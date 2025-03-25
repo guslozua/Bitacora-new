@@ -1,0 +1,70 @@
+# Dependencias
+node_modules/
+**/node_modules/
+**/venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Entornos de desarrollo
+.env
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Compilación y producción
+build/
+dist/
+/frontend-task-manager/build
+/frontend-task-manager/dist
+
+# IDEs y editores
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# Archivos de configuración locales
+config.local.js
+config.local.json
+
+# Bases de datos locales
+*.sqlite
+*.db
+
+# Archivos de seguridad y credenciales
+*.pem
+*.key
+.secrets/
+
+# Testing
+/coverage
+**/coverage/
+
+# Archivos temporales
+*.tmp
+*.bak
+*~
+
+# Dependencias específicas
+.pnp
+.pnp.js
+
+# Ignorar archivos específicos del sistema
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Backup y archivos de caché
+.backup
+.cache/
