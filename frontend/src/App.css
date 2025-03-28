@@ -1,3 +1,4 @@
+/* App styles */
 .App {
   text-align: center;
 }
@@ -35,4 +36,75 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Gantt Custom Styling */
+.gantt .bar-label {
+  fill: white;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.gantt .bar {
+  height: 25px !important;
+  stroke: #333;
+  stroke-width: 1px;
+  rx: 4;
+  ry: 4;
+}
+
+/* Tipos jerárquicos */
+.gantt .bar.proyecto {
+  height: 30px !important;
+  fill: #0d6efd !important;
+  rx: 4;
+  ry: 4;
+}
+
+.gantt .bar.tarea {
+  height: 20px !important;
+  fill: #1d3557 !important;
+  rx: 3px;
+}
+
+.gantt .bar.subtarea {
+  height: 14px !important;
+  fill: #a8dadc !important;
+  rx: 2px;
+}
+
+/* Prioridades */
+.prioridad-alta .bar {
+  stroke: #c0392b;
+  stroke-width: 2px;
+  stroke-dasharray: 4;
+}
+
+.prioridad-media .bar {
+  stroke: #e67e22;
+  stroke-width: 2px;
+  stroke-dasharray: 2;
+}
+
+.prioridad-baja .bar {
+  stroke: #16a085;
+  stroke-width: 2px;
+  opacity: 0.8;
+}
+
+/* Estados */
+.estado-pendiente .bar {
+  stroke: #f1c40f !important;
+  stroke-width: 2;
+}
+
+.estado-en\ progreso .bar {
+  stroke: #3498db !important;
+  stroke-width: 2;
+}
+
+.estado-completado .bar {
+  stroke: #2ecc71 !important;
+  stroke-width: 2;
+  opacity: 0.6;
 }

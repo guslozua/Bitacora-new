@@ -19,8 +19,12 @@ const LoginPage = () => {
         password
       });
 
-      const { token } = response.data;
-      localStorage.setItem('token', token);
+      const { token, usuario } = response.data;
+localStorage.setItem('token', token);
+
+if (usuario) {
+  localStorage.setItem('user', JSON.stringify(usuario));
+}
       setMensaje('¡Inicio de sesión exitoso!');
       setTimeout(() => {
         navigate('/dashboard'); // Redirigir al Dashboard
