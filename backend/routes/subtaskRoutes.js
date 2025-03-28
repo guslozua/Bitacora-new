@@ -10,6 +10,18 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
+// ✅ Nuevo endpoint: Obtener todas las subtareas (para el Gantt)
+router.get('/', authMiddleware, async (req, res) => {
+  try {
+    const db = require('../config/db');
+    const [subtareas] = await db.query('SELECT * FROM subtareas');
+    res.json({ success: true, data: subtareas });
+  } catch (error) {
+    console.error('Error al obtener las subtareas:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
 // Crear una nueva subtarea asociada a una tarea
 router.post('/task/:taskId', authMiddleware, createSubtask);
 

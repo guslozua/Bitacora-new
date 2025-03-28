@@ -49,8 +49,7 @@ const registerUser = async (req, res) => {
     return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
   }
 };
-
-// Inicio de sesión con generación de JWT
+// Inicio de sesion
 const loginUser = (req, res) => {
   console.log('Ejecutando loginUser');
   console.log('Body recibido:', req.body);
@@ -100,7 +99,7 @@ const loginUser = (req, res) => {
         console.log('Token generado exitosamente');
         res.json({
           token,
-          user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol }
+          usuario: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol }
         });
       });
     });
