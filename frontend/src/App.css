@@ -98,7 +98,7 @@
   stroke-width: 2;
 }
 
-.estado-en\ progreso .bar {
+.estado-en\progreso .bar {
   stroke: #3498db !important;
   stroke-width: 2;
 }
@@ -107,4 +107,103 @@
   stroke: #2ecc71 !important;
   stroke-width: 2;
   opacity: 0.6;
+}
+
+
+/* ======================== */
+/* 🎯 NUEVOS ESTILOS GANTT */
+/* ======================== */
+
+/* Organización jerárquica en "escalera" */
+.gantt .bar.proyecto {
+  fill: #6c5ce7 !important;
+  height: 30px !important;
+}
+.gantt .bar.tarea {
+  fill: #00b894 !important;
+  height: 20px !important;
+}
+.gantt .bar.subtarea {
+  fill: #fab1a0 !important;
+  height: 14px !important;
+}
+
+/* Etiquetas jerárquicas */
+.gantt .bar-label {
+  font-weight: 600;
+  font-size: 12px;
+  text-shadow: 1px 1px 2px #000;
+}
+
+/* Colores de progreso */
+.estado-completado .bar-progress {
+  fill: #2ecc71 !important;
+}
+.estado-en\progreso .bar-progress {
+  fill: #3498db !important;
+}
+.estado-pendiente .bar-progress {
+  fill: #f1c40f !important;
+}
+
+/* Contenedor con scroll visible */
+.gantt-container {
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  white-space: nowrap;
+  padding-bottom: 10px;
+}
+
+/* Mejora visual alternando filas */
+.gantt .grid-row:nth-child(even) {
+  fill: #f0f0f0;
+}
+.gantt .grid-row:nth-child(odd) {
+  fill: #ffffff;
+}
+
+/* Sombra sutil en barras */
+.gantt .bar {
+  filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.1));
+  rx: 4;
+  ry: 4;
+}
+
+
+/* ======================== */
+/* 🎯 ESTILOS SIDEBAR */
+/* ======================== */
+
+/* Hover effect para los elementos del menú */
+.sidebar-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+/* Estilo para el elemento activo */
+.sidebar-item.active {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+/* Asegurarse que el contenido principal ocupe toda la altura */
+#root {
+  min-height: 100vh;
+}
+
+/* Ajustes para dispositivos móviles */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -250px;
+  }
+  
+  .sidebar.show {
+    left: 0;
+  }
+  
+  .content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
 }
