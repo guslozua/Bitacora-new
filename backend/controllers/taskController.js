@@ -9,7 +9,7 @@ const createTask = async (req, res) => {
         console.log("Body recibido:", req.body);
         console.log("Usuario autenticado:", req.user);
 
-        const { titulo, descripcion, estado, prioridad, fecha_vencimiento, id_proyecto, id_usuario_asignado } = req.body;
+        const { titulo, descripcion, estado, prioridad, fecha_inicio, fecha_vencimiento, id_proyecto, id_usuario_asignado } = req.body;
         const userId = id_usuario_asignado || req.user.id;
 
         // Obtener nombre del usuario
@@ -20,12 +20,30 @@ const createTask = async (req, res) => {
         const [projectInfo] = await db.query('SELECT nombre FROM Proyectos WHERE id = ?', [id_proyecto]);
         const nombreProyecto = projectInfo.length > 0 ? projectInfo[0].nombre : null;
 
+        console.log({
+            titulo,
+            descripcion,
+            estado,
+            prioridad,
+            fecha_inicio,
+            fecha_vencimiento,
+            id_proyecto,
+            userId
+          });
+
+          const formatFecha = (fecha) => {
+            if (!fecha) return null;
+            const parsed = new Date(fecha);
+            return isNaN(parsed) ? null : parsed.toISOString().split('T')[0]; // YYYY-MM-DD
+        };
+        
         const result = await TaskModel.createTask(
             titulo,
             descripcion,
             estado,
             prioridad,
-            fecha_vencimiento,
+            formatFecha(fecha_inicio),
+            formatFecha(fecha_vencimiento),
             id_proyecto,
             userId
         );
@@ -99,7 +117,7 @@ const getTaskById = async (req, res) => {
 const updateTask = async (req, res) => {
     try {
         const taskId = req.params.id;
-        const { titulo, descripcion, estado, prioridad, fecha_vencimiento, id_usuario_asignado, id_proyecto } = req.body;
+        const { titulo, descripcion, estado, prioridad, fecha_inicio, fecha_vencimiento, id_usuario_asignado, id_proyecto } = req.body;
 
         // Obtener información actual de la tarea
         const [currentTask] = await TaskModel.getTaskById(taskId);
@@ -125,6 +143,7 @@ const updateTask = async (req, res) => {
             descripcion,
             estado,
             prioridad,
+            fecha_inicio,
             fecha_vencimiento,
             id_usuario_asignado
         );
@@ -154,6 +173,7 @@ const updateTask = async (req, res) => {
                 descripcion,
                 estado,
                 prioridad,
+                fecha_inicio,
                 fecha_vencimiento,
                 id_usuario_asignado,
                 id_proyecto: projectId

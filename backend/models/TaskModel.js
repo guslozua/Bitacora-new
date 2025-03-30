@@ -2,9 +2,9 @@
 const pool = require('../config/db');
 
 const TaskModel = {
-    createTask: async (titulo, descripcion, estado, prioridad, fecha_vencimiento, id_proyecto, id_usuario_asignado) => {
-        const sql = 'INSERT INTO Tareas (titulo, descripcion, estado, prioridad, fecha_vencimiento, id_proyecto, id_usuario_asignado) VALUES (?, ?, ?, ?, ?, ?, ?)';
-        const [result] = await pool.query(sql, [titulo, descripcion, estado, prioridad, fecha_vencimiento, id_proyecto, id_usuario_asignado]);
+    createTask: async (titulo, descripcion, estado, prioridad, fecha_inicio, fecha_vencimiento, id_proyecto, id_usuario_asignado) => {
+        const sql = 'INSERT INTO Tareas (titulo, descripcion, estado, prioridad, fecha_inicio, fecha_vencimiento, id_proyecto, id_usuario_asignado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+        const [result] = await pool.query(sql, [titulo, descripcion, estado, prioridad, fecha_inicio, fecha_vencimiento, id_proyecto, id_usuario_asignado]);
         return result;
     },
     
@@ -25,9 +25,9 @@ const TaskModel = {
         return rows;
     },
     
-    updateTask: async (id, titulo, descripcion, estado, prioridad, fecha_vencimiento, id_usuario_asignado) => {
-        const sql = 'UPDATE Tareas SET titulo = ?, descripcion = ?, estado = ?, prioridad = ?, fecha_vencimiento = ?, id_usuario_asignado = ? WHERE id = ?';
-        const [result] = await pool.query(sql, [titulo, descripcion, estado, prioridad, fecha_vencimiento, id_usuario_asignado, id]);
+    updateTask: async (id, titulo, descripcion, estado, prioridad, fecha_inicio, fecha_vencimiento, id_usuario_asignado) => {
+        const sql = 'UPDATE Tareas SET titulo = ?, descripcion = ?, estado = ?, prioridad = ?, fecha_inicio = ?, fecha_vencimiento = ?, id_usuario_asignado = ? WHERE id = ?';
+        const [result] = await pool.query(sql, [titulo, descripcion, estado, prioridad, fecha_inicio, fecha_vencimiento, id_usuario_asignado, id]);
         return result;
     },
     
