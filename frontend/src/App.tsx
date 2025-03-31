@@ -6,6 +6,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
+import Error404 from './pages/Error404'; // Importa la página de error
 
 
 const App: React.FC = () => {
@@ -15,6 +16,7 @@ const App: React.FC = () => {
 <Route path="/" element={<LoginPage />} />
 <Route path="/dashboard" element={<Dashboard />} />
 <Route path="/projects" element={<Projects />} />
+<Route path="*" element={<Error404 />} />
 </Routes>
 </Router>
   );

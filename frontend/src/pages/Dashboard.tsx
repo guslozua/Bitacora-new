@@ -248,11 +248,11 @@ const Dashboard = () => {
             <div>
               <Button variant="outline-secondary" className="me-2">
                 <i className="bi bi-plus me-2"></i>
-                Nueva Tarea
+                Nueva Proyecto
               </Button>
               <Button variant="outline-primary">
                 <i className="bi bi-plus me-2"></i>
-                Nuevo Proyecto
+                Nueva Tarea
               </Button>
             </div>
           </div>
