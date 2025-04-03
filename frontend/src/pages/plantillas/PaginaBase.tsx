@@ -2,17 +2,14 @@ import React, { useState } from 'react';
 import { Container } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 
-import Sidebar from '../components/Sidebar';
-import Footer from '../components/Footer';
+import Sidebar from '../../components/Sidebar';
+import Footer from '../../components/Footer';
 
-const TemplatePage = () => {
+const PaginaBase = () => {
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
-
+  const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed);
   const handleLogout = () => {
     localStorage.clear();
     navigate('/');
@@ -29,15 +26,11 @@ const TemplatePage = () => {
 
   return (
     <div className="d-flex">
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        toggle={toggleSidebar}
-        onLogout={handleLogout}
-      />
+      <Sidebar collapsed={sidebarCollapsed} toggle={toggleSidebar} onLogout={handleLogout} />
 
       <div style={contentStyle}>
         <Container className="py-4">
-          <h2 className="mb-4">Tareas</h2>
+          <h2 className="mb-4">Nueva Página</h2>
           {/* Acá va el contenido principal */}
         </Container>
 
@@ -47,4 +40,4 @@ const TemplatePage = () => {
   );
 };
 
-export default TemplatePage;
+export default PaginaBase;

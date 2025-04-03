@@ -13,6 +13,8 @@ import {
 } from 'recharts';
 
 import GanttChart from '../components/GanttChart';
+import Sidebar from '../components/Sidebar';
+import Footer from '../components/Footer';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -22,7 +24,6 @@ const Dashboard = () => {
   const [proyectos, setProyectos] = useState<number | null>(null);
   const [actividadReciente, setActividadReciente] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  // Sidebar colapsado por defecto
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   const token = localStorage.getItem('token');
@@ -95,20 +96,6 @@ const Dashboard = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
-  // Estilos para el sidebar y el contenido principal
-  const sidebarStyle = {
-    minHeight: '100vh',
-    width: sidebarCollapsed ? '80px' : '250px',
-    position: 'fixed' as 'fixed',
-    top: 0,
-    left: 0,
-    zIndex: 100,
-    transition: 'all 0.3s',
-    backgroundColor: '#343a40',
-    color: 'white',
-    boxShadow: '0 0 10px rgba(0,0,0,0.1)',
-  };
-
   const contentStyle = {
     marginLeft: sidebarCollapsed ? '80px' : '250px',
     transition: 'all 0.3s',
@@ -118,125 +105,14 @@ const Dashboard = () => {
     minHeight: '100vh',
   };
 
-  const menuItemStyle = {
-    padding: '10px 15px',
-    display: 'flex',
-    alignItems: 'center',
-    cursor: 'pointer',
-    transition: 'all 0.3s',
-    marginBottom: '5px',
-  };
-
-  const iconStyle = {
-    fontSize: '1.5rem',
-    marginRight: sidebarCollapsed ? '0' : '10px',
-  };
-
   return (
     <div className="d-flex">
-      {/* Sidebar */}
-      <div style={sidebarStyle}>
-        <div className="p-3 d-flex justify-content-between align-items-center" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          {!sidebarCollapsed && (
-            <div className="d-flex align-items-center">
-              <img
-                src="/logoxside.png"
-                alt="Logo"
-                style={{ width: '60px', height: '60px', marginRight: '10px' }}
-              />
-              <h5 className="mb-0">TASK manager</h5>
-            </div>
-          )}
-          {sidebarCollapsed && (
-            <img
-              src="/logoxside.png"
-              alt="Logo"
-              style={{ width: '40px', height: '40px', margin: '0 auto' }}
-            />
-          )}
-          <Button 
-            variant="link" 
-            className="text-white p-0" 
-            onClick={toggleSidebar}
-            style={{ marginLeft: sidebarCollapsed ? '0' : 'auto' }}
-          >
-            <i className={`bi ${sidebarCollapsed ? 'bi-chevron-right' : 'bi-chevron-left'}`}></i>
-          </Button>
-        </div>
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        toggle={toggleSidebar}
+        onLogout={handleLogout}
+      />
 
-        <div className="pt-3">
-          <div 
-            style={menuItemStyle} 
-            className="sidebar-item"
-            onClick={() => navigate('/dashboard')}
-          >
-            <i className="bi bi-speedometer2" style={iconStyle}></i>
-            {!sidebarCollapsed && <span>Dashboard</span>}
-          </div>
-          <div 
-            style={menuItemStyle} 
-            className="sidebar-item"
-            onClick={() => navigate('/projects')}
-          >
-            <i className="bi bi-diagram-3-fill" style={iconStyle}></i>
-            {!sidebarCollapsed && <span>Proyectos</span>}
-          </div>
-          <div 
-            style={menuItemStyle} 
-            className="sidebar-item"
-            onClick={() => navigate('/tasks')}
-          >
-            <i className="bi bi-list-task" style={iconStyle}></i>
-            {!sidebarCollapsed && <span>Tareas</span>}
-          </div>
-          <div 
-            style={menuItemStyle} 
-            className="sidebar-item"
-            onClick={() => navigate('/users')}
-          >
-            <i className="bi bi-people-fill" style={iconStyle}></i>
-            {!sidebarCollapsed && <span>Usuarios</span>}
-          </div>
-          
-          {/* Nuevo elemento: Bitácora */}
-          <div 
-            style={menuItemStyle} 
-            className="sidebar-item"
-            onClick={() => navigate('/bitacora')}
-          >
-            <i className="bi bi-journal-text" style={iconStyle}></i>
-            {!sidebarCollapsed && <span>Bitácora</span>}
-          </div>
-          
-          {/* Nuevo elemento: Hitos */}
-          <div 
-            style={menuItemStyle} 
-            className="sidebar-item"
-            onClick={() => navigate('/hitos')}
-          >
-            <i className="bi bi-flag-fill" style={iconStyle}></i>
-            {!sidebarCollapsed && <span>Hitos</span>}
-          </div>
-          
-          {/* Separador antes del botón de cerrar sesión */}
-          <div style={{ 
-            height: '1px', 
-            backgroundColor: 'rgba(255,255,255,0.1)', 
-            margin: '10px 15px' 
-          }}></div>
-          
-          <div 
-            style={menuItemStyle} 
-            className="sidebar-item"
-            onClick={handleLogout}
-          >
-            <i className="bi bi-box-arrow-right" style={iconStyle}></i>
-            {!sidebarCollapsed && <span>Cerrar sesión</span>}
-          </div>
-        </div>
-      </div>
-
-      {/* Contenido principal */}
       <div style={contentStyle}>
         <Container className="py-4">
           <div className="d-flex justify-content-between align-items-center mb-4">
@@ -336,9 +212,9 @@ const Dashboard = () => {
                             tickLine={false}
                           />
                           <Bar dataKey="cantidad">
-                            <Cell fill="#FA8072" /> {/* Usuarios */}
-                            <Cell fill="#7B8EFA" /> {/* Tareas */}
-                            <Cell fill="#ff0080" /> {/* Proyectos */}
+                            <Cell fill="#FA8072" />
+                            <Cell fill="#7B8EFA" />
+                            <Cell fill="#ff0080" />
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
@@ -347,7 +223,6 @@ const Dashboard = () => {
                 </Col>
               </Row>
 
-              {/* GANTT */}
               <Card className="shadow-sm mb-4">
                 <Card.Body>
                   <GanttChart />
@@ -356,30 +231,8 @@ const Dashboard = () => {
             </>
           )}
         </Container>
-        
-        {/* Footer */}
-        <footer style={{
-          backgroundColor: '#343a40',
-          color: 'white',
-          padding: '10px 0',
-          textAlign: 'center',
-          width: '100%',
-          marginTop: 'auto'
-        }}>
-          <div className="d-flex justify-content-center align-items-center">
-            
-            <span>Desarrollado por <img 
-              src="/logoxside.png" 
-              alt="ATPC Logo" 
-              style={{ 
-                height: '40px', 
-                marginRight: '10px',
-                objectFit: 'contain'
-              }} 
-            /> </span>
-            <small> - AseguramientoTecnicoydePlataformasdeContacto@teco.com.ar</small>
-          </div>
-        </footer>
+
+        <Footer />
       </div>
     </div>
   );
