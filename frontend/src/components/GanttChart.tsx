@@ -25,9 +25,9 @@ const GanttChart = () => {
             t &&
             typeof t.name === "string" &&
             t.start instanceof Date &&
-            !isNaN(t.start) &&
+            !isNaN(t.start.getTime()) &&
             t.end instanceof Date &&
-            !isNaN(t.end)
+            !isNaN(t.end.getTime())
         );
 
         setTasks(clean);
@@ -56,12 +56,15 @@ const GanttChart = () => {
   };
 
   const formatDate = (date: Date) =>
-    new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
+    new Intl.DateTimeFormat("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(date);
 
   const handleViewModeChange = (mode: ViewMode) => {
     setViewMode(mode);
-    
-    // Ajustar el ancho de columna automáticamente según el modo de vista
+
     switch (mode) {
       case ViewMode.Hour:
         setColumnWidth(50);
@@ -90,26 +93,18 @@ const GanttChart = () => {
 
   return (
     <div style={{ padding: "2rem" }}>
-      {/* Estilo mejorado que solo oculta las columnas Name, From, To pero mantiene los encabezados de tiempo */}
       <style>{`
-        /* Ocultar solamente las columnas Name, From, To */
         .gantt-task-info-wrapper {
           display: none !important;
         }
-        
-        /* Ajustar el ancho de la columna de tareas a 0 */
         .gantt-task-list-wrapper {
           min-width: 0 !important;
           width: 0 !important;
           border-right: none !important;
         }
-        
-        /* Asegurar que el gráfico ocupe todo el ancho disponible */
         .gantt-chart-wrapper {
           margin-left: 0 !important;
         }
-        
-        /* Estilo para los botones de vista seleccionados */
         .btn-view-mode.active {
           background-color: #0d6efd;
           color: white;
@@ -132,30 +127,30 @@ const GanttChart = () => {
               <div className="d-flex align-items-center">
                 <label className="me-2 fw-bold">Vista:</label>
                 <ButtonGroup className="me-4">
-                  <Button 
+                  <Button
                     variant="outline-primary"
-                    className={`btn-view-mode ${viewMode === ViewMode.Day ? 'active' : ''}`}
+                    className={`btn-view-mode ${viewMode === ViewMode.Day ? "active" : ""}`}
                     onClick={() => handleViewModeChange(ViewMode.Day)}
                   >
                     Día
                   </Button>
-                  <Button 
+                  <Button
                     variant="outline-primary"
-                    className={`btn-view-mode ${viewMode === ViewMode.Week ? 'active' : ''}`}
+                    className={`btn-view-mode ${viewMode === ViewMode.Week ? "active" : ""}`}
                     onClick={() => handleViewModeChange(ViewMode.Week)}
                   >
                     Semana
                   </Button>
-                  <Button 
+                  <Button
                     variant="outline-primary"
-                    className={`btn-view-mode ${viewMode === ViewMode.Month ? 'active' : ''}`}
+                    className={`btn-view-mode ${viewMode === ViewMode.Month ? "active" : ""}`}
                     onClick={() => handleViewModeChange(ViewMode.Month)}
                   >
                     Mes
                   </Button>
-                  <Button 
+                  <Button
                     variant="outline-primary"
-                    className={`btn-view-mode ${viewMode === ViewMode.Year ? 'active' : ''}`}
+                    className={`btn-view-mode ${viewMode === ViewMode.Year ? "active" : ""}`}
                     onClick={() => handleViewModeChange(ViewMode.Year)}
                   >
                     Año
@@ -166,10 +161,10 @@ const GanttChart = () => {
             <Col md={5}>
               <div className="d-flex align-items-center">
                 <label className="me-2 fw-bold" htmlFor="zoomRange">Zoom:</label>
-                <Form.Range 
+                <Form.Range
                   id="zoomRange"
-                  min={30} 
-                  max={200} 
+                  min={30}
+                  max={200}
                   step={10}
                   value={columnWidth}
                   onChange={handleZoomChange}

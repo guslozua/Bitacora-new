@@ -377,7 +377,7 @@ const Dashboard = () => {
                 objectFit: 'contain'
               }} 
             /> </span>
-            <small>- AseguramientoTecnicoydePlataformasdeContacto@teco.com.ar</small>
+            <small> - AseguramientoTecnicoydePlataformasdeContacto@teco.com.ar</small>
           </div>
         </footer>
       </div>

@@ -207,3 +207,39 @@
     width: 100% !important;
   }
 }
+
+/* Estilos manuales para react-split-pane */
+
+.SplitPane {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+}
+
+.Pane {
+  overflow: auto;
+}
+
+.Resizer {
+  background: #ccc;
+  z-index: 1;
+  box-sizing: border-box;
+  background-clip: padding-box;
+}
+
+.Resizer:hover {
+  transition: all 0.2s ease;
+}
+
+.Resizer.vertical {
+  width: 8px;
+  margin: 0 -4px;
+  cursor: col-resize;
+}
+
+.Resizer.horizontal {
+  height: 8px;
+  margin: -4px 0;
+  cursor: row-resize;
+}
