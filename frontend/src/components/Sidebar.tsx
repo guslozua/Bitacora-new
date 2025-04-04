@@ -1,5 +1,5 @@
-import React from 'react';
-import { Button } from 'react-bootstrap';
+import React, { useEffect, useRef } from 'react';
+import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
@@ -10,11 +10,28 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
   const navigate = useNavigate();
+  const logoRef = useRef<HTMLImageElement | null>(null); // 👈 Referencia al logo
 
-  const sidebarStyle = {
+  // Animación aleatoria de flip al logo
+  useEffect(() => {
+    if (!collapsed) return; // Solo activa en modo colapsado
+
+    const interval = setInterval(() => {
+      if (logoRef.current) {
+        logoRef.current.classList.add('animate__animated', 'animate__jello');
+        setTimeout(() => {
+          logoRef.current?.classList.remove('animate__animated', 'animate__jello');
+        }, 1000);
+      }
+    }, Math.floor(Math.random() * 10000) + 10000); // cada 10-20 segundos
+
+    return () => clearInterval(interval);
+  }, [collapsed]);
+
+  const sidebarStyle: React.CSSProperties = {
     minHeight: '100vh',
     width: collapsed ? '80px' : '250px',
-    position: 'fixed' as 'fixed',
+    position: 'fixed',
     top: 0,
     left: 0,
     zIndex: 100,
@@ -22,19 +39,26 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     backgroundColor: '#343a40',
     color: 'white',
     boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+    display: 'flex',
+    flexDirection: 'column',
+    overflowX: 'hidden',
   };
 
-  const menuItemStyle = {
-    padding: '10px 15px',
+  const menuItemStyle: React.CSSProperties = {
+    padding: '8px 12px',
     display: 'flex',
     alignItems: 'center',
     cursor: 'pointer',
-    transition: 'all 0.3s',
-    marginBottom: '5px',
+    transition: 'all 0.2s ease',
+    marginBottom: '2px',
+    borderRadius: '6px',
+    fontSize: '0.9rem',
+    overflowX: 'hidden',
+    whiteSpace: 'nowrap',
   };
 
-  const iconStyle = {
-    fontSize: '1.5rem',
+  const iconStyle: React.CSSProperties = {
+    fontSize: '1.3rem',
     marginRight: collapsed ? '0' : '10px',
   };
 
@@ -45,10 +69,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     { icon: 'bi-people-fill', label: 'Usuarios', route: '/users' },
     { icon: 'bi-journal-text', label: 'Bitácora', route: '/bitacora' },
     { icon: 'bi-flag-fill', label: 'Hitos', route: '/hitos' },
+    { icon: 'bi-crosshair2', label: 'iTracker', route: '/itracker' },
+    { icon: 'bi-shield-exclamation', label: 'Inc. en Guardia', route: '/incidencias' },
   ];
 
   return (
     <div style={sidebarStyle}>
+      {/* Header / Logo */}
       <div
         className="p-3 d-flex justify-content-between align-items-center"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}
@@ -58,12 +85,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
             <img
               src="/logoxside.png"
               alt="Logo"
-              style={{ width: '60px', height: '60px', marginRight: '10px' }}
+              style={{ width: '40px', height: '40px', marginRight: '10px' }}
             />
-            <h5 className="mb-0">TASK manager</h5>
+            <h6 className="mb-0">TASK manager</h6>
           </div>
         ) : (
           <img
+            ref={logoRef}
             src="/logoxside.png"
             alt="Logo"
             style={{ width: '40px', height: '40px', margin: '0 auto' }}
@@ -79,30 +107,40 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
         </Button>
       </div>
 
-      <div className="pt-3">
-        {menuItems.map((item) => (
-          <div
-            key={item.route}
-            style={menuItemStyle}
-            className="sidebar-item"
-            onClick={() => navigate(item.route)}
+      {/* Contenido con scroll vertical */}
+      <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 0 }}>
+        <div style={{ flex: 1, overflowY: 'auto', paddingTop: '8px' }}>
+          {menuItems.map((item) => (
+            <OverlayTrigger
+              key={item.route}
+              placement="right"
+              overlay={<Tooltip id={`tooltip-${item.label}`}>{item.label}</Tooltip>}
+              delay={{ show: 300, hide: 0 }}
+            >
+              <div
+                style={menuItemStyle}
+                className="sidebar-item"
+                onClick={() => navigate(item.route)}
+              >
+                <i className={`bi ${item.icon}`} style={iconStyle}></i>
+                {!collapsed && <span>{item.label}</span>}
+              </div>
+            </OverlayTrigger>
+          ))}
+        </div>
+
+        {/* Logout fijo */}
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px' }}>
+          <OverlayTrigger
+            placement="right"
+            overlay={<Tooltip id="tooltip-logout">Cerrar sesión</Tooltip>}
+            delay={{ show: 300, hide: 0 }}
           >
-            <i className={`bi ${item.icon}`} style={iconStyle}></i>
-            {!collapsed && <span>{item.label}</span>}
-          </div>
-        ))}
-
-        <div
-          style={{
-            height: '1px',
-            backgroundColor: 'rgba(255,255,255,0.1)',
-            margin: '10px 15px',
-          }}
-        ></div>
-
-        <div style={menuItemStyle} onClick={onLogout}>
-          <i className="bi bi-box-arrow-right" style={iconStyle}></i>
-          {!collapsed && <span>Cerrar sesión</span>}
+            <div style={menuItemStyle} className="sidebar-item" onClick={onLogout}>
+              <i className="bi bi-box-arrow-right" style={iconStyle}></i>
+              {!collapsed && <span>Cerrar sesión</span>}
+            </div>
+          </OverlayTrigger>
         </div>
       </div>
     </div>
