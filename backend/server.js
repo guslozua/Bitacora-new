@@ -11,6 +11,8 @@ const subtaskRoutes = require('./routes/subtaskRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const bitacoraRoutes = require('./routes/bitacoraRoutes');
 const itrackerRoutes = require('./routes/itracker');
+const itrackerStatsRoutes = require('./routes/itrackerStats');
+const itrackerListRoutes = require('./routes/itrackerList');
 
 // Inicializar Express
 const app = express();
@@ -34,6 +36,8 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/subtasks', subtaskRoutes);
 app.use('/api/bitacora', bitacoraRoutes);
 app.use('/api/itracker', itrackerRoutes);
+app.use('/api/itracker/stats', itrackerStatsRoutes);
+app.use('/api/itracker', itrackerListRoutes);
 app.use('/api/permisos', require('./routes/permisoRoutes'));
 
 // Depuración: Listar rutas registradas en Express
