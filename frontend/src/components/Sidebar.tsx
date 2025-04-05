@@ -10,11 +10,10 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
   const navigate = useNavigate();
-  const logoRef = useRef<HTMLImageElement | null>(null); // 👈 Referencia al logo
+  const logoRef = useRef<HTMLImageElement | null>(null);
 
-  // Animación aleatoria de flip al logo
   useEffect(() => {
-    if (!collapsed) return; // Solo activa en modo colapsado
+    if (!collapsed) return;
 
     const interval = setInterval(() => {
       if (logoRef.current) {
@@ -23,7 +22,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
           logoRef.current?.classList.remove('animate__animated', 'animate__jello');
         }, 1000);
       }
-    }, Math.floor(Math.random() * 10000) + 10000); // cada 10-20 segundos
+    }, Math.floor(Math.random() * 10000) + 10000);
 
     return () => clearInterval(interval);
   }, [collapsed]);
@@ -44,10 +43,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     overflowX: 'hidden',
   };
 
-  const menuItemStyle: React.CSSProperties = {
+  const getMenuItemStyle = (): React.CSSProperties => ({
     padding: '8px 12px',
     display: 'flex',
     alignItems: 'center',
+    justifyContent: collapsed ? 'center' : 'flex-start',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     marginBottom: '2px',
@@ -55,7 +55,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     fontSize: '0.9rem',
     overflowX: 'hidden',
     whiteSpace: 'nowrap',
-  };
+    textAlign: 'center',
+  });
 
   const iconStyle: React.CSSProperties = {
     fontSize: '1.3rem',
@@ -118,7 +119,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
               delay={{ show: 300, hide: 0 }}
             >
               <div
-                style={menuItemStyle}
+                style={getMenuItemStyle()}
                 className="sidebar-item"
                 onClick={() => navigate(item.route)}
               >
@@ -129,14 +130,14 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
           ))}
         </div>
 
-        {/* Logout fijo */}
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px' }}>
+        {/* Logout fijo abajo */}
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           <OverlayTrigger
             placement="right"
             overlay={<Tooltip id="tooltip-logout">Cerrar sesión</Tooltip>}
             delay={{ show: 300, hide: 0 }}
           >
-            <div style={menuItemStyle} className="sidebar-item" onClick={onLogout}>
+            <div style={getMenuItemStyle()} className="sidebar-item" onClick={onLogout}>
               <i className="bi bi-box-arrow-right" style={iconStyle}></i>
               {!collapsed && <span>Cerrar sesión</span>}
             </div>

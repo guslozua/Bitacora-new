@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
 import Tasks from './pages/Tasks';
+import ItrackerUpload from './pages/ItrackerUpload';
 import Error404 from './pages/Error404'; // Importa la página de error
 
 
@@ -18,6 +19,7 @@ const App: React.FC = () => {
 <Route path="/dashboard" element={<Dashboard />} />
 <Route path="/projects" element={<Projects />} />
 <Route path="/tasks" element={<Tasks />} />
+<Route path="/itracker" element={<ItrackerUpload />} />
 <Route path="*" element={<Error404 />} />
 </Routes>
 </Router>
