@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Spinner, Alert, Row, Col } from 'react-bootstrap';
+import { Container, Spinner, Alert, Row, Col, Card } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
-import ItrackerTable from '../components/ItrackerTable';
+import ItrackerTable from '../components/ItrackerTable'; // Importamos el componente de tabla
 
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip,
-  BarChart, Bar, PieChart, Pie, Cell, Legend
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  BarChart, Bar, PieChart, Pie, Cell, Legend, CartesianGrid
 } from 'recharts';
 
 const ItrackerDash = () => {
@@ -53,7 +53,9 @@ const ItrackerDash = () => {
     fetchData();
   }, [selectedYear, selectedMonth]);
 
-  const colors = ['#8884d8', '#82ca9d'];
+  // Paleta de colores más moderna y profesional
+  const colors = ['#3498db', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6', '#1abc9c'];
+  const pieColors = ['#3498db', '#2ecc71', '#f1c40f'];
 
   const months = [
     { label: 'Todos', value: 'all' },
@@ -75,17 +77,33 @@ const ItrackerDash = () => {
     ?.filter((item: any) => item?.centro && item.centro.trim() !== '')
     ?.map((item: any) => ({ centro: item.centro.trim(), cantidad: item.cantidad }));
 
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('es-ES').format(num);
+  };
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-2 border shadow-sm rounded">
+          <p className="mb-0"><strong>{label}</strong></p>
+          <p className="mb-0 text-primary">{`${payload[0].name}: ${formatNumber(payload[0].value)}`}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="d-flex">
       <Sidebar collapsed={sidebarCollapsed} toggle={toggleSidebar} onLogout={handleLogout} />
 
       <div style={contentStyle}>
-        <Container className="py-4">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h2 className="mb-0">Dashboard iTracker</h2>
+        <Container fluid className="py-4 px-4">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h2 className="mb-0 fw-bold">Dashboard iTracker</h2>
             <div className="d-flex gap-2">
               <select
-                className="form-select"
+                className="form-select shadow-sm"
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
               >
@@ -94,7 +112,7 @@ const ItrackerDash = () => {
                 <option value="2024">2024</option>
               </select>
               <select
-                className="form-select"
+                className="form-select shadow-sm"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
               >
@@ -106,82 +124,274 @@ const ItrackerDash = () => {
           </div>
 
           {loading ? (
-            <Spinner animation="border" />
+            <div className="text-center py-5">
+              <Spinner animation="border" variant="primary" />
+            </div>
           ) : error ? (
             <Alert variant="danger">{error}</Alert>
           ) : data ? (
             <>
-              {/* KPIs */}
-              <Row className="mb-4">
-                <Col><Alert variant="secondary">Total: {data.total}</Alert></Col>
-                <Col><Alert variant="info">Masivos: {data.masivos}</Alert></Col>
-                <Col><Alert variant="success">Puntuales: {data.puntuales}</Alert></Col>
-                <Col><Alert variant="warning">ABM: {data.abm}</Alert></Col>
+              {/* KPIs - Mejorados con estilo moderno */}
+              <Row className="g-4 mb-4">
+                <Col md={3}>
+                  <Card className="border-0 shadow-sm h-100">
+                    <Card.Body>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                          <h6 className="text-muted mb-1">Total Tickets</h6>
+                          <h2 className="fw-bold mb-0">{formatNumber(data.total)}</h2>
+                        </div>
+                        <div className="bg-light p-3 rounded-circle">
+                          <i className="bi bi-collection fs-3 text-dark" />
+                        </div>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={3}>
+                  <Card className="border-0 shadow-sm h-100">
+                    <Card.Body>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                          <h6 className="text-muted mb-1">Masivos</h6>
+                          <h2 className="fw-bold mb-0 text-primary">{formatNumber(data.masivos)}</h2>
+                        </div>
+                        <div className="bg-primary bg-opacity-10 p-3 rounded-circle">
+                          <i className="bi bi-graph-up-arrow fs-3 text-primary" />
+                        </div>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={3}>
+                  <Card className="border-0 shadow-sm h-100">
+                    <Card.Body>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                          <h6 className="text-muted mb-1">Puntuales</h6>
+                          <h2 className="fw-bold mb-0 text-success">{formatNumber(data.puntuales)}</h2>
+                        </div>
+                        <div className="bg-success bg-opacity-10 p-3 rounded-circle">
+                          <i className="bi bi-wrench-adjustable-circle fs-3 text-success" />
+                        </div>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={3}>
+                  <Card className="border-0 shadow-sm h-100">
+                    <Card.Body>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                          <h6 className="text-muted mb-1">ABM</h6>
+                          <h2 className="fw-bold mb-0 text-warning">{formatNumber(data.abm)}</h2>
+                        </div>
+                        <div className="bg-warning bg-opacity-10 p-3 rounded-circle">
+                          <i className="bi bi-person-badge fs-3 text-warning" />
+                        </div>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
               </Row>
 
-              {/* Gráficas */}
-              <Row className="mb-4">
+              {/* Gráficas reordenadas según solicitud */}
+              <Row className="g-4 mb-4">
                 <Col md={6}>
-                  <h5>Tickets por Mes</h5>
-                  <LineChart width={400} height={200} data={data.porMes.map((d: { mes: number, cantidad: number }) => ({ mes: `Mes ${d.mes}`, cantidad: d.cantidad }))}>
-                    <XAxis dataKey="mes" /><YAxis /><Tooltip />
-                    <Line type="monotone" dataKey="cantidad" stroke="#8884d8" />
-                  </LineChart>
+                  <Card className="border-0 shadow-sm h-100">
+                    <Card.Body>
+                      <h5 className="fw-bold mb-3">Tickets por Mes</h5>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <LineChart data={data.porMes.map((d: { mes: number, cantidad: number }) => ({ mes: `Mes ${d.mes}`, cantidad: d.cantidad }))}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis dataKey="mes" />
+                          <YAxis />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Line 
+                            type="monotone" 
+                            dataKey="cantidad" 
+                            name="Tickets"
+                            stroke={colors[0]} 
+                            strokeWidth={2}
+                            dot={{ r: 5, strokeWidth: 1 }}
+                            activeDot={{ r: 7, stroke: colors[0] }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </Card.Body>
+                  </Card>
                 </Col>
 
+                {/* Masivos vs Puntuales después de tickets por mes */}
                 <Col md={6}>
-                  <h5>Usuarios de Cierre</h5>
-                  <BarChart width={500} height={250} data={data.usuariosCierre} layout="vertical">
-                    <XAxis type="number" /><YAxis dataKey="name" type="category" width={200} /><Tooltip />
-                    <Bar dataKey="cantidad" fill="#82ca9d" />
-                  </BarChart>
+                  <Card className="border-0 shadow-sm h-100">
+                    <Card.Body>
+                      <h5 className="fw-bold mb-3">Masivos vs Puntuales</h5>
+                      <div className="d-flex justify-content-center">
+                        <ResponsiveContainer width="80%" height={250}>
+                          <PieChart>
+                            <Pie 
+                              data={[
+                                { tipo: 'Masivos', value: data.masivos }, 
+                                { tipo: 'Puntuales', value: data.puntuales },
+                                { tipo: 'ABM', value: data.abm }
+                              ]} 
+                              cx="50%" 
+                              cy="50%" 
+                              outerRadius={100} 
+                              innerRadius={60}
+                              dataKey="value" 
+                              nameKey="tipo"
+                              label={({ tipo, percent }) => `${tipo}: ${(percent * 100).toFixed(0)}%`}
+                              labelLine={false}
+                            >
+                              {[
+                                { tipo: 'Masivos', value: data.masivos },
+                                { tipo: 'Puntuales', value: data.puntuales },
+                                { tipo: 'ABM', value: data.abm }
+                              ].map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                            <Legend 
+                              verticalAlign="bottom" 
+                              height={36} 
+                              iconType="circle"
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </Card.Body>
+                  </Card>
                 </Col>
               </Row>
 
-              <Row className="mb-4">
+              <Row className="g-4 mb-4">
                 <Col md={6}>
-                  <h5>Tickets por Causa</h5>
-                  <BarChart width={500} height={250} data={data.porCausa} layout="vertical">
-                    <XAxis type="number" /><YAxis dataKey="causa" type="category" width={200} /><Tooltip />
-                    <Bar dataKey="cantidad" fill="#ffc658" />
-                  </BarChart>
+                  <Card className="border-0 shadow-sm h-100">
+                    <Card.Body>
+                      <h5 className="fw-bold mb-3">Tickets por Herramienta</h5>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <BarChart 
+                          data={data.porCausa.slice(0, 7)} 
+                          layout="vertical"
+                          margin={{ left: 120 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                          <XAxis type="number" />
+                          <YAxis 
+                            dataKey="causa" 
+                            type="category" 
+                            tick={{ fontSize: 10 }}
+                          />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Bar 
+                            dataKey="cantidad" 
+                            name="Tickets"
+                            fill={colors[2]} 
+                            radius={[0, 4, 4, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </Card.Body>
+                  </Card>
                 </Col>
 
                 <Col md={6}>
-                  <h5>Tickets por Centro</h5>
-                  <BarChart width={500} height={250} data={centrosFiltrados} layout="vertical">
-                    <XAxis type="number" /><YAxis dataKey="centro" type="category" width={200} /><Tooltip />
-                    <Bar dataKey="cantidad" fill="#8884d8" />
-                  </BarChart>
+                  <Card className="border-0 shadow-sm h-100">
+                    <Card.Body>
+                      <h5 className="fw-bold mb-3">Tickets por Centro</h5>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <BarChart 
+                          data={(centrosFiltrados || []).slice(0, 7)} 
+                          layout="vertical"
+                          margin={{ left: 120 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                          <XAxis type="number" />
+                          <YAxis 
+                            dataKey="centro" 
+                            type="category" 
+                            tick={{ fontSize: 10 }}
+                          />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Bar 
+                            dataKey="cantidad" 
+                            name="Tickets"
+                            fill={colors[3]} 
+                            radius={[0, 4, 4, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </Card.Body>
+                  </Card>
                 </Col>
               </Row>
 
-              <Row className="mb-4">
+              {/* Usuarios de Cierre */}
+              <Row className="g-4 mb-4">
+                <Col md={6}>
+                  <Card className="border-0 shadow-sm h-100">
+                    <Card.Body>
+                      <h5 className="fw-bold mb-3">Usuarios de Cierre</h5>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <BarChart 
+                          data={data.usuariosCierre.slice(0, 7)} 
+                          layout="vertical"
+                          margin={{ left: 120 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                          <XAxis type="number" />
+                          <YAxis 
+                            dataKey="name" 
+                            type="category" 
+                            tick={{ fontSize: 10 }}
+                          />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Bar 
+                            dataKey="cantidad" 
+                            name="Tickets"
+                            fill={colors[1]} 
+                            radius={[0, 4, 4, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+
+              {/* Nube de tags */}
+              <Row className="g-4 mb-4">
                 <Col md={12}>
-                  <h5>Masivos vs Puntuales</h5>
-                  <PieChart width={400} height={200}>
-                    <Pie dataKey="value" data={[{ tipo: 'Masivos', value: data.masivos }, { tipo: 'Puntuales', value: data.puntuales }]} cx="50%" cy="50%" outerRadius={80} label>
-                      {[{ tipo: 'Masivos', value: data.masivos }, { tipo: 'Puntuales', value: data.puntuales }].map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
+                  <Card className="border-0 shadow-sm">
+                    <Card.Body>
+                      <h5 className="fw-bold mb-3">Palabras más usadas en comentarios</h5>
+                      <div className="d-flex flex-wrap gap-2 mt-3">
+                        {data.tags.map((tag: { palabra: string; veces: number }, idx: number) => (
+                          <span 
+                            key={idx} 
+                            className="badge rounded-pill" 
+                            style={{ 
+                              backgroundColor: colors[idx % colors.length],
+                              fontSize: `${Math.min(1 + (tag.veces / 10), 1.5)}rem`,
+                              padding: '8px 12px'
+                            }}
+                          >
+                            {tag.palabra} ({tag.veces})
+                          </span>
+                        ))}
+                      </div>
+                    </Card.Body>
+                  </Card>
                 </Col>
               </Row>
 
-              <ItrackerTable />
-
-              <Row>
-                <Col>
-                  <h5>Palabras más usadas en comentarios</h5>
-                  <div className="d-flex flex-wrap gap-2">
-                    {data.tags.map((tag: { palabra: string; veces: number }, idx: number) => (
-                      <span key={idx} className="badge bg-secondary">
-                        {tag.palabra} ({tag.veces})
-                      </span>
-                    ))}
-                  </div>
+              {/* Componente de tabla */}
+              <Row className="g-4 mb-4">
+                <Col md={12}>
+                  <ItrackerTable />
                 </Col>
               </Row>
             </>
