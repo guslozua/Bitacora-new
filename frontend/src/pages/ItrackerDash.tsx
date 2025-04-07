@@ -202,9 +202,14 @@ const ItrackerDash = () => {
                     <Card.Body>
                       <h5 className="fw-bold mb-3">Tickets por Mes</h5>
                       <ResponsiveContainer width="100%" height={250}>
-                        <LineChart data={data.porMes.map((d: { mes: number, cantidad: number }) => ({ mes: `Mes ${d.mes}`, cantidad: d.cantidad }))}>
+                      <LineChart data={data.porMes.map((d: { mes: number, cantidad: number }) => ({ mes: d.mes.toString(), cantidad: d.cantidad }))}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                          <XAxis dataKey="mes" />
+                          <XAxis dataKey="mes"
+                            tickFormatter={(mes) => {
+                            const nombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+                            return nombres[parseInt(mes) - 1] || mes;
+                            }} 
+                            />
                           <YAxis />
                           <Tooltip content={<CustomTooltip />} />
                           <Line 
@@ -222,7 +227,7 @@ const ItrackerDash = () => {
                   </Card>
                 </Col>
 
-                {/* Masivos vs Puntuales después de tickets por mes */}
+                {/* Masivos vs Puntuales */}
                 <Col md={6}>
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
@@ -272,7 +277,7 @@ const ItrackerDash = () => {
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
                       <h5 className="fw-bold mb-3">Tickets por Herramienta</h5>
-                      <ResponsiveContainer width="100%" height={250}>
+                      <ResponsiveContainer width="100%" height={300}>
                         <BarChart 
                           data={data.porCausa.slice(0, 7)} 
                           layout="vertical"
@@ -302,7 +307,7 @@ const ItrackerDash = () => {
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
                       <h5 className="fw-bold mb-3">Tickets por Centro</h5>
-                      <ResponsiveContainer width="100%" height={250}>
+                      <ResponsiveContainer width="100%" height={300}>
                         <BarChart 
                           data={(centrosFiltrados || []).slice(0, 7)} 
                           layout="vertical"

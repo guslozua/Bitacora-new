@@ -1,4 +1,4 @@
-// Nuevo controlador: controllers/itrackerListController.js
+// controllers/itrackerListController.js
 const pool = require('../config/db');
 
 exports.getItrackerList = async (req, res) => {
@@ -41,7 +41,9 @@ exports.getItrackerList = async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      `SELECT ticket_id, unido_a, t_1, t_2, fecha_apertura, equipo_apertura, fecha_cierre, usuario_cierre, cierre_tipo, cierre_comentario 
+      `SELECT ticket_id, unido_a, t_1, t_2, fecha_apertura, equipo_apertura,
+              apertura_descripcion_error,  -- ✅ agregado este campo
+              fecha_cierre, usuario_cierre, cierre_tipo, cierre_comentario 
        FROM itracker_data
        ${where}
        ORDER BY fecha_apertura DESC

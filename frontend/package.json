@@ -10,6 +10,8 @@
     "axios": "^1.6.7",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
+    "d3": "^7.9.0",
+    "d3-cloud": "^1.2.7",
     "date-fns": "^4.1.0",
     "frappe-gantt-react": "^0.2.2",
     "gantt-task-react": "^0.3.9",
@@ -63,6 +65,8 @@
     "webpack": "^5.88.2"
   },
   "devDependencies": {
+    "@types/d3": "^7.4.3",
+    "@types/d3-cloud": "^1.2.9",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.13.13",
     "@types/react": "^19.0.12",

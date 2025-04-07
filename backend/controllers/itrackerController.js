@@ -44,6 +44,7 @@ exports.uploadExcel = async (req, res) => {
         cierre_falla: rowData['CIERRE_FALLA:'],
         cierre_novedad: rowData['CIERRE_NOVEDAD:'],
         cierre_comentario: rowData['CIERRE_COMENTARIO:'],
+        apertura_descripcion_error: rowData['APERTURA_DESCRIPCION DEL ERROR'],
         archivo_origen: req.file.originalname,
       };
 
@@ -60,8 +61,9 @@ exports.uploadExcel = async (req, res) => {
                 ticket_id, unido_a, t_0, t_1, t_2, t_3,
                 fecha_apertura, u_apertura, usuario_apertura, equipo_apertura,
                 estado, abierto_a, fecha_cierre, u_cierre, usuario_cierre,
-                cierre_tipo, cierre_falla, cierre_novedad, cierre_comentario, archivo_origen
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                cierre_tipo, cierre_falla, cierre_novedad, cierre_comentario,
+                apertura_descripcion_error, archivo_origen
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `, Object.values(finalData));
 
             totalInsertados++;
