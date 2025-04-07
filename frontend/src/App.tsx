@@ -9,6 +9,8 @@ import Projects from './pages/Projects';
 import Tasks from './pages/Tasks';
 import ItrackerUpload from './pages/ItrackerUpload';
 import ItrackerDash from './pages/ItrackerDash';
+import TabulacionesUpload from './pages/TabulacionesUpload';
+import TabulacionesDash from './pages/TabulacionesDash';
 import Error404 from './pages/Error404'; // Importa la página de error
 
 
@@ -22,6 +24,8 @@ const App: React.FC = () => {
 <Route path="/tasks" element={<Tasks />} />
 <Route path="/itracker" element={<ItrackerUpload />} />
 <Route path="/itrackerdash" element={<ItrackerDash />} />
+<Route path="/tabulaciones" element={<TabulacionesUpload />} />
+<Route path="/tabulacionesdash" element={<TabulacionesDash />} />
 <Route path="*" element={<Error404 />} />
 </Routes>
 </Router>

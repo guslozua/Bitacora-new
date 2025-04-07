@@ -71,7 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     { icon: 'bi-journal-text', label: 'Bitácora', route: '/bitacora' },
     { icon: 'bi-flag-fill', label: 'Hitos', route: '/hitos' },
     { icon: 'bi-crosshair2', label: 'iTracker', route: '/itrackerdash' },
-    { icon: 'bi-arrow-90deg-right', label: 'Tabulaciones', route: '/tabu' },
+    { icon: 'bi-arrow-90deg-right', label: 'Tabulaciones', route: '/tabulacionesdash' },
     { icon: 'bi-shield-exclamation', label: 'Inc. en Guardia', route: '/incidencias' },
   ];
 
