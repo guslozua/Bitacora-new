@@ -92,7 +92,7 @@ const TabulacionesDash = () => {
     fetchStats();
   }, [selectedYear, selectedMonth]);
 
-  // Paleta de colores igual a la de ItrackerDash
+  // Paleta de colores
   const colors = ['#3498db', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6', '#1abc9c'];
   const pieColors = ['#3498db', '#2ecc71', '#f1c40f'];
 
