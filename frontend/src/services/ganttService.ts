@@ -1,6 +1,11 @@
 import axios from "axios";
 import { Task } from "gantt-task-react";
 
+// Extendemos la interfaz Task para incluir nuestra propiedad isSubtask
+interface ExtendedTask extends Task {
+  isSubtask?: boolean;
+}
+
 // Interfaces para tipar los datos de la API
 interface Proyecto {
   id: number;
@@ -23,9 +28,11 @@ interface Subtarea {
   titulo: string;
   estado: "pendiente" | "en progreso" | "completado";
   id_tarea: number;
+  fecha_inicio?: string;
+  fecha_vencimiento?: string;
 }
 
-export const fetchGanttData = async (): Promise<Task[]> => {
+export const fetchGanttData = async (): Promise<ExtendedTask[]> => {
   const token = localStorage.getItem("token");
 
   if (!token) {
@@ -50,7 +57,9 @@ export const fetchGanttData = async (): Promise<Task[]> => {
     const tasks: Tarea[] = tasksRes.data.data;
     const subtasks: Subtarea[] = subtasksRes.data.data;
 
-    const allGanttTasks: Task[] = [];
+    console.log("Datos cargados - Proyectos:", projects.length, "Tareas:", tasks.length, "Subtareas:", subtasks.length);
+
+    const allGanttTasks: ExtendedTask[] = [];
 
     projects.forEach((project: Proyecto) => {
       if (!project.fecha_inicio || !project.fecha_fin) return;
@@ -68,6 +77,7 @@ export const fetchGanttData = async (): Promise<Task[]> => {
         progress: 0,
         isDisabled: true,
         hideChildren: false,
+        isSubtask: false,  // Explícitamente marcamos que no es subtarea
       });
 
       const projectTasks = tasks.filter((t: Tarea) => t.id_proyecto === project.id);
@@ -92,16 +102,21 @@ export const fetchGanttData = async (): Promise<Task[]> => {
               ? 50
               : 0,
           project: `project-${project.id}`,
+          isSubtask: false,  // Explícitamente marcamos que no es subtarea
         });
 
         const taskSubtasks = subtasks.filter((s: Subtarea) => s.id_tarea === task.id);
 
         taskSubtasks.forEach((sub: Subtarea) => {
+          // Usar fechas de la subtarea si están disponibles, si no usar las de la tarea padre
+          const subStart = sub.fecha_inicio ? new Date(sub.fecha_inicio) : tStart;
+          const subEnd = sub.fecha_vencimiento ? new Date(sub.fecha_vencimiento) : tEnd;
+
           allGanttTasks.push({
             id: `subtask-${sub.id}`,
             name: sub.titulo,
-            start: tStart,
-            end: tEnd,
+            start: subStart,
+            end: subEnd,
             type: "task",
             progress:
               sub.estado === "completado"
@@ -111,6 +126,7 @@ export const fetchGanttData = async (): Promise<Task[]> => {
                 : 0,
             project: `project-${project.id}`,
             dependencies: [`task-${task.id}`],
+            isSubtask: true,  // Marcamos explícitamente que es una subtarea
           });
         });
       });
@@ -126,6 +142,7 @@ export const fetchGanttData = async (): Promise<Task[]> => {
         typeof t.name === "string"
     );
 
+    console.log("Tareas procesadas para Gantt:", validTasks.length);
     return validTasks;
   } catch (error) {
     console.error("❌ Error al obtener datos del Gantt:", error);

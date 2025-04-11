@@ -1,52 +1,105 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Container, Row, Col, Form, Button, Badge } from 'react-bootstrap';
+import React, { useState, useEffect, useRef } from 'react';
+import { Card, Container, Row, Col, Form, Button, Badge, Modal, Spinner, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useSidebarVisibility } from '../services/SidebarVisibilityContext';
+import axios from 'axios';
+import Swal from 'sweetalert2';
 
-const AdminPanel = () => {
+// Definir interfaces para mejorar el tipado
+interface SidebarVisibility {
+  [key: string]: boolean;
+}
+
+interface DashboardItem {
+  id: string;
+  label: string;
+  visible: boolean;
+}
+
+interface SidebarItemMeta {
+  id: string;
+  label: string;
+  icon: string;
+  color: string;
+}
+
+interface AdminStat {
+  title: string;
+  value: number;
+  icon: string;
+  color: string;
+}
+
+const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
-  const { visibility, setVisibility } = useSidebarVisibility();
-  
+  const { visibility, setVisibility } = useSidebarVisibility() as {
+    visibility: SidebarVisibility;
+    setVisibility: (visibility: SidebarVisibility) => void;
+  };
+
+  // Referencias para los formularios
+  const itrackerFormRef = useRef<HTMLFormElement>(null);
+  const tabulacionesFormRef = useRef<HTMLFormElement>(null);
+
   // Mantener una copia local del estado para aplicar cambios solo cuando se guarda
-  const [localVisibility, setLocalVisibility] = useState({...visibility});
-  const [isDirty, setIsDirty] = useState(false);
+  const [localVisibility, setLocalVisibility] = useState<SidebarVisibility>({ ...visibility });
+  const [isDirty, setIsDirty] = useState<boolean>(false);
+
+  // Estados para modales
+  const [showItrackerModal, setShowItrackerModal] = useState<boolean>(false);
+  const [showTabulacionesModal, setShowTabulacionesModal] = useState<boolean>(false);
   
-  const toggleSidebarItem = (id: string) => {
-    const newState = {
+  // Estados para carga de archivos
+  const [itrackerFile, setItrackerFile] = useState<File | null>(null);
+  const [tabulacionesFile, setTabulacionesFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [uploadMessage, setUploadMessage] = useState<string>('');
+  const [uploadError, setUploadError] = useState<string>('');
+
+  const toggleSidebarItem = (id: string): void => {
+    const newState: SidebarVisibility = {
       ...localVisibility,
       [id]: !localVisibility[id],
     };
     setLocalVisibility(newState);
     setIsDirty(true);
   };
-  
-  const saveChanges = () => {
+
+  const saveChanges = (): void => {
     setVisibility(localVisibility);
     setIsDirty(false);
-    // Mostrar mensaje de éxito o feedback
-    alert('Cambios guardados correctamente');
+    
+    // Mostrar SweetAlert en lugar de alert
+    Swal.fire({
+      title: '¡Cambios guardados!',
+      text: 'La configuración ha sido actualizada correctamente',
+      icon: 'success',
+      iconColor: '#339fff',
+      timer: 1500,
+      showConfirmButton: false
+    });
   };
-  
+
   // Reset changes if user cancels
-  const cancelChanges = () => {
-    setLocalVisibility({...visibility});
+  const cancelChanges = (): void => {
+    setLocalVisibility({ ...visibility });
     setIsDirty(false);
   };
 
-  const [dashboardItems, setDashboardItems] = useState([
+  const [dashboardItems, setDashboardItems] = useState<DashboardItem[]>([
     { id: 'resumenProyectos', label: 'Resumen de Proyectos', visible: true },
     { id: 'tareasPendientes', label: 'Tareas Pendientes', visible: true },
     { id: 'ultimasCargas', label: 'Últimos archivos cargados', visible: true },
   ]);
 
-  const toggleDashboardItem = (id: string) => {
+  const toggleDashboardItem = (id: string): void => {
     setDashboardItems(items =>
       items.map(item => item.id === id ? { ...item, visible: !item.visible } : item)
     );
     setIsDirty(true);
   };
 
-  const sidebarItemsMeta = [
+  const sidebarItemsMeta: SidebarItemMeta[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'bi-speedometer2', color: '#3498db' },
     { id: 'proyectos', label: 'Proyectos', icon: 'bi-diagram-3-fill', color: '#2ecc71' },
     { id: 'tareas', label: 'Tareas', icon: 'bi-list-task', color: '#f1c40f' },
@@ -65,31 +118,168 @@ const AdminPanel = () => {
   ];
 
   // Estadísticas simuladas para el panel de administración
-  const adminStats = [
+  const adminStats: AdminStat[] = [
     { title: 'Usuarios Activos', value: 148, icon: 'bi-people-fill', color: '#3498db' },
     { title: 'Proyectos', value: 42, icon: 'bi-diagram-3-fill', color: '#2ecc71' },
     { title: 'Tareas Abiertas', value: 63, icon: 'bi-list-task', color: '#f1c40f' },
     { title: 'Archivos Cargados', value: 257, icon: 'bi-cloud-upload-fill', color: '#e74c3c' },
   ];
 
+  // Función para manejar subida de archivos iTracker
+  const handleItrackerUpload = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    if (!itrackerFile) {
+      setUploadError('Por favor seleccioná un archivo.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', itrackerFile);
+
+    try {
+      setUploading(true);
+      setUploadError('');
+      setUploadMessage('');
+
+      console.log("👉 Enviando archivo al backend...");
+
+      const res = await axios.post('http://localhost:5000/api/itracker/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const responseData = res.data?.data || res.data;
+      const { total_insertados, total_duplicados } = responseData;
+
+      setUploadMessage(`✔ Registros nuevos: ${total_insertados} | Repetidos: ${total_duplicados}`);
+      
+      // SweetAlert después de subir con éxito
+      Swal.fire({
+        title: '¡Archivo subido!',
+        text: `Se procesaron ${total_insertados} registros nuevos y ${total_duplicados} repetidos.`,
+        icon: 'success',
+        iconColor: '#339fff',
+        confirmButtonText: 'Entendido'
+      });
+    } catch (err) {
+      setUploadError('Error al subir el archivo. Verificá que sea un .xlsx válido.');
+      console.error('Error de carga:', err);
+      
+      // SweetAlert para errores
+      Swal.fire({
+        title: 'Error',
+        text: 'Error al subir el archivo. Verificá que sea un .xlsx válido.',
+        icon: 'error',
+        confirmButtonText: 'Intentar nuevamente',
+        confirmButtonColor: '#3085d6'
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Función para manejar subida de archivos Tabulaciones
+  const handleTabulacionesUpload = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    if (!tabulacionesFile) {
+      setUploadError('Por favor seleccioná un archivo.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', tabulacionesFile);
+
+    try {
+      setUploading(true);
+      setUploadError('');
+      setUploadMessage('');
+
+      const res = await axios.post('http://localhost:5000/api/tabulaciones/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const responseData = res.data?.data || res.data;
+      const { total_insertados, total_duplicados } = responseData;
+
+      setUploadMessage(`✔ Registros nuevos: ${total_insertados} | Repetidos: ${total_duplicados}`);
+      
+      // SweetAlert después de subir con éxito
+      Swal.fire({
+        title: '¡Archivo subido!',
+        text: `Se procesaron ${total_insertados} registros nuevos y ${total_duplicados} repetidos.`,
+        icon: 'success',
+        iconColor: '#339fff',
+        confirmButtonText: 'Entendido'
+      });
+    } catch (err) {
+      setUploadError('Error al subir el archivo. Verificá que sea un .xlsx válido.');
+      console.error('Error de carga:', err);
+      
+      // SweetAlert para errores
+      Swal.fire({
+        title: 'Error',
+        text: 'Error al subir el archivo. Verificá que sea un .xlsx válido.',
+        icon: 'error',
+        confirmButtonText: 'Intentar nuevamente',
+        confirmButtonColor: '#3085d6'
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Limpiar estados al cerrar los modales
+  const resetItrackerModal = () => {
+    setShowItrackerModal(false);
+    setItrackerFile(null);
+    setUploadMessage('');
+    setUploadError('');
+  };
+
+  const resetTabulacionesModal = () => {
+    setShowTabulacionesModal(false);
+    setTabulacionesFile(null);
+    setUploadMessage('');
+    setUploadError('');
+  };
+
   return (
     <Container fluid className="py-4 px-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="mb-0 fw-bold">Panel de Administración</h2>
-          <p className="text-muted mb-0">Configura el comportamiento y apariencia del sistema</p>
-        </div>
-        
-        {isDirty && (
-          <div>
-            <Button variant="success" className="me-2 shadow-sm" onClick={saveChanges}>
-              <i className="bi bi-check-circle me-1"></i> Guardar cambios
-            </Button>
-            <Button variant="light" className="shadow-sm" onClick={cancelChanges}>
-              <i className="bi bi-x-circle me-1"></i> Cancelar
-            </Button>
+          <div className="d-flex align-items-center mb-1">
+            <img
+              src="logoxside22.png"
+              alt="icono"
+              style={{ width: '32px', height: '32px', marginRight: '10px' }}
+            />
+            <h2 className="mb-0 fw-bold">Panel de Administración</h2>
           </div>
-        )}
+          <p className="text-muted mb-0">
+            Configura el comportamiento y apariencia del sistema
+          </p>
+        </div>
+
+        <div className="d-flex">
+          {/* Botón para ir al dashboard */}
+          <Button 
+            variant="outline-primary" 
+            className="me-2 shadow-sm" 
+            onClick={() => navigate('/dashboard')}
+          >
+            <i className="bi bi-house-door me-1"></i> Dashboard Principal
+          </Button>
+          
+          {isDirty && (
+            <>
+              <Button variant="success" className="me-2 shadow-sm" onClick={saveChanges}>
+                <i className="bi bi-check-circle me-1"></i> Guardar cambios
+              </Button>
+              <Button variant="light" className="shadow-sm" onClick={cancelChanges}>
+                <i className="bi bi-x-circle me-1"></i> Cancelar
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Estadísticas rápidas */}
@@ -161,18 +351,18 @@ const AdminPanel = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="text-center mt-3">
                     <small className="text-muted">
-                      {isDirty ? 
-                        "Las modificaciones solo se aplicarán al guardar los cambios" : 
+                      {isDirty ?
+                        "Las modificaciones solo se aplicarán al guardar los cambios" :
                         "El sidebar se muestra como está actualmente configurado"}
                     </small>
                   </div>
                 </Card.Body>
               </Card>
             </Col>
-            
+
             {/* Opciones de configuración - Con ajuste de tamaño */}
             <Col md={9}>
               <div className="pb-2 d-flex align-items-center">
@@ -260,8 +450,8 @@ const AdminPanel = () => {
             <Col md={4} className="mb-3">
               <Card className="h-100 border-0 shadow-sm">
                 <Card.Body className="p-0">
-                  <Button 
-                    variant="light" 
+                  <Button
+                    variant="light"
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     onClick={() => navigate('/admin/users')}
                   >
@@ -276,10 +466,10 @@ const AdminPanel = () => {
             <Col md={4} className="mb-3">
               <Card className="h-100 border-0 shadow-sm">
                 <Card.Body className="p-0">
-                  <Button 
-                    variant="light" 
+                  <Button
+                    variant="light"
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                    onClick={() => navigate('/itrackerupload')}
+                    onClick={() => setShowItrackerModal(true)}
                   >
                     <div className="bg-success bg-opacity-10 p-3 rounded-circle mb-3">
                       <i className="bi bi-file-earmark-excel fs-3 text-success"></i>
@@ -292,10 +482,10 @@ const AdminPanel = () => {
             <Col md={4} className="mb-3">
               <Card className="h-100 border-0 shadow-sm">
                 <Card.Body className="p-0">
-                  <Button 
-                    variant="light" 
+                  <Button
+                    variant="light"
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                    onClick={() => navigate('/tabulacionesupload')}
+                    onClick={() => setShowTabulacionesModal(true)}
                   >
                     <div className="bg-info bg-opacity-10 p-3 rounded-circle mb-3">
                       <i className="bi bi-table fs-3 text-info"></i>
@@ -308,8 +498,8 @@ const AdminPanel = () => {
             <Col md={4} className="mb-3">
               <Card className="h-100 border-0 shadow-sm">
                 <Card.Body className="p-0">
-                  <Button 
-                    variant="light" 
+                  <Button
+                    variant="light"
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     disabled
                   >
@@ -325,8 +515,8 @@ const AdminPanel = () => {
             <Col md={4} className="mb-3">
               <Card className="h-100 border-0 shadow-sm">
                 <Card.Body className="p-0">
-                  <Button 
-                    variant="light" 
+                  <Button
+                    variant="light"
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     onClick={() => navigate('/admin/uploads')}
                   >
@@ -341,8 +531,8 @@ const AdminPanel = () => {
             <Col md={4} className="mb-3">
               <Card className="h-100 border-0 shadow-sm">
                 <Card.Body className="p-0">
-                  <Button 
-                    variant="light" 
+                  <Button
+                    variant="light"
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     onClick={() => navigate('/admin/logs')}
                   >
@@ -357,6 +547,134 @@ const AdminPanel = () => {
           </Row>
         </Card.Body>
       </Card>
+
+      {/* Modal para subir archivos iTracker */}
+      <Modal
+        show={showItrackerModal}
+        onHide={resetItrackerModal}
+        centered
+      >
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="d-flex align-items-center">
+            <div className="bg-success bg-opacity-10 p-2 rounded-circle me-2">
+              <i className="bi bi-file-earmark-excel text-success"></i>
+            </div>
+            Carga reporte iTracker
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form ref={itrackerFormRef} onSubmit={handleItrackerUpload}>
+            <Form.Group controlId="formItrackerFile" className="mb-3">
+              <Form.Label>Archivo Excel (.xlsx)</Form.Label>
+              <Form.Control
+                type="file"
+                accept=".xlsx"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const files = e.target.files;
+                  setItrackerFile(files?.[0] || null);
+                  setUploadMessage('');
+                  setUploadError('');
+                }}
+              />
+              <Form.Text className="text-muted">
+                Selecciona el archivo de reporte iTracker para procesar.
+              </Form.Text>
+            </Form.Group>
+
+            {uploadMessage && <Alert variant="success" className="mt-3">{uploadMessage}</Alert>}
+            {uploadError && <Alert variant="danger" className="mt-3">{uploadError}</Alert>}
+          </Form>
+        </Modal.Body>
+        <Modal.Footer className="border-0 pt-0">
+          <Button 
+            variant="secondary" 
+            onClick={resetItrackerModal}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={() => {
+              if (itrackerFormRef.current) {
+                itrackerFormRef.current.dispatchEvent(
+                  new Event('submit', { cancelable: true, bubbles: true })
+                );
+              }
+            }} 
+            disabled={uploading || !itrackerFile}
+          >
+            {uploading ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-1" /> Procesando...
+              </>
+            ) : "Subir archivo"}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modal para subir archivos Tabulaciones */}
+      <Modal
+        show={showTabulacionesModal}
+        onHide={resetTabulacionesModal}
+        centered
+      >
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="d-flex align-items-center">
+            <div className="bg-info bg-opacity-10 p-2 rounded-circle me-2">
+              <i className="bi bi-table text-info"></i>
+            </div>
+            Carga de Tabulaciones
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form ref={tabulacionesFormRef} onSubmit={handleTabulacionesUpload}>
+            <Form.Group controlId="formTabulacionesFile" className="mb-3">
+              <Form.Label>Archivo Excel (.xlsx) con la hoja "Tareas"</Form.Label>
+              <Form.Control
+                type="file"
+                accept=".xlsx"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const files = e.target.files;
+                  setTabulacionesFile(files?.[0] || null);
+                  setUploadMessage('');
+                  setUploadError('');
+                }}
+              />
+              <Form.Text className="text-muted">
+                Selecciona el archivo de tabulaciones para procesar.
+              </Form.Text>
+            </Form.Group>
+
+            {uploadMessage && <Alert variant="success" className="mt-3">{uploadMessage}</Alert>}
+            {uploadError && <Alert variant="danger" className="mt-3">{uploadError}</Alert>}
+          </Form>
+        </Modal.Body>
+        <Modal.Footer className="border-0 pt-0">
+          <Button 
+            variant="secondary" 
+            onClick={resetTabulacionesModal}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={() => {
+              if (tabulacionesFormRef.current) {
+                tabulacionesFormRef.current.dispatchEvent(
+                  new Event('submit', { cancelable: true, bubbles: true })
+                );
+              }
+            }} 
+            disabled={uploading || !tabulacionesFile}
+          >
+            {uploading ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-1" /> Procesando...
+              </>
+            ) : "Subir archivo"}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };

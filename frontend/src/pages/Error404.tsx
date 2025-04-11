@@ -103,7 +103,7 @@ const Error404 = () => {
         <div className="d-flex justify-content-center align-items-center">
             
             <span>Desarrollado por <img 
-              src="/logox1.png" 
+              src="/logox1b.png" 
               alt="ATPC Logo" 
               style={{ 
                 height: '40px', 

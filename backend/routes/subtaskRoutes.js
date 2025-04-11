@@ -1,4 +1,4 @@
-// routes/subtaskRoutes.js
+// routes/subtaskRoutes.js (corregido)
 const express = require('express');
 const {
   createSubtask,
@@ -10,7 +10,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// ✅ Nuevo endpoint: Obtener todas las subtareas (para el Gantt)
+// ✅ Obtener todas las subtareas (para el Gantt)
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const db = require('../config/db');
@@ -24,6 +24,9 @@ router.get('/', authMiddleware, async (req, res) => {
 
 // Crear una nueva subtarea asociada a una tarea
 router.post('/task/:taskId', authMiddleware, createSubtask);
+
+// Ruta alternativa para la creación de subtareas (usada en el frontend actual)
+router.post('/:taskId/subtasks', authMiddleware, createSubtask);
 
 // Obtener subtareas por ID de tarea
 router.get('/task/:taskId', authMiddleware, getSubtasksByTaskId);

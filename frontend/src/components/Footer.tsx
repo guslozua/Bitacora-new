@@ -12,7 +12,7 @@ const Footer = () => {
     }}>
       <div className="d-flex justify-content-center align-items-center">
         <span>Desarrollado por <img
-          src="/logoxside.png"
+          src="/logoxsideb.png"
           alt="ATPC Logo"
           style={{
             height: '40px',

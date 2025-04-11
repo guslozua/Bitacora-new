@@ -32,6 +32,7 @@ const LoginPage = () => {
         title: '¡Bienvenido!',
         text: '¡Inicio de sesión exitoso!',
         icon: 'success',
+        iconColor: '#339fff',
         timer: 1500,
         showConfirmButton: false
       }).then(() => {
@@ -55,7 +56,7 @@ const LoginPage = () => {
         <div className="text-center">
           <div className="d-flex align-items-center justify-content-center mb-2">
             <img src="/logox1.png" alt="Logo" style={{ width: '65px' }} />
-            <h3 className="ms-2 mb-0 fw-bold" style={{ color: '#333' }}>Task Manager</h3>
+            <h3 className="ms-2 mb-0 fw-bold" style={{ color: '#333' }}>TaskManager</h3>
           </div>
           <p className="text-muted mb-4">Iniciar sesión para continuar</p>
         </div>

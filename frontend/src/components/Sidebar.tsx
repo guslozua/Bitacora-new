@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Button, Tooltip } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useSidebarVisibility } from '../services/SidebarVisibilityContext'; 
 
@@ -13,7 +13,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
   const navigate = useNavigate();
   const logoRef = useRef<HTMLImageElement | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { visibility } = useSidebarVisibility(); // Usar el contexto
+  const { visibility } = useSidebarVisibility();
+  
+  // Estados para tooltips personalizados
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   
   // Estado para controlar la posición de scroll
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -22,7 +26,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
   const [canScrollDown, setCanScrollDown] = useState(false);
 
   useEffect(() => {
-    if (!collapsed) return;
+    // Eliminada la condición: if (!collapsed) return;
+    // para que la animación funcione en ambos estados
 
     const interval = setInterval(() => {
       if (logoRef.current) {
@@ -80,6 +85,23 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     }
   };
 
+  // Mostrar tooltip personalizado
+  const handleMouseEnter = (event: React.MouseEvent, itemId: string, label: string) => {
+    if (collapsed) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      setTooltipPosition({
+        top: rect.top + rect.height / 2,
+        left: rect.right + 10
+      });
+      setActiveTooltip(label);
+    }
+  };
+
+  // Ocultar tooltip
+  const handleMouseLeave = () => {
+    setActiveTooltip(null);
+  };
+
   const sidebarStyle: React.CSSProperties = {
     minHeight: '100vh',
     height: '100vh',
@@ -88,7 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     top: 0,
     left: 0,
     zIndex: 100,
-    transition: 'all 0.3s',
+    transition: 'width 0.3s',
     backgroundColor: '#343a40',
     color: 'white',
     boxShadow: '0 0 10px rgba(0,0,0,0.1)',
@@ -103,18 +125,19 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     alignItems: 'center',
     justifyContent: collapsed ? 'center' : 'flex-start',
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
+    transition: 'background-color 0.2s ease',
     marginBottom: '2px',
     borderRadius: '6px',
     fontSize: '0.9rem',
-    overflowX: 'hidden',
-    whiteSpace: 'nowrap',
-    textAlign: 'center',
+    textAlign: collapsed ? 'center' : 'left',
+    overflow: 'hidden',
+    width: '100%',
   });
 
   const iconStyle: React.CSSProperties = {
     fontSize: '1.3rem',
     marginRight: collapsed ? '0' : '10px',
+    flexShrink: 0,
   };
 
   const scrollButtonStyle: React.CSSProperties = {
@@ -136,6 +159,21 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     cursor: 'not-allowed',
   };
 
+  // Estilo para tooltip personalizado
+  const customTooltipStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: `${tooltipPosition.top}px`,
+    left: `${tooltipPosition.left}px`,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    color: 'white',
+    padding: '5px 10px',
+    borderRadius: '4px',
+    fontSize: '0.8rem',
+    zIndex: 9999,
+    pointerEvents: 'none',
+    transform: 'translateY(-50%)',
+  };
+
   const menuItems = [
     { id: 'dashboard', icon: 'bi-speedometer2', label: 'Dashboard', route: '/dashboard' },
     { id: 'proyectos', icon: 'bi-diagram-3-fill', label: 'Proyectos', route: '/projects' },
@@ -155,136 +193,161 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
   ];
 
   return (
-    <div style={sidebarStyle}>
-      {/* Header / Logo */}
-      <div
-        className="p-3 d-flex justify-content-between align-items-center"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
-      >
-        {!collapsed ? (
-          <div className="d-flex align-items-center">
+    <>
+      <div style={sidebarStyle}>
+        {/* Header / Logo */}
+        <div
+          className="p-3 d-flex justify-content-between align-items-center"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
+        >
+          {!collapsed ? (
+            <div className="d-flex align-items-center">
+              <img
+                ref={logoRef} // Añadida referencia al logo expandido
+                src="/logoxside.png"
+                alt="Logo"
+                style={{ width: '40px', height: '40px', marginRight: '10px' }}
+              />
+              <h6 className="mb-0">TaskManager</h6>
+            </div>
+          ) : (
             <img
+              ref={logoRef}
               src="/logoxside.png"
               alt="Logo"
-              style={{ width: '40px', height: '40px', marginRight: '10px' }}
+              style={{ width: '40px', height: '40px', margin: '0 auto' }}
             />
-            <h6 className="mb-0">TASK manager</h6>
-          </div>
-        ) : (
-          <img
-            ref={logoRef}
-            src="/logoxside.png"
-            alt="Logo"
-            style={{ width: '40px', height: '40px', margin: '0 auto' }}
-          />
-        )}
-        <Button
-          variant="link"
-          className="text-white p-0"
-          onClick={toggle}
-          style={{ marginLeft: collapsed ? '0' : 'auto' }}
-        >
-          <i className={`bi ${collapsed ? 'bi-chevron-right' : 'bi-chevron-left'}`}></i>
-        </Button>
-      </div>
-
-      {/* Contenedor principal */}
-      <div 
-        style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          height: 'calc(100% - 70px)',
-          overflow: 'hidden' 
-        }}
-      >
-        {/* Botón de scroll hacia arriba */}
-        {showScrollButtons && (
-          <button 
-            style={canScrollUp ? scrollButtonStyle : disabledScrollButtonStyle}
-            onClick={() => canScrollUp && handleScroll('up')}
-            disabled={!canScrollUp}
+          )}
+          <Button
+            variant="link"
+            className="text-white p-0"
+            onClick={toggle}
+            style={{ marginLeft: collapsed ? '0' : 'auto' }}
           >
-            <i className="bi bi-caret-up-fill"></i>
-          </button>
-        )}
+            <i className={`bi ${collapsed ? 'bi-chevron-right' : 'bi-chevron-left'}`}></i>
+          </Button>
+        </div>
 
-        {/* Contenido del menú - sin scrollbar visible */}
+        {/* Contenedor principal */}
         <div 
-          ref={menuRef}
           style={{ 
-            flex: '1 1 auto', 
-            overflowY: 'auto',
-            paddingTop: '8px',
-            paddingRight: '5px',
-            paddingLeft: '5px',
-            paddingBottom: '8px',
-            msOverflowStyle: 'none',  // IE y Edge
-            scrollbarWidth: 'none',   // Firefox
+            display: 'flex', 
+            flexDirection: 'column', 
+            height: 'calc(100% - 70px)',
+            overflow: 'hidden' 
           }}
-          onScroll={updateScrollState}
         >
-          <style>
-            {`
-              /* Ocultar scrollbar para Chrome, Safari y Opera */
-              div[style*="overflow-y: auto"]::-webkit-scrollbar {
-                display: none;
-              }
-            `}
-          </style>
-          {menuItems
-            .filter(item => visibility[item.id] !== false) // Filtrar según visibilidad
-            .map((item) => (
-              <OverlayTrigger
-                key={item.route}
-                placement="right"
-                overlay={<Tooltip id={`tooltip-${item.label}`}>{item.label}</Tooltip>}
-                delay={{ show: 300, hide: 0 }}
-              >
+          {/* Botón de scroll hacia arriba */}
+          {showScrollButtons && (
+            <button 
+              style={canScrollUp ? scrollButtonStyle : disabledScrollButtonStyle}
+              onClick={() => canScrollUp && handleScroll('up')}
+              disabled={!canScrollUp}
+            >
+              <i className="bi bi-caret-up-fill"></i>
+            </button>
+          )}
+
+          {/* Contenido del menú - sin scrollbar visible y sin tooltip de OverlayTrigger */}
+          <div 
+            ref={menuRef}
+            style={{ 
+              flex: '1 1 auto', 
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              paddingTop: '8px',
+              paddingRight: '5px',
+              paddingLeft: '5px',
+              paddingBottom: '8px',
+              msOverflowStyle: 'none',
+              scrollbarWidth: 'none',
+            }}
+            onScroll={updateScrollState}
+            className="menu-container"
+          >
+            <style>
+              {`
+                .menu-container::-webkit-scrollbar {
+                  display: none;
+                }
+                
+                .sidebar-item {
+                  transform: translateZ(0);
+                  will-change: background-color;
+                }
+                
+                .hover-highlight:hover {
+                  background-color: rgba(255, 255, 255, 0.1);
+                }
+              `}
+            </style>
+            {menuItems
+              .filter(item => visibility[item.id] !== false)
+              .map((item) => (
                 <div
+                  key={item.route}
                   style={getMenuItemStyle()}
                   className="sidebar-item hover-highlight"
                   onClick={() => navigate(item.route)}
+                  onMouseEnter={(e) => handleMouseEnter(e, item.id, item.label)}
+                  onMouseLeave={handleMouseLeave}
                 >
                   <i className={`bi ${item.icon}`} style={iconStyle}></i>
-                  {!collapsed && <span>{item.label}</span>}
+                  {!collapsed && (
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.label}
+                    </span>
+                  )}
                 </div>
-              </OverlayTrigger>
-            ))}
-        </div>
+              ))}
+          </div>
 
-        {/* Botón de scroll hacia abajo */}
-        {showScrollButtons && (
-          <button 
-            style={canScrollDown ? scrollButtonStyle : disabledScrollButtonStyle}
-            onClick={() => canScrollDown && handleScroll('down')}
-            disabled={!canScrollDown}
-          >
-            <i className="bi bi-caret-down-fill"></i>
-          </button>
-        )}
+          {/* Botón de scroll hacia abajo */}
+          {showScrollButtons && (
+            <button 
+              style={canScrollDown ? scrollButtonStyle : disabledScrollButtonStyle}
+              onClick={() => canScrollDown && handleScroll('down')}
+              disabled={!canScrollDown}
+            >
+              <i className="bi bi-caret-down-fill"></i>
+            </button>
+          )}
 
-        {/* Logout fijo abajo */}
-        <div 
-          style={{ 
-            borderTop: '1px solid rgba(255,255,255,0.1)', 
-            flexShrink: 0, 
-            padding: '5px',
-            marginTop: 'auto' 
-          }}
-        >
-          <OverlayTrigger
-            placement="right"
-            overlay={<Tooltip id="tooltip-logout">Cerrar sesión</Tooltip>}
-            delay={{ show: 300, hide: 0 }}
+          {/* Logout fijo abajo */}
+          <div 
+            style={{ 
+              borderTop: '1px solid rgba(255,255,255,0.1)', 
+              flexShrink: 0, 
+              padding: '5px',
+              marginTop: 'auto',
+              overflowX: 'hidden'
+            }}
           >
-            <div style={getMenuItemStyle()} className="sidebar-item hover-highlight" onClick={onLogout}>
+            <div 
+              style={getMenuItemStyle()} 
+              className="sidebar-item hover-highlight" 
+              onClick={onLogout}
+              onMouseEnter={(e) => handleMouseEnter(e, 'logout', 'Cerrar sesión')}
+              onMouseLeave={handleMouseLeave}
+            >
               <i className="bi bi-box-arrow-right" style={iconStyle}></i>
-              {!collapsed && <span>Cerrar sesión</span>}
+              {!collapsed && (
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  Cerrar sesión
+                </span>
+              )}
             </div>
-          </OverlayTrigger>
+          </div>
         </div>
       </div>
-    </div>
+      
+      {/* Tooltip personalizado (fuera del flujo de documento) */}
+      {collapsed && activeTooltip && (
+        <div style={customTooltipStyle}>
+          {activeTooltip}
+        </div>
+      )}
+    </>
   );
 };
 
