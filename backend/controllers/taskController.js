@@ -4,7 +4,7 @@ const db = require('../config/db');
 const logEvento = require('../utils/logEvento');
 
 // Crear una nueva tarea
-const createTask = async (req, res) => {
+exports.createTask = async (req, res) => {
     try {
         console.log("Body recibido:", req.body);
         console.log("Usuario autenticado:", req.user);
@@ -69,7 +69,7 @@ const createTask = async (req, res) => {
 };
 
 // Obtener todas las tareas con filtros
-const getAllTasks = async (req, res) => {
+exports.getAllTasks = async (req, res) => {
     try {
         const { estado, prioridad, usuario } = req.query;
         let sql = 'SELECT * FROM Tareas WHERE 1=1';
@@ -97,7 +97,7 @@ const getAllTasks = async (req, res) => {
 };
 
 // Obtener una tarea por ID
-const getTaskById = async (req, res) => {
+exports.getTaskById = async (req, res) => {
     try {
         const taskId = req.params.id;
 
@@ -114,7 +114,7 @@ const getTaskById = async (req, res) => {
 };
 
 // Actualizar una tarea por ID
-const updateTask = async (req, res) => {
+exports.updateTask = async (req, res) => {
     try {
         const taskId = req.params.id;
         const { titulo, descripcion, estado, prioridad, fecha_inicio, fecha_vencimiento, id_usuario_asignado, id_proyecto } = req.body;
@@ -186,7 +186,7 @@ const updateTask = async (req, res) => {
 };
 
 // Eliminar una tarea por ID
-const deleteTask = async (req, res) => {
+exports.deleteTask = async (req, res) => {
     try {
         const taskId = req.params.id;
 
@@ -235,4 +235,200 @@ const deleteTask = async (req, res) => {
     }
 };
 
-module.exports = { createTask, getAllTasks, getTaskById, updateTask, deleteTask };
+// FUNCIONES PARA GESTIÓN DE USUARIOS DE TAREAS
+
+/**
+ * Obtiene todos los usuarios asignados a una tarea
+ */
+exports.getTaskUsers = async (req, res) => {
+    try {
+      const taskId = req.params.id;
+      
+      // Verificar que la tarea existe
+      const [task] = await TaskModel.getTaskById(taskId);
+      if (!task) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Tarea no encontrada' 
+        });
+      }
+      
+      // Obtener usuarios asignados
+      const users = await TaskModel.getTaskUsers(taskId);
+      
+      return res.json({ 
+        success: true, 
+        data: users 
+      });
+    } catch (error) {
+      console.error('Error al obtener usuarios de la tarea:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al obtener usuarios de la tarea',
+        error: error.message
+      });
+    }
+};
+  
+/**
+ * Asigna un usuario a una tarea
+ */
+exports.assignUserToTask = async (req, res) => {
+    try {
+      const taskId = req.params.id;
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Se requiere especificar el ID de usuario'
+        });
+      }
+      
+      // Verificar que la tarea existe
+      const [task] = await TaskModel.getTaskById(taskId);
+      if (!task) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Tarea no encontrada' 
+        });
+      }
+      
+      // Verificar que el usuario existe
+      const [user] = await db.query('SELECT * FROM Usuarios WHERE id = ?', [userId]);
+      if (!user || user.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Usuario no encontrado'
+        });
+      }
+      
+      // Realizar la asignación
+      await TaskModel.assignUserToTask(taskId, userId);
+      
+      // Obtener la información completa del usuario para la respuesta
+      const [userInfo] = await db.query('SELECT id, nombre, email FROM Usuarios WHERE id = ?', [userId]);
+      
+      return res.status(201).json({
+        success: true,
+        message: 'Usuario asignado a la tarea con éxito',
+        data: {
+          id_tarea: taskId,
+          id_usuario: userId,
+          usuario: userInfo[0]
+        }
+      });
+    } catch (error) {
+      console.error('Error al asignar usuario a la tarea:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al asignar usuario a la tarea',
+        error: error.message
+      });
+    }
+};
+  
+/**
+ * Elimina la asignación de un usuario de una tarea
+ */
+exports.removeUserFromTask = async (req, res) => {
+    try {
+      const taskId = req.params.taskId;
+      const userId = req.params.userId;
+      
+      // Verificar que la tarea existe
+      const [task] = await TaskModel.getTaskById(taskId);
+      if (!task) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Tarea no encontrada' 
+        });
+      }
+      
+      // Eliminar la asignación
+      const result = await TaskModel.removeUserFromTask(taskId, userId);
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'El usuario no está asignado a esta tarea'
+        });
+      }
+      
+      return res.json({
+        success: true,
+        message: 'Usuario eliminado de la tarea con éxito'
+      });
+    } catch (error) {
+      console.error('Error al eliminar usuario de la tarea:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al eliminar usuario de la tarea',
+        error: error.message
+      });
+    }
+};
+  
+/**
+ * Actualiza todos los usuarios asignados a una tarea
+ */
+exports.updateTaskUsers = async (req, res) => {
+    try {
+      const taskId = req.params.id;
+      const { userIds } = req.body;
+      
+      if (!Array.isArray(userIds)) {
+        return res.status(400).json({
+          success: false,
+          message: 'El campo userIds debe ser un array'
+        });
+      }
+      
+      // Verificar que la tarea existe
+      const [task] = await TaskModel.getTaskById(taskId);
+      if (!task) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Tarea no encontrada' 
+        });
+      }
+      
+      // Actualizar usuarios
+      await TaskModel.updateTaskUsers(taskId, userIds);
+      
+      // Obtener la lista actualizada de usuarios
+      const updatedUsers = await TaskModel.getTaskUsers(taskId);
+      
+      // Obtener nombre del proyecto
+      const projectId = task.id_proyecto;
+      const [projectInfo] = await db.query('SELECT nombre FROM Proyectos WHERE id = ?', [projectId]);
+      const nombreProyecto = projectInfo.length > 0 ? projectInfo[0].nombre : null;
+      
+      // Registrar el evento en la bitácora
+      await logEvento({
+        tipo_evento: 'ACTUALIZACIÓN',
+        descripcion: `Usuarios de la tarea actualizados: ${task.titulo}`,
+        id_usuario: req.user.id,
+        nombre_usuario: req.user.nombre,
+        id_proyecto: projectId,
+        nombre_proyecto: nombreProyecto,
+        id_tarea: taskId,
+        nombre_tarea: task.titulo,
+        id_subtarea: null,
+        nombre_subtarea: null
+      });
+      
+      return res.json({
+        success: true,
+        message: 'Usuarios de la tarea actualizados con éxito',
+        data: updatedUsers
+      });
+    } catch (error) {
+      console.error('Error al actualizar usuarios de la tarea:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al actualizar usuarios de la tarea',
+        error: error.message
+      });
+    }
+};

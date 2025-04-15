@@ -319,3 +319,278 @@ exports.getProjectStats = async (req, res) => {
     });
   }
 };
+
+// FUNCIONES PARA GESTIÓN DE USUARIOS DE PROYECTOS
+
+/**
+ * Obtiene todos los usuarios asignados a un proyecto
+ */
+exports.getProjectUsers = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    
+    // Verificar que el proyecto existe
+    const [project] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [projectId]);
+    if (!project || project.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Proyecto no encontrado'
+      });
+    }
+    
+    // Obtener usuarios asignados
+    const users = await projectModel.getProjectUsers(projectId);
+    
+    return res.json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    console.error('Error al obtener usuarios del proyecto:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al obtener usuarios del proyecto',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Asigna un usuario a un proyecto
+ */
+exports.assignUserToProject = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const { userId, rol } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requiere especificar el ID de usuario'
+      });
+    }
+    
+    // Verificar que el proyecto existe
+    const [project] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [projectId]);
+    if (!project || project.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Proyecto no encontrado'
+      });
+    }
+    
+    // Verificar que el usuario existe
+    const [user] = await db.query('SELECT * FROM Usuarios WHERE id = ?', [userId]);
+    if (!user || user.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+    
+    // Realizar la asignación
+    await projectModel.assignUserToProject(projectId, userId, rol || 'colaborador');
+    
+    // Obtener la información completa del usuario para la respuesta
+    const [userInfo] = await db.query('SELECT id, nombre, email FROM Usuarios WHERE id = ?', [userId]);
+    
+    return res.status(201).json({
+      success: true,
+      message: 'Usuario asignado al proyecto con éxito',
+      data: {
+        id_proyecto: projectId,
+        id_usuario: userId,
+        rol: rol || 'colaborador',
+        usuario: userInfo[0]
+      }
+    });
+  } catch (error) {
+    console.error('Error al asignar usuario al proyecto:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al asignar usuario al proyecto',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Elimina la asignación de un usuario de un proyecto
+ */
+exports.removeUserFromProject = async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+    const userId = req.params.userId;
+    
+    // Verificar que el proyecto existe
+    const [project] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [projectId]);
+    if (!project || project.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Proyecto no encontrado'
+      });
+    }
+    
+    // Eliminar la asignación
+    const result = await projectModel.removeUserFromProject(projectId, userId);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'El usuario no está asignado a este proyecto'
+      });
+    }
+    
+    return res.json({
+      success: true,
+      message: 'Usuario eliminado del proyecto con éxito'
+    });
+  } catch (error) {
+    console.error('Error al eliminar usuario del proyecto:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al eliminar usuario del proyecto',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Actualiza el rol de un usuario en un proyecto
+ */
+exports.updateUserRoleInProject = async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+    const userId = req.params.userId;
+    const { rol } = req.body;
+    
+    if (!rol || !['responsable', 'colaborador', 'observador'].includes(rol)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requiere especificar un rol válido (responsable, colaborador, observador)'
+      });
+    }
+    
+    // Verificar que el proyecto existe
+    const [project] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [projectId]);
+    if (!project || project.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Proyecto no encontrado'
+      });
+    }
+    
+    // Actualizar el rol
+    const result = await projectModel.updateUserRoleInProject(projectId, userId, rol);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'El usuario no está asignado a este proyecto'
+      });
+    }
+    
+    return res.json({
+      success: true,
+      message: 'Rol de usuario actualizado con éxito',
+      data: {
+        id_proyecto: projectId,
+        id_usuario: userId,
+        rol: rol
+      }
+    });
+  } catch (error) {
+    console.error('Error al actualizar rol de usuario en proyecto:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al actualizar rol de usuario en proyecto',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Actualiza todos los usuarios asignados a un proyecto
+ */
+exports.updateProjectUsers = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const { usuarios } = req.body;
+    
+    if (!Array.isArray(usuarios)) {
+      return res.status(400).json({
+        success: false,
+        message: 'El campo usuarios debe ser un array'
+      });
+    }
+    
+    // Verificar que el proyecto existe
+    const [project] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [projectId]);
+    if (!project || project.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Proyecto no encontrado'
+      });
+    }
+    
+    const connection = await db.getConnection();
+    
+    try {
+      await connection.beginTransaction();
+      
+      // Eliminar asignaciones existentes
+      await connection.query('DELETE FROM proyecto_usuarios WHERE id_proyecto = ?', [projectId]);
+      
+      // Crear nuevas asignaciones
+      if (usuarios.length > 0) {
+        const values = usuarios.map(user => [
+          projectId, 
+          user.id_usuario, 
+          user.rol || 'colaborador'
+        ]);
+        
+        await connection.query(
+          'INSERT INTO proyecto_usuarios (id_proyecto, id_usuario, rol) VALUES ?', 
+          [values]
+        );
+      }
+      
+      await connection.commit();
+      
+      // Obtener la lista actualizada de usuarios
+      const updatedUsers = await projectModel.getProjectUsers(projectId);
+      
+      // Registrar el evento en la bitácora
+      await logEvento({
+        tipo_evento: 'ACTUALIZACIÓN',
+        descripcion: `Usuarios del proyecto actualizados: ${project[0].nombre}`,
+        id_usuario: req.user.id,
+        nombre_usuario: req.user.nombre,
+        id_proyecto: projectId,
+        nombre_proyecto: project[0].nombre,
+        id_tarea: null,
+        nombre_tarea: null,
+        id_subtarea: null,
+        nombre_subtarea: null
+      });
+      
+      return res.json({
+        success: true,
+        message: 'Usuarios del proyecto actualizados con éxito',
+        data: updatedUsers
+      });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('Error al actualizar usuarios del proyecto:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al actualizar usuarios del proyecto',
+      error: error.message
+    });
+  }
+};

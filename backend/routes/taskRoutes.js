@@ -1,6 +1,16 @@
 //routes/taskRoutes.js
 const express = require('express');
-const { createTask, getAllTasks, getTaskById, updateTask, deleteTask } = require('../controllers/taskController');
+const { 
+    createTask, 
+    getAllTasks, 
+    getTaskById, 
+    updateTask, 
+    deleteTask,
+    getTaskUsers,
+    assignUserToTask,
+    removeUserFromTask,
+    updateTaskUsers
+} = require('../controllers/taskController');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
 const { createSubtask, getSubtasksByTaskId } = require('../controllers/subtaskController');
@@ -33,5 +43,27 @@ router.get('/:id/subtasks', authMiddleware, (req, res) => {
     req.params.taskId = req.params.id;
     getSubtasksByTaskId(req, res);
 });
+
+// ===== NUEVAS RUTAS PARA ASIGNACIÓN DE USUARIOS =====
+
+// Obtener usuarios asignados a una tarea
+// GET /api/tasks/:id/users
+router.get('/:id/users', authMiddleware, getTaskUsers);
+
+// Asignar un usuario a una tarea
+// POST /api/tasks/:id/users
+router.post('/:id/users', authMiddleware, roleMiddleware(['Admin', 'SuperAdmin']), assignUserToTask);
+
+// Eliminar asignación de un usuario a una tarea
+// DELETE /api/tasks/:taskId/users/:userId
+router.delete('/:taskId/users/:userId', authMiddleware, roleMiddleware(['Admin', 'SuperAdmin']), removeUserFromTask);
+
+// Actualizar todos los usuarios asignados a una tarea
+// PUT /api/tasks/:id/users
+router.put('/:id/users', 
+    authMiddleware, 
+    roleMiddleware(['Admin', 'SuperAdmin']),
+    updateTaskUsers
+);
 
 module.exports = router;

@@ -341,3 +341,89 @@ exports.getProjectStats = async (req, res) => {
     });
   }
 };
+
+/**
+ * Obtiene los usuarios asignados a un proyecto
+ * @param {number} projectId - ID del proyecto
+ * @returns {Promise<Object[]>} - Array de objetos de usuario con información de rol
+ */
+exports.getProjectUsers = async (projectId) => {
+  const query = `
+    SELECT pu.id, pu.id_proyecto, pu.id_usuario, pu.rol, pu.fecha_asignacion, 
+           u.nombre, u.email
+    FROM proyecto_usuarios pu
+    JOIN usuarios u ON pu.id_usuario = u.id
+    WHERE pu.id_proyecto = ?
+    ORDER BY FIELD(pu.rol, 'responsable', 'colaborador', 'observador'), u.nombre
+  `;
+  
+  const [users] = await db.query(query, [projectId]);
+  return users;
+};
+
+/**
+ * Asigna un usuario a un proyecto
+ * @param {number} projectId - ID del proyecto
+ * @param {number} userId - ID del usuario
+ * @param {string} rol - Rol del usuario (responsable, colaborador, observador)
+ * @returns {Promise<Object>} - Resultado de la operación
+ */
+exports.assignUserToProject = async (projectId, userId, rol = 'colaborador') => {
+  try {
+    const query = `
+      INSERT INTO proyecto_usuarios (id_proyecto, id_usuario, rol)
+      VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE rol = ?
+    `;
+    
+    const [result] = await db.query(query, [projectId, userId, rol, rol]);
+    return result;
+  } catch (error) {
+    console.error('Error al asignar usuario al proyecto:', error);
+    throw error;
+  }
+};
+
+/**
+ * Elimina la asignación de un usuario a un proyecto
+ * @param {number} projectId - ID del proyecto
+ * @param {number} userId - ID del usuario
+ * @returns {Promise<Object>} - Resultado de la operación
+ */
+exports.removeUserFromProject = async (projectId, userId) => {
+  try {
+    const query = `
+      DELETE FROM proyecto_usuarios
+      WHERE id_proyecto = ? AND id_usuario = ?
+    `;
+    
+    const [result] = await db.query(query, [projectId, userId]);
+    return result;
+  } catch (error) {
+    console.error('Error al eliminar usuario del proyecto:', error);
+    throw error;
+  }
+};
+
+/**
+ * Actualiza el rol de un usuario en un proyecto
+ * @param {number} projectId - ID del proyecto
+ * @param {number} userId - ID del usuario
+ * @param {string} newRole - Nuevo rol del usuario
+ * @returns {Promise<Object>} - Resultado de la operación
+ */
+exports.updateUserRoleInProject = async (projectId, userId, newRole) => {
+  try {
+    const query = `
+      UPDATE proyecto_usuarios
+      SET rol = ?
+      WHERE id_proyecto = ? AND id_usuario = ?
+    `;
+    
+    const [result] = await db.query(query, [newRole, projectId, userId]);
+    return result;
+  } catch (error) {
+    console.error('Error al actualizar rol de usuario en proyecto:', error);
+    throw error;
+  }
+};

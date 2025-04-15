@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { ViewMode, Gantt, Task } from 'gantt-task-react';
 import 'gantt-task-react/dist/index.css';
 import 'react-circular-progressbar/dist/styles.css';
-import { ButtonGroup, Button, Spinner, Offcanvas, ProgressBar, Form } from 'react-bootstrap';
+import { ButtonGroup, Button, Spinner, Offcanvas, ProgressBar, Form, Tab, Nav, Badge } from 'react-bootstrap';
 import Select from 'react-select';
 import { createRoot } from 'react-dom/client';
 import { fetchGanttData } from '../services/ganttService';
 import GanttDependencyLines from './GanttDependencyLines';
 import ProgressCircle from './ProgressCircle';
+import UserAssignment from './UserAssignment';
+import UserAvatars from './UserAvatars';
 import axios from 'axios';
 
 // Extendemos la interfaz Task para incluir un campo personalizado
@@ -24,6 +26,7 @@ const AdvancedGanttChart = () => {
   const [searchText, setSearchText] = useState<string>('');
   const [estadoFiltro, setEstadoFiltro] = useState<string[]>([]);
   const [ganttHeight, setGanttHeight] = useState('600px');
+  const [activeTab, setActiveTab] = useState('detalles');
   const [taskForm, setTaskForm] = useState({
     titulo: '',
     descripcion: '',
@@ -61,7 +64,9 @@ const AdvancedGanttChart = () => {
           progress: typeof task.progress === 'number' ? task.progress : 0,
           id: task.id || `task-${Math.random().toString(36).substr(2, 9)}`,
           // Aseguramos que el campo isSubtask esté definido
-          isSubtask: task.isSubtask || false
+          isSubtask: task.isSubtask || false,
+          // Colapsar todos los proyectos por defecto
+          hideChildren: task.type === 'project' ? true : task.hideChildren
         }));
 
         console.log('Datos filtrados y procesados:', dataFiltrada);
@@ -88,6 +93,21 @@ const AdvancedGanttChart = () => {
         const match = tasks.find((t) => t.name === taskName);
         if (match) {
           bar.setAttribute('data-task-id', match.id);
+          
+          // Aplicar estilos según el progreso
+          if (match.progress === 100) {
+            const barEl = bar.querySelector('.bar');
+            if (barEl) {
+              barEl.style.backgroundColor = '#28a745'; // Verde para completado
+              barEl.style.borderColor = '#218838';
+            }
+          } else if (match.progress > 0) {
+            const barEl = bar.querySelector('.bar');
+            if (barEl) {
+              barEl.style.backgroundColor = '#007bff'; // Azul para en progreso
+              barEl.style.borderColor = '#0069d9';
+            }
+          }
         }
       }
     });
@@ -103,24 +123,55 @@ const AdvancedGanttChart = () => {
           wrapper.style.display = 'flex';
           wrapper.style.alignItems = 'center';
           wrapper.style.justifyContent = 'space-between';
+          wrapper.style.width = '100%';
 
           const nameSpan = document.createElement('span');
           nameSpan.textContent = taskName ?? '';
-
+          
+          // Contenedor para el círculo de progreso
+          const progressContainer = document.createElement('div');
+          progressContainer.style.display = 'flex';
+          progressContainer.style.alignItems = 'center';
+          
+          // Crear el contenedor para avatares de usuarios
+          const userAvatarsContainer = document.createElement('div');
+          userAvatarsContainer.className = 'ms-2 me-2';
+          userAvatarsContainer.style.minWidth = '90px';
+          
+          // Elemento para el círculo de progreso
           const circle = document.createElement('div');
           const root = document.createElement('div');
           circle.style.width = '40px';
           circle.style.height = '40px';
           circle.appendChild(root);
 
+          // Crear root para los avatares de usuario
+          const avatarsRoot = document.createElement('div');
+          userAvatarsContainer.appendChild(avatarsRoot);
+          
           wrapper.appendChild(nameSpan);
-          wrapper.appendChild(circle);
+          progressContainer.appendChild(userAvatarsContainer);
+          progressContainer.appendChild(circle);
+          wrapper.appendChild(progressContainer);
 
           taskNameEl.innerHTML = '';
           taskNameEl.appendChild(wrapper);
-
+          
+          // Renderizar el círculo de progreso
           createRoot(root).render(
             <ProgressCircle value={task.progress || 0} size={40} />
+          );
+          
+          // Renderizar los avatares de usuarios asignados
+          const itemType = task.type === 'project' ? 'project' : (task.isSubtask ? 'subtask' : 'task');
+          
+          createRoot(avatarsRoot).render(
+            <UserAvatars 
+              itemId={task.id.toString()} 
+              itemType={itemType} 
+              maxDisplay={2} 
+              size="sm" 
+            />
           );
         }
       }
@@ -173,11 +224,13 @@ const AdvancedGanttChart = () => {
       id: task.id,
       type: task.type,
       isSubtask: task.isSubtask,
-      name: task.name
+      name: task.name,
+      progress: task.progress
     });
     
     setSelectedTask(task);
     setShowDetails(true);
+    setActiveTab('detalles'); // Restaurar a la pestaña de detalles por defecto
     
     // Limpiar formularios al abrir un nuevo detalle
     setTaskForm({
@@ -270,29 +323,7 @@ const AdvancedGanttChart = () => {
         setShowDetails(false);
         
         // Actualizar datos en lugar de recargar la página
-        const getData = async () => {
-          setLoading(true);
-          try {
-            const data = await fetchGanttData();
-            const dataFiltrada = data.filter(
-              (t: ExtendedTask) => t && t.start && t.end && t.name
-            ).map((task: ExtendedTask) => ({
-              ...task,
-              start: task.start instanceof Date ? task.start : new Date(task.start),
-              end: task.end instanceof Date ? task.end : new Date(task.end),
-              progress: typeof task.progress === 'number' ? task.progress : 0,
-              id: task.id || `task-${Math.random().toString(36).substr(2, 9)}`,
-              isSubtask: task.isSubtask || false
-            }));
-
-            setTasks(dataFiltrada);
-          } catch (error) {
-            console.error('Error al actualizar datos del Gantt:', error);
-          } finally {
-            setLoading(false);
-          }
-        };
-        getData();
+        refreshGanttData();
       } else {
         alert(`❌ No se pudo crear la tarea: ${response.data.message || 'Error desconocido'}`);
       }
@@ -357,35 +388,96 @@ const AdvancedGanttChart = () => {
         setShowDetails(false);
         
         // Actualizar datos en lugar de recargar la página
-        const getData = async () => {
-          setLoading(true);
-          try {
-            const data = await fetchGanttData();
-            const dataFiltrada = data.filter(
-              (t: ExtendedTask) => t && t.start && t.end && t.name
-            ).map((task: ExtendedTask) => ({
-              ...task,
-              start: task.start instanceof Date ? task.start : new Date(task.start),
-              end: task.end instanceof Date ? task.end : new Date(task.end),
-              progress: typeof task.progress === 'number' ? task.progress : 0,
-              id: task.id || `task-${Math.random().toString(36).substr(2, 9)}`,
-              isSubtask: task.isSubtask || false
-            }));
-
-            setTasks(dataFiltrada);
-          } catch (error) {
-            console.error('Error al actualizar datos del Gantt:', error);
-          } finally {
-            setLoading(false);
-          }
-        };
-        getData();
+        refreshGanttData();
       } else {
         alert(`❌ No se pudo crear la subtarea: ${response.data.message || 'Error desconocido'}`);
       }
     } catch (error: any) {
       console.error('Error al crear subtarea:', error.response?.data || error.message);
       alert(`Error al crear la subtarea: ${error.response?.data?.message || error.message}`);
+    }
+  };
+
+  // Nueva función para marcar como completado
+  const handleMarkAsCompleted = async () => {
+    if (!selectedTask) return;
+    
+    try {
+      const config = {
+        headers: {
+          'x-auth-token': token || '',
+          'Content-Type': 'application/json',
+        },
+      };
+      
+      // Extraer el ID sin prefijos
+      let itemId = selectedTask.id.toString();
+      if (itemId.includes('project-')) {
+        itemId = itemId.split('project-')[1];
+      } else if (itemId.includes('task-')) {
+        itemId = itemId.split('task-')[1];
+      } else if (itemId.includes('subtask-')) {
+        itemId = itemId.split('subtask-')[1];
+      }
+      
+      // Determinar el endpoint correcto según el tipo
+      let endpoint = '';
+      if (selectedTask.type === 'project') {
+        endpoint = `http://localhost:5000/api/projects/${itemId}/complete`;
+      } else if (selectedTask.isSubtask) {
+        // Obtener el ID de la tarea padre
+        const parentTaskId = selectedTask.id.toString().split('-parent-')[1];
+        if (parentTaskId) {
+          endpoint = `http://localhost:5000/api/tasks/${parentTaskId}/subtasks/${itemId}/complete`;
+        } else {
+          throw new Error('No se pudo determinar la tarea padre de esta subtarea');
+        }
+      } else {
+        endpoint = `http://localhost:5000/api/tasks/${itemId}/complete`;
+      }
+      
+      const response = await axios.put(endpoint, {}, config);
+      
+      if (response.data.success) {
+        alert('✅ Elemento marcado como completado exitosamente');
+        setShowDetails(false);
+        
+        // Actualizar datos
+        refreshGanttData();
+      } else {
+        alert(`❌ No se pudo completar el elemento: ${response.data.message || 'Error desconocido'}`);
+      }
+    } catch (error: any) {
+      console.error('Error al marcar como completado:', error.response?.data || error.message);
+      alert(`Error al marcar como completado: ${error.response?.data?.message || error.message}`);
+    }
+  };
+
+  // Función para refrescar los datos del Gantt
+  const refreshGanttData = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchGanttData();
+      const dataFiltrada = data.filter(
+        (t: ExtendedTask) => t && t.start && t.end && t.name
+      ).map((task: ExtendedTask) => ({
+        ...task,
+        start: task.start instanceof Date ? task.start : new Date(task.start),
+        end: task.end instanceof Date ? task.end : new Date(task.end),
+        progress: typeof task.progress === 'number' ? task.progress : 0,
+        id: task.id || `task-${Math.random().toString(36).substr(2, 9)}`,
+        isSubtask: task.isSubtask || false,
+        // Mantener el estado de colapso actual
+        hideChildren: 
+          tasks.find(t => t.id === task.id)?.hideChildren || 
+          (task.type === 'project' ? true : false)
+      }));
+
+      setTasks(dataFiltrada);
+    } catch (error) {
+      console.error('Error al actualizar datos del Gantt:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -426,6 +518,17 @@ const AdvancedGanttChart = () => {
   const isRegularTaskSelected = selectedTask && 
                                selectedTask.type === 'task' && 
                                selectedTask.isSubtask !== true;
+                               
+  // Determina si el elemento seleccionado está completado al 100%
+  const isItemCompleted = selectedTask && selectedTask.progress === 100;
+
+  // Determina el tipo de elemento seleccionado para la asignación de usuarios
+  const getSelectedItemType = (): 'project' | 'task' | 'subtask' => {
+    if (!selectedTask) return 'task';
+    if (selectedTask.type === 'project') return 'project';
+    if (selectedTask.isSubtask) return 'subtask';
+    return 'task';
+  };
 
   return (
     <div>
@@ -491,112 +594,155 @@ const AdvancedGanttChart = () => {
         <Offcanvas.Body>
           {selectedTask && (
             <>
-              <h5>{selectedTask.name}</h5>
-              <p><strong>Inicio:</strong> {selectedTask.start instanceof Date ? selectedTask.start.toLocaleDateString() : 'Fecha inválida'}</p>
-              <p><strong>Fin:</strong> {selectedTask.end instanceof Date ? selectedTask.end.toLocaleDateString() : 'Fecha inválida'}</p>
-              <p><strong>Progreso:</strong> {selectedTask.progress || 0}%</p>
-              <ProgressBar now={selectedTask.progress || 0} label={`${selectedTask.progress || 0}%`} className="mb-3" />
-              <p><strong>ID:</strong> {selectedTask.id}</p>
-              {selectedTask.dependencies && (
-                <p><strong>Depende de:</strong> {Array.isArray(selectedTask.dependencies) ? selectedTask.dependencies.join(', ') : 'Ninguna'}</p>
-              )}
-              <p><strong>Tipo:</strong> {selectedTask.isSubtask === true ? 'Subtarea' : selectedTask.type || 'No especificado'}</p>
+              <div className="d-flex justify-content-between align-items-start mb-2">
+                <h5>{selectedTask.name}</h5>
+                <Badge 
+                  bg={
+                    selectedTask.progress === 100 ? 'success' : 
+                    selectedTask.progress > 0 ? 'primary' : 'secondary'
+                  }
+                >
+                  {selectedTask.progress === 100 ? 'Completado' : 
+                   selectedTask.progress > 0 ? 'En Progreso' : 'Pendiente'}
+                </Badge>
+              </div>
+              
+              <Nav variant="tabs" className="mb-3" activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'detalles')}>
+                <Nav.Item>
+                  <Nav.Link eventKey="detalles">Detalles</Nav.Link>
+                </Nav.Item>
+                <Nav.Item>
+                  <Nav.Link eventKey="usuarios">
+                    Usuarios
+                  </Nav.Link>
+                </Nav.Item>
+              </Nav>
+              
+              <Tab.Content>
+                <Tab.Pane active={activeTab === 'detalles'}>
+                  <p><strong>Inicio:</strong> {selectedTask.start instanceof Date ? selectedTask.start.toLocaleDateString() : 'Fecha inválida'}</p>
+                  <p><strong>Fin:</strong> {selectedTask.end instanceof Date ? selectedTask.end.toLocaleDateString() : 'Fecha inválida'}</p>
+                  <p><strong>Progreso:</strong> {selectedTask.progress || 0}%</p>
+                  <ProgressBar now={selectedTask.progress || 0} label={`${selectedTask.progress || 0}%`} className="mb-3" />
+                  <p><strong>ID:</strong> {selectedTask.id}</p>
+                  {selectedTask.dependencies && (
+                    <p><strong>Depende de:</strong> {Array.isArray(selectedTask.dependencies) ? selectedTask.dependencies.join(', ') : 'Ninguna'}</p>
+                  )}
+                  <p><strong>Tipo:</strong> {selectedTask.isSubtask === true ? 'Subtarea' : selectedTask.type || 'No especificado'}</p>
 
-              {/* Formulario para agregar tareas si seleccionamos un proyecto */}
-              {selectedTask.type === 'project' && (
-                <>
-                  <h6 className="mt-4">Agregar Tarea</h6>
-                  <Form>
-                    <Form.Group className="mb-2">
-                      <Form.Label>Título</Form.Label>
-                      <Form.Control type="text" name="titulo" value={taskForm.titulo} onChange={(e) => handleInputChange(e, 'task')} />
-                    </Form.Group>
-                    <Form.Group className="mb-2">
-                      <Form.Label>Descripción</Form.Label>
-                      <Form.Control as="textarea" name="descripcion" rows={2} value={taskForm.descripcion} onChange={(e) => handleInputChange(e, 'task')} />
-                    </Form.Group>
-                    <Form.Group className="mb-2">
-                      <Form.Label>Prioridad</Form.Label>
-                      <Form.Select name="prioridad" value={taskForm.prioridad} onChange={(e) => handleInputChange(e, 'task')}>
-                        <option value="baja">Baja</option>
-                        <option value="media">Media</option>
-                        <option value="alta">Alta</option>
-                      </Form.Select>
-                    </Form.Group>
-                    <Form.Group className="mb-2">
-                      <Form.Label>Fecha de Inicio</Form.Label>
-                      <Form.Control 
-                        type="date" 
-                        name="fecha_inicio" 
-                        value={taskForm.fecha_inicio} 
-                        onChange={(e) => handleInputChange(e, 'task')} 
-                        min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''} 
-                        max={selectedTask.end instanceof Date ? selectedTask.end.toISOString().split('T')[0] : ''}
-                      />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Fecha de Vencimiento</Form.Label>
-                      <Form.Control 
-                        type="date" 
-                        name="fecha_vencimiento" 
-                        value={taskForm.fecha_vencimiento} 
-                        onChange={(e) => handleInputChange(e, 'task')} 
-                        min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''} 
-                        max={selectedTask.end instanceof Date ? selectedTask.end.toISOString().split('T')[0] : ''}
-                      />
-                    </Form.Group>
-                    <Button variant="success" onClick={handleCreateTask}>Crear Tarea</Button>
-                  </Form>
-                </>
-              )}
+                  {/* Botón para marcar como completado */}
+                  {!isItemCompleted && (
+                    <div className="mb-4 mt-2">
+                      <Button variant="success" onClick={handleMarkAsCompleted}>
+                        Marcar como Completado
+                      </Button>
+                    </div>
+                  )}
 
-              {/* Formulario para agregar subtareas si seleccionamos una tarea regular */}
-              {isRegularTaskSelected && (
-                <>
-                  <h6 className="mt-4">Agregar Subtarea</h6>
-                  <Form>
-                    <Form.Group className="mb-2">
-                      <Form.Label>Título</Form.Label>
-                      <Form.Control type="text" name="titulo" value={subtaskForm.titulo} onChange={(e) => handleInputChange(e, 'subtask')} />
-                    </Form.Group>
-                    <Form.Group className="mb-2">
-                      <Form.Label>Descripción</Form.Label>
-                      <Form.Control as="textarea" name="descripcion" rows={2} value={subtaskForm.descripcion} onChange={(e) => handleInputChange(e, 'subtask')} />
-                    </Form.Group>
-                    <Form.Group className="mb-2">
-                      <Form.Label>Prioridad</Form.Label>
-                      <Form.Select name="prioridad" value={subtaskForm.prioridad} onChange={(e) => handleInputChange(e, 'subtask')}>
-                        <option value="baja">Baja</option>
-                        <option value="media">Media</option>
-                        <option value="alta">Alta</option>
-                      </Form.Select>
-                    </Form.Group>
-                    <Form.Group className="mb-2">
-                      <Form.Label>Fecha de Inicio</Form.Label>
-                      <Form.Control 
-                        type="date" 
-                        name="fecha_inicio" 
-                        value={subtaskForm.fecha_inicio} 
-                        onChange={(e) => handleInputChange(e, 'subtask')} 
-                        min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''} 
-                        max={selectedTask.end instanceof Date ? selectedTask.end.toISOString().split('T')[0] : ''}
-                      />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Fecha de Vencimiento</Form.Label>
-                      <Form.Control 
-                        type="date" 
-                        name="fecha_vencimiento" 
-                        value={subtaskForm.fecha_vencimiento} 
-                        onChange={(e) => handleInputChange(e, 'subtask')} 
-                        min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''} 
-                        max={selectedTask.end instanceof Date ? selectedTask.end.toISOString().split('T')[0] : ''}
-                      />
-                    </Form.Group>
-                    <Button variant="success" onClick={handleCreateSubtask}>Crear Subtarea</Button>
-                  </Form>
-                </>
-              )}
+                  {/* Formulario para agregar tareas si seleccionamos un proyecto */}
+                  {selectedTask.type === 'project' && (
+                    <>
+                      <h6 className="mt-4">Agregar Tarea</h6>
+                      <Form>
+                        <Form.Group className="mb-2">
+                          <Form.Label>Título</Form.Label>
+                          <Form.Control type="text" name="titulo" value={taskForm.titulo} onChange={(e) => handleInputChange(e, 'task')} />
+                        </Form.Group>
+                        <Form.Group className="mb-2">
+                          <Form.Label>Descripción</Form.Label>
+                          <Form.Control as="textarea" name="descripcion" rows={2} value={taskForm.descripcion} onChange={(e) => handleInputChange(e, 'task')} />
+                        </Form.Group>
+                        <Form.Group className="mb-2">
+                          <Form.Label>Prioridad</Form.Label>
+                          <Form.Select name="prioridad" value={taskForm.prioridad} onChange={(e) => handleInputChange(e, 'task')}>
+                            <option value="baja">Baja</option>
+                            <option value="media">Media</option>
+                            <option value="alta">Alta</option>
+                          </Form.Select>
+                        </Form.Group>
+                        <Form.Group className="mb-2">
+                          <Form.Label>Fecha de Inicio</Form.Label>
+                          <Form.Control 
+                            type="date" 
+                            name="fecha_inicio" 
+                            value={taskForm.fecha_inicio} 
+                            onChange={(e) => handleInputChange(e, 'task')} 
+                            min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''} 
+                            max={selectedTask.end instanceof Date ? selectedTask.end.toISOString().split('T')[0] : ''}
+                          />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Fecha de Vencimiento</Form.Label>
+                          <Form.Control 
+                            type="date" 
+                            name="fecha_vencimiento" 
+                            value={taskForm.fecha_vencimiento} 
+                            onChange={(e) => handleInputChange(e, 'task')} 
+                            min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''} 
+                            max={selectedTask.end instanceof Date ? selectedTask.end.toISOString().split('T')[0] : ''}
+                          />
+                        </Form.Group>
+                        <Button variant="success" onClick={handleCreateTask}>Crear Tarea</Button>
+                      </Form>
+                    </>
+                  )}
+
+                  {/* Formulario para agregar subtareas si seleccionamos una tarea regular */}
+                  {isRegularTaskSelected && (
+                    <>
+                      <h6 className="mt-4">Agregar Subtarea</h6>
+                      <Form>
+                        <Form.Group className="mb-2">
+                          <Form.Label>Título</Form.Label>
+                          <Form.Control type="text" name="titulo" value={subtaskForm.titulo} onChange={(e) => handleInputChange(e, 'subtask')} />
+                        </Form.Group>
+                        <Form.Group className="mb-2">
+                          <Form.Label>Descripción</Form.Label>
+                          <Form.Control as="textarea" name="descripcion" rows={2} value={subtaskForm.descripcion} onChange={(e) => handleInputChange(e, 'subtask')} />
+                        </Form.Group>
+                        <Form.Group className="mb-2">
+                          <Form.Label>Prioridad</Form.Label>
+                          <Form.Select name="prioridad" value={subtaskForm.prioridad} onChange={(e) => handleInputChange(e, 'subtask')}>
+                            <option value="baja">Baja</option>
+                            <option value="media">Media</option>
+                            <option value="alta">Alta</option>
+                          </Form.Select>
+                        </Form.Group>
+                        <Form.Group className="mb-2">
+                          <Form.Label>Fecha de Inicio</Form.Label>
+                          <Form.Control 
+                            type="date" 
+                            name="fecha_inicio" 
+                            value={subtaskForm.fecha_inicio} 
+                            onChange={(e) => handleInputChange(e, 'subtask')} 
+                            min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''} 
+                            max={selectedTask.end instanceof Date ? selectedTask.end.toISOString().split('T')[0] : ''}
+                          />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                          <Form.Label>Fecha de Vencimiento</Form.Label>
+                          <Form.Control 
+                            type="date" 
+                            name="fecha_vencimiento" 
+                            value={subtaskForm.fecha_vencimiento} 
+                            onChange={(e) => handleInputChange(e, 'subtask')} 
+                            min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''} 
+                            max={selectedTask.end instanceof Date ? selectedTask.end.toISOString().split('T')[0] : ''}
+                          />
+                        </Form.Group>
+                        <Button variant="success" onClick={handleCreateSubtask}>Crear Subtarea</Button>
+                      </Form>
+                    </>
+                  )}
+                </Tab.Pane>
+                <Tab.Pane active={activeTab === 'usuarios'}>
+                  <UserAssignment 
+                    itemId={selectedTask.id} 
+                    itemType={getSelectedItemType()} 
+                    onUsersUpdated={refreshGanttData}
+                  />
+                </Tab.Pane>
+              </Tab.Content>
             </>
           )}
         </Offcanvas.Body>
