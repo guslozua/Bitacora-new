@@ -5,16 +5,153 @@ import 'react-circular-progressbar/dist/styles.css';
 import { ButtonGroup, Button, Spinner, Offcanvas, ProgressBar, Form, Tab, Nav, Badge } from 'react-bootstrap';
 import Select from 'react-select';
 import { createRoot } from 'react-dom/client';
-import { fetchGanttData } from '../services/ganttService';
+import { fetchGanttData, updateElementProgress } from '../services/ganttService';
 import GanttDependencyLines from './GanttDependencyLines';
 import ProgressCircle from './ProgressCircle';
 import UserAssignment from './UserAssignment';
 import UserAvatars from './UserAvatars';
 import axios from 'axios';
 
+// Define los tipos para los estilos personalizados
+interface TaskStyles {
+  backgroundColor: string;
+  progressColor: string;
+  backgroundSelectedColor: string;
+  progressSelectedColor: string;
+}
+
+// Define las estructuras de colores
+interface ColorSet {
+  PENDING: TaskStyles;
+  COMPLETED: TaskStyles;
+}
+
+interface ColorScheme {
+  PROJECT: ColorSet;
+  TASK: ColorSet;
+  SUBTASK: ColorSet;
+}
+
+// Definimos colores por tipo y estado
+const COLORS: ColorScheme = {
+  PROJECT: {
+    PENDING: {
+      backgroundColor: '#bb8fce',
+      progressColor: '#8e44ad',
+      backgroundSelectedColor: '#a569bd',
+      progressSelectedColor: '#7d3c98'
+    },
+    COMPLETED: {
+      backgroundColor: '#7d3c98',
+      progressColor: '#6c3483',
+      backgroundSelectedColor: '#6c3483',
+      progressSelectedColor: '#5b2c6f'
+    }
+  },
+  TASK: {
+    PENDING: {
+      backgroundColor: '#abebc6',
+      progressColor: '#58d68d',
+      backgroundSelectedColor: '#82e0aa',
+      progressSelectedColor: '#27ae60'
+    },
+    COMPLETED: {
+      backgroundColor: '#2ecc71',
+      progressColor: '#27ae60',
+      backgroundSelectedColor: '#27ae60',
+      progressSelectedColor: '#229954'
+    }
+  },
+  SUBTASK: {
+    PENDING: {
+      backgroundColor: '#f9e79f',
+      progressColor: '#f4d03f',
+      backgroundSelectedColor: '#f7dc6f',
+      progressSelectedColor: '#f1c40f'
+    },
+    COMPLETED: {
+      backgroundColor: '#f1c40f',
+      progressColor: '#d4ac0d',
+      backgroundSelectedColor: '#d4ac0d',
+      progressSelectedColor: '#b7950b'
+    }
+  }
+};
+
+// Componente de leyenda de colores
+const ColorLegend = () => {
+  const legendItems = [
+    { label: 'Proyectos pendientes', color: COLORS.PROJECT.PENDING.backgroundColor },
+    { label: 'Proyectos completados', color: COLORS.PROJECT.COMPLETED.backgroundColor },
+    { label: 'Tareas pendientes', color: COLORS.TASK.PENDING.backgroundColor },
+    { label: 'Tareas completadas', color: COLORS.TASK.COMPLETED.backgroundColor },
+    { label: 'Subtareas pendientes', color: COLORS.SUBTASK.PENDING.backgroundColor },
+    { label: 'Subtareas completadas', color: COLORS.SUBTASK.COMPLETED.backgroundColor }
+  ];
+
+  return (
+    <div className="mb-3 mt-2 p-2 border rounded bg-light">
+      <h6 className="mb-2">Leyenda de colores</h6>
+      <div className="d-flex flex-wrap gap-3">
+        {legendItems.map((item, index) => (
+          <div key={index} className="d-flex align-items-center">
+            <div 
+              style={{ 
+                width: '16px', 
+                height: '16px', 
+                backgroundColor: item.color,
+                marginRight: '6px',
+                border: '1px solid rgba(0,0,0,0.2)',
+                borderRadius: '3px'
+              }}
+            ></div>
+            <small>{item.label}</small>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Definir interfaz para props del tooltip
+interface TooltipContentProps {
+  task: Task;
+  fontSize: string;
+  fontFamily: string;
+}
+
+// Componente personalizado para el tooltip
+const TooltipContent: React.FC<TooltipContentProps> = ({ task, fontSize, fontFamily }) => {
+  return (
+    <div 
+      style={{
+        background: 'rgba(0, 0, 0, 0.85)',
+        color: 'white',
+        padding: '6px 10px',
+        borderRadius: '4px',
+        fontSize: fontSize || '12px',
+        fontFamily: fontFamily || 'Arial, sans-serif',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+      }}
+    >
+      <div>{task.name}</div>
+      <div>Progreso: {task.progress}%</div>
+      <div>
+        {task.start.toLocaleDateString()} - {task.end.toLocaleDateString()}
+      </div>
+    </div>
+  );
+};
+
 // Extendemos la interfaz Task para incluir un campo personalizado
 interface ExtendedTask extends Task {
-  isSubtask?: boolean; // Usamos un campo booleano en lugar de un valor de tipo
+  isSubtask?: boolean;
+  styles?: {
+    backgroundColor?: string;
+    backgroundSelectedColor?: string;
+    progressColor?: string;
+    progressSelectedColor?: string;
+  };
 }
 
 const AdvancedGanttChart = () => {
@@ -55,22 +192,52 @@ const AdvancedGanttChart = () => {
       setLoading(true);
       try {
         const data = await fetchGanttData();
-        const dataFiltrada = data.filter(
-          (t: ExtendedTask) => t && t.start && t.end && t.name
-        ).map((task: ExtendedTask) => ({
-          ...task,
-          start: task.start instanceof Date ? task.start : new Date(task.start),
-          end: task.end instanceof Date ? task.end : new Date(task.end),
-          progress: typeof task.progress === 'number' ? task.progress : 0,
-          id: task.id || `task-${Math.random().toString(36).substr(2, 9)}`,
-          // Aseguramos que el campo isSubtask esté definido
-          isSubtask: task.isSubtask || false,
-          // Colapsar todos los proyectos por defecto
-          hideChildren: task.type === 'project' ? true : task.hideChildren
-        }));
+        const processedTasks = data
+          .filter((t: ExtendedTask) => t && t.start && t.end && t.name)
+          .map((task: ExtendedTask) => {
+            // Procesar fechas y valores por defecto
+            const processedTask = {
+              ...task,
+              start: task.start instanceof Date ? task.start : new Date(task.start),
+              end: task.end instanceof Date ? task.end : new Date(task.end),
+              progress: typeof task.progress === 'number' ? task.progress : 0,
+              id: task.id || `task-${Math.random().toString(36).substr(2, 9)}`,
+              isSubtask: task.isSubtask || false,
+              hideChildren: task.type === 'project' ? true : task.hideChildren
+            };
+            
+            // Asignar estilos según tipo y progreso
+            let taskStyles: TaskStyles;
+            
+            if (task.id.toString().startsWith('project-') || task.type === 'project') {
+              // Utilizar Number() para evitar problemas con tipos literales
+              taskStyles = Number(task.progress) === 100 
+                ? COLORS.PROJECT.COMPLETED 
+                : COLORS.PROJECT.PENDING;
+            } else if (task.id.toString().startsWith('subtask-') || task.isSubtask) {
+              taskStyles = Number(task.progress) === 100 
+                ? COLORS.SUBTASK.COMPLETED 
+                : COLORS.SUBTASK.PENDING;
+            } else {
+              taskStyles = Number(task.progress) === 100 
+                ? COLORS.TASK.COMPLETED 
+                : COLORS.TASK.PENDING;
+            }
+            
+            // Añadir estilos a la tarea
+            return {
+              ...processedTask,
+              styles: {
+                backgroundColor: taskStyles.backgroundColor,
+                progressColor: taskStyles.progressColor,
+                backgroundSelectedColor: taskStyles.backgroundSelectedColor,
+                progressSelectedColor: taskStyles.progressSelectedColor
+              }
+            };
+          });
 
-        console.log('Datos filtrados y procesados:', dataFiltrada);
-        setTasks(dataFiltrada);
+        console.log('Datos procesados con estilos aplicados:', processedTasks);
+        setTasks(processedTasks);
       } catch (error) {
         console.error('Error al cargar datos del Gantt:', error);
         setTasks([]);
@@ -81,102 +248,6 @@ const AdvancedGanttChart = () => {
 
     getData();
   }, []);
-
-  useEffect(() => {
-    if (tasks.length === 0) return;
-
-    const bars = document.querySelectorAll('.bar-wrapper');
-    bars.forEach((bar: any) => {
-      const label = bar.querySelector('.bar-label');
-      if (label && label.innerText) {
-        const taskName = label.innerText;
-        const match = tasks.find((t) => t.name === taskName);
-        if (match) {
-          bar.setAttribute('data-task-id', match.id);
-          
-          // Aplicar estilos según el progreso
-          if (match.progress === 100) {
-            const barEl = bar.querySelector('.bar');
-            if (barEl) {
-              barEl.style.backgroundColor = '#28a745'; // Verde para completado
-              barEl.style.borderColor = '#218838';
-            }
-          } else if (match.progress > 0) {
-            const barEl = bar.querySelector('.bar');
-            if (barEl) {
-              barEl.style.backgroundColor = '#007bff'; // Azul para en progreso
-              barEl.style.borderColor = '#0069d9';
-            }
-          }
-        }
-      }
-    });
-
-    const rows = document.querySelectorAll('.task-list .task-list-item');
-    rows.forEach((row) => {
-      const taskNameEl = row.querySelector('.task-list-name');
-      if (taskNameEl) {
-        const taskName = taskNameEl.textContent?.trim();
-        const task = tasks.find((t) => t.name === taskName);
-        if (task) {
-          const wrapper = document.createElement('div');
-          wrapper.style.display = 'flex';
-          wrapper.style.alignItems = 'center';
-          wrapper.style.justifyContent = 'space-between';
-          wrapper.style.width = '100%';
-
-          const nameSpan = document.createElement('span');
-          nameSpan.textContent = taskName ?? '';
-          
-          // Contenedor para el círculo de progreso
-          const progressContainer = document.createElement('div');
-          progressContainer.style.display = 'flex';
-          progressContainer.style.alignItems = 'center';
-          
-          // Crear el contenedor para avatares de usuarios
-          const userAvatarsContainer = document.createElement('div');
-          userAvatarsContainer.className = 'ms-2 me-2';
-          userAvatarsContainer.style.minWidth = '90px';
-          
-          // Elemento para el círculo de progreso
-          const circle = document.createElement('div');
-          const root = document.createElement('div');
-          circle.style.width = '40px';
-          circle.style.height = '40px';
-          circle.appendChild(root);
-
-          // Crear root para los avatares de usuario
-          const avatarsRoot = document.createElement('div');
-          userAvatarsContainer.appendChild(avatarsRoot);
-          
-          wrapper.appendChild(nameSpan);
-          progressContainer.appendChild(userAvatarsContainer);
-          progressContainer.appendChild(circle);
-          wrapper.appendChild(progressContainer);
-
-          taskNameEl.innerHTML = '';
-          taskNameEl.appendChild(wrapper);
-          
-          // Renderizar el círculo de progreso
-          createRoot(root).render(
-            <ProgressCircle value={task.progress || 0} size={40} />
-          );
-          
-          // Renderizar los avatares de usuarios asignados
-          const itemType = task.type === 'project' ? 'project' : (task.isSubtask ? 'subtask' : 'task');
-          
-          createRoot(avatarsRoot).render(
-            <UserAvatars 
-              itemId={task.id.toString()} 
-              itemType={itemType} 
-              maxDisplay={2} 
-              size="sm" 
-            />
-          );
-        }
-      }
-    });
-  }, [tasks, view]);
 
   useEffect(() => {
     const updateGanttHeight = () => {
@@ -193,8 +264,8 @@ const AdvancedGanttChart = () => {
     return () => window.removeEventListener('resize', updateGanttHeight);
   }, []);
 
+  // Cuando se selecciona una tarea, inicializar formularios
   useEffect(() => {
-    // Si se selecciona una tarea o un proyecto, inicializar los formularios con sus fechas
     if (selectedTask) {
       const startDate = selectedTask.start instanceof Date 
         ? selectedTask.start.toISOString().split('T')[0] 
@@ -216,6 +287,84 @@ const AdvancedGanttChart = () => {
       }));
     }
   }, [selectedTask]);
+
+  // Función para inyectar información adicional en las filas de la tabla
+  const enhanceTaskListItems = () => {
+    setTimeout(() => {
+      const rows = document.querySelectorAll('.task-list .task-list-item');
+      rows.forEach((row) => {
+        const taskNameEl = row.querySelector('.task-list-name');
+        if (taskNameEl && !taskNameEl.getAttribute('data-enhanced')) {
+          const taskName = taskNameEl.textContent?.trim();
+          const task = tasks.find((t) => t.name === taskName);
+          if (task) {
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.style.alignItems = 'center';
+            wrapper.style.justifyContent = 'space-between';
+            wrapper.style.width = '100%';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = taskName ?? '';
+            
+            // Contenedor para el círculo de progreso
+            const progressContainer = document.createElement('div');
+            progressContainer.style.display = 'flex';
+            progressContainer.style.alignItems = 'center';
+            
+            // Crear el contenedor para avatares de usuarios
+            const userAvatarsContainer = document.createElement('div');
+            userAvatarsContainer.className = 'ms-2 me-2';
+            userAvatarsContainer.style.minWidth = '90px';
+            
+            // Elemento para el círculo de progreso
+            const circle = document.createElement('div');
+            const root = document.createElement('div');
+            circle.style.width = '40px';
+            circle.style.height = '40px';
+            circle.appendChild(root);
+
+            // Crear root para los avatares de usuario
+            const avatarsRoot = document.createElement('div');
+            userAvatarsContainer.appendChild(avatarsRoot);
+            
+            wrapper.appendChild(nameSpan);
+            progressContainer.appendChild(userAvatarsContainer);
+            progressContainer.appendChild(circle);
+            wrapper.appendChild(progressContainer);
+
+            taskNameEl.innerHTML = '';
+            taskNameEl.appendChild(wrapper);
+            taskNameEl.setAttribute('data-enhanced', 'true');
+            
+            // Renderizar el círculo de progreso
+            createRoot(root).render(
+              <ProgressCircle value={task.progress || 0} size={40} />
+            );
+            
+            // Renderizar los avatares de usuarios asignados
+            const itemType = task.type === 'project' ? 'project' : (task.isSubtask ? 'subtask' : 'task');
+            
+            createRoot(avatarsRoot).render(
+              <UserAvatars 
+                itemId={task.id.toString()} 
+                itemType={itemType} 
+                maxDisplay={2} 
+                size="sm" 
+              />
+            );
+          }
+        }
+      });
+    }, 100);
+  };
+
+  // Aplicar mejoras a la lista de tareas cuando cambian las tareas o la vista
+  useEffect(() => {
+    if (tasks.length > 0) {
+      enhanceTaskListItems();
+    }
+  }, [tasks, view]);
 
   const handleViewChange = (mode: ViewMode) => setView(mode);
 
@@ -303,9 +452,6 @@ const AdvancedGanttChart = () => {
         ? selectedTask.id.toString().split('project-')[1]
         : selectedTask.id;
       
-      console.log("ID de proyecto original:", selectedTask.id);
-      console.log("ID de proyecto enviado al API:", projectId);
-      
       const newTask = {
         titulo: taskForm.titulo,
         descripcion: taskForm.descripcion,
@@ -336,13 +482,6 @@ const AdvancedGanttChart = () => {
   const handleCreateSubtask = async () => {
     if (!selectedTask) return;
 
-    console.log("Datos de tarea seleccionada para crear subtarea:", {
-      id: selectedTask.id,
-      type: selectedTask.type,
-      isSubtask: selectedTask.isSubtask,
-      name: selectedTask.name
-    });
-
     // Para las subtareas usamos el ID de la tarea (no es un proyecto ni una subtarea)
     if (selectedTask.type === 'project' || selectedTask.isSubtask === true) {
       alert('Solo se pueden crear subtareas a partir de tareas regulares.');
@@ -368,9 +507,6 @@ const AdvancedGanttChart = () => {
       const taskId = selectedTask.id.toString().includes('task-')
         ? selectedTask.id.toString().split('task-')[1]
         : selectedTask.id;
-      
-      console.log("ID de tarea original:", selectedTask.id);
-      console.log("ID de tarea enviado al API:", taskId);
       
       const newSubtask = {
         titulo: subtaskForm.titulo,
@@ -398,54 +534,75 @@ const AdvancedGanttChart = () => {
     }
   };
 
-  // Nueva función para marcar como completado
+  // Función para marcar como completado
   const handleMarkAsCompleted = async () => {
     if (!selectedTask) return;
     
     try {
-      const config = {
-        headers: {
-          'x-auth-token': token || '',
-          'Content-Type': 'application/json',
-        },
-      };
+      console.log("Marcando como completado:", selectedTask.id);
       
-      // Extraer el ID sin prefijos
-      let itemId = selectedTask.id.toString();
-      if (itemId.includes('project-')) {
-        itemId = itemId.split('project-')[1];
-      } else if (itemId.includes('task-')) {
-        itemId = itemId.split('task-')[1];
-      } else if (itemId.includes('subtask-')) {
-        itemId = itemId.split('subtask-')[1];
-      }
+      // Usar la función de servicio para actualizar el progreso a 100%
+      const success = await updateElementProgress(selectedTask.id.toString(), 100);
       
-      // Determinar el endpoint correcto según el tipo
-      let endpoint = '';
-      if (selectedTask.type === 'project') {
-        endpoint = `http://localhost:5000/api/projects/${itemId}/complete`;
-      } else if (selectedTask.isSubtask) {
-        // Obtener el ID de la tarea padre
-        const parentTaskId = selectedTask.id.toString().split('-parent-')[1];
-        if (parentTaskId) {
-          endpoint = `http://localhost:5000/api/tasks/${parentTaskId}/subtasks/${itemId}/complete`;
-        } else {
-          throw new Error('No se pudo determinar la tarea padre de esta subtarea');
-        }
-      } else {
-        endpoint = `http://localhost:5000/api/tasks/${itemId}/complete`;
-      }
-      
-      const response = await axios.put(endpoint, {}, config);
-      
-      if (response.data.success) {
+      if (success) {
         alert('✅ Elemento marcado como completado exitosamente');
-        setShowDetails(false);
         
-        // Actualizar datos
+        // Actualizar el estado local antes de cerrar el panel
+        setTasks(prev => prev.map(task => {
+          if (task.id === selectedTask.id) {
+            // Actualizar el progreso y los estilos según el tipo
+            let updatedStyles: TaskStyles;
+            
+            if (task.id.toString().startsWith('project-') || task.type === 'project') {
+              updatedStyles = COLORS.PROJECT.COMPLETED;
+            } else if (task.id.toString().startsWith('subtask-') || task.isSubtask) {
+              updatedStyles = COLORS.SUBTASK.COMPLETED;
+            } else {
+              updatedStyles = COLORS.TASK.COMPLETED;
+            }
+            
+            return { 
+              ...task, 
+              progress: 100,
+              styles: {
+                backgroundColor: updatedStyles.backgroundColor,
+                progressColor: updatedStyles.progressColor,
+                backgroundSelectedColor: updatedStyles.backgroundSelectedColor,
+                progressSelectedColor: updatedStyles.progressSelectedColor
+              }
+            };
+          }
+          return task;
+        }));
+        
+        // Actualizar el elemento seleccionado para reflejar el cambio en el panel
+        if (selectedTask) {
+          let updatedStyles: TaskStyles;
+          
+          if (selectedTask.type === 'project') {
+            updatedStyles = COLORS.PROJECT.COMPLETED;
+          } else if (selectedTask.isSubtask) {
+            updatedStyles = COLORS.SUBTASK.COMPLETED;
+          } else {
+            updatedStyles = COLORS.TASK.COMPLETED;
+          }
+          
+          setSelectedTask({ 
+            ...selectedTask, 
+            progress: 100,
+            styles: {
+              backgroundColor: updatedStyles.backgroundColor,
+              progressColor: updatedStyles.progressColor,
+              backgroundSelectedColor: updatedStyles.backgroundSelectedColor,
+              progressSelectedColor: updatedStyles.progressSelectedColor
+            }
+          });
+        }
+        
+        // Actualizar datos del Gantt
         refreshGanttData();
       } else {
-        alert(`❌ No se pudo completar el elemento: ${response.data.message || 'Error desconocido'}`);
+        alert('❌ No se pudo completar el elemento. Por favor, intente nuevamente.');
       }
     } catch (error: any) {
       console.error('Error al marcar como completado:', error.response?.data || error.message);
@@ -458,22 +615,55 @@ const AdvancedGanttChart = () => {
     setLoading(true);
     try {
       const data = await fetchGanttData();
-      const dataFiltrada = data.filter(
-        (t: ExtendedTask) => t && t.start && t.end && t.name
-      ).map((task: ExtendedTask) => ({
-        ...task,
-        start: task.start instanceof Date ? task.start : new Date(task.start),
-        end: task.end instanceof Date ? task.end : new Date(task.end),
-        progress: typeof task.progress === 'number' ? task.progress : 0,
-        id: task.id || `task-${Math.random().toString(36).substr(2, 9)}`,
-        isSubtask: task.isSubtask || false,
-        // Mantener el estado de colapso actual
-        hideChildren: 
-          tasks.find(t => t.id === task.id)?.hideChildren || 
-          (task.type === 'project' ? true : false)
-      }));
+      const processedTasks = data
+        .filter((t: ExtendedTask) => t && t.start && t.end && t.name)
+        .map((task: ExtendedTask) => {
+          // Conservar estado de colapso
+          const existingTask = tasks.find(t => t.id === task.id);
+          const hideChildren = existingTask ? existingTask.hideChildren : (task.type === 'project' ? true : false);
+          
+          // Procesar fechas y valores por defecto
+          const processedTask = {
+            ...task,
+            start: task.start instanceof Date ? task.start : new Date(task.start),
+            end: task.end instanceof Date ? task.end : new Date(task.end),
+            progress: typeof task.progress === 'number' ? task.progress : 0,
+            id: task.id || `task-${Math.random().toString(36).substr(2, 9)}`,
+            isSubtask: task.isSubtask || false,
+            hideChildren
+          };
+          
+          // Asignar estilos según tipo y progreso
+          let taskStyles: TaskStyles;
+          
+          if (task.id.toString().startsWith('project-') || task.type === 'project') {
+            taskStyles = Number(task.progress) === 100 
+              ? COLORS.PROJECT.COMPLETED 
+              : COLORS.PROJECT.PENDING;
+          } else if (task.id.toString().startsWith('subtask-') || task.isSubtask) {
+            taskStyles = Number(task.progress) === 100 
+              ? COLORS.SUBTASK.COMPLETED 
+              : COLORS.SUBTASK.PENDING;
+          } else {
+            taskStyles = Number(task.progress) === 100 
+              ? COLORS.TASK.COMPLETED 
+              : COLORS.TASK.PENDING;
+          }
+          
+          // Añadir estilos a la tarea
+          return {
+            ...processedTask,
+            styles: {
+              backgroundColor: taskStyles.backgroundColor,
+              progressColor: taskStyles.progressColor,
+              backgroundSelectedColor: taskStyles.backgroundSelectedColor,
+              progressSelectedColor: taskStyles.progressSelectedColor
+            }
+          };
+        });
 
-      setTasks(dataFiltrada);
+      console.log('Datos actualizados del Gantt:', processedTasks);
+      setTasks(processedTasks);
     } catch (error) {
       console.error('Error al actualizar datos del Gantt:', error);
     } finally {
@@ -520,7 +710,7 @@ const AdvancedGanttChart = () => {
                                selectedTask.isSubtask !== true;
                                
   // Determina si el elemento seleccionado está completado al 100%
-  const isItemCompleted = selectedTask && selectedTask.progress === 100;
+  const isItemCompleted = selectedTask && Number(selectedTask.progress) === 100;
 
   // Determina el tipo de elemento seleccionado para la asignación de usuarios
   const getSelectedItemType = (): 'project' | 'task' | 'subtask' => {
@@ -532,31 +722,48 @@ const AdvancedGanttChart = () => {
 
   return (
     <div>
-      <div className="d-flex flex-row align-items-center gap-2 mb-3" style={{ flexWrap: 'nowrap', overflowX: 'auto' }}>
-        <input
-          type="text"
-          className="form-control"
-          placeholder="Buscar tarea..."
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          style={{ width: '200px', flexShrink: 0 }}
-        />
-        <div style={{ width: '220px', flexShrink: 0 }}>
-          <Select
-            isMulti
-            options={opcionesEstado}
-            classNamePrefix="select"
-            placeholder="Filtrar por estado..."
-            onChange={(selected) => setEstadoFiltro(selected.map(opt => opt.value))}
-            value={opcionesEstado.filter(opt => estadoFiltro.includes(opt.value))}
+      {/* Contenedor de filtros */}
+      <div className="filter-controls mb-3">
+        <div className="d-flex flex-wrap gap-2 align-items-center">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Buscar tarea..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: '200px' }}
           />
+          <div style={{ width: '220px', minWidth: '220px' }}>
+            <Select
+              isMulti
+              options={opcionesEstado}
+              classNamePrefix="select"
+              placeholder="Filtrar por estado..."
+              onChange={(selected) => setEstadoFiltro(selected.map(opt => opt.value))}
+              value={opcionesEstado.filter(opt => estadoFiltro.includes(opt.value))}
+              menuPosition="fixed"
+              menuPortalTarget={document.body}
+              styles={{
+                menuPortal: base => ({ ...base, zIndex: 9999 })
+              }}
+            />
+          </div>
+          <ButtonGroup>
+            <Button variant={view === ViewMode.Day ? 'primary' : 'outline-primary'} onClick={() => handleViewChange(ViewMode.Day)}>Día</Button>
+            <Button variant={view === ViewMode.Week ? 'primary' : 'outline-primary'} onClick={() => handleViewChange(ViewMode.Week)}>Semana</Button>
+            <Button variant={view === ViewMode.Month ? 'primary' : 'outline-primary'} onClick={() => handleViewChange(ViewMode.Month)}>Mes</Button>
+          </ButtonGroup>
+          <Button 
+            variant="outline-success" 
+            onClick={refreshGanttData}
+          >
+            <i className="bi bi-arrow-clockwise"></i> Actualizar
+          </Button>
         </div>
-        <ButtonGroup style={{ flexShrink: 0 }}>
-          <Button variant={view === ViewMode.Day ? 'primary' : 'outline-primary'} onClick={() => handleViewChange(ViewMode.Day)}>Día</Button>
-          <Button variant={view === ViewMode.Week ? 'primary' : 'outline-primary'} onClick={() => handleViewChange(ViewMode.Week)}>Semana</Button>
-          <Button variant={view === ViewMode.Month ? 'primary' : 'outline-primary'} onClick={() => handleViewChange(ViewMode.Month)}>Mes</Button>
-        </ButtonGroup>
       </div>
+
+      {/* Leyenda de colores */}
+      {!loading && hasTasks && <ColorLegend />}
 
       {loading ? (
         <div className="text-center py-5">
@@ -575,11 +782,100 @@ const AdvancedGanttChart = () => {
             listCellWidth="155px"
             barFill={60}
             onDateChange={(task, children) => console.log('Tarea modificada:', task)}
-            onProgressChange={(task, progress) => console.log('Progreso actualizado:', task, progress)}
+            onProgressChange={(task, progress) => {
+              console.log('Progreso actualizado:', task.id, progress);
+              
+              // Actualizar estado local inmediatamente para mejor UX
+              setTasks(prev => 
+                prev.map(t => {
+                  if (t.id === task.id) {
+                    let newStyles: TaskStyles;
+                    // Asegúrate de que progress sea un número
+                    const progressNum = typeof progress === 'number' ? progress : 0;
+                    
+                    if (t.id.toString().startsWith('project-') || t.type === 'project') {
+                      newStyles = Number(progressNum) === 100 ? COLORS.PROJECT.COMPLETED : COLORS.PROJECT.PENDING;
+                    } else if (t.id.toString().startsWith('subtask-') || t.isSubtask) {
+                      newStyles = Number(progressNum) === 100 ? COLORS.SUBTASK.COMPLETED : COLORS.SUBTASK.PENDING;
+                    } else {
+                      newStyles = Number(progressNum) === 100 ? COLORS.TASK.COMPLETED : COLORS.TASK.PENDING;
+                    }
+                    return { 
+                      ...t, 
+                      progress: progressNum, 
+                      styles: {
+                        backgroundColor: newStyles.backgroundColor,
+                        progressColor: newStyles.progressColor,
+                        backgroundSelectedColor: newStyles.backgroundSelectedColor,
+                        progressSelectedColor: newStyles.progressSelectedColor
+                      }
+                    };
+                  }
+                  return t;
+                })
+              );
+              
+              
+              // Si la tarea seleccionada es la que se actualizó, actualizar también el panel de detalles
+              if (selectedTask && selectedTask.id === task.id) {
+                // Determinar estilos para la tarea seleccionada
+                let newStyles: TaskStyles;
+                const progressNum = typeof progress === 'number' ? progress : 0;
+                
+                if (selectedTask.type === 'project') {
+                  newStyles = Number(progressNum) === 100 
+                    ? COLORS.PROJECT.COMPLETED 
+                    : COLORS.PROJECT.PENDING;
+                } else if (selectedTask.isSubtask) {
+                  newStyles = Number(progressNum) === 100 
+                    ? COLORS.SUBTASK.COMPLETED 
+                    : COLORS.SUBTASK.PENDING;
+                } else {
+                  newStyles = Number(progressNum) === 100 
+                    ? COLORS.TASK.COMPLETED 
+                    : COLORS.TASK.PENDING;
+                }
+                
+                setSelectedTask({
+                  ...selectedTask,
+                  progress: progressNum,
+                  styles: {
+                    backgroundColor: newStyles.backgroundColor,
+                    progressColor: newStyles.progressColor,
+                    backgroundSelectedColor: newStyles.backgroundSelectedColor,
+                    progressSelectedColor: newStyles.progressSelectedColor
+                  }
+                });
+              }
+              
+              // También actualizar en el backend
+              const progressNum = typeof progress === 'number' ? progress : 0;
+              updateElementProgress(task.id.toString(), progressNum)
+                .then(success => {
+                  if (!success) {
+                    console.error('Error al actualizar progreso en el servidor');
+                  }
+                })
+                .catch(error => {
+                  console.error('Error al actualizar progreso:', error);
+                });
+            }}
             onDoubleClick={openTaskDetails}
             onExpanderClick={handleExpanderClick}
+            TooltipContent={TooltipContent}
+            // Opciones de estilo globales
+            rowHeight={50}
+            headerHeight={50}
+            barCornerRadius={4}
+            todayColor="rgba(252, 248, 227, 0.5)"
+            projectProgressColor="#8e44ad"
+            projectProgressSelectedColor="#6c3483"
+            projectBackgroundColor="#bb8fce"
+            projectBackgroundSelectedColor="#a569bd"
           />
-          <GanttDependencyLines dependencies={filteredTasks.flatMap((t) => Array.isArray(t.dependencies) ? t.dependencies.map((dep) => ({ fromId: dep, toId: t.id })) : [])} />
+          <GanttDependencyLines dependencies={filteredTasks.flatMap((t) => 
+            Array.isArray(t.dependencies) ? t.dependencies.map((dep) => ({ fromId: dep, toId: t.id })) : []
+          )} />
         </div>
       )}
 
@@ -598,12 +894,12 @@ const AdvancedGanttChart = () => {
                 <h5>{selectedTask.name}</h5>
                 <Badge 
                   bg={
-                    selectedTask.progress === 100 ? 'success' : 
-                    selectedTask.progress > 0 ? 'primary' : 'secondary'
+                    Number(selectedTask.progress) === 100 ? 'success' : 
+                    Number(selectedTask.progress) > 0 ? 'primary' : 'secondary'
                   }
                 >
-                  {selectedTask.progress === 100 ? 'Completado' : 
-                   selectedTask.progress > 0 ? 'En Progreso' : 'Pendiente'}
+                  {Number(selectedTask.progress) === 100 ? 'Completado' : 
+                   Number(selectedTask.progress) > 0 ? 'En Progreso' : 'Pendiente'}
                 </Badge>
               </div>
               

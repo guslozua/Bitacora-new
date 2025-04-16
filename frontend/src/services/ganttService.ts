@@ -21,6 +21,7 @@ interface Proyecto {
   nombre: string;
   fecha_inicio: string;
   fecha_fin: string;
+  estado?: string; // Añadimos estado para determinar el progreso
 }
 
 interface Tarea {
@@ -53,6 +54,21 @@ export const getNumericId = (id: string): string => {
   return id;
 };
 
+// Función para calcular el progreso basado en el estado
+const calculateProgress = (estado?: string): number => {
+  if (!estado) return 0;
+  
+  switch (estado.toLowerCase()) {
+    case 'completado':
+      return 100;
+    case 'en progreso':
+      return 50;
+    case 'pendiente':
+    default:
+      return 0;
+  }
+};
+
 export const fetchGanttData = async (): Promise<ExtendedTask[]> => {
   const token = localStorage.getItem("token");
 
@@ -81,6 +97,9 @@ export const fetchGanttData = async (): Promise<ExtendedTask[]> => {
 
     console.log("Datos cargados - Proyectos:", projects.length, "Tareas:", tasks.length, "Subtareas:", subtasks.length);
 
+    // Log para depuración - ver los estados de los proyectos
+    console.log("Estados de proyectos:", projects.map(p => ({id: p.id, nombre: p.nombre, estado: p.estado})));
+
     const allGanttTasks: ExtendedTask[] = [];
 
     // Procesar proyectos
@@ -106,13 +125,17 @@ export const fetchGanttData = async (): Promise<ExtendedTask[]> => {
         console.log(`No se pudieron obtener usuarios del proyecto ${project.id}`);
       }
 
+      // Calcular el progreso basado en el estado del proyecto
+      const projectProgress = calculateProgress(project.estado);
+      console.log(`Proyecto ${project.id} - ${project.nombre} - Estado: ${project.estado} - Progreso: ${projectProgress}%`);
+
       allGanttTasks.push({
         id: `project-${project.id}`,
         name: project.nombre,
         start,
         end,
         type: "project",
-        progress: 0,
+        progress: projectProgress, // Usar el progreso calculado
         isDisabled: true,
         hideChildren: false,
         isSubtask: false,
@@ -265,10 +288,15 @@ export const updateElementProgress = async (
                     ? "en progreso" 
                     : "pendiente";
                      
+    console.log(`Actualizando progreso de ${itemId} (${numericId}) a ${progress}% (estado: ${estado})`);
+    console.log(`Endpoint: ${endpoint}`);
+    
     const response = await axios.put(endpoint, { 
       estado,
       porcentaje: progress 
     }, config);
+    
+    console.log(`Respuesta de actualización:`, response.data);
     
     return response.data.success;
   } catch (error) {
