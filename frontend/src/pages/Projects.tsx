@@ -38,6 +38,7 @@ const Projects = () => {
   });
 
   // Estados para los KPIs
+  const [proyectosTotales, setProyectosTotales] = useState(0);
   const [proyectosActivos, setProyectosActivos] = useState(0);
   const [tareasPendientes, setTareasPendientes] = useState(0);
   const [porcentajeCompletado, setPorcentajeCompletado] = useState(0);
@@ -62,29 +63,33 @@ const Projects = () => {
         
         // Calculamos los KPIs
         
-        // 1. Proyectos activos
-        const activos = proyectos.length;
+        // 1. Proyectos totales (nuevo)
+        setProyectosTotales(proyectos.length);
+        
+        // 2. Proyectos activos (corregido: solo los no completados)
+        const activos = proyectos.filter((proyecto: any) => 
+          proyecto.estado !== 'completado' && proyecto.estado !== 'finalizado'
+        ).length;
         setProyectosActivos(activos);
         
-        // 2. Tareas pendientes
+        // 3. Tareas pendientes
         const pendientes = tareas.filter((tarea: any) => 
           tarea.estado !== 'completada' && tarea.estado !== 'finalizada'
         ).length;
         setTareasPendientes(pendientes);
         
-        // 3. Porcentaje completado (tareas completadas / total de tareas)
-        const completadas = tareas.filter((tarea: any) => 
-          tarea.estado === 'completada' || tarea.estado === 'finalizada'
+        // 4. Porcentaje completado (proyectos completados / total de proyectos)
+        const proyectosCompletados = proyectos.filter((proyecto: any) => 
+          proyecto.estado === 'completado' || proyecto.estado === 'finalizado'
         ).length;
         
-        const totalTareas = tareas.length;
-        const porcentaje = totalTareas > 0 
-          ? Math.round((completadas / totalTareas) * 100) 
+        const porcentaje = proyectos.length > 0 
+          ? Math.round((proyectosCompletados / proyectos.length) * 100) 
           : 0;
         
         setPorcentajeCompletado(porcentaje);
         
-        // 4. Proyectos próximos a vencer (en los próximos 7 días)
+        // 5. Proyectos próximos a vencer (en los próximos 7 días)
         const hoy = new Date();
         const enUnaSemana = new Date();
         enUnaSemana.setDate(hoy.getDate() + 7);
@@ -204,7 +209,24 @@ const Projects = () => {
             <>
               {/* KPIs conectados a datos reales */}
               <Row className="g-4 mb-4">
-                <Col md={3}>
+                {/* Nueva tarjeta de Proyectos Totales */}
+                <Col md={3} lg={true}>
+                  <Card className="border-0 shadow-sm h-100">
+                    <Card.Body>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                          <h6 className="text-muted mb-1">Proyectos Totales</h6>
+                          <h2 className="fw-bold mb-0">{proyectosTotales}</h2>
+                        </div>
+                        <div className="bg-info bg-opacity-10 p-3 rounded-circle">
+                          <i className="bi bi-folder fs-3 text-info" />
+                        </div>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                
+                <Col md={3} lg={true}>
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center">
@@ -220,12 +242,12 @@ const Projects = () => {
                   </Card>
                 </Col>
                 
-                <Col md={3}>
+                <Col md={3} lg={true}>
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center">
                         <div>
-                          <h6 className="text-muted mb-1">Tareas Pendientes</h6>
+                          <h6 className="text-muted mb-1">Tareas Asociadas</h6>
                           <h2 className="fw-bold mb-0 text-primary">{tareasPendientes}</h2>
                         </div>
                         <div className="bg-primary bg-opacity-10 p-3 rounded-circle">
@@ -236,7 +258,7 @@ const Projects = () => {
                   </Card>
                 </Col>
                 
-                <Col md={3}>
+                <Col md={3} lg={true}>
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center">
@@ -252,7 +274,7 @@ const Projects = () => {
                   </Card>
                 </Col>
                 
-                <Col md={3}>
+                <Col md={3} lg={true}>
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center">
@@ -269,7 +291,7 @@ const Projects = () => {
                 </Col>
               </Row>
 
-              {/* Diagrama de Gantt después de los KPIs */}
+              {/* Diagrama de Gantt */}
               <Row className="g-4 mb-4">
                 <Col md={12}>
                   <Card className="border-0 shadow-sm mb-4">

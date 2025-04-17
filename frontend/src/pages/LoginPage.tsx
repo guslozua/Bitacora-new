@@ -1,15 +1,30 @@
 // src/pages/LoginPage.tsx
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const logoRef = useRef<HTMLImageElement | null>(null);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Efecto para la animación del logo
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (logoRef.current) {
+        logoRef.current.classList.add('animate__animated', 'animate__jello');
+        setTimeout(() => {
+          logoRef.current?.classList.remove('animate__animated', 'animate__jello');
+        }, 1000);
+      }
+    }, Math.floor(Math.random() * 10000) + 10000); // Entre 10 y 20 segundos
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,10 +67,21 @@ const LoginPage = () => {
 
   return (
     <div className="container d-flex align-items-center justify-content-center min-vh-100 bg-light">
+      {/* Importación de estilos de Animate.css */}
+      <style>
+        {`
+          @import url('https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css');
+        `}
+      </style>
       <div className="card border-0 p-4 shadow-lg" style={{ maxWidth: '400px', width: '100%', borderRadius: '15px' }}>
         <div className="text-center">
           <div className="d-flex align-items-center justify-content-center mb-2">
-            <img src="/logox1.png" alt="Logo" style={{ width: '65px' }} />
+            <img 
+              ref={logoRef} 
+              src="/logox1.png" 
+              alt="Logo" 
+              style={{ width: '65px' }} 
+            />
             <h3 className="ms-2 mb-0 fw-bold" style={{ color: '#333' }}>TaskManager</h3>
           </div>
           <p className="text-muted mb-4">Iniciar sesión para continuar</p>

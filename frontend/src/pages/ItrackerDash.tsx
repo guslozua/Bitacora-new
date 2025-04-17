@@ -195,7 +195,7 @@ const ItrackerDash = () => {
                 </Col>
               </Row>
 
-              {/* Gráficas reordenadas según solicitud */}
+              {/* Gráficas */}
               <Row className="g-4 mb-4">
                 <Col md={6}>
                   <Card className="border-0 shadow-sm h-100">

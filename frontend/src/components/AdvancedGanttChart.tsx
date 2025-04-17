@@ -95,10 +95,10 @@ const ColorLegend = () => {
       <div className="d-flex flex-wrap gap-3">
         {legendItems.map((item, index) => (
           <div key={index} className="d-flex align-items-center">
-            <div 
-              style={{ 
-                width: '16px', 
-                height: '16px', 
+            <div
+              style={{
+                width: '16px',
+                height: '16px',
                 backgroundColor: item.color,
                 marginRight: '6px',
                 border: '1px solid rgba(0,0,0,0.2)',
@@ -123,7 +123,7 @@ interface TooltipContentProps {
 // Componente personalizado para el tooltip
 const TooltipContent: React.FC<TooltipContentProps> = ({ task, fontSize, fontFamily }) => {
   return (
-    <div 
+    <div
       style={{
         background: 'rgba(0, 0, 0, 0.85)',
         color: 'white',
@@ -164,6 +164,7 @@ const AdvancedGanttChart = () => {
   const [estadoFiltro, setEstadoFiltro] = useState<string[]>([]);
   const [ganttHeight, setGanttHeight] = useState('600px');
   const [activeTab, setActiveTab] = useState('detalles');
+  const [showTaskList, setShowTaskList] = useState<boolean>(true);
   const [taskForm, setTaskForm] = useState({
     titulo: '',
     descripcion: '',
@@ -205,25 +206,25 @@ const AdvancedGanttChart = () => {
               isSubtask: task.isSubtask || false,
               hideChildren: task.type === 'project' ? true : task.hideChildren
             };
-            
+
             // Asignar estilos según tipo y progreso
             let taskStyles: TaskStyles;
-            
+
             if (task.id.toString().startsWith('project-') || task.type === 'project') {
               // Utilizar Number() para evitar problemas con tipos literales
-              taskStyles = Number(task.progress) === 100 
-                ? COLORS.PROJECT.COMPLETED 
+              taskStyles = Number(task.progress) === 100
+                ? COLORS.PROJECT.COMPLETED
                 : COLORS.PROJECT.PENDING;
             } else if (task.id.toString().startsWith('subtask-') || task.isSubtask) {
-              taskStyles = Number(task.progress) === 100 
-                ? COLORS.SUBTASK.COMPLETED 
+              taskStyles = Number(task.progress) === 100
+                ? COLORS.SUBTASK.COMPLETED
                 : COLORS.SUBTASK.PENDING;
             } else {
-              taskStyles = Number(task.progress) === 100 
-                ? COLORS.TASK.COMPLETED 
+              taskStyles = Number(task.progress) === 100
+                ? COLORS.TASK.COMPLETED
                 : COLORS.TASK.PENDING;
             }
-            
+
             // Añadir estilos a la tarea
             return {
               ...processedTask,
@@ -267,19 +268,19 @@ const AdvancedGanttChart = () => {
   // Cuando se selecciona una tarea, inicializar formularios
   useEffect(() => {
     if (selectedTask) {
-      const startDate = selectedTask.start instanceof Date 
-        ? selectedTask.start.toISOString().split('T')[0] 
+      const startDate = selectedTask.start instanceof Date
+        ? selectedTask.start.toISOString().split('T')[0]
         : '';
-      const endDate = selectedTask.end instanceof Date 
-        ? selectedTask.end.toISOString().split('T')[0] 
+      const endDate = selectedTask.end instanceof Date
+        ? selectedTask.end.toISOString().split('T')[0]
         : '';
-      
+
       setTaskForm(prev => ({
         ...prev,
         fecha_inicio: startDate,
         fecha_vencimiento: endDate
       }));
-      
+
       setSubtaskForm(prev => ({
         ...prev,
         fecha_inicio: startDate,
@@ -290,6 +291,7 @@ const AdvancedGanttChart = () => {
 
   // Función para inyectar información adicional en las filas de la tabla
   const enhanceTaskListItems = () => {
+    if (!showTaskList) return;
     setTimeout(() => {
       const rows = document.querySelectorAll('.task-list .task-list-item');
       rows.forEach((row) => {
@@ -306,17 +308,17 @@ const AdvancedGanttChart = () => {
 
             const nameSpan = document.createElement('span');
             nameSpan.textContent = taskName ?? '';
-            
+
             // Contenedor para el círculo de progreso
             const progressContainer = document.createElement('div');
             progressContainer.style.display = 'flex';
             progressContainer.style.alignItems = 'center';
-            
+
             // Crear el contenedor para avatares de usuarios
             const userAvatarsContainer = document.createElement('div');
             userAvatarsContainer.className = 'ms-2 me-2';
             userAvatarsContainer.style.minWidth = '90px';
-            
+
             // Elemento para el círculo de progreso
             const circle = document.createElement('div');
             const root = document.createElement('div');
@@ -327,7 +329,7 @@ const AdvancedGanttChart = () => {
             // Crear root para los avatares de usuario
             const avatarsRoot = document.createElement('div');
             userAvatarsContainer.appendChild(avatarsRoot);
-            
+
             wrapper.appendChild(nameSpan);
             progressContainer.appendChild(userAvatarsContainer);
             progressContainer.appendChild(circle);
@@ -336,21 +338,21 @@ const AdvancedGanttChart = () => {
             taskNameEl.innerHTML = '';
             taskNameEl.appendChild(wrapper);
             taskNameEl.setAttribute('data-enhanced', 'true');
-            
+
             // Renderizar el círculo de progreso
             createRoot(root).render(
               <ProgressCircle value={task.progress || 0} size={40} />
             );
-            
+
             // Renderizar los avatares de usuarios asignados
             const itemType = task.type === 'project' ? 'project' : (task.isSubtask ? 'subtask' : 'task');
-            
+
             createRoot(avatarsRoot).render(
-              <UserAvatars 
-                itemId={task.id.toString()} 
-                itemType={itemType} 
-                maxDisplay={2} 
-                size="sm" 
+              <UserAvatars
+                itemId={task.id.toString()}
+                itemType={itemType}
+                maxDisplay={2}
+                size="sm"
               />
             );
           }
@@ -364,7 +366,7 @@ const AdvancedGanttChart = () => {
     if (tasks.length > 0) {
       enhanceTaskListItems();
     }
-  }, [tasks, view]);
+  }, [tasks, view, showTaskList]);
 
   const handleViewChange = (mode: ViewMode) => setView(mode);
 
@@ -376,11 +378,11 @@ const AdvancedGanttChart = () => {
       name: task.name,
       progress: task.progress
     });
-    
+
     setSelectedTask(task);
     setShowDetails(true);
     setActiveTab('detalles'); // Restaurar a la pestaña de detalles por defecto
-    
+
     // Limpiar formularios al abrir un nuevo detalle
     setTaskForm({
       titulo: '',
@@ -389,7 +391,7 @@ const AdvancedGanttChart = () => {
       fecha_inicio: '',
       fecha_vencimiento: '',
     });
-    
+
     setSubtaskForm({
       titulo: '',
       descripcion: '',
@@ -398,6 +400,8 @@ const AdvancedGanttChart = () => {
       fecha_vencimiento: '',
     });
   };
+
+
 
   const handleExpanderClick = (task: ExtendedTask) => {
     setTasks((prev) =>
@@ -446,12 +450,12 @@ const AdvancedGanttChart = () => {
           'Content-Type': 'application/json',
         },
       };
-      
+
       // Extraer solo la parte numérica del ID del proyecto
       const projectId = selectedTask.id.toString().includes('project-')
         ? selectedTask.id.toString().split('project-')[1]
         : selectedTask.id;
-      
+
       const newTask = {
         titulo: taskForm.titulo,
         descripcion: taskForm.descripcion,
@@ -467,7 +471,7 @@ const AdvancedGanttChart = () => {
         alert(`✅ Tarea creada con éxito con ID: ${response.data.id}`);
         setTaskForm({ titulo: '', descripcion: '', prioridad: 'media', fecha_inicio: '', fecha_vencimiento: '' });
         setShowDetails(false);
-        
+
         // Actualizar datos en lugar de recargar la página
         refreshGanttData();
       } else {
@@ -502,12 +506,12 @@ const AdvancedGanttChart = () => {
           'Content-Type': 'application/json',
         },
       };
-      
+
       // Extraer el ID de la tarea, eliminando cualquier prefijo
       const taskId = selectedTask.id.toString().includes('task-')
         ? selectedTask.id.toString().split('task-')[1]
         : selectedTask.id;
-      
+
       const newSubtask = {
         titulo: subtaskForm.titulo,
         descripcion: subtaskForm.descripcion,
@@ -522,7 +526,7 @@ const AdvancedGanttChart = () => {
         alert(`✅ Subtarea creada con éxito con ID: ${response.data.id}`);
         setSubtaskForm({ titulo: '', descripcion: '', prioridad: 'media', fecha_inicio: '', fecha_vencimiento: '' });
         setShowDetails(false);
-        
+
         // Actualizar datos en lugar de recargar la página
         refreshGanttData();
       } else {
@@ -537,22 +541,22 @@ const AdvancedGanttChart = () => {
   // Función para marcar como completado
   const handleMarkAsCompleted = async () => {
     if (!selectedTask) return;
-    
+
     try {
       console.log("Marcando como completado:", selectedTask.id);
-      
+
       // Usar la función de servicio para actualizar el progreso a 100%
       const success = await updateElementProgress(selectedTask.id.toString(), 100);
-      
+
       if (success) {
         alert('✅ Elemento marcado como completado exitosamente');
-        
+
         // Actualizar el estado local antes de cerrar el panel
         setTasks(prev => prev.map(task => {
           if (task.id === selectedTask.id) {
             // Actualizar el progreso y los estilos según el tipo
             let updatedStyles: TaskStyles;
-            
+
             if (task.id.toString().startsWith('project-') || task.type === 'project') {
               updatedStyles = COLORS.PROJECT.COMPLETED;
             } else if (task.id.toString().startsWith('subtask-') || task.isSubtask) {
@@ -560,9 +564,9 @@ const AdvancedGanttChart = () => {
             } else {
               updatedStyles = COLORS.TASK.COMPLETED;
             }
-            
-            return { 
-              ...task, 
+
+            return {
+              ...task,
               progress: 100,
               styles: {
                 backgroundColor: updatedStyles.backgroundColor,
@@ -574,11 +578,11 @@ const AdvancedGanttChart = () => {
           }
           return task;
         }));
-        
+
         // Actualizar el elemento seleccionado para reflejar el cambio en el panel
         if (selectedTask) {
           let updatedStyles: TaskStyles;
-          
+
           if (selectedTask.type === 'project') {
             updatedStyles = COLORS.PROJECT.COMPLETED;
           } else if (selectedTask.isSubtask) {
@@ -586,9 +590,9 @@ const AdvancedGanttChart = () => {
           } else {
             updatedStyles = COLORS.TASK.COMPLETED;
           }
-          
-          setSelectedTask({ 
-            ...selectedTask, 
+
+          setSelectedTask({
+            ...selectedTask,
             progress: 100,
             styles: {
               backgroundColor: updatedStyles.backgroundColor,
@@ -598,7 +602,7 @@ const AdvancedGanttChart = () => {
             }
           });
         }
-        
+
         // Actualizar datos del Gantt
         refreshGanttData();
       } else {
@@ -621,7 +625,7 @@ const AdvancedGanttChart = () => {
           // Conservar estado de colapso
           const existingTask = tasks.find(t => t.id === task.id);
           const hideChildren = existingTask ? existingTask.hideChildren : (task.type === 'project' ? true : false);
-          
+
           // Procesar fechas y valores por defecto
           const processedTask = {
             ...task,
@@ -632,24 +636,24 @@ const AdvancedGanttChart = () => {
             isSubtask: task.isSubtask || false,
             hideChildren
           };
-          
+
           // Asignar estilos según tipo y progreso
           let taskStyles: TaskStyles;
-          
+
           if (task.id.toString().startsWith('project-') || task.type === 'project') {
-            taskStyles = Number(task.progress) === 100 
-              ? COLORS.PROJECT.COMPLETED 
+            taskStyles = Number(task.progress) === 100
+              ? COLORS.PROJECT.COMPLETED
               : COLORS.PROJECT.PENDING;
           } else if (task.id.toString().startsWith('subtask-') || task.isSubtask) {
-            taskStyles = Number(task.progress) === 100 
-              ? COLORS.SUBTASK.COMPLETED 
+            taskStyles = Number(task.progress) === 100
+              ? COLORS.SUBTASK.COMPLETED
               : COLORS.SUBTASK.PENDING;
           } else {
-            taskStyles = Number(task.progress) === 100 
-              ? COLORS.TASK.COMPLETED 
+            taskStyles = Number(task.progress) === 100
+              ? COLORS.TASK.COMPLETED
               : COLORS.TASK.PENDING;
           }
-          
+
           // Añadir estilos a la tarea
           return {
             ...processedTask,
@@ -705,10 +709,10 @@ const AdvancedGanttChart = () => {
   const hasTasks = filteredTasks.length > 0 && filteredTasks.every(task => task && task.start instanceof Date && task.end instanceof Date);
 
   // Determina si la tarea seleccionada es una tarea regular (no un proyecto ni una subtarea)
-  const isRegularTaskSelected = selectedTask && 
-                               selectedTask.type === 'task' && 
-                               selectedTask.isSubtask !== true;
-                               
+  const isRegularTaskSelected = selectedTask &&
+    selectedTask.type === 'task' &&
+    selectedTask.isSubtask !== true;
+
   // Determina si el elemento seleccionado está completado al 100%
   const isItemCompleted = selectedTask && Number(selectedTask.progress) === 100;
 
@@ -723,42 +727,53 @@ const AdvancedGanttChart = () => {
   return (
     <div>
       {/* Contenedor de filtros */}
+      {/* Modificar esta parte donde están los controles de filtro */}
       <div className="filter-controls mb-3">
-        <div className="d-flex flex-wrap gap-2 align-items-center">
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Buscar tarea..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: '200px' }}
-          />
-          <div style={{ width: '220px', minWidth: '220px' }}>
-            <Select
-              isMulti
-              options={opcionesEstado}
-              classNamePrefix="select"
-              placeholder="Filtrar por estado..."
-              onChange={(selected) => setEstadoFiltro(selected.map(opt => opt.value))}
-              value={opcionesEstado.filter(opt => estadoFiltro.includes(opt.value))}
-              menuPosition="fixed"
-              menuPortalTarget={document.body}
-              styles={{
-                menuPortal: base => ({ ...base, zIndex: 9999 })
-              }}
+        <div className="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+          <div className="d-flex flex-wrap gap-2 align-items-center">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Buscar tarea..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: '200px' }}
             />
+            <div style={{ width: '220px', minWidth: '220px' }}>
+              <Select
+                isMulti
+                options={opcionesEstado}
+                classNamePrefix="select"
+                placeholder="Filtrar por estado..."
+                onChange={(selected) => setEstadoFiltro(selected.map(opt => opt.value))}
+                value={opcionesEstado.filter(opt => estadoFiltro.includes(opt.value))}
+                menuPosition="fixed"
+                menuPortalTarget={document.body}
+                styles={{
+                  menuPortal: base => ({ ...base, zIndex: 9999 })
+                }}
+              />
+            </div>
+            <ButtonGroup>
+              <Button variant={view === ViewMode.Day ? 'primary' : 'outline-primary'} onClick={() => handleViewChange(ViewMode.Day)}>Día</Button>
+              <Button variant={view === ViewMode.Week ? 'primary' : 'outline-primary'} onClick={() => handleViewChange(ViewMode.Week)}>Semana</Button>
+              <Button variant={view === ViewMode.Month ? 'primary' : 'outline-primary'} onClick={() => handleViewChange(ViewMode.Month)}>Mes</Button>
+            </ButtonGroup>
+            <Button
+              variant="outline-success"
+              onClick={refreshGanttData}
+            >
+              <i className="bi bi-arrow-clockwise"></i> Actualizar
+            </Button>
           </div>
-          <ButtonGroup>
-            <Button variant={view === ViewMode.Day ? 'primary' : 'outline-primary'} onClick={() => handleViewChange(ViewMode.Day)}>Día</Button>
-            <Button variant={view === ViewMode.Week ? 'primary' : 'outline-primary'} onClick={() => handleViewChange(ViewMode.Week)}>Semana</Button>
-            <Button variant={view === ViewMode.Month ? 'primary' : 'outline-primary'} onClick={() => handleViewChange(ViewMode.Month)}>Mes</Button>
-          </ButtonGroup>
-          <Button 
-            variant="outline-success" 
-            onClick={refreshGanttData}
-          >
-            <i className="bi bi-arrow-clockwise"></i> Actualizar
-          </Button>
+          {/* Toggle movido a la derecha */}
+          <Form.Check
+            type="switch"
+            id="task-list-toggle"
+            label="Mostrar tabla"
+            checked={showTaskList}
+            onChange={(e) => setShowTaskList(e.target.checked)}
+          />
         </div>
       </div>
 
@@ -779,20 +794,20 @@ const AdvancedGanttChart = () => {
             tasks={filteredTasks}
             viewMode={view}
             locale="es"
-            listCellWidth="155px"
+            listCellWidth={showTaskList ? "155px" : ""}
             barFill={60}
             onDateChange={(task, children) => console.log('Tarea modificada:', task)}
             onProgressChange={(task, progress) => {
               console.log('Progreso actualizado:', task.id, progress);
-              
+
               // Actualizar estado local inmediatamente para mejor UX
-              setTasks(prev => 
+              setTasks(prev =>
                 prev.map(t => {
                   if (t.id === task.id) {
                     let newStyles: TaskStyles;
                     // Asegúrate de que progress sea un número
                     const progressNum = typeof progress === 'number' ? progress : 0;
-                    
+
                     if (t.id.toString().startsWith('project-') || t.type === 'project') {
                       newStyles = Number(progressNum) === 100 ? COLORS.PROJECT.COMPLETED : COLORS.PROJECT.PENDING;
                     } else if (t.id.toString().startsWith('subtask-') || t.isSubtask) {
@@ -800,9 +815,9 @@ const AdvancedGanttChart = () => {
                     } else {
                       newStyles = Number(progressNum) === 100 ? COLORS.TASK.COMPLETED : COLORS.TASK.PENDING;
                     }
-                    return { 
-                      ...t, 
-                      progress: progressNum, 
+                    return {
+                      ...t,
+                      progress: progressNum,
                       styles: {
                         backgroundColor: newStyles.backgroundColor,
                         progressColor: newStyles.progressColor,
@@ -814,28 +829,28 @@ const AdvancedGanttChart = () => {
                   return t;
                 })
               );
-              
-              
+
+
               // Si la tarea seleccionada es la que se actualizó, actualizar también el panel de detalles
               if (selectedTask && selectedTask.id === task.id) {
                 // Determinar estilos para la tarea seleccionada
                 let newStyles: TaskStyles;
                 const progressNum = typeof progress === 'number' ? progress : 0;
-                
+
                 if (selectedTask.type === 'project') {
-                  newStyles = Number(progressNum) === 100 
-                    ? COLORS.PROJECT.COMPLETED 
+                  newStyles = Number(progressNum) === 100
+                    ? COLORS.PROJECT.COMPLETED
                     : COLORS.PROJECT.PENDING;
                 } else if (selectedTask.isSubtask) {
-                  newStyles = Number(progressNum) === 100 
-                    ? COLORS.SUBTASK.COMPLETED 
+                  newStyles = Number(progressNum) === 100
+                    ? COLORS.SUBTASK.COMPLETED
                     : COLORS.SUBTASK.PENDING;
                 } else {
-                  newStyles = Number(progressNum) === 100 
-                    ? COLORS.TASK.COMPLETED 
+                  newStyles = Number(progressNum) === 100
+                    ? COLORS.TASK.COMPLETED
                     : COLORS.TASK.PENDING;
                 }
-                
+
                 setSelectedTask({
                   ...selectedTask,
                   progress: progressNum,
@@ -847,7 +862,7 @@ const AdvancedGanttChart = () => {
                   }
                 });
               }
-              
+
               // También actualizar en el backend
               const progressNum = typeof progress === 'number' ? progress : 0;
               updateElementProgress(task.id.toString(), progressNum)
@@ -873,7 +888,7 @@ const AdvancedGanttChart = () => {
             projectBackgroundColor="#bb8fce"
             projectBackgroundSelectedColor="#a569bd"
           />
-          <GanttDependencyLines dependencies={filteredTasks.flatMap((t) => 
+          <GanttDependencyLines dependencies={filteredTasks.flatMap((t) =>
             Array.isArray(t.dependencies) ? t.dependencies.map((dep) => ({ fromId: dep, toId: t.id })) : []
           )} />
         </div>
@@ -882,9 +897,9 @@ const AdvancedGanttChart = () => {
       <Offcanvas show={showDetails} onHide={() => setShowDetails(false)} placement="end">
         <Offcanvas.Header closeButton>
           <Offcanvas.Title>
-            {selectedTask?.type === 'project' ? 'Detalles del Proyecto' : 
-             selectedTask?.isSubtask === true ? 'Detalles de Subtarea' : 
-             'Detalles de Tarea'}
+            {selectedTask?.type === 'project' ? 'Detalles del Proyecto' :
+              selectedTask?.isSubtask === true ? 'Detalles de Subtarea' :
+                'Detalles de Tarea'}
           </Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body>
@@ -892,17 +907,17 @@ const AdvancedGanttChart = () => {
             <>
               <div className="d-flex justify-content-between align-items-start mb-2">
                 <h5>{selectedTask.name}</h5>
-                <Badge 
+                <Badge
                   bg={
-                    Number(selectedTask.progress) === 100 ? 'success' : 
-                    Number(selectedTask.progress) > 0 ? 'primary' : 'secondary'
+                    Number(selectedTask.progress) === 100 ? 'success' :
+                      Number(selectedTask.progress) > 0 ? 'primary' : 'secondary'
                   }
                 >
-                  {Number(selectedTask.progress) === 100 ? 'Completado' : 
-                   Number(selectedTask.progress) > 0 ? 'En Progreso' : 'Pendiente'}
+                  {Number(selectedTask.progress) === 100 ? 'Completado' :
+                    Number(selectedTask.progress) > 0 ? 'En Progreso' : 'Pendiente'}
                 </Badge>
               </div>
-              
+
               <Nav variant="tabs" className="mb-3" activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'detalles')}>
                 <Nav.Item>
                   <Nav.Link eventKey="detalles">Detalles</Nav.Link>
@@ -913,7 +928,7 @@ const AdvancedGanttChart = () => {
                   </Nav.Link>
                 </Nav.Item>
               </Nav>
-              
+
               <Tab.Content>
                 <Tab.Pane active={activeTab === 'detalles'}>
                   <p><strong>Inicio:</strong> {selectedTask.start instanceof Date ? selectedTask.start.toLocaleDateString() : 'Fecha inválida'}</p>
@@ -958,23 +973,23 @@ const AdvancedGanttChart = () => {
                         </Form.Group>
                         <Form.Group className="mb-2">
                           <Form.Label>Fecha de Inicio</Form.Label>
-                          <Form.Control 
-                            type="date" 
-                            name="fecha_inicio" 
-                            value={taskForm.fecha_inicio} 
-                            onChange={(e) => handleInputChange(e, 'task')} 
-                            min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''} 
+                          <Form.Control
+                            type="date"
+                            name="fecha_inicio"
+                            value={taskForm.fecha_inicio}
+                            onChange={(e) => handleInputChange(e, 'task')}
+                            min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''}
                             max={selectedTask.end instanceof Date ? selectedTask.end.toISOString().split('T')[0] : ''}
                           />
                         </Form.Group>
                         <Form.Group className="mb-3">
                           <Form.Label>Fecha de Vencimiento</Form.Label>
-                          <Form.Control 
-                            type="date" 
-                            name="fecha_vencimiento" 
-                            value={taskForm.fecha_vencimiento} 
-                            onChange={(e) => handleInputChange(e, 'task')} 
-                            min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''} 
+                          <Form.Control
+                            type="date"
+                            name="fecha_vencimiento"
+                            value={taskForm.fecha_vencimiento}
+                            onChange={(e) => handleInputChange(e, 'task')}
+                            min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''}
                             max={selectedTask.end instanceof Date ? selectedTask.end.toISOString().split('T')[0] : ''}
                           />
                         </Form.Group>
@@ -1006,23 +1021,23 @@ const AdvancedGanttChart = () => {
                         </Form.Group>
                         <Form.Group className="mb-2">
                           <Form.Label>Fecha de Inicio</Form.Label>
-                          <Form.Control 
-                            type="date" 
-                            name="fecha_inicio" 
-                            value={subtaskForm.fecha_inicio} 
-                            onChange={(e) => handleInputChange(e, 'subtask')} 
-                            min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''} 
+                          <Form.Control
+                            type="date"
+                            name="fecha_inicio"
+                            value={subtaskForm.fecha_inicio}
+                            onChange={(e) => handleInputChange(e, 'subtask')}
+                            min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''}
                             max={selectedTask.end instanceof Date ? selectedTask.end.toISOString().split('T')[0] : ''}
                           />
                         </Form.Group>
                         <Form.Group className="mb-3">
                           <Form.Label>Fecha de Vencimiento</Form.Label>
-                          <Form.Control 
-                            type="date" 
-                            name="fecha_vencimiento" 
-                            value={subtaskForm.fecha_vencimiento} 
-                            onChange={(e) => handleInputChange(e, 'subtask')} 
-                            min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''} 
+                          <Form.Control
+                            type="date"
+                            name="fecha_vencimiento"
+                            value={subtaskForm.fecha_vencimiento}
+                            onChange={(e) => handleInputChange(e, 'subtask')}
+                            min={selectedTask.start instanceof Date ? selectedTask.start.toISOString().split('T')[0] : ''}
                             max={selectedTask.end instanceof Date ? selectedTask.end.toISOString().split('T')[0] : ''}
                           />
                         </Form.Group>
@@ -1032,9 +1047,9 @@ const AdvancedGanttChart = () => {
                   )}
                 </Tab.Pane>
                 <Tab.Pane active={activeTab === 'usuarios'}>
-                  <UserAssignment 
-                    itemId={selectedTask.id} 
-                    itemType={getSelectedItemType()} 
+                  <UserAssignment
+                    itemId={selectedTask.id}
+                    itemType={getSelectedItemType()}
                     onUsersUpdated={refreshGanttData}
                   />
                 </Tab.Pane>
