@@ -63,18 +63,75 @@ exports.getTabulacionesStats = async (req, res) => {
       ORDER BY cantidad DESC
     `, [...params]))[0];
 
-    // 5. Ranking árboles (por nombre)
-    const rankingTab = (await pool.query(`
-      SELECT 
-        SUBSTRING_INDEX(SUBSTRING_INDEX(nombre_tarea, 'Tab.', -1), ' ', 1) AS arbol,
-        COUNT(*) AS cantidad
+    // 5. Obtener datos crudos para procesamiento avanzado
+    const rawTabulaciones = (await pool.query(`
+      SELECT nombre_tarea
       FROM tabulaciones_data
       ${baseWhere}
-      AND nombre_tarea LIKE '%Tab.%'
-      GROUP BY arbol
-      ORDER BY cantidad DESC
-      LIMIT 20
+      ORDER BY fecha_creacion DESC
     `, [...params]))[0];
+
+    // Extraer los árboles de tabulación mediante procesamiento en JS
+    const arbolesConteo = {};
+    rawTabulaciones.forEach(tarea => {
+      if (!tarea.nombre_tarea) return;
+      
+      // Normalizar el nombre a minúsculas
+      const nombreNormalizado = tarea.nombre_tarea.toLowerCase().trim();
+      
+      // Buscar patrones "tab.xxx" o "tab.xxx.xxx"
+      const regexTab = /\b(tab\.[a-z0-9]+(\.[a-z0-9]+)?)\b/i;
+      const matchTab = nombreNormalizado.match(regexTab);
+      
+      // Buscar variantes como "tap.xxx" (error común)
+      const regexTap = /\b(tap\.[a-z0-9]+(\.[a-z0-9]+)?)\b/i;
+      const matchTap = nombreNormalizado.match(regexTap);
+      
+      let arbol = null;
+      
+      if (matchTab) {
+        arbol = matchTab[1];
+      } else if (matchTap) {
+        arbol = matchTap[1].replace('tap.', 'tab.');
+      } else if (nombreNormalizado.includes('-')) {
+        // Buscar después de un guión
+        const partes = nombreNormalizado.split('-');
+        for (const parte of partes) {
+          const trimmed = parte.trim();
+          if (trimmed.startsWith('tab.')) {
+            const soloTab = trimmed.match(/tab\.[a-z0-9]+(\.[a-z0-9]+)?/i);
+            arbol = soloTab ? soloTab[0] : trimmed;
+            break;
+          }
+        }
+      } else if (nombreNormalizado.includes('tab.')) {
+        // Buscar "tab." en cualquier posición
+        const inicio = nombreNormalizado.indexOf('tab.');
+        let fin = nombreNormalizado.indexOf(' ', inicio);
+        if (fin === -1) fin = nombreNormalizado.length;
+        arbol = nombreNormalizado.substring(inicio, fin);
+      } else if (nombreNormalizado.includes('customer')) {
+        arbol = 'customer';
+      } else if (nombreNormalizado.includes('soporte')) {
+        arbol = 'soporte';
+      }
+      
+      if (arbol) {
+        // Normalizar el arbol (quitar números, versiones, etc.)
+        arbol = arbol.replace(/\s+[0-9]+(\s+\([0-9]+\))?$/, '')  // "tab.xxx 1" o "tab.xxx 1 (1)"
+                  .replace(/\s+V[0-9]+$/i, '')                    // "tab.xxx V123"
+                  .replace(/\.xlsx$/, '')                         // extensiones
+                  .trim();
+        
+        arbolesConteo[arbol] = (arbolesConteo[arbol] || 0) + 1;
+      }
+    });
+
+    // Convertir conteo a array para el ranking
+    const rankingTab = Object.entries(arbolesConteo)
+      .map(([arbol, cantidad]) => ({ arbol, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad)
+      .slice(0, 10);
 
     // Añadir información de diagnóstico
     const diagnostico = (await pool.query(`
@@ -94,6 +151,7 @@ exports.getTabulacionesStats = async (req, res) => {
       completadoPor,
       creadoPor,
       rankingTab,
+      rawTabulaciones,  // Incluir datos crudos para procesamiento en frontend
       diagnostico
     });
   } catch (error) {

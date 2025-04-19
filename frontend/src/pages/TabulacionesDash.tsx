@@ -27,6 +27,263 @@ interface TabulacionesStats {
   };
 }
 
+// Lista oficial de árboles de tabulación
+const ARBOLES_OFICIALES = [
+  "tab.recupero",
+  "tab.abono",
+  "tab.admrosout",
+  "tab.altovalor",
+  "tab.bocable",
+  "tab.boportafija",
+  "tab.borecupero",
+  "tab.cablebo",
+  "tab.cablecbc",
+  "tab.cablecbs",
+  "tab.CABLECUSTOMER",
+  "tab.cablecustomuy",
+  "tab.cablesoporte",
+  "tab.caprofan",
+  "tab.carteraexecutive",
+  "tab.cater",
+  "tab.cbssmb",
+  "tab.cgr",
+  "tab.clarinpapel",
+  "tab.cncustomer",
+  "tab.cnsoporte",
+  "tab.cocmx.relllamadoreshfc",
+  "tab.comcorpo",
+  "tab.conexiontotal",
+  "tab.contencioncv",
+  "tab.Converg",
+  "tab.corpoventasout",
+  "tab.custoconvergente",
+  "tab.empresasmovilht",
+  "tab.Empresasmovilintegral",
+  "tab.empresasreten",
+  "tab.facturaunificada",
+  "tab.fidemigra",
+  "tab.fijaintegral",
+  "tab.fijaretencion",
+  "tab.fijasoporte",
+  "tab.flowappuy",
+  "tab.gestionesuy",
+  "tab.gestionesvarias",
+  "tab.gestorescobranza",
+  "tab.ggcccorpcom",
+  "tab.ggcccorptec",
+  "tab.hightech",
+  "tab.hightechcorpo",
+  "tab.icfs.solremota",
+  "tab.icmc.customerconvnplay",
+  "tab.icmc.recuperocustomer",
+  "tab.icmc.recuperosoporte",
+  "tab.icmc.soportenplay",
+  "tab.iffs.llamadasrecibidasyrealizadas",
+  "tab.iffs.soportecomobile",
+  "tab.ifmc.customerftth",
+  "tab.ifmc.soporteftth",
+  "tab.ifmg.profijaretencion",
+  "tab.imec.carteraexecutive",
+  "tab.immc.personal",
+  "tab.immc.prepago",
+  "tab.immz.mdafan",
+  "tab.integralb2b",
+  "tab.integralcorpo",
+  "tab.integralsmb",
+  "tab.isladegra",
+  "tab.isladigitclasicohd",
+  "tab.masit",
+  "tab.migra",
+  "tab.migrafansmb",
+  "tab.ocmb.bogestvarias",
+  "tab.ocmb.bopbu",
+  "tab.ocmb.boreclamosscore",
+  "tab.ocmb.boreintegrogral",
+  "tab.ocmb.reclamospaginas",
+  "tab.ocmc.fibersecurity2",
+  "tab.ocmg.retenhbo",
+  "tab.offs.cdr",
+  "tab.offs.cerochocientos",
+  "tab.offs.dyr",
+  "tab.offs.hfc",
+  "tab.ofmc.migratelefoniahiq",
+  "tab.ommg.portoutivr",
+  "tab.ommg.probajasmovil",
+  "tab.ommv.proventas",
+  "tab.ventasin",
+  "tab.onbcentric",
+  "tab.onboarding",
+  "tab.poolcorpo",
+  "tab.porta",
+  "tab.ocmv.portaexpertos",
+  "tab.portanoconv",
+  "tab.portawb",
+  "tab.portawinsoho",
+  "tab.portacancelada",
+  "tab.ppay",
+  "tab.prorecudownapre",
+  "tab.prospfija",
+  "tab.pymesout",
+  "tab.recuperouy",
+  "tab.rellamadoresmovil",
+  "tab.REPACTASERVICEICD",
+  "tab.retencioncv",
+  "tab.retenciones",
+  "tab.retenout",
+  "tab.smarthomeventas",
+  "tab.smbcomercial",
+  "tab.smbmovilintegral",
+  "tab.smbreten",
+  "tab.soportefanftth",
+  "tab.soportemovil",
+  "tab.soporteonb",
+  "tab.soportesmb",
+  "tab.tecnicacorpo",
+  "tab.TeleRed",
+  "tab.teleredcustomer",
+  "tab.unet",
+  "tab.ventacorpomigraout",
+  "tab.ventaincv",
+  "tab.ventascorpo",
+  "tab.vtasolucionesciber",
+  "tab.vtasolucionesiot",
+  "tab.vtexfan"
+];
+
+// Función para verificar si un árbol debe ser excluido (sin clasificar)
+const esArbolExcluido = (arbol: string): boolean => {
+  if (!arbol) return true;
+  const normalizado = arbol.toLowerCase().trim();
+  return normalizado === 'sin clasificar' || normalizado === 'sinclasificar';
+};
+
+// Normaliza un nombre y extrae todos los patrones tab.xxx que encuentre
+function extraerTodosLosTabsDeNombre(nombre: string): string[] {
+  if (!nombre) return ['Sin clasificar'];
+  
+  // Normalizar: convertir a minúsculas y eliminar espacios extra
+  const normalizado = nombre.toLowerCase().trim();
+  
+  // Buscar todos los patrones "tab.xxx" o "tab.xxx.xxx"
+  const regex = /\b(tab\.[a-z0-9]+(\.[a-z0-9]+)?)\b/gi;
+  const matches = normalizado.match(regex);
+  
+  // También buscar patrones "tap.xxx" (error común de escritura)
+  const regexTap = /\b(tap\.[a-z0-9]+(\.[a-z0-9]+)?)\b/gi;
+  const matchesTap = normalizado.match(regexTap);
+  
+  const resultado: string[] = [];
+  
+  // Agregar coincidencias de tab.
+  if (matches && matches.length > 0) {
+    matches.forEach(match => resultado.push(match));
+  }
+  
+  // Agregar coincidencias de tap. corrigiendo a tab.
+  if (matchesTap && matchesTap.length > 0) {
+    matchesTap.forEach(match => resultado.push(match.replace('tap.', 'tab.')));
+  }
+  
+  // Si no encontramos nada, usar estrategias alternativas para casos especiales
+  if (resultado.length === 0) {
+    // Buscar después de separadores comunes
+    const posiblesSeparadores = ['-', ':', '|', '–', '—'];
+    for (const sep of posiblesSeparadores) {
+      if (normalizado.includes(sep)) {
+        const partes = normalizado.split(sep);
+        // Buscar en cada parte después del separador
+        for (const parte of partes) {
+          const trimmed = parte.trim();
+          if (trimmed.startsWith('tab.')) {
+            // Extraer solo la parte que comienza con tab.
+            const soloTab = trimmed.match(/tab\.[a-z0-9]+(\.[a-z0-9]+)?/i);
+            if (soloTab) resultado.push(soloTab[0]);
+            else resultado.push(trimmed);
+          }
+        }
+      }
+    }
+  }
+  
+  // Si aún no encontramos nada, buscar tab. en cualquier posición
+  if (resultado.length === 0 && normalizado.includes('tab.')) {
+    const inicio = normalizado.indexOf('tab.');
+    let fin = normalizado.indexOf(' ', inicio);
+    if (fin === -1) fin = normalizado.length;
+    resultado.push(normalizado.substring(inicio, fin));
+  }
+  
+  // Eliminar sufijos numéricos comunes y versiones (por ejemplo, "tab.nombre 1" o "tab.nombre V01082024")
+  const resultadoFinal = resultado.map(arbol => {
+    // Eliminar números y versiones al final
+    return arbol.replace(/\s+[0-9]+(\s+\([0-9]+\))?$/, '')  // Eliminar "tab.xxx 1" o "tab.xxx 1 (1)"
+                .replace(/\s+V[0-9]+$/i, '')                // Eliminar "tab.xxx V123"
+                .replace(/\.xlsx$/, '')                     // Eliminar extensiones de archivo
+                .trim();
+  });
+  
+  // Si no encontramos un patrón tab, identificar palabras clave
+  if (resultadoFinal.length === 0) {
+    // Identificar por palabras clave comunes
+    if (normalizado.includes('customer')) return ['customer'];
+    if (normalizado.includes('soporte')) return ['soporte'];
+    if (normalizado.includes('abono')) return ['tab.abono'];
+    if (normalizado.includes('alto valor')) return ['tab.altovalor'];
+    
+    return ['Sin clasificar'];
+  }
+  
+  return resultadoFinal;
+}
+
+// Agrupa tareas por árbol correctamente identificado
+function agruparPorArbol(tareas: any[]): { arbol: string; cantidad: number }[] {
+  if (!tareas || !Array.isArray(tareas) || tareas.length === 0) return [];
+  
+  const conteo: Record<string, number> = {};
+  
+  // Procesar cada tarea y extraer todos los árboles que contiene
+  tareas.forEach(tarea => {
+    if (!tarea.nombre_tarea) return;
+    
+    const arboles = extraerTodosLosTabsDeNombre(tarea.nombre_tarea);
+    
+    arboles.forEach(arbol => {
+      // Saltar árboles "Sin clasificar"
+      if (esArbolExcluido(arbol)) return;
+      
+      // Normalizar para evitar duplicados por mayúsculas/minúsculas
+      const arbolNormalizado = arbol.toLowerCase();
+      conteo[arbolNormalizado] = (conteo[arbolNormalizado] || 0) + 1;
+    });
+  });
+  
+  // Convertir a formato para gráfica y ordenar por cantidad
+  return Object.entries(conteo)
+    .map(([arbol, cantidad]) => {
+      // Mejorar la presentación para la gráfica
+      let nombreMostrar = arbol;
+      
+      // Si es una categoría especial sin tab. explícito
+      if (arbol === 'customer' || arbol === 'soporte') {
+        nombreMostrar = arbol.charAt(0).toUpperCase() + arbol.slice(1);
+      }
+      // Para los demás, verificar si es un árbol oficial conocido
+      else {
+        const arbolOficial = ARBOLES_OFICIALES.find(
+          a => a.toLowerCase() === arbol.toLowerCase()
+        );
+        if (arbolOficial) {
+          nombreMostrar = arbolOficial; // Usar nombre oficial con mayúsculas correctas
+        }
+      }
+      
+      return { arbol: nombreMostrar, cantidad };
+    })
+    .filter(item => !esArbolExcluido(item.arbol)) // Filtrar los no clasificados con función especializada
+    .sort((a, b) => b.cantidad - a.cantidad);
+}
+
 const TabulacionesDash = () => {
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -35,6 +292,7 @@ const TabulacionesDash = () => {
   const [error, setError] = useState('');
   const [selectedYear, setSelectedYear] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState('all');
+  const [rawTabulaciones, setRawTabulaciones] = useState<any[]>([]);
 
   const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed);
   const handleLogout = () => {
@@ -48,6 +306,43 @@ const TabulacionesDash = () => {
       const query = `year=${selectedYear}&month=${selectedMonth}`;
       const res = await axios.get(`http://localhost:5000/api/tabulaciones/stats?${query}`);
       
+      // Almacenar datos crudos para procesamiento local
+      let tareasParaAnalizar: any[] = [];
+      
+      // Si el backend envía rawTabulaciones, úsalas
+      if (res.data.rawTabulaciones && Array.isArray(res.data.rawTabulaciones)) {
+        tareasParaAnalizar = res.data.rawTabulaciones;
+      } 
+      // Si no, tratar de extraer de las tareas existentes si están disponibles
+      else if (res.data.tareas && Array.isArray(res.data.tareas)) {
+        tareasParaAnalizar = res.data.tareas;
+      }
+      
+      // Si no hay datos crudos, usar el ranking existente pero filtrar estrictamente
+      let rankingCalculado = (res.data.rankingTab || [])
+        .filter((item: any) => 
+          !esArbolExcluido(item.arbol) && 
+          item.arbol !== 'sin clasificar' && 
+          item.arbol?.toLowerCase() !== 'sin clasificar'
+        )
+        .slice(0, 10);
+      
+      // Si tenemos datos para analizar, generar nuestro propio ranking
+      if (tareasParaAnalizar.length > 0) {
+        const rankingDetallado = agruparPorArbol(tareasParaAnalizar)
+          .filter(item => 
+            !esArbolExcluido(item.arbol) && 
+            item.arbol !== 'sin clasificar' && 
+            item.arbol?.toLowerCase() !== 'sin clasificar'
+          )
+          .slice(0, 10);
+        
+        // Usar siempre la vista detallada
+        rankingCalculado = rankingDetallado;
+        
+        setRawTabulaciones(tareasParaAnalizar);
+      }
+      
       // Procesamiento de datos para asegurar que no haya valores nulos
       const processedData: TabulacionesStats = {
         total: res.data.total || 0,
@@ -57,23 +352,21 @@ const TabulacionesDash = () => {
           .filter((item: any) => item && item.fecha)
           .sort((a: any, b: any) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()),
         
-        // Datos agrupados por mes (si existe, sino crear array vacío)
+        // Datos agrupados por mes
         porMes: res.data.porMes || [],
         
-        // Filtrar usuarios nulos y limitar a top 10 para mejor visualización
+        // Filtrar usuarios nulos y limitar a top 7
         completadoPor: (res.data.completadoPor || [])
           .filter((item: any) => item && item.usuario)
           .slice(0, 7),
         
-        // Filtrar usuarios nulos y limitar a top 10
+        // Filtrar usuarios nulos y limitar a top 7
         creadoPor: (res.data.creadoPor || [])
           .filter((item: any) => item && item.usuario)
           .slice(0, 7),
         
-        // Filtrar árboles nulos y limitar a top 10
-        rankingTab: (res.data.rankingTab || [])
-          .filter((item: any) => item && item.arbol)
-          .slice(0, 7),
+        // Usar el ranking calculado
+        rankingTab: rankingCalculado,
           
         // Información de diagnóstico
         diagnostico: res.data.diagnostico
@@ -118,7 +411,6 @@ const TabulacionesDash = () => {
     }));
   };
   
-
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -462,11 +754,13 @@ const TabulacionesDash = () => {
                 <Col md={12}>
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
-                      <h5 className="fw-bold mb-3">Ranking Árboles de Tabulación</h5>
+                      <div className="d-flex justify-content-between align-items-center mb-3">
+                        <h5 className="fw-bold mb-0">Ranking Árboles de Tabulación</h5>
+                      </div>
                       {data.rankingTab && data.rankingTab.length > 0 ? (
                         <ResponsiveContainer width="100%" height={300}>
                           <BarChart 
-                            data={data.rankingTab} 
+                            data={data.rankingTab.filter(item => !esArbolExcluido(item.arbol))} 
                             layout="vertical"
                             margin={{ left: 120 }}
                           >
@@ -483,6 +777,7 @@ const TabulacionesDash = () => {
                               name="Tabulaciones"
                               fill={colors[1]} 
                               radius={[0, 4, 4, 0]}
+                              label={{ position: 'right', formatter: (val: any) => formatNumber(val) }}
                             />
                           </BarChart>
                         </ResponsiveContainer>
@@ -491,6 +786,16 @@ const TabulacionesDash = () => {
                           <p>No hay datos de árboles de tabulación disponibles</p>
                         </div>
                       )}
+                      
+                      {/* Información de procesamiento */}
+                      <div className="mt-3">
+                        <Alert variant="info" className="mb-0">
+                          <small>
+                            <i className="bi bi-info-circle me-2"></i>
+                            Ranking de los árboles de tabulación más solicitados
+                          </small>
+                        </Alert>
+                      </div>
                     </Card.Body>
                   </Card>
                 </Col>
