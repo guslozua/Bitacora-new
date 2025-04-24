@@ -12,7 +12,10 @@ import ItrackerUpload from './pages/ItrackerUpload';
 import ItrackerDash from './pages/ItrackerDash';
 import TabulacionesUpload from './pages/TabulacionesUpload';
 import TabulacionesDash from './pages/TabulacionesDash';
+import AbmDashboard from './pages/AbmDashboard';
+import AbmUpload from './pages/AbmUpload';
 import AdminPanel from './pages/AdminPanel';
+import PlacasDash from './pages/PlacasDash';
 import Error404 from './pages/Error404'; // Importa la página de error
 
 
@@ -30,6 +33,9 @@ const App: React.FC = () => {
 <Route path="/tabulaciones" element={<TabulacionesUpload />} />
 <Route path="/tabulacionesdash" element={<TabulacionesDash />} />
 <Route path="/admin" element={<AdminPanel />} />
+<Route path="/abmdashboard" element={<AbmDashboard />} />
+<Route path="/abm" element={<AbmUpload />} />
+<Route path="/placasdash" element={<PlacasDash />} />
 <Route path="*" element={<Error404 />} />
 </Routes>
 </SidebarVisibilityProvider>

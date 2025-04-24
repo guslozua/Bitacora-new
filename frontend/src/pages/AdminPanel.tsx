@@ -102,7 +102,7 @@ const AdminPanel: React.FC = () => {
   const sidebarItemsMeta: SidebarItemMeta[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'bi-speedometer2', color: '#3498db' },
     { id: 'proyectos', label: 'Proyectos', icon: 'bi-diagram-3-fill', color: '#2ecc71' },
-    { id: 'tareas', label: 'Tareas', icon: 'bi-list-task', color: '#f1c40f' },
+    { id: 'placas', label: 'Placas', icon: 'bi-list-task', color: '#f1c40f' },
     { id: 'usuarios', label: 'ABM Usuarios', icon: 'bi-people-fill', color: '#e74c3c' },
     { id: 'bitacora', label: 'Bitácora', icon: 'bi-journal-text', color: '#9b59b6' },
     { id: 'hitos', label: 'Hitos', icon: 'bi-flag-fill', color: '#1abc9c' },

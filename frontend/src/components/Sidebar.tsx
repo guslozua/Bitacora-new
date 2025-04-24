@@ -177,8 +177,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
   const menuItems = [
     { id: 'dashboard', icon: 'bi-speedometer2', label: 'Dashboard', route: '/dashboard' },
     { id: 'proyectos', icon: 'bi-diagram-3-fill', label: 'Proyectos', route: '/projects' },
-    { id: 'tareas', icon: 'bi-list-task', label: 'Tareas', route: '/tasks' },
-    { id: 'usuarios', icon: 'bi-people-fill', label: 'ABM Usuarios', route: '/users' },
+    { id: 'placas', icon: 'bi-list-task', label: 'Placas', route: '/placasdash' },
+    { id: 'usuarios', icon: 'bi-people-fill', label: 'ABM Usuarios', route: '/abmdashboard' },
     { id: 'bitacora', icon: 'bi-journal-text', label: 'Bitácora', route: '/bitacora' },
     { id: 'hitos', icon: 'bi-flag-fill', label: 'Hitos', route: '/hitos' },
     { id: 'itracker', icon: 'bi-hdd-network-fill', label: 'iTracker', route: '/itrackerdash' },

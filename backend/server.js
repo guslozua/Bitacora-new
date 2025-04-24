@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 // Importar rutas
@@ -15,6 +16,10 @@ const itrackerStatsRoutes = require('./routes/itrackerStats');
 const itrackerListRoutes = require('./routes/itrackerList');
 const tabulacionesRoutes = require('./routes/tabulaciones');
 const tabulacionesStatsRoutes = require('./routes/tabulacionesStats');
+const placasRoutes = require('./routes/placasRoutes');
+
+// Importar el programador de limpieza
+const { scheduleCleanup, cleanupUploadsFolder } = require('./utils/cleanupScheduler');
 
 // Inicializar Express
 const app = express();
@@ -25,10 +30,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Asegurar que la carpeta uploads exista
+const uploadsDir = path.join(__dirname, 'uploads');
+const fs = require('fs');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log('✅ Carpeta de uploads creada');
+}
 
 // reportes
 app.use('/api/reports', reportRoutes);
-
 
 // Rutas
 app.use('/api/auth', authRoutes);
@@ -42,6 +53,10 @@ app.use('/api/itracker/stats', itrackerStatsRoutes);
 app.use('/api/itracker', itrackerListRoutes);
 app.use('/api/tabulaciones', tabulacionesRoutes);
 app.use('/api/tabulaciones/stats', tabulacionesStatsRoutes);
+app.use('/api/abm/social', require('./routes/abmSocial'));
+app.use('/api/abm/pic', require('./routes/abmPic'));
+app.use('/api/abm/stats', require('./routes/abmStats'));
+app.use('/api/placas', placasRoutes);
 app.use('/api/permisos', require('./routes/permisoRoutes'));
 
 // Depuración: Listar rutas registradas en Express
@@ -74,4 +89,12 @@ app.get('/api/test', (req, res) => {
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT} 🚀`);
+  
+  // Ejecutar limpieza inicial al iniciar el servidor
+  console.log('Ejecutando limpieza inicial de la carpeta uploads...');
+  cleanupUploadsFolder();
+  
+  // Programar limpiezas periódicas
+  scheduleCleanup();
+  console.log('Sistema de limpieza automática de archivos configurado 🧹');
 });
