@@ -9,10 +9,14 @@ import {
   Offcanvas,
   Form,
 } from 'react-bootstrap';
+import { Tabs, Tab } from 'react-bootstrap';
+import KanbanBoard from '../components/KanbanBoard';
+import { ButtonGroup } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 import AdvancedGanttChart from '../components/AdvancedGanttChart';
+import '../styles/kanban.css';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
 
@@ -30,6 +34,7 @@ const Projects = () => {
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [showOffcanvas, setShowOffcanvas] = useState(false);
+  const [activeView, setActiveView] = useState<'gantt' | 'kanban'>('gantt');
   const [projectData, setProjectData] = useState<ProjectData>({
     name: '',
     description: '',
@@ -50,57 +55,57 @@ const Projects = () => {
         const config = {
           headers: { 'x-auth-token': token || '' },
         };
-        
+
         // Obtenemos datos de proyectos
         const projectsRes = await axios.get('http://localhost:5000/api/projects', config);
-        
+
         // Obtenemos datos de tareas
         const tasksRes = await axios.get('http://localhost:5000/api/tasks', config);
-        
+
         // Extraemos los datos relevantes
         const proyectos = projectsRes.data?.data || [];
         const tareas = tasksRes.data?.data || [];
-        
+
         // Calculamos los KPIs
-        
+
         // 1. Proyectos totales (nuevo)
         setProyectosTotales(proyectos.length);
-        
+
         // 2. Proyectos activos (corregido: solo los no completados)
-        const activos = proyectos.filter((proyecto: any) => 
+        const activos = proyectos.filter((proyecto: any) =>
           proyecto.estado !== 'completado' && proyecto.estado !== 'finalizado'
         ).length;
         setProyectosActivos(activos);
-        
+
         // 3. Tareas pendientes
-        const pendientes = tareas.filter((tarea: any) => 
+        const pendientes = tareas.filter((tarea: any) =>
           tarea.estado !== 'completada' && tarea.estado !== 'finalizada'
         ).length;
         setTareasPendientes(pendientes);
-        
+
         // 4. Porcentaje completado (proyectos completados / total de proyectos)
-        const proyectosCompletados = proyectos.filter((proyecto: any) => 
+        const proyectosCompletados = proyectos.filter((proyecto: any) =>
           proyecto.estado === 'completado' || proyecto.estado === 'finalizado'
         ).length;
-        
-        const porcentaje = proyectos.length > 0 
-          ? Math.round((proyectosCompletados / proyectos.length) * 100) 
+
+        const porcentaje = proyectos.length > 0
+          ? Math.round((proyectosCompletados / proyectos.length) * 100)
           : 0;
-        
+
         setPorcentajeCompletado(porcentaje);
-        
+
         // 5. Proyectos próximos a vencer (en los próximos 7 días)
         const hoy = new Date();
         const enUnaSemana = new Date();
         enUnaSemana.setDate(hoy.getDate() + 7);
-        
+
         const proximos = proyectos.filter((proyecto: any) => {
           const fechaFin = new Date(proyecto.fecha_fin);
           return fechaFin >= hoy && fechaFin <= enUnaSemana;
         }).length;
-        
+
         setProximosVencer(proximos);
-        
+
       } catch (error) {
         console.error('Error cargando datos del proyecto:', error);
       } finally {
@@ -191,8 +196,8 @@ const Projects = () => {
         <Container fluid className="py-4 px-4">
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h2 className="mb-0 fw-bold">Gestión de Proyectos</h2>
-            <Button 
-              variant="primary" 
+            <Button
+              variant="primary"
               className="shadow-sm"
               onClick={() => setShowOffcanvas(true)}
             >
@@ -225,7 +230,7 @@ const Projects = () => {
                     </Card.Body>
                   </Card>
                 </Col>
-                
+
                 <Col md={3} lg={true}>
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
@@ -241,7 +246,7 @@ const Projects = () => {
                     </Card.Body>
                   </Card>
                 </Col>
-                
+
                 <Col md={3} lg={true}>
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
@@ -257,7 +262,7 @@ const Projects = () => {
                     </Card.Body>
                   </Card>
                 </Col>
-                
+
                 <Col md={3} lg={true}>
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
@@ -273,7 +278,7 @@ const Projects = () => {
                     </Card.Body>
                   </Card>
                 </Col>
-                
+
                 <Col md={3} lg={true}>
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
@@ -291,13 +296,36 @@ const Projects = () => {
                 </Col>
               </Row>
 
-              {/* Diagrama de Gantt */}
+              {/* Vistas de proyectos (Gantt/Kanban) */}
               <Row className="g-4 mb-4">
                 <Col md={12}>
                   <Card className="border-0 shadow-sm mb-4">
                     <Card.Body>
-                      <h5 className="fw-bold mb-3">Diagrama de Gantt</h5>
-                      <AdvancedGanttChart />
+                      <div className="d-flex justify-content-between align-items-center mb-3">
+                        <h5 className="fw-bold mb-0">Gestión Visual de Proyectos</h5>
+                        <div>
+                          <ButtonGroup>
+                            <Button
+                              variant={activeView === 'gantt' ? 'primary' : 'outline-primary'}
+                              onClick={() => setActiveView('gantt')}
+                            >
+                              <i className="bi bi-bar-chart-line me-1"></i> Gantt
+                            </Button>
+                            <Button
+                              variant={activeView === 'kanban' ? 'primary' : 'outline-primary'}
+                              onClick={() => setActiveView('kanban')}
+                            >
+                              <i className="bi bi-kanban me-1"></i> Kanban
+                            </Button>
+                          </ButtonGroup>
+                        </div>
+                      </div>
+
+                      {activeView === 'gantt' ? (
+                        <AdvancedGanttChart />
+                      ) : (
+                        <KanbanBoard />
+                      )}
                     </Card.Body>
                   </Card>
                 </Col>
