@@ -33,6 +33,24 @@ exports.getItrackerStats = async (req, res) => {
       return rows;
     };
 
+    // Consulta para obtener la fecha del último registro cargado
+    const [ultimaActualizacionRes] = await pool.query(`
+      SELECT MAX(fecha_cierre) as ultima_fecha FROM itracker_data
+    `);
+    
+    // Formateamos la fecha a dd/mm/yyyy para consistencia con el formato usado en AbmDashboard
+    let ultimaActualizacion = 'Fecha no disponible';
+    if (ultimaActualizacionRes[0]?.ultima_fecha) {
+      const fechaUltima = new Date(ultimaActualizacionRes[0].ultima_fecha);
+      if (!isNaN(fechaUltima.getTime())) {
+        ultimaActualizacion = fechaUltima.toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+      }
+    }
+
     const total = (await runQuery("SELECT COUNT(*) AS total FROM itracker_data"))[0].total;
     const masivos = (await runQuery("SELECT COUNT(*) AS total FROM itracker_data", { condition: "t_1 = 'Incidentes Masivos'" }))[0].total;
     const puntuales = (await runQuery("SELECT COUNT(*) AS total FROM itracker_data", { condition: "t_1 = 'Incidentes Puntuales'" }))[0].total;
@@ -102,6 +120,7 @@ exports.getItrackerStats = async (req, res) => {
       usuariosCierre,
       porCentro,
       tags,
+      ultimaActualizacion // Añadimos la fecha de última actualización a la respuesta
     });
   } catch (error) {
     console.error('Error al obtener estadísticas de iTracker:', error);

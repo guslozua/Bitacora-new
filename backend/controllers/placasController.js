@@ -93,11 +93,36 @@ exports.createPlaca = async (req, res) => {
       causa_resolutiva
     } = req.body;
     
+    // Validaciones adicionales
+    if (!clase) {
+      return res.status(400).json({ error: 'La clase es obligatoria' });
+    }
+    
+    if (!sistema) {
+      return res.status(400).json({ error: 'El sistema es obligatorio' });
+    }
+    
+    // Para incidentes, el impacto es obligatorio
+    if (clase === 'Incidente' && !impacto) {
+      return res.status(400).json({ error: 'El impacto es obligatorio para incidentes' });
+    }
+    
+    // Para comunicados y mantenimientos, el impacto debe ser null
+    const finalImpacto = clase === 'Incidente' ? impacto : null;
+    
     // Calcular duración en minutos (si ambas fechas están presentes)
     let duracion = null;
     if (fecha_inicio && fecha_cierre) {
       const inicio = new Date(fecha_inicio);
       const cierre = new Date(fecha_cierre);
+      
+      // Validar que la fecha de cierre sea posterior a la de inicio
+      if (cierre <= inicio) {
+        return res.status(400).json({ 
+          error: 'La fecha de cierre debe ser posterior a la fecha de inicio' 
+        });
+      }
+      
       duracion = Math.round((cierre - inicio) / (1000 * 60)); // Duración en minutos
     }
     
@@ -108,7 +133,7 @@ exports.createPlaca = async (req, res) => {
         fecha_inicio, fecha_cierre, duracion, cerrado_por, causa_resolutiva
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        numero_placa, titulo, descripcion, impacto, 
+        numero_placa, titulo, descripcion, finalImpacto, 
         clase, sistema,
         fecha_inicio, fecha_cierre, duracion, cerrado_por, causa_resolutiva
       ]
@@ -143,11 +168,36 @@ exports.updatePlaca = async (req, res) => {
       causa_resolutiva
     } = req.body;
     
+    // Validaciones adicionales
+    if (!clase) {
+      return res.status(400).json({ error: 'La clase es obligatoria' });
+    }
+    
+    if (!sistema) {
+      return res.status(400).json({ error: 'El sistema es obligatorio' });
+    }
+    
+    // Para incidentes, el impacto es obligatorio
+    if (clase === 'Incidente' && !impacto) {
+      return res.status(400).json({ error: 'El impacto es obligatorio para incidentes' });
+    }
+    
+    // Para comunicados y mantenimientos, el impacto debe ser null
+    const finalImpacto = clase === 'Incidente' ? impacto : null;
+    
     // Calcular duración en minutos (si ambas fechas están presentes)
     let duracion = null;
     if (fecha_inicio && fecha_cierre) {
       const inicio = new Date(fecha_inicio);
       const cierre = new Date(fecha_cierre);
+      
+      // Validar que la fecha de cierre sea posterior a la de inicio
+      if (cierre <= inicio) {
+        return res.status(400).json({ 
+          error: 'La fecha de cierre debe ser posterior a la fecha de inicio' 
+        });
+      }
+      
       duracion = Math.round((cierre - inicio) / (1000 * 60)); // Duración en minutos
     }
     
@@ -158,7 +208,7 @@ exports.updatePlaca = async (req, res) => {
         fecha_inicio = ?, fecha_cierre = ?, duracion = ?, cerrado_por = ?, causa_resolutiva = ?
       WHERE id = ?`,
       [
-        numero_placa, titulo, descripcion, impacto,
+        numero_placa, titulo, descripcion, finalImpacto,
         clase, sistema,
         fecha_inicio, fecha_cierre, duracion, cerrado_por, causa_resolutiva,
         req.params.id
@@ -221,10 +271,40 @@ exports.getPlacasStats = async (req, res) => {
     );
     const total = totalResult[0].total;
     
-    // Placas por nivel de impacto
-    const [impactoResult] = await pool.query(
-      `SELECT impacto, COUNT(*) as cantidad FROM placas ${where} GROUP BY impacto`,
+    // Distribución por clase
+    const [porClaseResult] = await pool.query(
+      `SELECT clase, COUNT(*) as cantidad FROM placas ${where} GROUP BY clase`,
       params
+    );
+    
+    // Extraer conteo por clase
+    const porClase = {
+      Incidente: 0,
+      Comunicado: 0,
+      Mantenimiento: 0
+    };
+    
+    porClaseResult.forEach(item => {
+      if (porClase.hasOwnProperty(item.clase)) {
+        porClase[item.clase] = item.cantidad;
+      }
+    });
+    
+    // Placas por nivel de impacto (solo para Incidentes)
+    const impactoConditions = [...conditions];
+    impactoConditions.push('clase = "Incidente"');
+    
+    const impactoWhere = impactoConditions.length 
+      ? `WHERE ${impactoConditions.join(' AND ')}` 
+      : 'WHERE clase = "Incidente"';
+    
+    const impactoParams = conditions.length 
+      ? [...params, 'Incidente'] 
+      : ['Incidente'];
+    
+    const [impactoResult] = await pool.query(
+      `SELECT impacto, COUNT(*) as cantidad FROM placas ${impactoWhere} GROUP BY impacto`,
+      impactoParams
     );
     
     // Obtener conteo por impacto (o 0 si no hay)
@@ -232,51 +312,65 @@ exports.getPlacasStats = async (req, res) => {
     const impactoMedio = impactoResult.find(i => i.impacto === 'medio')?.cantidad || 0;
     const impactoAlto = impactoResult.find(i => i.impacto === 'alto')?.cantidad || 0;
     
-    // Placas por clase
-    const [porClaseResult] = await pool.query(
-      `SELECT clase, COUNT(*) as cantidad FROM placas ${where} GROUP BY clase`,
-      params
-    );
-    
     // Placas por sistema
     const [porSistemaResult] = await pool.query(
       `SELECT sistema, COUNT(*) as cantidad FROM placas ${where} GROUP BY sistema ORDER BY cantidad DESC LIMIT 10`,
       params
     );
     
-    // Placas por mes
-    let porMesQuery = `
+    // SECCIÓN CORREGIDA: Placas por mes
+    // Determinar el año para las consultas (tanto apertura como cierre)
+    let yearFilter = year;
+    if (!yearFilter || yearFilter === 'all') {
+      // Si no hay año seleccionado, usar el año actual
+      const currentDate = new Date();
+      yearFilter = currentDate.getFullYear().toString();
+    }
+
+    // Consulta para placas por mes (fecha de apertura)
+    let porMesAperturaQuery = `
       SELECT MONTH(fecha_inicio) as mes, COUNT(*) as cantidad 
       FROM placas 
+      WHERE YEAR(fecha_inicio) = ?
     `;
-    
-    let porMesParams = [];
-    
-    if (year && year !== 'all') {
-      if (conditions.length > 0) {
-        porMesQuery += `WHERE YEAR(fecha_inicio) = ? `;
-      } else {
-        porMesQuery += `WHERE YEAR(fecha_inicio) = YEAR(CURDATE()) `;
-      }
-      
-      if (year !== 'all') {
-        porMesQuery = `
-          SELECT MONTH(fecha_inicio) as mes, COUNT(*) as cantidad 
-          FROM placas 
-          WHERE YEAR(fecha_inicio) = ?
-        `;
-        porMesParams = [year];
-      }
-    } else {
-      porMesQuery += `WHERE YEAR(fecha_inicio) = YEAR(CURDATE()) `;
+
+    let porMesAperturaParams = [yearFilter];
+
+    // Si hay filtro de mes para apertura, aplicarlo
+    if (month && month !== 'all') {
+      porMesAperturaQuery += ` AND MONTH(fecha_inicio) = ?`;
+      porMesAperturaParams.push(month);
     }
+
+    porMesAperturaQuery += ` GROUP BY mes ORDER BY mes`;
+
+    // Consulta para placas por mes (fecha de cierre)
+    let porMesCierreQuery = `
+      SELECT MONTH(fecha_cierre) as mes, COUNT(*) as cantidad 
+      FROM placas 
+      WHERE fecha_cierre IS NOT NULL AND YEAR(fecha_cierre) = ?
+    `;
+
+    let porMesCierreParams = [yearFilter];
+
+    // Si hay filtro de mes para cierre, aplicarlo
+    if (month && month !== 'all') {
+      porMesCierreQuery += ` AND MONTH(fecha_cierre) = ?`;
+      porMesCierreParams.push(month);
+    }
+
+    porMesCierreQuery += ` GROUP BY mes ORDER BY mes`;
+
+    // Añadir logs para depuración
+    console.log("Filtros aplicados - Año:", yearFilter, "Mes:", month || "todos");
+    console.log("Query apertura:", porMesAperturaQuery, "Params:", porMesAperturaParams);
+    console.log("Query cierre:", porMesCierreQuery, "Params:", porMesCierreParams);
+
+    // Ejecutar ambas consultas
+    const [porMesAperturaResult] = await pool.query(porMesAperturaQuery, porMesAperturaParams);
+    const [porMesCierreResult] = await pool.query(porMesCierreQuery, porMesCierreParams);
     
-    porMesQuery += `GROUP BY mes ORDER BY mes`;
-    
-    const [porMesResult] = await pool.query(porMesQuery, porMesParams);
-    
-    // Placas por duración promedio (en minutos)
-    // CORREGIDO: Usar AND en lugar de un segundo WHERE
+    // Duración promedio general (de todas las placas cerradas)
     let duracionQuery = `
       SELECT AVG(duracion) as promedio_duracion 
       FROM placas 
@@ -316,39 +410,73 @@ exports.getPlacasStats = async (req, res) => {
     
     const [usuariosResult] = await pool.query(usuariosQuery, params);
     
-    // Duración promedio por nivel de impacto
+    // ACTUALIZADO: Duración promedio, máxima y mínima por nivel de impacto (solo para incidentes)
     let duracionPorImpactoQuery = `
-      SELECT impacto, AVG(duracion) as promedio 
+      SELECT 
+        impacto, 
+        ROUND(AVG(duracion)) as promedio, 
+        MAX(duracion) as maximo, 
+        MIN(duracion) as minimo,
+        COUNT(*) as cantidad
       FROM placas 
+      WHERE duracion IS NOT NULL AND clase = 'Incidente'
     `;
     
     if (conditions.length > 0) {
-      duracionPorImpactoQuery += `${where} AND duracion IS NOT NULL`;
-    } else {
-      duracionPorImpactoQuery += `WHERE duracion IS NOT NULL`;
+      duracionPorImpactoQuery = `
+        SELECT 
+          impacto, 
+          ROUND(AVG(duracion)) as promedio, 
+          MAX(duracion) as maximo, 
+          MIN(duracion) as minimo,
+          COUNT(*) as cantidad
+        FROM placas 
+        WHERE duracion IS NOT NULL AND clase = 'Incidente' AND ${conditions.join(' AND ')}
+      `;
     }
     
     duracionPorImpactoQuery += ` GROUP BY impacto`;
     
     const [duracionPorImpactoResult] = await pool.query(duracionPorImpactoQuery, params);
     
+    // NUEVO: Asegurarse de que todos los niveles de impacto estén incluidos
+    const impactosRequeridos = ['alto', 'medio', 'bajo'];
+    const duracionPorImpactoCompleto = impactosRequeridos.map(impacto => {
+      // Busca si el nivel de impacto ya está en los resultados
+      const existente = duracionPorImpactoResult.find(item => item.impacto === impacto);
+      
+      if (existente) {
+        return existente; // Si existe, úsalo tal cual
+      } else {
+        // Si no existe, crea un objeto con valores null
+        return {
+          impacto,
+          promedio: null,
+          maximo: null,
+          minimo: null,
+          cantidad: 0
+        };
+      }
+    });
+    
     res.json({
       total,
+      por_clase: porClase,
       por_impacto: {
         bajo: impactoBajo,
         medio: impactoMedio,
         alto: impactoAlto
       },
-      por_clase: porClaseResult,
       por_sistema: porSistemaResult,
-      por_mes: porMesResult,
+      por_mes: porMesAperturaResult,
+      por_mes_cierre: porMesCierreResult,
       duracion_promedio: promedioDuracion,
       estado: {
         resueltas: estadoResult[0].resueltas,
         pendientes: estadoResult[0].pendientes
       },
       top_usuarios: usuariosResult,
-      duracion_por_impacto: duracionPorImpactoResult
+      duracion_por_impacto: duracionPorImpactoCompleto
     });
   } catch (error) {
     console.error('Error al obtener estadísticas de placas:', error);

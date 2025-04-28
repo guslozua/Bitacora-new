@@ -5,6 +5,9 @@ import { useSidebarVisibility } from '../services/SidebarVisibilityContext';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
+// Importamos el componente modal que acabamos de crear
+import AbmUploadModal from '../components/AbmUploadModal';
+
 // Definir interfaces para mejorar el tipado
 interface SidebarVisibility {
   [key: string]: boolean;
@@ -48,6 +51,7 @@ const AdminPanel: React.FC = () => {
   // Estados para modales
   const [showItrackerModal, setShowItrackerModal] = useState<boolean>(false);
   const [showTabulacionesModal, setShowTabulacionesModal] = useState<boolean>(false);
+  const [showAbmUploadModal, setShowAbmUploadModal] = useState<boolean>(false);
   
   // Estados para carga de archivos
   const [itrackerFile, setItrackerFile] = useState<File | null>(null);
@@ -102,11 +106,11 @@ const AdminPanel: React.FC = () => {
   const sidebarItemsMeta: SidebarItemMeta[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'bi-speedometer2', color: '#3498db' },
     { id: 'proyectos', label: 'Proyectos', icon: 'bi-diagram-3-fill', color: '#2ecc71' },
-    { id: 'placas', label: 'Placas', icon: 'bi-list-task', color: '#f1c40f' },
+    { id: 'placas', label: 'Placas', icon: 'bi-clipboard', color: '#f1c40f' },
     { id: 'usuarios', label: 'ABM Usuarios', icon: 'bi-people-fill', color: '#e74c3c' },
     { id: 'bitacora', label: 'Bitácora', icon: 'bi-journal-text', color: '#9b59b6' },
     { id: 'hitos', label: 'Hitos', icon: 'bi-flag-fill', color: '#1abc9c' },
-    { id: 'itracker', label: 'iTracker', icon: 'bi-hdd-network-fill', color: '#3498db' },
+    { id: 'itracker', label: 'iTracker', icon: 'bi-circle', color: '#3498db' },
     { id: 'tabulaciones', label: 'Tabulaciones', icon: 'bi-table', color: '#2ecc71' },
     { id: 'incidencias', label: 'Inc. en Guardia', icon: 'bi-shield-exclamation', color: '#f1c40f' },
     { id: 'stats', label: 'Estadísticas', icon: 'bi-graph-up', color: '#e74c3c' },
@@ -240,6 +244,13 @@ const AdminPanel: React.FC = () => {
     setTabulacionesFile(null);
     setUploadMessage('');
     setUploadError('');
+  };
+
+  // Manejar el éxito de la carga de archivos ABM
+  const handleAbmUploadSuccess = () => {
+    // Aquí podrías realizar alguna acción adicional después de una carga exitosa
+    // Por ejemplo, actualizar contadores o estadísticas
+    console.log('Carga de archivo ABM exitosa');
   };
 
   return (
@@ -501,12 +512,28 @@ const AdminPanel: React.FC = () => {
                   <Button
                     variant="light"
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                    disabled
+                    onClick={() => setShowAbmUploadModal(true)}
                   >
-                    <div className="bg-secondary bg-opacity-10 p-3 rounded-circle mb-3">
-                      <i className="bi bi-cloud-upload-fill fs-3 text-secondary"></i>
+                    <div className="bg-danger bg-opacity-10 p-3 rounded-circle mb-3">
+                      <i className="bi bi-cloud-upload-fill fs-3 text-danger"></i>
                     </div>
                     <span className="fw-medium">Subir archivos PIC & Social</span>
+                  </Button>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={4} className="mb-3">
+              <Card className="h-100 border-0 shadow-sm">
+                <Card.Body className="p-0">
+                  <Button
+                    variant="light"
+                    className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
+                    disabled
+                  >
+                    <div className="bg-warning bg-opacity-10 p-3 rounded-circle mb-3">
+                      <i className="bi bi-clock-history fs-3 text-warning"></i>
+                    </div>
+                    <span className="fw-medium">Historial de cargas</span>
                     <Badge bg="secondary" className="mt-2">Proximamente</Badge>
                   </Button>
                 </Card.Body>
@@ -518,28 +545,13 @@ const AdminPanel: React.FC = () => {
                   <Button
                     variant="light"
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                    onClick={() => navigate('/admin/uploads')}
-                  >
-                    <div className="bg-warning bg-opacity-10 p-3 rounded-circle mb-3">
-                      <i className="bi bi-clock-history fs-3 text-warning"></i>
-                    </div>
-                    <span className="fw-medium">Historial de cargas</span>
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={4} className="mb-3">
-              <Card className="h-100 border-0 shadow-sm">
-                <Card.Body className="p-0">
-                  <Button
-                    variant="light"
-                    className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                    onClick={() => navigate('/admin/logs')}
+                    disabled
                   >
                     <div className="bg-dark bg-opacity-10 p-3 rounded-circle mb-3">
                       <i className="bi bi-journal-text fs-3 text-dark"></i>
                     </div>
                     <span className="fw-medium">Bitácora del sistema</span>
+                    <Badge bg="secondary" className="mt-2">Proximamente</Badge>
                   </Button>
                 </Card.Body>
               </Card>
@@ -675,6 +687,13 @@ const AdminPanel: React.FC = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Modal para subir archivos PIC y Social */}
+      <AbmUploadModal 
+        show={showAbmUploadModal} 
+        onHide={() => setShowAbmUploadModal(false)}
+        onSuccess={handleAbmUploadSuccess}
+      />
     </Container>
   );
 };

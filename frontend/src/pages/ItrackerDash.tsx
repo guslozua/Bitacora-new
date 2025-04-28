@@ -73,6 +73,10 @@ const ItrackerDash = () => {
     { label: 'Diciembre', value: '12' }
   ];
 
+  // NUEVO: Función para obtener los años disponibles basados en el año actual
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 2023 }, (_, i) => 2024 + i);
+
   const centrosFiltrados = data?.porCentro
     ?.filter((item: any) => item?.centro && item.centro.trim() !== '')
     ?.map((item: any) => ({ centro: item.centro.trim(), cantidad: item.cantidad }));
@@ -93,6 +97,80 @@ const ItrackerDash = () => {
     return null;
   };
 
+  // NUEVO: Componente para mostrar la última actualización de datos
+  const renderUltimaActualizacion = () => {
+    const getLatestUpdateDate = () => {
+      if (!data || !data.ultimaActualizacion) {
+        // Si no existe en la respuesta del backend, usar la fecha actual como fallback
+        const today = new Date();
+        return today.toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+      }
+      
+      const latestDate = data.ultimaActualizacion;
+      
+      // Parsear la fecha (asumiendo que viene en formato dd/mm/yyyy o similar)
+      const parts = latestDate.split('/');
+      if (parts.length === 3) {
+        // Si está en formato dd/mm/yyyy
+        const [day, month, year] = parts;
+        
+        // Crear fecha utilizando UTC para evitar ajustes de zona horaria
+        const parsedDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+        
+        if (isNaN(parsedDate.getTime())) {
+          return 'Fecha no válida';
+        }
+
+        // Formateamos la fecha para mostrarla en el formato 'dd/mm/yyyy'
+        return parsedDate.toLocaleDateString('es-ES', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric',
+          timeZone: 'UTC'
+        });
+      } else {
+        // Intentar un formato estándar
+        const parsedDate = new Date(latestDate);
+        
+        if (isNaN(parsedDate.getTime())) {
+          return 'Fecha no válida';
+        }
+        
+        // Crear una nueva fecha en UTC para eliminar el efecto de la zona horaria
+        const utcDate = new Date(Date.UTC(
+          parsedDate.getFullYear(),
+          parsedDate.getMonth(),
+          parsedDate.getDate()
+        ));
+        
+        return utcDate.toLocaleDateString('es-ES', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric',
+          timeZone: 'UTC'
+        });
+      }
+    };
+
+    const latestInfo = getLatestUpdateDate();
+    
+    return (
+      <Card className="shadow-sm border-0 mb-4">
+        <Card.Body className="p-4">
+          <h5 className="fw-bold mb-3 text-center">
+            <i className="bi bi-clock-history me-2 text-primary"></i>
+            Última Actualización de Datos
+          </h5>
+          <div className="fs-3 mb-2 text-center text-muted">{latestInfo}</div>
+        </Card.Body>
+      </Card>
+    );
+  };
+
   return (
     <div className="d-flex">
       <Sidebar collapsed={sidebarCollapsed} toggle={toggleSidebar} onLogout={handleLogout} />
@@ -108,8 +186,9 @@ const ItrackerDash = () => {
                 onChange={(e) => setSelectedYear(e.target.value)}
               >
                 <option value="all">Todos los años</option>
-                <option value="2025">2025</option>
-                <option value="2024">2024</option>
+                {years.map(year => (
+                  <option key={year} value={year.toString()}>{year}</option>
+                ))}
               </select>
               <select
                 className="form-select shadow-sm"
@@ -399,6 +478,9 @@ const ItrackerDash = () => {
                   <ItrackerTable />
                 </Col>
               </Row>
+              
+              {/* Última actualización de datos al final */}
+              {renderUltimaActualizacion()}
             </>
           ) : null}
         </Container>

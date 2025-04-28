@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Form, Row, Col, Spinner, Alert, Button, Pagination, Offcanvas, Modal } from 'react-bootstrap';
+import { Table, Form, Row, Col, Spinner, Alert, Button, Pagination, Offcanvas } from 'react-bootstrap';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 import PlacaFormModal from './PlacaFormModal';
 
 interface Placa {
@@ -8,9 +9,9 @@ interface Placa {
   numero_placa: string;
   titulo: string;
   descripcion: string;
-  impacto: 'bajo' | 'medio' | 'alto';
-  clase: 'Incidente' | 'Comunicado' | 'Mantenimiento';  // Nuevo campo
-  sistema: string;  // Nuevo campo
+  impacto: 'bajo' | 'medio' | 'alto' | null;
+  clase: 'Incidente' | 'Comunicado' | 'Mantenimiento';
+  sistema: string;
   fecha_inicio: string;
   fecha_cierre?: string | null;
   duracion: number | null;
@@ -32,8 +33,8 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
     numero_placa: '',
     titulo: '',
     impacto: 'all',
-    clase: 'all',    // Nuevo filtro
-    sistema: 'all'   // Nuevo filtro
+    clase: 'all',
+    sistema: 'all'
   });
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -43,8 +44,6 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
   const [showDetail, setShowDetail] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [placaToEdit, setPlacaToEdit] = useState<Placa | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [placaToDelete, setPlacaToDelete] = useState<number | null>(null);
 
   // Lista de sistemas disponibles
   const sistemasDisponibles = [
@@ -109,6 +108,12 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
       setError('');
     } catch (err) {
       setError('Error al cargar la tabla de placas');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error de carga',
+        text: 'No se pudieron cargar los datos de las placas',
+        confirmButtonColor: '#3085d6'
+      });
     } finally {
       setLoading(false);
     }
@@ -130,24 +135,47 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
     setShowEditModal(true);
   };
 
-  // Confirmar eliminación
-  const confirmDelete = (id: number) => {
-    setPlacaToDelete(id);
-    setShowDeleteConfirm(true);
+  // Confirmar eliminación con SweetAlert2
+  const confirmDelete = (id: number, numeroPlaca: string) => {
+    Swal.fire({
+      title: '¿Eliminar placa?',
+      text: `¿Está seguro que desea eliminar la placa ${numeroPlaca}? Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deletePlaca(id);
+      }
+    });
   };
 
   // Eliminar placa
-  const deletePlaca = async () => {
-    if (!placaToDelete) return;
-    
+  const deletePlaca = async (id: number) => {
     try {
-      await axios.delete(`http://localhost:5000/api/placas/${placaToDelete}`);
+      await axios.delete(`http://localhost:5000/api/placas/${id}`);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Placa eliminada',
+        text: 'La placa ha sido eliminada correctamente',
+        timer: 1500,
+        showConfirmButton: false
+      });
+      
       fetchData();
       onPlacaChange();
-      setShowDeleteConfirm(false);
-      setPlacaToDelete(null);
+      setShowDetail(false);
     } catch (err) {
-      setError('Error al eliminar la placa');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error al eliminar la placa',
+        confirmButtonColor: '#3085d6'
+      });
     }
   };
 
@@ -173,7 +201,8 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
   };
 
   // Colores según nivel de impacto
-  const getImpactColor = (impacto: string) => {
+  const getImpactColor = (impacto: string | null) => {
+    if (!impacto) return 'secondary';
     switch (impacto) {
       case 'bajo': return 'success';
       case 'medio': return 'warning';
@@ -197,8 +226,8 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
     id: { width: '60px', maxWidth: '60px' },
     numero: { width: '120px', maxWidth: '120px' },
     titulo: { width: '150px', maxWidth: '150px' },
-    impacto: { width: '80px', maxWidth: '80px' },
     clase: { width: '100px', maxWidth: '100px' },
+    impacto: { width: '80px', maxWidth: '80px' },
     sistema: { width: '120px', maxWidth: '120px' },
     fechaInicio: { width: '140px', maxWidth: '140px' },
     fechaCierre: { width: '140px', maxWidth: '140px' },
@@ -237,18 +266,6 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
           </Col>
           <Col md={2}>
             <Form.Select 
-              name="impacto" 
-              value={filters.impacto} 
-              onChange={handleChange}
-            >
-              <option value="all">Todos los impactos</option>
-              <option value="bajo">Bajo</option>
-              <option value="medio">Medio</option>
-              <option value="alto">Alto</option>
-            </Form.Select>
-          </Col>
-          <Col md={2}>
-            <Form.Select 
               name="clase" 
               value={filters.clase} 
               onChange={handleChange}
@@ -257,6 +274,18 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
               <option value="Incidente">Incidente</option>
               <option value="Comunicado">Comunicado</option>
               <option value="Mantenimiento">Mantenimiento</option>
+            </Form.Select>
+          </Col>
+          <Col md={2}>
+            <Form.Select 
+              name="impacto" 
+              value={filters.impacto} 
+              onChange={handleChange}
+            >
+              <option value="all">Todos los impactos</option>
+              <option value="bajo">Bajo</option>
+              <option value="medio">Medio</option>
+              <option value="alto">Alto</option>
             </Form.Select>
           </Col>
           <Col md={2}>
@@ -308,16 +337,16 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
                     Título {sortBy === 'titulo' ? (sortAsc ? '↑' : '↓') : '⇅'}
                   </th>
                   <th 
-                    style={{...columnStyles.impacto, ...sortableHeaderStyle}} 
-                    onClick={() => { setSortBy('impacto'); setSortAsc(sortBy !== 'impacto' || !sortAsc); }}
-                  >
-                    Impacto {sortBy === 'impacto' ? (sortAsc ? '↑' : '↓') : '⇅'}
-                  </th>
-                  <th 
                     style={{...columnStyles.clase, ...sortableHeaderStyle}} 
                     onClick={() => { setSortBy('clase'); setSortAsc(sortBy !== 'clase' || !sortAsc); }}
                   >
                     Clase {sortBy === 'clase' ? (sortAsc ? '↑' : '↓') : '⇅'}
+                  </th>
+                  <th 
+                    style={{...columnStyles.impacto, ...sortableHeaderStyle}} 
+                    onClick={() => { setSortBy('impacto'); setSortAsc(sortBy !== 'impacto' || !sortAsc); }}
+                  >
+                    Impacto {sortBy === 'impacto' ? (sortAsc ? '↑' : '↓') : '⇅'}
                   </th>
                   <th 
                     style={{...columnStyles.sistema, ...sortableHeaderStyle}} 
@@ -361,15 +390,19 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
                         {placa.titulo}
                       </div>
                     </td>
-                    <td style={columnStyles.impacto}>
-                      <span className={`badge bg-${getImpactColor(placa.impacto)}`}>
-                        {placa.impacto.charAt(0).toUpperCase() + placa.impacto.slice(1)}
-                      </span>
-                    </td>
                     <td style={columnStyles.clase}>
                       <span className={`badge bg-${getClaseColor(placa.clase)}`}>
                         {placa.clase}
                       </span>
+                    </td>
+                    <td style={columnStyles.impacto}>
+                      {placa.impacto ? (
+                        <span className={`badge bg-${getImpactColor(placa.impacto)}`}>
+                          {placa.impacto.charAt(0).toUpperCase() + placa.impacto.slice(1)}
+                        </span>
+                      ) : (
+                        <span className="text-muted">-</span>
+                      )}
                     </td>
                     <td style={columnStyles.sistema} title={placa.sistema}>
                       <div className="text-truncate" style={{maxWidth: columnStyles.sistema.maxWidth}}>
@@ -401,7 +434,7 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
                           variant="outline-danger"
                           onClick={(e) => {
                             e.stopPropagation();
-                            confirmDelete(placa.id);
+                            confirmDelete(placa.id, placa.numero_placa);
                           }}
                         >
                           <i className="bi bi-trash"></i>
@@ -461,9 +494,11 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
                         <span className={`badge bg-${getClaseColor(selectedPlaca.clase)}`}>
                           {selectedPlaca.clase}
                         </span>
-                        <span className={`badge bg-${getImpactColor(selectedPlaca.impacto)}`}>
-                          Impacto: {selectedPlaca.impacto.charAt(0).toUpperCase() + selectedPlaca.impacto.slice(1)}
-                        </span>
+                        {selectedPlaca.impacto && (
+                          <span className={`badge bg-${getImpactColor(selectedPlaca.impacto)}`}>
+                            Impacto: {selectedPlaca.impacto.charAt(0).toUpperCase() + selectedPlaca.impacto.slice(1)}
+                          </span>
+                        )}
                       </div>
                       <h5>{selectedPlaca.titulo}</h5>
                       <p className="mt-2 text-muted">#{selectedPlaca.numero_placa}</p>
@@ -519,7 +554,7 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
                       variant="outline-danger" 
                       onClick={() => {
                         setShowDetail(false);
-                        confirmDelete(selectedPlaca.id);
+                        confirmDelete(selectedPlaca.id, selectedPlaca.numero_placa);
                       }}
                     >
                       <i className="bi bi-trash me-1"></i> Eliminar
@@ -542,24 +577,6 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
               placa={placaToEdit}
             />
           )}
-
-          {/* Modal de confirmación para eliminar */}
-          <Modal show={showDeleteConfirm} onHide={() => setShowDeleteConfirm(false)}>
-            <Modal.Header closeButton>
-              <Modal.Title>Confirmar eliminación</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-              ¿Está seguro que desea eliminar esta placa? Esta acción no se puede deshacer.
-            </Modal.Body>
-            <Modal.Footer>
-              <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)}>
-                Cancelar
-              </Button>
-              <Button variant="danger" onClick={deletePlaca}>
-                Eliminar
-              </Button>
-            </Modal.Footer>
-          </Modal>
         </>
       )}
     </div>

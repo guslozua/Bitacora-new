@@ -10,7 +10,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
-  CartesianGrid,
 } from 'recharts';
 
 import GanttChart from '../components/GanttChart';
@@ -108,14 +107,22 @@ const Dashboard = () => {
 
   return (
     <div className="d-flex">
-      <Sidebar collapsed={sidebarCollapsed} toggle={toggleSidebar} onLogout={handleLogout} />
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        toggle={toggleSidebar}
+        onLogout={handleLogout}
+      />
 
       <div style={contentStyle}>
-        <Container className="py-4 px-4">
+        <Container className="py-4">
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h2 className="mb-0 fw-bold">Bienvenido, {nombre}</h2>
-            <div className="d-flex gap-2">
-              <Button variant="outline-secondary">
+            <div className="d-flex align-items-center" style={{ flex: 1 }}>
+              <div style={{ flexGrow: 1 }}>
+                <h2 className="mb-0">Bienvenido, {nombre}</h2>
+              </div>
+            </div>
+            <div>
+              <Button variant="outline-secondary" className="me-2">
                 <i className="bi bi-plus me-2"></i>
                 Nueva Proyecto
               </Button>
@@ -132,59 +139,44 @@ const Dashboard = () => {
             </div>
           ) : (
             <>
-              <Row className="g-4 mb-4">
+              <Row className="mb-4">
                 <Col md={4}>
-                  <Card className="border-0 shadow-sm h-100">
+                  <Card className="text-center shadow-sm">
                     <Card.Body>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div>
-                          <h6 className="text-muted mb-1">Proyectos Activos</h6>
-                          <h2 className="fw-bold mb-0">{proyectos ?? 0}</h2>
-                        </div>
-                        <div className="bg-primary bg-opacity-10 p-3 rounded-circle">
-                          <i className="bi bi-diagram-3-fill fs-3 text-primary" />
-                        </div>
-                      </div>
+                      <i className="bi bi-diagram-3-fill mb-2 text-primary" style={{ fontSize: '1.8rem' }}></i>
+                      <Card.Title>Proyectos Activos</Card.Title>
+                      <h3>{proyectos ?? 0}</h3>
+                      <small>+info</small>
                     </Card.Body>
                   </Card>
                 </Col>
                 <Col md={4}>
-                  <Card className="border-0 shadow-sm h-100">
+                  <Card className="text-center shadow-sm">
                     <Card.Body>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div>
-                          <h6 className="text-muted mb-1">Tareas Pendientes</h6>
-                          <h2 className="fw-bold mb-0">{tareas ?? 0}</h2>
-                        </div>
-                        <div className="bg-warning bg-opacity-10 p-3 rounded-circle">
-                          <i className="bi bi-list-task fs-3 text-warning" />
-                        </div>
-                      </div>
+                      <i className="bi bi-list-task mb-2 text-warning" style={{ fontSize: '1.8rem' }}></i>
+                      <Card.Title>Tareas Pendientes</Card.Title>
+                      <h3>{tareas ?? 0}</h3>
+                      <small>+info</small>
                     </Card.Body>
                   </Card>
                 </Col>
                 <Col md={4}>
-                  <Card className="border-0 shadow-sm h-100">
+                  <Card className="text-center shadow-sm">
                     <Card.Body>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div>
-                          <h6 className="text-muted mb-1">Usuarios</h6>
-                          <h2 className="fw-bold mb-0">{usuarios ?? 0}</h2>
-                        </div>
-                        <div className="bg-success bg-opacity-10 p-3 rounded-circle">
-                          <i className="bi bi-people-fill fs-3 text-success" />
-                        </div>
-                      </div>
+                      <i className="bi bi-people-fill mb-2 text-success" style={{ fontSize: '1.8rem' }}></i>
+                      <Card.Title>Usuarios</Card.Title>
+                      <h3>{usuarios ?? 0}</h3>
+                      <small>En el sistema</small>
                     </Card.Body>
                   </Card>
                 </Col>
               </Row>
 
-              <Row className="g-4 mb-4">
+              <Row className="mb-4">
                 <Col md={6}>
-                  <Card className="shadow-sm h-100 border-0">
+                  <Card className="shadow-sm h-100">
                     <Card.Body>
-                      <h5 className="fw-bold mb-3">Actividad Reciente</h5>
+                      <Card.Title>Actividad Reciente</Card.Title>
                       <ListGroup variant="flush">
                         {actividadReciente.length === 0 ? (
                           <ListGroup.Item>No hay actividad reciente</ListGroup.Item>
@@ -199,9 +191,9 @@ const Dashboard = () => {
                 </Col>
 
                 <Col md={6}>
-                  <Card className="shadow-sm h-100 border-0">
+                  <Card className="shadow-sm h-100">
                     <Card.Body>
-                      <h5 className="fw-bold mb-3">Reportes Rápidos</h5>
+                      <Card.Title>Reportes Rápidos</Card.Title>
                       <ResponsiveContainer width="100%" height={200}>
                         <BarChart
                           layout="vertical"
@@ -209,7 +201,6 @@ const Dashboard = () => {
                           margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
                           barCategoryGap={20}
                         >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                           <Tooltip />
                           <XAxis type="number" hide />
                           <YAxis
@@ -232,7 +223,7 @@ const Dashboard = () => {
                 </Col>
               </Row>
 
-              <Card className="shadow-sm mb-4 border-0">
+              <Card className="shadow-sm mb-4">
                 <Card.Body>
                   <GanttChart />
                 </Card.Body>

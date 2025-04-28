@@ -177,11 +177,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
   const menuItems = [
     { id: 'dashboard', icon: 'bi-speedometer2', label: 'Dashboard', route: '/dashboard' },
     { id: 'proyectos', icon: 'bi-diagram-3-fill', label: 'Proyectos', route: '/projects' },
-    { id: 'placas', icon: 'bi-list-task', label: 'Placas', route: '/placasdash' },
+    { id: 'placas', icon: 'bi-clipboard', label: 'Placas', route: '/placasdash' },
     { id: 'usuarios', icon: 'bi-people-fill', label: 'ABM Usuarios', route: '/abmdashboard' },
     { id: 'bitacora', icon: 'bi-journal-text', label: 'Bitácora', route: '/bitacora' },
     { id: 'hitos', icon: 'bi-flag-fill', label: 'Hitos', route: '/hitos' },
-    { id: 'itracker', icon: 'bi-hdd-network-fill', label: 'iTracker', route: '/itrackerdash' },
+    { id: 'itracker', icon: 'bi-circle', label: 'iTracker', route: '/itrackerdash' },
     { id: 'tabulaciones', icon: 'bi-table', label: 'Tabulaciones', route: '/tabulacionesdash' },
     { id: 'incidencias', icon: 'bi-shield-exclamation', label: 'Inc. en Guardia', route: '/incidencias' },
     { id: 'stats', icon: 'bi-graph-up', label: 'Estadísticas', route: '/stats' },

@@ -24,6 +24,26 @@ exports.getTabulacionesStats = async (req, res) => {
     const baseWhere = whereClause || 'WHERE 1=1';
     const whereFinalizadas = `${baseWhere} AND fecha_finalizacion IS NOT NULL`;
 
+    // NUEVO: Consulta para obtener la fecha de última actualización
+    // Usamos la última fecha de finalización como indicador de última actualización
+    const [ultimaActualizacionRes] = await pool.query(`
+      SELECT MAX(fecha_finalizacion) as ultima_fecha 
+      FROM tabulaciones_data
+    `);
+    
+    // Formateamos la fecha a dd/mm/yyyy
+    let ultimaActualizacion = 'Fecha no disponible';
+    if (ultimaActualizacionRes[0]?.ultima_fecha) {
+      const fechaUltima = new Date(ultimaActualizacionRes[0].ultima_fecha);
+      if (!isNaN(fechaUltima.getTime())) {
+        ultimaActualizacion = fechaUltima.toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+      }
+    }
+
     // 1. Total tareas
     const total = (await pool.query(
       `SELECT COUNT(*) AS total FROM tabulaciones_data ${whereClause}`,
@@ -152,7 +172,8 @@ exports.getTabulacionesStats = async (req, res) => {
       creadoPor,
       rankingTab,
       rawTabulaciones,  // Incluir datos crudos para procesamiento en frontend
-      diagnostico
+      diagnostico,
+      ultimaActualizacion // NUEVO: Añadimos la fecha de última actualización
     });
   } catch (error) {
     console.error('❌ Error al obtener estadísticas de tabulaciones:', error);

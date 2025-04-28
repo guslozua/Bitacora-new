@@ -25,6 +25,7 @@ interface TabulacionesStats {
     sin_nombre_tarea: number;
     total_registros: number;
   };
+  ultimaActualizacion?: string; // Añadido para la fecha de última actualización
 }
 
 // Lista oficial de árboles de tabulación
@@ -369,7 +370,10 @@ const TabulacionesDash = () => {
         rankingTab: rankingCalculado,
           
         // Información de diagnóstico
-        diagnostico: res.data.diagnostico
+        diagnostico: res.data.diagnostico,
+        
+        // Agregar fecha de última actualización
+        ultimaActualizacion: res.data.ultimaActualizacion
       };
       
       setData(processedData);
@@ -446,6 +450,80 @@ const TabulacionesDash = () => {
     display: 'flex' as 'flex',
     flexDirection: 'column' as 'column',
     minHeight: '100vh',
+  };
+
+  // NUEVO: Componente para mostrar la última actualización de datos
+  const renderUltimaActualizacion = () => {
+    const getLatestUpdateDate = () => {
+      if (!data || !data.ultimaActualizacion) {
+        // Si no existe en la respuesta del backend, usar la fecha actual como fallback
+        const today = new Date();
+        return today.toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+      }
+      
+      const latestDate = data.ultimaActualizacion;
+      
+      // Parsear la fecha (asumiendo que viene en formato dd/mm/yyyy o similar)
+      const parts = latestDate.split('/');
+      if (parts.length === 3) {
+        // Si está en formato dd/mm/yyyy
+        const [day, month, year] = parts;
+        
+        // Crear fecha utilizando UTC para evitar ajustes de zona horaria
+        const parsedDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+        
+        if (isNaN(parsedDate.getTime())) {
+          return 'Fecha no válida';
+        }
+
+        // Formateamos la fecha para mostrarla en el formato 'dd/mm/yyyy'
+        return parsedDate.toLocaleDateString('es-ES', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric',
+          timeZone: 'UTC'
+        });
+      } else {
+        // Intentar un formato estándar
+        const parsedDate = new Date(latestDate);
+        
+        if (isNaN(parsedDate.getTime())) {
+          return 'Fecha no válida';
+        }
+        
+        // Crear una nueva fecha en UTC para eliminar el efecto de la zona horaria
+        const utcDate = new Date(Date.UTC(
+          parsedDate.getFullYear(),
+          parsedDate.getMonth(),
+          parsedDate.getDate()
+        ));
+        
+        return utcDate.toLocaleDateString('es-ES', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric',
+          timeZone: 'UTC'
+        });
+      }
+    };
+
+    const latestInfo = getLatestUpdateDate();
+    
+    return (
+      <Card className="shadow-sm border-0 mb-4">
+        <Card.Body className="p-4">
+          <h5 className="fw-bold mb-3 text-center">
+            <i className="bi bi-clock-history me-2 text-primary"></i>
+            Última Actualización de Datos
+          </h5>
+          <div className="fs-3 mb-2 text-center text-muted">{latestInfo}</div>
+        </Card.Body>
+      </Card>
+    );
   };
 
   return (
@@ -592,15 +670,15 @@ const TabulacionesDash = () => {
                     <Card.Body>
                       <h5 className="fw-bold mb-3">Tareas por Mes</h5>
                       <ResponsiveContainer width="100%" height={250}>
-                      <LineChart 
-  data={data.porFechaFinal?.length > 0 
-    ? agruparPorMes(data.porFechaFinal)
-    : Array.from({ length: 12 }, (_, i) => ({
-        mes: (i + 1).toString(),
-        nombre: '',
-        cantidad: 0
-      }))
-  }
+                        <LineChart 
+                          data={data.porFechaFinal?.length > 0 
+                            ? agruparPorMes(data.porFechaFinal)
+                            : Array.from({ length: 12 }, (_, i) => ({
+                                mes: (i + 1).toString(),
+                                nombre: '',
+                                cantidad: 0
+                              }))
+                          }
                         >
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                           <XAxis dataKey="nombre" />
@@ -800,6 +878,9 @@ const TabulacionesDash = () => {
                   </Card>
                 </Col>
               </Row>
+              
+              {/* Última actualización de datos al final */}
+              {renderUltimaActualizacion()}
             </>
           ) : null}
         </Container>

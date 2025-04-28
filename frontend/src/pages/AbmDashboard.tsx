@@ -74,7 +74,7 @@ const AbmDashboard = () => {
   }, [year, month]);
 
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: currentYear - 2022 + 1 }, (_, i) => 2023 + i);
+  const years = Array.from({ length: currentYear - 2022 }, (_, i) => 2023 + i);
   const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
   // Paleta de colores moderna

@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Spinner, Alert } from 'react-bootstrap';
+import { Modal, Button, Form, Spinner } from 'react-bootstrap';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 
 interface Placa {
   id?: number;
   numero_placa: string;
   titulo: string;
   descripcion: string;
-  impacto: 'bajo' | 'medio' | 'alto';
+  impacto: 'bajo' | 'medio' | 'alto' | null;
+  clase: 'Incidente' | 'Comunicado' | 'Mantenimiento';
+  sistema: string;
   fecha_inicio: string;
   fecha_cierre?: string | null;
   cerrado_por?: string | null;
@@ -22,12 +25,26 @@ interface PlacaFormModalProps {
 }
 
 const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, placa = null }) => {
+  // Función para obtener la fecha y hora actual en formato ISO local
+  const getCurrentLocalISOString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const defaultPlaca: Placa = {
     numero_placa: '',
     titulo: '',
     descripcion: '',
-    impacto: 'medio',
-    fecha_inicio: new Date().toISOString().slice(0, 16),
+    impacto: 'bajo',  // Por defecto será medio para incidentes
+    clase: 'Incidente',
+    sistema: 'No aplica',
+    fecha_inicio: getCurrentLocalISOString(),
     fecha_cierre: '',
     cerrado_por: '',
     causa_resolutiva: ''
@@ -35,8 +52,7 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
 
   const [formData, setFormData] = useState<Placa>(placa || defaultPlaca);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [minFechaCierre, setMinFechaCierre] = useState(formData.fecha_inicio || '');
 
   // Lista de usuarios para el campo "Cerrado por"
   const usuariosCierre = [
@@ -47,29 +63,110 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
     'Pablo Palomanes',
     'Guillermo Jacob',
     'Diego D´Agostino',
-    'Carlos Beltrame',
+    'Carlos Beltrame Pertersen',
     'Luciano Centurion',
     'Gaston Mingarelli'
   ];
 
+  // Lista de sistemas disponibles
+  const sistemasDisponibles = [
+    'Citrix', 'Doble Factor', 'Eflow', 'Enlace', 'EQA', 
+    'Form. Responsys', 'Form. Web', 'Genesys Administrator', 
+    'Genesys Chat y Mail', 'Genesys Pic', 'GI2', 'Idaptive', 
+    'Infraestructura Terceros', 'IVR', 'Pulse', 'Red', 
+    'Red Corporativa (Teco)', 'Social+', 'Speech Miner/ GIR', 
+    'Tuid', 'TuidCloud', 'TuidFedCloud', 'Virtual Access', 'No aplica'
+  ];
+
   useEffect(() => {
     if (show) {
-      setFormData(placa || defaultPlaca);
-      setError('');
-      setSuccess(false);
+      if (placa) {
+        setFormData(placa);
+        setMinFechaCierre(placa.fecha_inicio);
+      } else {
+        const currentLocalDateTime = getCurrentLocalISOString();
+        const newDefaultPlaca = {
+          ...defaultPlaca,
+          fecha_inicio: currentLocalDateTime
+        };
+        setFormData(newDefaultPlaca);
+        setMinFechaCierre(currentLocalDateTime);
+      }
     }
   }, [show, placa]);
 
+  // Manejar cambios en la fecha de inicio para validar la fecha de cierre
+  const handleFechaInicioChange = (value: string) => {
+    setMinFechaCierre(value);
+    
+    // Si hay fecha de cierre, verificar que siga siendo válida
+    if (formData.fecha_cierre) {
+      const fechaInicio = new Date(value);
+      const fechaCierre = new Date(formData.fecha_cierre);
+      
+      // Si la fecha/hora de cierre es menor o igual a la nueva fecha/hora de inicio, resetearla
+      if (fechaCierre.getTime() <= fechaInicio.getTime()) {
+        setFormData(prev => ({
+          ...prev,
+          fecha_inicio: value,
+          fecha_cierre: ''
+        }));
+        return;
+      }
+    }
+    
+    setFormData(prev => ({ ...prev, fecha_inicio: value }));
+  };
+
+  // Manejar cambio en la clase de placa
+  const handleClaseChange = (value: string) => {
+    // Si no es incidente, establecer impacto a null
+    if (value !== 'Incidente') {
+      setFormData(prev => ({
+        ...prev,
+        clase: value as 'Comunicado' | 'Mantenimiento' | 'Incidente',
+        impacto: null
+      }));
+    } else {
+      // Si es incidente, establecer impacto a medio por defecto
+      setFormData(prev => ({
+        ...prev,
+        clase: value as 'Incidente',
+        impacto: 'medio'
+      }));
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    if (name === 'fecha_inicio') {
+      handleFechaInicioChange(value);
+    } else if (name === 'clase') {
+      handleClaseChange(value);
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const validateForm = () => {
     if (!formData.numero_placa) return 'El número de placa es obligatorio';
     if (!formData.titulo) return 'El título es obligatorio';
-    if (!formData.impacto) return 'El impacto es obligatorio';
+    if (formData.clase === 'Incidente' && !formData.impacto) return 'El impacto es obligatorio para incidentes';
+    if (!formData.clase) return 'La clase es obligatoria';
+    if (!formData.sistema) return 'El sistema es obligatorio';
     if (!formData.fecha_inicio) return 'La fecha de inicio es obligatoria';
+    
+    // Validar que la fecha y hora de cierre sea posterior a la fecha y hora de inicio
+    if (formData.fecha_cierre) {
+      const fechaInicio = new Date(formData.fecha_inicio);
+      const fechaCierre = new Date(formData.fecha_cierre);
+      
+      // Comparar los timestamps (que incluyen fecha Y hora)
+      if (fechaCierre.getTime() <= fechaInicio.getTime()) {
+        return 'La fecha y hora de cierre debe ser posterior a la fecha y hora de inicio';
+      }
+    }
     
     // Si hay fecha de cierre, debe haber causa resolutiva y cerrado por
     if (formData.fecha_cierre && !formData.cerrado_por) {
@@ -87,29 +184,78 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
     
     const validationError = validateForm();
     if (validationError) {
-      setError(validationError);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error de validación',
+        text: validationError,
+        confirmButtonColor: '#3085d6'
+      });
+      return;
+    }
+    
+    // Mostrar confirmación antes de guardar
+    const result = await Swal.fire({
+      title: placa?.id ? '¿Actualizar placa?' : '¿Guardar nueva placa?',
+      text: `Confirme para ${placa?.id ? 'actualizar' : 'guardar'} la placa ${formData.numero_placa}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: placa?.id ? 'Actualizar' : 'Guardar',
+      cancelButtonText: 'Cancelar'
+    });
+    
+    if (!result.isConfirmed) {
       return;
     }
     
     setLoading(true);
-    setError('');
     
     try {
+      // Si no es incidente, asegúrate de que impacto sea null
+      const dataToSend = { 
+        ...formData,
+        impacto: formData.clase === 'Incidente' ? formData.impacto : null
+      };
+      
       if (placa?.id) {
         // Actualizar placa existente
-        await axios.put(`http://localhost:5000/api/placas/${placa.id}`, formData);
+        await axios.put(`http://localhost:5000/api/placas/${placa.id}`, dataToSend);
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Placa actualizada',
+          text: 'La placa se ha actualizado correctamente',
+          timer: 1500,
+          showConfirmButton: false
+        });
       } else {
         // Crear nueva placa
-        await axios.post('http://localhost:5000/api/placas', formData);
+        await axios.post('http://localhost:5000/api/placas', dataToSend);
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Placa creada',
+          text: 'La placa se ha creado correctamente',
+          timer: 1500,
+          showConfirmButton: false
+        });
       }
       
-      setSuccess(true);
+      // Esperar un poco para que el usuario vea el mensaje de éxito
       setTimeout(() => {
         onSave();
         onHide();
-      }, 1000);
+      }, 1500);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Error al guardar la placa');
+      const errorMessage = err.response?.data?.error || 'Error al guardar la placa';
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: errorMessage,
+        confirmButtonColor: '#3085d6'
+      });
     } finally {
       setLoading(false);
     }
@@ -121,10 +267,32 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
     return isoDate.slice(0, 16); // Formato YYYY-MM-DDTHH:MM
   };
 
+  // Manejar cierre del modal con confirmación si hay cambios
+  const handleModalClose = () => {
+    if (JSON.stringify(formData) !== JSON.stringify(placa || defaultPlaca)) {
+      Swal.fire({
+        title: '¿Descartar cambios?',
+        text: 'Los cambios no guardados se perderán',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, descartar',
+        cancelButtonText: 'No, continuar editando'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          onHide();
+        }
+      });
+    } else {
+      onHide();
+    }
+  };
+
   return (
     <Modal 
       show={show} 
-      onHide={onHide} 
+      onHide={handleModalClose} 
       backdrop="static" 
       size="lg" 
       centered
@@ -136,9 +304,6 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
       </Modal.Header>
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
-          {error && <Alert variant="danger">{error}</Alert>}
-          {success && <Alert variant="success">Placa guardada correctamente</Alert>}
-          
           <div className="row g-3">
             <div className="col-md-6">
               <Form.Group controlId="numero_placa">
@@ -154,18 +319,65 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
               </Form.Group>
             </div>
             
+            {/* Clase de placa */}
             <div className="col-md-6">
-              <Form.Group controlId="impacto">
-                <Form.Label>Nivel de Impacto</Form.Label>
+              <Form.Group controlId="clase">
+                <Form.Label>Clase</Form.Label>
                 <Form.Select
-                  name="impacto"
-                  value={formData.impacto}
+                  name="clase"
+                  value={formData.clase}
                   onChange={handleChange}
                   required
+                >
+                  <option value="Incidente">Incidente</option>
+                  <option value="Comunicado">Comunicado</option>
+                  <option value="Mantenimiento">Mantenimiento</option>
+                </Form.Select>
+              </Form.Group>
+            </div>
+            
+            {/* Nivel de impacto (solo para incidentes) */}
+            <div className="col-md-6">
+              <Form.Group controlId="impacto">
+                <Form.Label>
+                  Nivel de Impacto 
+                  {formData.clase !== 'Incidente' && 
+                    <span className="text-muted"> (Solo para Incidentes)</span>
+                  }
+                </Form.Label>
+                <Form.Select
+                  name="impacto"
+                  value={formData.impacto || ''}
+                  onChange={handleChange}
+                  disabled={formData.clase !== 'Incidente'}
+                  required={formData.clase === 'Incidente'}
+                  className={formData.clase !== 'Incidente' ? 'bg-light text-muted' : ''}
                 >
                   <option value="bajo">Bajo</option>
                   <option value="medio">Medio</option>
                   <option value="alto">Alto</option>
+                </Form.Select>
+                {formData.clase !== 'Incidente' && (
+                  <Form.Text className="text-muted">
+                    El nivel de impacto solo aplica para Incidentes
+                  </Form.Text>
+                )}
+              </Form.Group>
+            </div>
+
+            <div className="col-md-6">
+              <Form.Group controlId="sistema">
+                <Form.Label>Sistema Afectado</Form.Label>
+                <Form.Select
+                  name="sistema"
+                  value={formData.sistema}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">-- Seleccione Sistema --</option>
+                  {sistemasDisponibles.map(sistema => (
+                    <option key={sistema} value={sistema}>{sistema}</option>
+                  ))}
                 </Form.Select>
               </Form.Group>
             </div>
@@ -219,9 +431,10 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
                   name="fecha_cierre"
                   value={formatDateForInput(formData.fecha_cierre)}
                   onChange={handleChange}
+                  min={minFechaCierre}
                 />
                 <Form.Text className="text-muted">
-                  Dejar en blanco si aún no se ha resuelto
+                  Dejar en blanco si aún no se ha resuelto. Debe ser posterior a la fecha y hora de inicio.
                 </Form.Text>
               </Form.Group>
             </div>
@@ -258,7 +471,7 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
           </div>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={onHide}>
+          <Button variant="secondary" onClick={handleModalClose}>
             Cancelar
           </Button>
           <Button 
@@ -269,7 +482,7 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
             {loading ? (
               <>
                 <Spinner animation="border" size="sm" className="me-2" />
-                Guardando...
+                {placa?.id ? 'Actualizando...' : 'Guardando...'}
               </>
             ) : (
               placa?.id ? 'Actualizar' : 'Guardar'
