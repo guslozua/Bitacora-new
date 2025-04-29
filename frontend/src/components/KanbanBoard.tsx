@@ -2,8 +2,37 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { Spinner, Button, Form, Row, Col } from 'react-bootstrap';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import UserAvatars from './UserAvatars';
 import KanbanLegend from './KanbanLegend';
+
+// Fix para React 18 y react-beautiful-dnd
+// Este hack se debe añadir al componente para evitar problemas con StrictMode
+const useReactBeautifulDndFix = () => {
+  useEffect(() => {
+    // Fix para react-beautiful-dnd con React 18
+    window.addEventListener('error', (e) => {
+      if (
+        e.message === 'ResizeObserver loop limit exceeded' ||
+        e.message.includes('Invariant failed: Cannot find droppable') ||
+        e.message.includes('Unable to find draggable with id')
+      ) {
+        const resizeObserverErrDiv = document.getElementById(
+          'webpack-dev-server-client-overlay-div'
+        );
+        const resizeObserverErr = document.getElementById(
+          'webpack-dev-server-client-overlay'
+        );
+        if (resizeObserverErr) {
+          resizeObserverErr.style.display = 'none';
+        }
+        if (resizeObserverErrDiv) {
+          resizeObserverErrDiv.style.display = 'none';
+        }
+      }
+    });
+  }, []);
+};
 
 // Interfaces para los datos
 interface KanbanData {
@@ -50,12 +79,18 @@ interface EntityMap {
 }
 
 const KanbanBoard: React.FC = () => {
+  // Aplicar el fix para react-beautiful-dnd
+  useReactBeautifulDndFix();
+  
   const [data, setData] = useState<KanbanData>({ lanes: [] });
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [filterText, setFilterText] = useState('');
   const [filterPriority, setFilterPriority] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'project' | 'task' | 'subtask'>('all');
+  
+  // Estado para almacenar si las columnas están listas para drag and drop
+  const [isDroppableEnabled, setIsDroppableEnabled] = useState(false);
   
   // Mapas para mantener relaciones
   const [projectMap, setProjectMap] = useState<EntityMap>({});
@@ -79,6 +114,19 @@ const KanbanBoard: React.FC = () => {
       completed: '#f1c40f'
     }
   }), []);
+
+  // Habilitar droppables después de que el componente se renderice
+  useEffect(() => {
+    if (!loading && data.lanes.length > 0) {
+      // Habilitar droppables después de un corto retraso
+      const timer = setTimeout(() => {
+        setIsDroppableEnabled(true);
+        console.log("Droppables habilitados:", data.lanes.map(lane => lane.id));
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [loading, data.lanes]);
 
   // Función para filtrar tarjetas
   const filterCards = useCallback((cards: Card[]): Card[] => {
@@ -132,6 +180,7 @@ const KanbanBoard: React.FC = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setIsDroppableEnabled(false); // Deshabilitar droppables mientras se cargan datos
 
     try {
       const token = localStorage.getItem('token');
@@ -320,16 +369,6 @@ const KanbanBoard: React.FC = () => {
       console.log('ProjectMap:', Object.keys(newProjectMap).length, 'proyectos');
       console.log('TaskMap:', Object.keys(newTaskMap).length, 'tareas y subtareas');
       
-      // Verificar las subtareas en la primera tarea (si existe)
-      const firstTaskKey = Object.keys(newTaskMap).find(key => key.startsWith('task-'));
-      if (firstTaskKey) {
-        console.log(
-          'Subtareas en la primera tarea:',
-          newTaskMap[firstTaskKey].subtasks?.length || 0,
-          newTaskMap[firstTaskKey].subtasks
-        );
-      }
-      
       // Actualizar los mapas de estado
       setProjectMap(newProjectMap);
       setTaskMap(newTaskMap);
@@ -379,6 +418,7 @@ const KanbanBoard: React.FC = () => {
       };
 
       setData(kanbanData);
+      console.log("Lanes IDs configurados:", kanbanData.lanes.map(lane => lane.id));
     } catch (error) {
       console.error('Error al cargar datos para el Kanban:', error);
       setError('Error al cargar los datos. Por favor, intenta de nuevo.');
@@ -467,6 +507,55 @@ const KanbanBoard: React.FC = () => {
     }
   };
 
+  // Manejar fin del arrastre (onDragEnd)
+  const handleDragEnd = (result: any) => {
+    const { source, destination, draggableId } = result;
+    
+    console.log("DragEnd:", { source, destination, draggableId });
+    
+    // Si no hay destino (se soltó fuera de un droppable) o no se movió
+    if (!destination || 
+        (source.droppableId === destination.droppableId && 
+         source.index === destination.index)) {
+      return;
+    }
+    
+    // Actualizar la posición en el estado local primero para una UI fluida
+    const newData = { ...data };
+    const sourceLane = newData.lanes.find(lane => lane.id === source.droppableId);
+    const destLane = newData.lanes.find(lane => lane.id === destination.droppableId);
+    
+    if (!sourceLane || !destLane) {
+      console.error("Lanes no encontrados:", { 
+        sourceLaneId: source.droppableId, 
+        destLaneId: destination.droppableId,
+        availableLanes: newData.lanes.map(l => l.id)
+      });
+      return;
+    }
+    
+    // Encontrar la tarjeta que se está moviendo
+    const cardIndex = sourceLane.cards.findIndex(card => card.id === draggableId);
+    if (cardIndex < 0) return;
+    
+    const card = sourceLane.cards[cardIndex];
+    
+    // Eliminar la tarjeta de la columna origen
+    sourceLane.cards.splice(cardIndex, 1);
+    
+    // Insertar la tarjeta en la columna destino
+    destLane.cards.splice(destination.index, 0, card);
+    
+    // Actualizar las etiquetas de conteo
+    sourceLane.label = `${sourceLane.cards.length}`;
+    destLane.label = `${destLane.cards.length}`;
+    
+    // Actualizar el estado local para un cambio inmediato en la UI
+    setData({ ...newData });
+    
+    // Actualizar en el backend
+    updateCardStatus(draggableId, source.droppableId, destination.droppableId);
+  };
   // Componente para renderizar tareas con subtareas
   const TaskWithSubtasks = React.memo(({ taskId, taskCard, taskMap, cardColors, getPriorityColor }: {
     taskId: string;
@@ -632,7 +721,7 @@ const KanbanBoard: React.FC = () => {
   });
 
   // Componente personalizado para las tarjetas del Kanban
-  const CustomCard = React.memo(({ id, title, description, metadata, tags }: any) => {
+  const CustomCard = React.memo(({ id, title, description, metadata, tags, index }: any) => {
     const [expanded, setExpanded] = useState(false);
     
     // Determinar si tiene hijos
@@ -652,7 +741,7 @@ const KanbanBoard: React.FC = () => {
     
     // Determinar estilo basado en tipo y progreso
     const type = metadata.type as 'project' | 'task' | 'subtask';
-    let backgroundColor;
+    let backgroundColor: string = '#f0f0f0'; // Color por defecto
     
     if (metadata.progress === 100) {
       backgroundColor = cardColors[type].completed;
@@ -666,135 +755,142 @@ const KanbanBoard: React.FC = () => {
     const textColor = type === 'project' ? 'white' : 'black';
     
     return (
-      <div 
-        style={{ 
-          backgroundColor,
-          padding: '10px',
-          borderRadius: '6px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
-          marginBottom: '10px',
-          color: textColor
-        }} 
-        data-task-id={id}
-      >
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'flex-start',
-          marginBottom: '5px'
-        }}>
-          <div style={{ 
-            fontSize: '14px', 
-            fontWeight: 'bold', 
-            marginBottom: '5px',
-            display: 'flex',
-            alignItems: 'center' 
-          }}>
-            {title}
-            {hasChildren && (
-              <span 
-                style={{
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  padding: '2px 6px',
-                  backgroundColor: 'rgba(0,0,0,0.1)',
-                  borderRadius: '4px',
-                  marginLeft: '5px'
-                }}
-                onClick={() => setExpanded(!expanded)}
-              >
-                {expanded ? '▼' : '▶'} {
-                  metadata.type === 'project' && projectMap[id]?.tasks ? 
-                    `${projectMap[id]?.tasks?.length} tareas` : 
-                    metadata.type === 'task' && taskMap[id]?.subtasks ? 
-                      `${taskMap[id]?.subtasks?.length} subtareas` : ''
-                }
-              </span>
-            )}
-          </div>
-          <div>
-            {tags.map((tag: any, index: number) => (
-              <span 
-                key={index}
-                style={{ 
-                  backgroundColor: tag.color,
-                  color: 'white',
-                  padding: '2px 6px',
-                  borderRadius: '3px',
-                  fontSize: '10px',
-                  marginRight: '4px'
-                }}
-              >
-                {tag.title}
-              </span>
-            ))}
-          </div>
-        </div>
-        
-        {description && (
-          <div style={{ fontSize: '12px', marginBottom: '5px' }}>
-            {description.length > 100 ? `${description.substring(0, 100)}...` : description}
-          </div>
-        )}
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '5px' }}>
-          <div>
-            {(metadata.startDate || metadata.endDate) && (
-              <div style={{ fontSize: '11px' }}>
-                {metadata.startDate && <span>Inicio: {new Date(metadata.startDate).toLocaleDateString()}</span>}
-                {metadata.startDate && metadata.endDate && <span> | </span>}
-                {metadata.endDate && <span>Fin: {new Date(metadata.endDate).toLocaleDateString()}</span>}
+      <Draggable draggableId={id} index={index} key={id}>
+        {(provided) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+            {...provided.dragHandleProps}
+            style={{ 
+              ...provided.draggableProps.style,
+              backgroundColor,
+              padding: '10px',
+              borderRadius: '6px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+              marginBottom: '10px',
+              color: textColor
+            }} 
+            data-task-id={id}
+          >
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'flex-start',
+              marginBottom: '5px'
+            }}>
+              <div style={{ 
+                fontSize: '14px', 
+                fontWeight: 'bold', 
+                marginBottom: '5px',
+                display: 'flex',
+                alignItems: 'center' 
+              }}>
+                {title}
+                {hasChildren && (
+                  <span 
+                    style={{
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      padding: '2px 6px',
+                      backgroundColor: 'rgba(0,0,0,0.1)',
+                      borderRadius: '4px',
+                      marginLeft: '5px'
+                    }}
+                    onClick={() => setExpanded(!expanded)}
+                  >
+                    {expanded ? '▼' : '▶'} {
+                      metadata.type === 'project' && projectMap[id]?.tasks ? 
+                        `${projectMap[id]?.tasks?.length} tareas` : 
+                        metadata.type === 'task' && taskMap[id]?.subtasks ? 
+                          `${taskMap[id]?.subtasks?.length} subtareas` : ''
+                    }
+                  </span>
+                )}
               </div>
-            )}
-          </div>
-          <UserAvatars 
-            itemId={metadata.entityId} 
-            itemType={metadata.type} 
-            maxDisplay={2} 
-            size="sm" 
-          />
-        </div>
-        
-        {expanded && hasChildren && (
-          <div style={{ 
-            marginTop: '10px',
-            borderTop: '1px solid rgba(0,0,0,0.1)',
-            paddingTop: '10px'
-          }}>
-            {metadata.type === 'project' && projectMap[id]?.tasks && (
-              <div className="project-tasks">
-                {(projectMap[id]?.tasks || []).map((taskId: string) => {
-                  const taskCardObj = taskMap[taskId]?.card;
-                  if (!taskCardObj) return null;
-                  
-                  return (
-                    <TaskWithSubtasks 
-                      key={taskId}
-                      taskId={taskId}
-                      taskCard={taskCardObj}
-                      taskMap={taskMap}
-                      cardColors={cardColors}
-                      getPriorityColor={getPriorityColor}
-                    />
-                  );
-                })}
+              <div>
+                {tags.map((tag: any, index: number) => (
+                  <span 
+                    key={index}
+                    style={{ 
+                      backgroundColor: tag.color,
+                      color: 'white',
+                      padding: '2px 6px',
+                      borderRadius: '3px',
+                      fontSize: '10px',
+                      marginRight: '4px'
+                    }}
+                  >
+                    {tag.title}
+                  </span>
+                ))}
+              </div>
+            </div>
+            
+            {description && (
+              <div style={{ fontSize: '12px', marginBottom: '5px' }}>
+                {description.length > 100 ? `${description.substring(0, 100)}...` : description}
               </div>
             )}
             
-            {metadata.type === 'task' && taskMap[id]?.subtasks && (
-              <SubtasksList 
-                subtaskIds={taskMap[id]?.subtasks || []}
-                taskMap={taskMap}
-                cardColors={cardColors}
-                getPriorityColor={getPriorityColor}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '5px' }}>
+              <div>
+                {(metadata.startDate || metadata.endDate) && (
+                  <div style={{ fontSize: '11px' }}>
+                    {metadata.startDate && <span>Inicio: {new Date(metadata.startDate).toLocaleDateString()}</span>}
+                    {metadata.startDate && metadata.endDate && <span> | </span>}
+                    {metadata.endDate && <span>Fin: {new Date(metadata.endDate).toLocaleDateString()}</span>}
+                  </div>
+                )}
+              </div>
+              <UserAvatars 
+                itemId={metadata.entityId} 
+                itemType={metadata.type} 
+                maxDisplay={2} 
+                size="sm" 
               />
+            </div>
+            
+            {expanded && hasChildren && (
+              <div style={{ 
+                marginTop: '10px',
+                borderTop: '1px solid rgba(0,0,0,0.1)',
+                paddingTop: '10px'
+              }}>
+                {metadata.type === 'project' && projectMap[id]?.tasks && (
+                  <div className="project-tasks">
+                    {(projectMap[id]?.tasks || []).map((taskId: string) => {
+                      const taskCardObj = taskMap[taskId]?.card;
+                      if (!taskCardObj) return null;
+                      
+                      return (
+                        <TaskWithSubtasks 
+                          key={taskId}
+                          taskId={taskId}
+                          taskCard={taskCardObj}
+                          taskMap={taskMap}
+                          cardColors={cardColors}
+                          getPriorityColor={getPriorityColor}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+                
+                {metadata.type === 'task' && taskMap[id]?.subtasks && (
+                  <SubtasksList 
+                    subtaskIds={taskMap[id]?.subtasks || []}
+                    taskMap={taskMap}
+                    cardColors={cardColors}
+                    getPriorityColor={getPriorityColor}
+                  />
+                )}
+              </div>
             )}
           </div>
         )}
-      </div>
+      </Draggable>
     );
   });
-
   if (loading) {
     return (
       <div className="text-center py-5">
@@ -836,7 +932,6 @@ const KanbanBoard: React.FC = () => {
       </div>
       
       <KanbanLegend />
-      {/* Se ha eliminado el componente debugInfo */}
       
       <div className="filter-controls mb-3">
         <Row>
@@ -889,78 +984,176 @@ const KanbanBoard: React.FC = () => {
         </Row>
       </div>
       
-      <div 
-        style={{ 
-          height: 'auto',
-          minHeight: '600px', 
-          overflowX: 'auto',
-          paddingBottom: '20px' 
-        }}
-        className="kanban-board-wrapper"
-      >
-        <div 
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            gap: '16px',
-            height: 'auto',
-            minHeight: '600px',
-            width: '100%'
-          }}
-        >
-          {data.lanes.map((lane) => (
+      {/* Solo mostrar DragDropContext si los droppables están habilitados */}
+      {isDroppableEnabled ? (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div 
+            style={{ 
+              height: 'auto',
+              minHeight: '600px', 
+              overflowX: 'auto',
+              paddingBottom: '20px' 
+            }}
+            className="kanban-board-wrapper"
+          >
             <div 
-              key={lane.id} 
-              className="custom-lane"
               style={{
-                flex: '1 1 0', // Distribución equitativa del espacio
-                minWidth: '300px', // Ancho mínimo para cada columna
-                backgroundColor: lane.style?.backgroundColor || '#f8f9fa',
-                borderRadius: '8px',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                 display: 'flex',
-                flexDirection: 'column',
+                flexDirection: 'row',
+                gap: '16px',
                 height: 'auto',
-                margin: '0'
+                minHeight: '600px',
+                width: '100%'
               }}
             >
-              <div 
-                className="lane-header"
-                style={{
-                  padding: '10px 15px',
-                  borderBottom: '1px solid rgba(0,0,0,0.1)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  color: lane.style?.color || '#212529',
-                  fontWeight: 'bold'
-                }}
-              >
-                <div>{lane.title}</div>
-                <div className="lane-count">{lane.label}</div>
-              </div>
-              <div 
-                className="lane-cards"
-                style={{
-                  padding: '10px',
-                  height: 'auto'
-                }}
-              >
-                {lane.cards.map((card) => (
-                  <CustomCard 
-                    key={card.id} 
-                    id={card.id} 
-                    title={card.title} 
-                    description={card.description} 
-                    metadata={card.metadata} 
-                    tags={card.tags} 
-                  />
-                ))}
-              </div>
+              {data.lanes.map((lane) => (
+                <div 
+                  key={lane.id} 
+                  className="custom-lane"
+                  style={{
+                    flex: '1 1 0', // Distribución equitativa del espacio
+                    minWidth: '300px', // Ancho mínimo para cada columna
+                    backgroundColor: lane.style?.backgroundColor || '#f8f9fa',
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: 'auto',
+                    margin: '0'
+                  }}
+                >
+                  <div 
+                    className="lane-header"
+                    style={{
+                      padding: '10px 15px',
+                      borderBottom: '1px solid rgba(0,0,0,0.1)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      color: lane.style?.color || '#212529',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    <div>{lane.title}</div>
+                    <div className="lane-count">{lane.label}</div>
+                  </div>
+                  <Droppable droppableId={lane.id} key={lane.id}>
+                    {(provided) => (
+                      <div 
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className="lane-cards"
+                        style={{
+                          padding: '10px',
+                          height: 'auto',
+                          minHeight: '100px'
+                        }}
+                      >
+                        {lane.cards.map((card, index) => (
+                          <CustomCard 
+                            key={card.id} 
+                            id={card.id} 
+                            title={card.title} 
+                            description={card.description} 
+                            metadata={card.metadata} 
+                            tags={card.tags}
+                            index={index}
+                          />
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+        </DragDropContext>
+      ) : (
+        // Versión sin DragDrop mientras se está cargando
+        <div 
+          style={{ 
+            height: 'auto',
+            minHeight: '600px', 
+            overflowX: 'auto',
+            paddingBottom: '20px' 
+          }}
+          className="kanban-board-wrapper"
+        >
+          <div 
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              gap: '16px',
+              height: 'auto',
+              minHeight: '600px',
+              width: '100%'
+            }}
+          >
+            {data.lanes.map((lane) => (
+              <div 
+                key={lane.id} 
+                className="custom-lane"
+                style={{
+                  flex: '1 1 0',
+                  minWidth: '300px',
+                  backgroundColor: lane.style?.backgroundColor || '#f8f9fa',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: 'auto',
+                  margin: '0'
+                }}
+              >
+                <div 
+                  className="lane-header"
+                  style={{
+                    padding: '10px 15px',
+                    borderBottom: '1px solid rgba(0,0,0,0.1)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    color: lane.style?.color || '#212529',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  <div>{lane.title}</div>
+                  <div className="lane-count">{lane.label}</div>
+                </div>
+                <div 
+                  className="lane-cards"
+                  style={{
+                    padding: '10px',
+                    height: 'auto',
+                    minHeight: '100px'
+                  }}
+                >
+                  {lane.cards.map((card, index) => (
+                    <div 
+                      key={card.id}
+                      style={{ 
+                        backgroundColor: card.metadata.type === 'project' 
+                          ? (card.metadata.progress === 100 ? cardColors.project.completed : cardColors.project.pending)
+                          : card.metadata.type === 'task'
+                            ? (card.metadata.progress === 100 ? cardColors.task.completed : cardColors.task.pending)
+                            : (card.metadata.progress === 100 ? cardColors.subtask.completed : cardColors.subtask.pending),
+                        padding: '10px',
+                        borderRadius: '6px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+                        marginBottom: '10px',
+                        color: card.metadata.type === 'project' ? 'white' : 'black'
+                      }}
+                    >
+                      <div>{card.title}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
