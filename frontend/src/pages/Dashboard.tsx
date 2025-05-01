@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Card, Button, ListGroup, Spinner } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, ListGroup, Spinner, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -16,6 +16,8 @@ import {
 import GanttChart from '../components/GanttChart';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
+// Importamos funciones del servicio de autenticación
+import { getUserName, logout, getToken } from '../services/authService';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -25,19 +27,23 @@ const Dashboard = () => {
   const [proyectos, setProyectos] = useState<number | null>(null);
   const [actividadReciente, setActividadReciente] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [showDataInfo, setShowDataInfo] = useState(false);
+  const [apiResponses, setApiResponses] = useState<any>({});
+  const [profileInfo, setProfileInfo] = useState<any>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
-  const token = localStorage.getItem('token');
+  // Obtenemos el token usando el servicio de autenticación
+  const token = getToken();
 
-  let user = {};
-  try {
-    const raw = localStorage.getItem('user');
-    user = raw ? JSON.parse(raw) : {};
-  } catch {
-    user = {};
-  }
+  // Nombre a mostrar en el saludo (valor inicial desde el servicio de autenticación)
+  const [nombreUsuario, setNombreUsuario] = useState<string>(getUserName());
 
-  const nombre = (user as any)?.nombre || 'Usuario';
+  useEffect(() => {
+    // Log para depuración
+    console.log("Estado actual de nombreUsuario:", nombreUsuario);
+  }, [nombreUsuario]);
 
   const chartData = [
     { nombre: 'Usuarios', cantidad: usuarios ?? 0 },
@@ -45,41 +51,235 @@ const Dashboard = () => {
     { nombre: 'Proyectos', cantidad: proyectos ?? 0 },
   ];
 
+  // Nueva función para obtener el perfil del usuario con mejor manejo de errores
+  const fetchUserProfile = async () => {
+    if (!token) {
+      console.log("No hay token, saltando fetchUserProfile");
+      return;
+    }
+    
+    setProfileError(null);
+    
+    try {
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      };
+      
+      console.log("Obteniendo perfil de usuario...");
+      const response = await axios.get('http://localhost:5000/api/users/profile', config);
+      console.log("Respuesta de perfil de usuario:", response.data);
+      
+      if (response.data && response.data.success && response.data.data) {
+        const userData = response.data.data;
+        if (userData.nombre) {
+          console.log("Actualizando nombre de usuario a:", userData.nombre);
+          // Actualizar estado con el nombre del usuario
+          setNombreUsuario(userData.nombre);
+          // También guardar toda la información del perfil
+          setProfileInfo(userData);
+        } else {
+          console.warn("La respuesta no contiene el campo 'nombre':", userData);
+          setProfileError("El perfil recibido no contiene nombre de usuario");
+        }
+      } else {
+        console.warn("Respuesta vacía o con formato incorrecto del servidor:", response.data);
+        setProfileError("Respuesta con formato inesperado del servidor");
+      }
+    } catch (error: any) {
+      console.error("Error obteniendo perfil de usuario:", error.response || error);
+      setProfileError(`Error obteniendo perfil: ${error.message}`);
+    }
+  };
+
+  // Función para contar usuarios utilizando una API alternativa
+  const fetchUserCount = async (config: any) => {
+    try {
+      console.log("Intentando obtener conteo de usuarios con ruta principal...");
+      // Primero intentar con la ruta protegida regular
+      const usersResponse = await axios.get('http://localhost:5000/api/users', config);
+      console.log("Respuesta exitosa de /api/users:", usersResponse.data);
+      
+      // Verificar si la respuesta tiene el formato esperado
+      if (usersResponse.data && usersResponse.data.success && Array.isArray(usersResponse.data.data)) {
+        return { 
+          success: true, 
+          data: usersResponse.data.data, 
+          count: usersResponse.data.data.length,
+          method: "users_list"
+        };
+      } else if (Array.isArray(usersResponse.data)) {
+        return { 
+          success: true, 
+          data: usersResponse.data, 
+          count: usersResponse.data.length,
+          method: "users_list_array"
+        };
+      } else {
+        console.warn("Formato de respuesta inesperado:", usersResponse.data);
+        return { 
+          success: true, 
+          data: usersResponse.data, 
+          count: 0,
+          method: "unknown_format"
+        };
+      }
+    } catch (error: any) {
+      console.log("Error con ruta principal:", error.response?.status || error.message);
+      
+      // Si hay error, intentar con API de conteo
+      try {
+        console.log("Intentando obtener conteo con ruta alternativa...");
+        // Intenta obtener solo el conteo (si existe esta ruta)
+        const countResponse = await axios.get('http://localhost:5000/api/users/count', config);
+        console.log("Respuesta exitosa de /api/users/count:", countResponse.data);
+        return { 
+          success: true, 
+          data: null, 
+          count: countResponse.data.count || 0,
+          method: "count_api"
+        };
+      } catch (secondError: any) {
+        // Si tampoco funciona, mostrar mensaje de error detallado
+        console.error("Error también con ruta alternativa:", secondError.response || secondError);
+        
+        // Usar valor predeterminado
+        console.warn("Usando valor predeterminado para conteo de usuarios");
+        return { 
+          success: false, 
+          data: null, 
+          count: 0, 
+          error: secondError,
+          method: "fallback"
+        };
+      }
+    }
+  };
+
   useEffect(() => {
+    // Cargar el perfil del usuario
+    console.log("Iniciando carga de perfil de usuario y datos del dashboard");
+    fetchUserProfile();
+    
     const fetchData = async () => {
+      setError(null);
+      
       try {
         const config = {
           headers: {
-            'x-auth-token': token || '',
+            'Authorization': `Bearer ${token || ''}`,
           },
         };
 
-        const [usersRes, tasksRes, projectsRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/users', config),
-          axios.get('http://localhost:5000/api/tasks', config),
-          axios.get('http://localhost:5000/api/projects', config),
+        // Función para obtener datos de forma segura
+        const fetchSafely = async (url: string, label: string) => {
+          try {
+            const response = await axios.get(url, config);
+            console.log(`Respuesta de ${label}:`, response.data);
+            return response;
+          } catch (err: any) {
+            console.error(`Error obteniendo ${label}:`, err.response || err);
+            return { data: null, error: err };
+          }
+        };
+
+        // Obtener datos de tareas y proyectos
+        const [tasksRes, projectsRes] = await Promise.all([
+          fetchSafely('http://localhost:5000/api/tasks', 'tareas'),
+          fetchSafely('http://localhost:5000/api/projects', 'proyectos'),
         ]);
+        
+        // Obtener conteo de usuarios con método especial
+        const usersRes = await fetchUserCount(config);
+        console.log("Resultado final de conteo de usuarios:", usersRes);
 
-        setUsuarios(usersRes.data.length);
-        setTareas(tasksRes.data?.data?.length || 0);
-        setProyectos(projectsRes.data?.data?.length || 0);
+        // Guardar las respuestas para inspección
+        setApiResponses({
+          users: usersRes,
+          tasks: tasksRes.data,
+          projects: projectsRes.data,
+          profile: profileInfo
+        });
 
-        const proyectosRecientes = projectsRes.data.data.slice(-3).reverse();
-        const tareasRecientes = tasksRes.data.data.slice(-3).reverse();
+        // Procesar datos de usuarios
+        let userCount = usersRes.count || 0;
+        console.log("Estableciendo conteo de usuarios:", userCount);
+        setUsuarios(userCount);
 
+        // Procesar datos de tareas de forma robusta
+        let taskCount = 0;
+        let taskData: any[] = [];
+        if (tasksRes.data) {
+          if (Array.isArray(tasksRes.data)) {
+            taskCount = tasksRes.data.length;
+            taskData = tasksRes.data;
+          } else if (tasksRes.data.data && Array.isArray(tasksRes.data.data)) {
+            taskCount = tasksRes.data.data.length;
+            taskData = tasksRes.data.data;
+          } else if (tasksRes.data.success && tasksRes.data.data && Array.isArray(tasksRes.data.data)) {
+            taskCount = tasksRes.data.data.length;
+            taskData = tasksRes.data.data;
+          }
+        }
+        setTareas(taskCount);
+
+        // Procesar datos de proyectos de forma robusta
+        let projectCount = 0;
+        let projectData: any[] = [];
+        if (projectsRes.data) {
+          if (Array.isArray(projectsRes.data)) {
+            projectCount = projectsRes.data.length;
+            projectData = projectsRes.data;
+          } else if (projectsRes.data.data && Array.isArray(projectsRes.data.data)) {
+            projectCount = projectsRes.data.data.length;
+            projectData = projectsRes.data.data;
+          } else if (projectsRes.data.success && projectsRes.data.data && Array.isArray(projectsRes.data.data)) {
+            projectCount = projectsRes.data.data.length;
+            projectData = projectsRes.data.data;
+          }
+        }
+        setProyectos(projectCount);
+
+        // Construir actividad reciente
         const actividad: string[] = [];
 
+        // Añadir proyectos recientes
+        const proyectosRecientes = projectData.slice(-3).reverse();
         proyectosRecientes.forEach((p: any) => {
-          actividad.push(`📁 Nuevo proyecto creado: ${p.nombre}`);
+          if (p && p.nombre) {
+            actividad.push(`📁 Nuevo proyecto creado: ${p.nombre}`);
+          }
         });
 
+        // Añadir tareas recientes
+        const tareasRecientes = taskData.slice(-3).reverse();
         tareasRecientes.forEach((t: any) => {
-          actividad.push(`📝 Nueva tarea: ${t.titulo}`);
+          if (t && t.titulo) {
+            actividad.push(`📝 Nueva tarea: ${t.titulo}`);
+          } else if (t && t.nombre) {
+            // Alternativa si se usa nombre en lugar de titulo
+            actividad.push(`📝 Nueva tarea: ${t.nombre}`);
+          }
         });
+
+        // Si no hay actividad, mostrar mensaje por defecto
+        if (actividad.length === 0 && (projectCount > 0 || taskCount > 0)) {
+          actividad.push('No se pudieron cargar detalles de actividad reciente');
+          // Había datos pero no pudimos extraer actividad específica
+          console.warn('No se pudieron extraer detalles de actividad reciente');
+        }
 
         setActividadReciente(actividad);
-      } catch (error) {
+
+        // Si no hay datos en general
+        if (userCount === 0 && taskCount === 0 && projectCount === 0) {
+          setError('No se encontraron datos para mostrar. Puede ser un problema de permisos o conexión.');
+        }
+
+      } catch (error: any) {
         console.error('Error cargando datos del dashboard:', error);
+        setError(`Error cargando datos: ${error.message || 'Error desconocido'}`);
       } finally {
         setLoading(false);
       }
@@ -88,13 +288,28 @@ const Dashboard = () => {
     fetchData();
   }, [token]);
 
+  // Usar la función de logout del servicio de autenticación
   const handleLogout = () => {
-    localStorage.clear();
+    logout();
     navigate('/');
   };
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
+  };
+
+  const toggleDataInfo = () => {
+    setShowDataInfo(!showDataInfo);
+  };
+
+  // Función para forzar recarga de datos
+  const handleRefresh = () => {
+    setLoading(true);
+    fetchUserProfile();
+    // Simular un pequeño retraso para que se vea el spinner
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
   };
 
   const contentStyle = {
@@ -113,11 +328,15 @@ const Dashboard = () => {
       <div style={contentStyle}>
         <Container className="py-4 px-4">
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h2 className="mb-0 fw-bold">Bienvenido, {nombre}</h2>
+            <h2 className="mb-0 fw-bold">Bienvenido, {nombreUsuario}</h2>
             <div className="d-flex gap-2">
-              <Button variant="outline-secondary">
+              <Button variant="outline-info" className="me-2" onClick={handleRefresh}>
+                <i className="bi bi-arrow-clockwise me-1"></i>
+                Recargar
+              </Button>
+              <Button variant="outline-secondary" onClick={() => navigate('/projects')}>
                 <i className="bi bi-plus me-2"></i>
-                Nueva Proyecto
+                Nuevo Proyecto
               </Button>
               <Button variant="outline-primary">
                 <i className="bi bi-plus me-2"></i>
@@ -126,9 +345,50 @@ const Dashboard = () => {
             </div>
           </div>
 
+          {profileError && (
+            <Alert variant="info" className="mb-4">
+              <small>
+                <i className="bi bi-info-circle me-2"></i>
+                {profileError} 
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  className="p-0 ms-2" 
+                  onClick={fetchUserProfile}
+                >
+                  Reintentar
+                </Button>
+              </small>
+            </Alert>
+          )}
+
+          {error && (
+            <Alert variant="warning" className="mb-4">
+              <Alert.Heading>Atención</Alert.Heading>
+              <p>{error}</p>
+              <div className="d-flex justify-content-end">
+                <Button variant="outline-info" size="sm" onClick={toggleDataInfo}>
+                  {showDataInfo ? 'Ocultar detalles' : 'Ver detalles técnicos'}
+                </Button>
+              </div>
+              
+              {showDataInfo && (
+                <div className="mt-3 small">
+                  <hr />
+                  <h6>Información para desarrolladores:</h6>
+                  <p>Respuestas API:</p>
+                  <pre className="bg-light p-2" style={{ maxHeight: '200px', overflow: 'auto' }}>
+                    {JSON.stringify(apiResponses, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </Alert>
+          )}
+
           {loading ? (
             <div className="text-center py-5">
               <Spinner animation="border" variant="primary" />
+              <p className="mt-3 text-muted">Cargando datos del dashboard...</p>
             </div>
           ) : (
             <>

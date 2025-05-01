@@ -1,8 +1,8 @@
 // src/pages/LoginPage.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { login } from '../services/authService'; // Importar el servicio de autenticación
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -31,32 +31,29 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
-        email,
-        password
-      });
-
-      const { token, usuario } = response.data;
-      localStorage.setItem('token', token);
-
-      if (usuario) {
-        localStorage.setItem('user', JSON.stringify(usuario));
+      // Usar la función de login del servicio de autenticación
+      const result = await login(email, password);
+      
+      if (result.success) {
+        Swal.fire({
+          title: '¡Bienvenido!',
+          text: '¡Inicio de sesión exitoso!',
+          icon: 'success',
+          iconColor: '#339fff',
+          timer: 1500,
+          showConfirmButton: false
+        }).then(() => {
+          navigate('/dashboard');
+        });
+      } else {
+        throw new Error(result.error?.message || 'Error desconocido');
       }
+    } catch (error: any) {
+      console.error('Error durante el login:', error);
       
       Swal.fire({
-        title: '¡Bienvenido!',
-        text: '¡Inicio de sesión exitoso!',
-        icon: 'success',
-        iconColor: '#339fff',
-        timer: 1500,
-        showConfirmButton: false
-      }).then(() => {
-        navigate('/dashboard');
-      });
-    } catch (error: any) {
-      Swal.fire({
         title: 'Error',
-        text: error.response?.data?.message || 'Error al iniciar sesión',
+        text: error.message || 'Error al iniciar sesión',
         icon: 'error',
         confirmButtonText: 'Intentar nuevamente',
         confirmButtonColor: '#3085d6'

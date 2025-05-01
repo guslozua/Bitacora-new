@@ -1,6 +1,8 @@
 import axios from 'axios';
+import { getToken } from './authService'; // Importamos getToken del servicio de autenticación
 
-const token = localStorage.getItem('token');
+// Usar getToken en lugar de acceder directamente a localStorage
+const token = getToken();
 
 if (token) {
   axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -69,12 +71,12 @@ export const getParentTaskId = (subtaskId: string): string | null => {
   return null;
 };
 
-// Función auxiliar para obtener la configuración de autenticación
+// Función auxiliar para obtener la configuración de autenticación - actualizada
 const getAuthConfig = () => {
-  const token = localStorage.getItem('token');
+  const token = getToken(); // Usar getToken en lugar de localStorage
   return {
     headers: {
-      'x-auth-token': token || '',
+      'Authorization': `Bearer ${token || ''}`,
       'Content-Type': 'application/json'
     }
   };
@@ -630,7 +632,7 @@ export const diagnoseAPI = async () => {
   return results;
 };
 
-// Función para limpiar caché - ASEGURAMOS EXPORTACIÓN
+// Función para limpiar caché
 export const clearCache = () => {
   Object.keys(assignedUsersCache).forEach(key => {
     delete assignedUsersCache[key];

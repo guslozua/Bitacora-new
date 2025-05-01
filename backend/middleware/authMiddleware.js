@@ -1,4 +1,4 @@
-///middleware/authMiddleware.js
+// middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
 const UserModel = require('../models/UserModel');
 
@@ -27,12 +27,24 @@ module.exports = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       UserModel.getUserById(decoded.id, (err, results) => {
         if (err || results.length === 0) {
+          console.error('Error o usuario no encontrado:', err);
           return res.status(401).json({ success: false, message: 'Usuario no encontrado' });
         }
+        
         const user = results[0];
+        console.log('Usuario autenticado:', {
+          id: user.id,
+          nombre: user.nombre,
+          email: user.email,
+          estado: user.estado,
+          roles: user.roles
+        });
+        
         if (user.estado === 'bloqueado') {
           return res.status(403).json({ success: false, message: 'Cuenta bloqueada' });
         }
+        
+        // Asignar el usuario al request para uso posterior
         req.user = user;
         next();
       });

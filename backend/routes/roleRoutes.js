@@ -15,4 +15,10 @@ router.post('/', authMiddleware, roleMiddleware(['SuperAdmin']), createRole);
 // Asignar un rol a un usuario
 router.put('/assign', authMiddleware, roleMiddleware(['SuperAdmin']), assignRoleToUser);
 
+// Quitar un rol a un usuario
+router.delete('/assign', authMiddleware, roleMiddleware(['SuperAdmin']), removeRoleFromUser);
+
+// Obtener roles de un usuario
+router.get('/user/:userId', authMiddleware, roleMiddleware(['Admin', 'SuperAdmin']), getUserRoles);
+
 module.exports = router;

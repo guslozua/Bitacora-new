@@ -2,8 +2,11 @@ import React, { useEffect } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import logo from './logo.svg';
 import './App.css';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { SidebarVisibilityProvider } from './services/SidebarVisibilityContext'; // 
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { SidebarVisibilityProvider } from './services/SidebarVisibilityContext';
+import { initializeAuth, isAuthenticated } from './services/authService'; // Importar funciones de autenticación
+
+// Páginas
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
@@ -16,7 +19,21 @@ import AbmDashboard from './pages/AbmDashboard';
 import AbmUpload from './pages/AbmUpload';
 import AdminPanel from './pages/AdminPanel';
 import PlacasDash from './pages/PlacasDash';
-import Error404 from './pages/Error404'; // Importa la página de error
+import Error404 from './pages/Error404';
+
+// Componente para rutas protegidas
+interface ProtectedRouteProps {
+  element: React.ReactNode;
+  path?: string;
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element }) => {
+  // Redirigir a login si no está autenticado
+  if (!isAuthenticated()) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{element}</>;
+};
 
 // Hack para solucionar problemas con react-beautiful-dnd en React 18
 const originalConsoleError = console.error;
@@ -33,7 +50,12 @@ console.error = (...args) => {
 };
 
 const App: React.FC = () => {
-  // Hook para suprimir errores específicos de ResizeObserver que pueden ocurrir con react-beautiful-dnd
+  // Inicializar autenticación al cargar la aplicación
+  useEffect(() => {
+    initializeAuth();
+  }, []);
+
+  // Hook para suprimir errores específicos de ResizeObserver
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
       if (
@@ -56,18 +78,23 @@ const App: React.FC = () => {
     <Router>
       <SidebarVisibilityProvider>
         <Routes>
+          {/* Rutas públicas */}
           <Route path="/" element={<LoginPage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/itracker" element={<ItrackerUpload />} />
-          <Route path="/itrackerdash" element={<ItrackerDash />} />
-          <Route path="/tabulaciones" element={<TabulacionesUpload />} />
-          <Route path="/tabulacionesdash" element={<TabulacionesDash />} />
-          <Route path="/admin" element={<AdminPanel />} />
-          <Route path="/abmdashboard" element={<AbmDashboard />} />
-          <Route path="/abm" element={<AbmUpload />} />
-          <Route path="/placasdash" element={<PlacasDash />} />
+          
+          {/* Rutas protegidas */}
+          <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
+          <Route path="/projects" element={<ProtectedRoute element={<Projects />} />} />
+          <Route path="/tasks" element={<ProtectedRoute element={<Tasks />} />} />
+          <Route path="/itracker" element={<ProtectedRoute element={<ItrackerUpload />} />} />
+          <Route path="/itrackerdash" element={<ProtectedRoute element={<ItrackerDash />} />} />
+          <Route path="/tabulaciones" element={<ProtectedRoute element={<TabulacionesUpload />} />} />
+          <Route path="/tabulacionesdash" element={<ProtectedRoute element={<TabulacionesDash />} />} />
+          <Route path="/admin" element={<ProtectedRoute element={<AdminPanel />} />} />
+          <Route path="/abmdashboard" element={<ProtectedRoute element={<AbmDashboard />} />} />
+          <Route path="/abm" element={<ProtectedRoute element={<AbmUpload />} />} />
+          <Route path="/placasdash" element={<ProtectedRoute element={<PlacasDash />} />} />
+          
+          {/* Ruta para errores */}
           <Route path="*" element={<Error404 />} />
         </Routes>
       </SidebarVisibilityProvider>

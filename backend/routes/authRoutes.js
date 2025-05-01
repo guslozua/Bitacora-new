@@ -1,33 +1,77 @@
+// routes/authRoutes.js
 const express = require('express');
-const { registerUser, loginUser, changePassword } = require('../controllers/authController');
+const { check } = require('express-validator');
+const {
+  registerUser,
+  loginUser,
+  changePassword,
+  verifyUser,
+  requestPasswordReset,
+  resetPassword
+} = require('../controllers/authController');
 const authMiddleware = require('../middleware/authMiddleware');
+
 const router = express.Router();
 
-// Ruta de test simple
-router.post('/test', (req, res) => {
-  console.log('Test en auth route recibido');
+// MIDDLEWARE DE DEPURACIÓN
+router.use((req, res, next) => {
+  console.log('Entrando a ruta', req.path);
   console.log('Body:', req.body);
-  res.json({ message: 'Auth test route OK', body: req.body });
+  next();
 });
 
-// Agregar logs a las rutas existentes
-router.post('/register', (req, res, next) => {
-  console.log('Entrando a ruta /register');
-  console.log('Body:', req.body);
-  next();
-}, registerUser);
+// Registro de usuario
+router.post(
+  '/register',
+  [
+    check('nombre', 'El nombre es obligatorio').not().isEmpty(),
+    check('email', 'Por favor incluya un email válido').isEmail(),
+    check('password', 'Por favor ingrese una contraseña con 6 o más caracteres').isLength({ min: 6 })
+  ],
+  registerUser
+);
 
-router.post('/login', (req, res, next) => {
-  console.log('Entrando a ruta /login');
-  console.log('Body:', req.body);
-  next();
-}, loginUser);
+// Login de usuario
+router.post(
+  '/login',
+  [
+    check('email', 'Por favor incluya un email válido').isEmail(),
+    check('password', 'La contraseña es obligatoria').exists()
+  ],
+  loginUser
+);
 
-// cambiar pass
-router.put('/change-password', authMiddleware, (req, res, next) => {
-  console.log('Entrando a ruta /change-password');
-  console.log('Body:', req.body);
-  next();
-}, changePassword);
+// Cambiar contraseña (requiere autenticación)
+router.put(
+  '/password',
+  authMiddleware,
+  [
+    check('currentPassword', 'La contraseña actual es obligatoria').exists(),
+    check('newPassword', 'La nueva contraseña debe tener 6 o más caracteres').isLength({ min: 6 })
+  ],
+  changePassword
+);
+
+// Verificar usuario (ruta protegida para pruebas)
+router.get('/verify', authMiddleware, verifyUser);
+
+// Solicitar recuperación de contraseña
+router.post(
+  '/forgot-password',
+  [
+    check('email', 'Por favor incluya un email válido').isEmail()
+  ],
+  requestPasswordReset
+);
+
+// Resetear contraseña
+router.post(
+  '/reset-password',
+  [
+    check('token', 'Token es requerido').not().isEmpty(),
+    check('newPassword', 'La nueva contraseña debe tener 6 o más caracteres').isLength({ min: 6 })
+  ],
+  resetPassword
+);
 
 module.exports = router;
