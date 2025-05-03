@@ -102,7 +102,7 @@ const AdminPanel: React.FC = () => {
     setIsDirty(true);
   };
   const sidebarItemsMeta: SidebarItemMeta[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'bi-speedometer2', color: '#3498db' },
+    { id: 'dashboard', label: 'Dashboard', icon: 'bi-clipboard-data-fill', color: '#3498db' },
     { id: 'proyectos', label: 'Proyectos', icon: 'bi-diagram-3-fill', color: '#2ecc71' },
     { id: 'placas', label: 'Placas', icon: 'bi-clipboard', color: '#f1c40f' },
     { id: 'usuarios', label: 'ABM Usuarios', icon: 'bi-people-fill', color: '#e74c3c' },

@@ -175,7 +175,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
   };
 
   const menuItems = [
-    { id: 'dashboard', icon: 'bi-speedometer2', label: 'Dashboard', route: '/dashboard' },
+    { id: 'dashboard', icon: 'bi-clipboard-data-fill', label: 'Dashboard', route: '/dashboard' },
     { id: 'proyectos', icon: 'bi-diagram-3-fill', label: 'Proyectos', route: '/projects' },
     { id: 'placas', icon: 'bi-clipboard', label: 'Placas', route: '/placasdash' },
     { id: 'usuarios', icon: 'bi-people-fill', label: 'ABM Usuarios', route: '/abmdashboard' },

@@ -229,7 +229,7 @@ const Projects = () => {
                             height: '3.5rem',
                             padding: 0
                           }}>
-                          <i className="bi bi-folder fs-3 text-info" />
+                          <i className="bi bi-diagram-3-fill fs-3 text-info" />
                         </div>
                       </div>
                     </Card.Body>

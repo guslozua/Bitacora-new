@@ -26,7 +26,9 @@ export interface User {
 // Interfaces adicionales para el panel de administración
 export interface UserAdmin extends User {
   estado?: string;
+  status?: string;
   roles?: string[];
+  role?: string;
   ultimo_acceso?: string | Date;
   imagen_perfil?: string;
 }
@@ -246,6 +248,267 @@ export const fetchUserCount = async (): Promise<ApiResponse & { count: number }>
     return response.data;
   } catch (error: any) {
     console.error('Error al obtener conteo de usuarios:', error);
+    throw error;
+  }
+};
+
+// Obtener cantidad de usuarios activos (método alternativo)
+export const fetchActiveUserCount = async (): Promise<ApiResponse & { count: number }> => {
+  try {
+    // Intentar primero con parámetro de filtro
+    try {
+      const response = await axios.get(`${API_BASE_URL}/users/count?estado=activo`, getAuthConfig());
+      if (response.data && response.data.success && response.data.count !== undefined) {
+        return response.data;
+      }
+    } catch (err) {
+      console.log('Error con filtro estado=activo, probando alternativas');
+    }
+    
+    // Alternativa: usar endpoint específico
+    try {
+      const response = await axios.get(`${API_BASE_URL}/users/active/count`, getAuthConfig());
+      if (response.data && response.data.success && response.data.count !== undefined) {
+        return response.data;
+      }
+    } catch (err) {
+      console.log('Error con endpoint /users/active/count, probando alternativas');
+    }
+    
+    // Alternativa: obtener todos los usuarios y filtrar manualmente
+    const response = await axios.get(`${API_BASE_URL}/users`, getAuthConfig());
+    let users = [];
+    
+    if (response.data && Array.isArray(response.data)) {
+      users = response.data;
+    } else if (response.data && response.data.success && Array.isArray(response.data.data)) {
+      users = response.data.data;
+    } else if (response.data && response.data.success && Array.isArray(response.data.usuarios)) {
+      users = response.data.usuarios;
+    }
+    
+    // Contar usuarios activos (estado === 'activo')
+    const activeCount = users.filter((user: UserAdmin) => 
+      user.estado === 'activo' || 
+      user.status === 'active' || 
+      user.estado === 'active' || 
+      user.status === 'activo'
+    ).length;
+    
+    return { success: true, count: activeCount };
+  } catch (error: any) {
+    console.error('Error al obtener conteo de usuarios activos:', error);
+    throw error;
+  }
+};
+
+// Obtener cantidad de usuarios con rol de administrador (método alternativo)
+// Obtener cantidad de usuarios con rol de administrador (método alternativo)
+export const fetchAdminCount = async (): Promise<ApiResponse & { count: number }> => {
+  try {
+    // Intentar primero con parámetro de filtro
+    try {
+      const response = await axios.get(`${API_BASE_URL}/users/count?rol=admin,superadmin`, getAuthConfig());
+      if (response.data && response.data.success && response.data.count !== undefined) {
+        return response.data;
+      }
+    } catch (err) {
+      console.log('Error con filtro rol=admin,superadmin, probando alternativas');
+    }
+    
+    // Alternativa: usar endpoint específico
+    try {
+      const response = await axios.get(`${API_BASE_URL}/users/admin/count`, getAuthConfig());
+      if (response.data && response.data.success && response.data.count !== undefined) {
+        return response.data;
+      }
+    } catch (err) {
+      console.log('Error con endpoint /users/admin/count, probando alternativas');
+    }
+    
+    // Alternativa: obtener todos los usuarios y filtrar manualmente
+    const response = await axios.get(`${API_BASE_URL}/users`, getAuthConfig());
+    let users = [];
+    
+    if (response.data && Array.isArray(response.data)) {
+      users = response.data;
+    } else if (response.data && response.data.success && Array.isArray(response.data.data)) {
+      users = response.data.data;
+    } else if (response.data && response.data.success && Array.isArray(response.data.usuarios)) {
+      users = response.data.usuarios;
+    }
+    
+    // Registrar información detallada sobre cada usuario para depuración
+    console.log("=== DEPURACIÓN DE ROLES DE USUARIOS ===");
+    users.forEach((user: UserAdmin, index: number) => {
+      console.log(`Usuario ${index+1} - ID: ${user.id}`);
+      console.log(`  Nombre: ${user.nombre}`);
+      console.log(`  Email: ${user.email}`);
+      console.log(`  Campo 'rol': ${user.rol}`);
+      console.log(`  Campo 'role': ${user.role}`);
+      console.log(`  Campo 'roles': ${user.roles ? JSON.stringify(user.roles) : 'no definido'}`);
+      
+      // Verificar todos los campos del objeto para buscar roles
+      const allProps = Object.keys(user);
+      console.log(`  Todas las propiedades: ${allProps.join(', ')}`);
+      
+      // Buscar cualquier propiedad que pueda contener "admin" o "role"
+      const adminProps = allProps.filter(prop => 
+        prop.toLowerCase().includes('admin') || 
+        prop.toLowerCase().includes('role') || 
+        prop.toLowerCase().includes('rol')
+      );
+      
+      if (adminProps.length > 0) {
+        console.log(`  Propiedades relacionadas con roles: ${adminProps.join(', ')}`);
+        adminProps.forEach(prop => {
+          console.log(`    ${prop}: ${JSON.stringify((user as any)[prop])}`);
+        });
+      }
+      
+      console.log("----------------------------");
+    });
+
+    // Ampliar la lógica de detección de administradores para considerar más casos
+    const adminCount = users.filter((user: UserAdmin) => {
+      // Verificar diferentes formatos posibles
+      
+      // 1. Verificar un array de roles
+      if (user.roles && Array.isArray(user.roles)) {
+        const isAdmin = user.roles.some((rol: string) => 
+          String(rol).toLowerCase().includes('admin') || 
+          String(rol).toLowerCase().includes('superadmin') || 
+          String(rol).toLowerCase().includes('administrator')
+        );
+        if (isAdmin) {
+          console.log(`Usuario ${user.nombre} (${user.email}) es admin por array de roles: ${JSON.stringify(user.roles)}`);
+          return true;
+        }
+      }
+      
+      // 2. Verificar campo rol como string
+      if (user.rol) {
+        const isAdmin = String(user.rol).toLowerCase().includes('admin') || 
+                       String(user.rol).toLowerCase().includes('superadmin') || 
+                       String(user.rol).toLowerCase().includes('administrator');
+        if (isAdmin) {
+          console.log(`Usuario ${user.nombre} (${user.email}) es admin por campo rol: ${user.rol}`);
+          return true;
+        }
+      }
+      
+      // 3. Verificar campo role como string
+      if (user.role) {
+        const isAdmin = String(user.role).toLowerCase().includes('admin') || 
+                       String(user.role).toLowerCase().includes('superadmin') || 
+                       String(user.role).toLowerCase().includes('administrator');
+        if (isAdmin) {
+          console.log(`Usuario ${user.nombre} (${user.email}) es admin por campo role: ${user.role}`);
+          return true;
+        }
+      }
+      
+      // 4. Buscar en cualquier otra propiedad que pueda contener rol
+      const allProps = Object.keys(user);
+      const adminProps = allProps.filter(prop => 
+        prop.toLowerCase().includes('admin') || 
+        prop.toLowerCase().includes('role') || 
+        prop.toLowerCase().includes('rol')
+      );
+      
+      for (const prop of adminProps) {
+        const value = (user as any)[prop];
+        if (typeof value === 'string' && String(value).toLowerCase().includes('admin')) {
+          console.log(`Usuario ${user.nombre} (${user.email}) es admin por campo ${prop}: ${value}`);
+          return true;
+        }
+        if (Array.isArray(value) && value.some(v => typeof v === 'string' && String(v).toLowerCase().includes('admin'))) {
+          console.log(`Usuario ${user.nombre} (${user.email}) es admin por array en campo ${prop}: ${JSON.stringify(value)}`);
+          return true;
+        }
+        // Si es un objeto, verificar sus propiedades también
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          const objProps = Object.entries(value);
+          for (const [key, val] of objProps) {
+            if (
+              (typeof val === 'string' && String(val).toLowerCase().includes('admin')) ||
+              (typeof key === 'string' && String(key).toLowerCase().includes('admin') && val === true)
+            ) {
+              console.log(`Usuario ${user.nombre} (${user.email}) es admin por propiedad anidada ${prop}.${key}: ${val}`);
+              return true;
+            }
+          }
+        }
+      }
+      
+      return false;
+    }).length;
+
+    console.log(`Total de administradores detectados: ${adminCount}`);
+    console.log("=== FIN DEPURACIÓN DE ROLES ===");
+
+    return { success: true, count: adminCount };
+  } catch (error: any) {
+    console.error('Error al obtener conteo de administradores:', error);
+    throw error;
+  }
+};
+// Obtener cantidad de usuarios bloqueados (método alternativo)
+export const fetchBlockedUserCount = async (): Promise<ApiResponse & { count: number }> => {
+  try {
+    // Intentar primero con parámetro de filtro
+    try {
+      const response = await axios.get(`${API_BASE_URL}/users/count?estado=bloqueado`, getAuthConfig());
+      if (response.data && response.data.success && response.data.count !== undefined) {
+        return response.data;
+      }
+    } catch (err) {
+      console.log('Error con filtro estado=bloqueado, probando alternativas');
+    }
+    
+    // Probar con otros posibles parámetros
+    try {
+      const response = await axios.get(`${API_BASE_URL}/users/count?status=blocked`, getAuthConfig());
+      if (response.data && response.data.success && response.data.count !== undefined) {
+        return response.data;
+      }
+    } catch (err) {
+      console.log('Error con filtro status=blocked, probando alternativas');
+    }
+    
+    // Alternativa: usar endpoint específico
+    try {
+      const response = await axios.get(`${API_BASE_URL}/users/blocked/count`, getAuthConfig());
+      if (response.data && response.data.success && response.data.count !== undefined) {
+        return response.data;
+      }
+    } catch (err) {
+      console.log('Error con endpoint /users/blocked/count, probando alternativas');
+    }
+    
+    // Alternativa: obtener todos los usuarios y filtrar manualmente
+    const response = await axios.get(`${API_BASE_URL}/users`, getAuthConfig());
+    let users = [];
+    
+    if (response.data && Array.isArray(response.data)) {
+      users = response.data;
+    } else if (response.data && response.data.success && Array.isArray(response.data.data)) {
+      users = response.data.data;
+    } else if (response.data && response.data.success && Array.isArray(response.data.usuarios)) {
+      users = response.data.usuarios;
+    }
+    
+    // Contar usuarios bloqueados (estado === 'bloqueado' o similar)
+    const blockedCount = users.filter((user: UserAdmin) => 
+      user.estado === 'bloqueado' || 
+      user.status === 'blocked' || 
+      user.estado === 'blocked' || 
+      user.status === 'bloqueado'
+    ).length;
+    
+    return { success: true, count: blockedCount };
+  } catch (error: any) {
+    console.error('Error al obtener conteo de usuarios bloqueados:', error);
     throw error;
   }
 };

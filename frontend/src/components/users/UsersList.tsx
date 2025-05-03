@@ -1,21 +1,26 @@
 // src/components/users/UsersList.tsx
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Badge, Pagination, Spinner, Alert, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { fetchAdminUsers, deleteUser, updateUser, UserFilters, UserAdmin } from '../../services/userService';
+import UserDetailModal from './UserDetailModal';
 
 interface UsersListProps {
   filters?: UserFilters;
+  onEditUser?: (userId: string) => void; // Prop para editar usuario
+  onViewUser?: (userId: string) => void; // Prop para ver detalles (opcional)
 }
 
-const UsersList: React.FC<UsersListProps> = ({ filters = {} }) => {
+const UsersList: React.FC<UsersListProps> = ({ filters = {}, onEditUser, onViewUser }) => {
   const [users, setUsers] = useState<UserAdmin[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
-  const navigate = useNavigate();
+  
+  // Estados para el modal de detalles
+  const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   
   const loadUsers = async () => {
     try {
@@ -51,12 +56,26 @@ const UsersList: React.FC<UsersListProps> = ({ filters = {} }) => {
   
   // Ver detalles de usuario
   const handleViewUser = (userId: number) => {
-    navigate(`/admin/users/${userId}`);
+    // Si existe onViewUser (prop externa), usarla
+    if (onViewUser) {
+      onViewUser(String(userId));
+    } else {
+      // Si no, usar el modal interno
+      setSelectedUserId(String(userId));
+      setShowDetailModal(true);
+    }
   };
   
-  // Editar usuario
+  // Cerrar modal de detalles
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+  };
+  
+  // Editar usuario desde el modal de detalles o desde la lista
   const handleEditUser = (userId: number) => {
-    navigate(`/admin/users/${userId}/edit`);
+    if (onEditUser) {
+      onEditUser(String(userId));
+    }
   };
   
   // Mostrar SweetAlert para eliminar usuario
@@ -220,7 +239,7 @@ const UsersList: React.FC<UsersListProps> = ({ filters = {} }) => {
   }
   
   return (
-    <div>
+    <>
       {error && <Alert variant="danger">{error}</Alert>}
       
       <Table responsive striped hover className="align-middle">
@@ -316,7 +335,15 @@ const UsersList: React.FC<UsersListProps> = ({ filters = {} }) => {
           </Pagination>
         </div>
       )}
-    </div>
+      
+      {/* Modal de detalles */}
+      <UserDetailModal
+        show={showDetailModal}
+        onHide={handleCloseDetailModal}
+        userId={selectedUserId}
+        onEdit={onEditUser ? (userId) => onEditUser(userId) : undefined}
+      />
+    </>
   );
 };
 
