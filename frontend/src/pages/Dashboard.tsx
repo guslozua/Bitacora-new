@@ -57,20 +57,20 @@ const Dashboard = () => {
       console.log("No hay token, saltando fetchUserProfile");
       return;
     }
-    
+
     setProfileError(null);
-    
+
     try {
       const config = {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       };
-      
+
       console.log("Obteniendo perfil de usuario...");
       const response = await axios.get('http://localhost:5000/api/users/profile', config);
       console.log("Respuesta de perfil de usuario:", response.data);
-      
+
       if (response.data && response.data.success && response.data.data) {
         const userData = response.data.data;
         if (userData.nombre) {
@@ -100,56 +100,56 @@ const Dashboard = () => {
       // Primero intentar con la ruta protegida regular
       const usersResponse = await axios.get('http://localhost:5000/api/users', config);
       console.log("Respuesta exitosa de /api/users:", usersResponse.data);
-      
+
       // Verificar si la respuesta tiene el formato esperado
       if (usersResponse.data && usersResponse.data.success && Array.isArray(usersResponse.data.data)) {
-        return { 
-          success: true, 
-          data: usersResponse.data.data, 
+        return {
+          success: true,
+          data: usersResponse.data.data,
           count: usersResponse.data.data.length,
           method: "users_list"
         };
       } else if (Array.isArray(usersResponse.data)) {
-        return { 
-          success: true, 
-          data: usersResponse.data, 
+        return {
+          success: true,
+          data: usersResponse.data,
           count: usersResponse.data.length,
           method: "users_list_array"
         };
       } else {
         console.warn("Formato de respuesta inesperado:", usersResponse.data);
-        return { 
-          success: true, 
-          data: usersResponse.data, 
+        return {
+          success: true,
+          data: usersResponse.data,
           count: 0,
           method: "unknown_format"
         };
       }
     } catch (error: any) {
       console.log("Error con ruta principal:", error.response?.status || error.message);
-      
+
       // Si hay error, intentar con API de conteo
       try {
         console.log("Intentando obtener conteo con ruta alternativa...");
         // Intenta obtener solo el conteo (si existe esta ruta)
         const countResponse = await axios.get('http://localhost:5000/api/users/count', config);
         console.log("Respuesta exitosa de /api/users/count:", countResponse.data);
-        return { 
-          success: true, 
-          data: null, 
+        return {
+          success: true,
+          data: null,
           count: countResponse.data.count || 0,
           method: "count_api"
         };
       } catch (secondError: any) {
         // Si tampoco funciona, mostrar mensaje de error detallado
         console.error("Error también con ruta alternativa:", secondError.response || secondError);
-        
+
         // Usar valor predeterminado
         console.warn("Usando valor predeterminado para conteo de usuarios");
-        return { 
-          success: false, 
-          data: null, 
-          count: 0, 
+        return {
+          success: false,
+          data: null,
+          count: 0,
           error: secondError,
           method: "fallback"
         };
@@ -161,10 +161,10 @@ const Dashboard = () => {
     // Cargar el perfil del usuario
     console.log("Iniciando carga de perfil de usuario y datos del dashboard");
     fetchUserProfile();
-    
+
     const fetchData = async () => {
       setError(null);
-      
+
       try {
         const config = {
           headers: {
@@ -189,7 +189,7 @@ const Dashboard = () => {
           fetchSafely('http://localhost:5000/api/tasks', 'tareas'),
           fetchSafely('http://localhost:5000/api/projects', 'proyectos'),
         ]);
-        
+
         // Obtener conteo de usuarios con método especial
         const usersRes = await fetchUserCount(config);
         console.log("Resultado final de conteo de usuarios:", usersRes);
@@ -349,11 +349,11 @@ const Dashboard = () => {
             <Alert variant="info" className="mb-4">
               <small>
                 <i className="bi bi-info-circle me-2"></i>
-                {profileError} 
-                <Button 
-                  variant="link" 
-                  size="sm" 
-                  className="p-0 ms-2" 
+                {profileError}
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="p-0 ms-2"
                   onClick={fetchUserProfile}
                 >
                   Reintentar
@@ -371,7 +371,7 @@ const Dashboard = () => {
                   {showDataInfo ? 'Ocultar detalles' : 'Ver detalles técnicos'}
                 </Button>
               </div>
-              
+
               {showDataInfo && (
                 <div className="mt-3 small">
                   <hr />
@@ -401,7 +401,12 @@ const Dashboard = () => {
                           <h6 className="text-muted mb-1">Proyectos Activos</h6>
                           <h2 className="fw-bold mb-0">{proyectos ?? 0}</h2>
                         </div>
-                        <div className="bg-primary bg-opacity-10 p-3 rounded-circle">
+                        <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                          style={{
+                            width: '3.5rem',
+                            height: '3.5rem',
+                            padding: 0
+                          }}>
                           <i className="bi bi-diagram-3-fill fs-3 text-primary" />
                         </div>
                       </div>
@@ -416,7 +421,12 @@ const Dashboard = () => {
                           <h6 className="text-muted mb-1">Tareas Pendientes</h6>
                           <h2 className="fw-bold mb-0">{tareas ?? 0}</h2>
                         </div>
-                        <div className="bg-warning bg-opacity-10 p-3 rounded-circle">
+                        <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                          style={{
+                            width: '3.5rem',
+                            height: '3.5rem',
+                            padding: 0
+                          }}>
                           <i className="bi bi-list-task fs-3 text-warning" />
                         </div>
                       </div>
@@ -431,7 +441,12 @@ const Dashboard = () => {
                           <h6 className="text-muted mb-1">Usuarios</h6>
                           <h2 className="fw-bold mb-0">{usuarios ?? 0}</h2>
                         </div>
-                        <div className="bg-success bg-opacity-10 p-3 rounded-circle">
+                        <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                          style={{
+                            width: '3.5rem',
+                            height: '3.5rem',
+                            padding: 0
+                          }}>
                           <i className="bi bi-people-fill fs-3 text-success" />
                         </div>
                       </div>

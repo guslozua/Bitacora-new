@@ -21,17 +21,38 @@ import AdminPanel from './pages/AdminPanel';
 import PlacasDash from './pages/PlacasDash';
 import Error404 from './pages/Error404';
 
+// Nuevos imports para el panel de administración de usuarios
+import AdminUsersDashboard from './pages/AdminUsersDashboard';
+import UserDetail from './components/users/UserDetail';
+import UserForm from './components/users/UserForm';
+
 // Componente para rutas protegidas
 interface ProtectedRouteProps {
   element: React.ReactNode;
   path?: string;
+  allowedRoles?: string[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element }) => {
-  // Redirigir a login si no está autenticado
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element, allowedRoles }) => {
+  // Verificar autenticación primero
   if (!isAuthenticated()) {
     return <Navigate to="/" replace />;
   }
+  
+  // Si se especifican roles, verificar que el usuario tenga al menos uno de ellos
+  if (allowedRoles && allowedRoles.length > 0) {
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    
+    const hasRequiredRole = user && 
+      Array.isArray(user.roles) && 
+      user.roles.some((role: string) => allowedRoles.includes(role));
+    
+    if (!hasRequiredRole) {
+      return <Navigate to="/dashboard" replace />;
+    }
+  }
+  
   return <>{element}</>;
 };
 
@@ -93,6 +114,24 @@ const App: React.FC = () => {
           <Route path="/abmdashboard" element={<ProtectedRoute element={<AbmDashboard />} />} />
           <Route path="/abm" element={<ProtectedRoute element={<AbmUpload />} />} />
           <Route path="/placasdash" element={<ProtectedRoute element={<PlacasDash />} />} />
+          
+          {/* Rutas de administración de usuarios */}
+          <Route 
+            path="/admin/users" 
+            element={<ProtectedRoute element={<AdminUsersDashboard />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+          />
+          <Route 
+            path="/admin/users/new" 
+            element={<ProtectedRoute element={<UserForm />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+          />
+          <Route 
+            path="/admin/users/:id" 
+            element={<ProtectedRoute element={<UserDetail />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+          />
+          <Route 
+            path="/admin/users/:id/edit" 
+            element={<ProtectedRoute element={<UserForm />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+          />
           
           {/* Ruta para errores */}
           <Route path="*" element={<Error404 />} />

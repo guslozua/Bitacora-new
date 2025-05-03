@@ -7,7 +7,7 @@ import Footer from '../components/Footer';
 
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  BarChart, Bar, CartesianGrid, Legend, PieChart, Pie, Cell, 
+  BarChart, Bar, CartesianGrid, Legend, PieChart, Pie, Cell,
   LabelList
 } from 'recharts';
 
@@ -161,30 +161,30 @@ const esArbolExcluido = (arbol: string): boolean => {
 // Normaliza un nombre y extrae todos los patrones tab.xxx que encuentre
 function extraerTodosLosTabsDeNombre(nombre: string): string[] {
   if (!nombre) return ['Sin clasificar'];
-  
+
   // Normalizar: convertir a minúsculas y eliminar espacios extra
   const normalizado = nombre.toLowerCase().trim();
-  
+
   // Buscar todos los patrones "tab.xxx" o "tab.xxx.xxx"
   const regex = /\b(tab\.[a-z0-9]+(\.[a-z0-9]+)?)\b/gi;
   const matches = normalizado.match(regex);
-  
+
   // También buscar patrones "tap.xxx" (error común de escritura)
   const regexTap = /\b(tap\.[a-z0-9]+(\.[a-z0-9]+)?)\b/gi;
   const matchesTap = normalizado.match(regexTap);
-  
+
   const resultado: string[] = [];
-  
+
   // Agregar coincidencias de tab.
   if (matches && matches.length > 0) {
     matches.forEach(match => resultado.push(match));
   }
-  
+
   // Agregar coincidencias de tap. corrigiendo a tab.
   if (matchesTap && matchesTap.length > 0) {
     matchesTap.forEach(match => resultado.push(match.replace('tap.', 'tab.')));
   }
-  
+
   // Si no encontramos nada, usar estrategias alternativas para casos especiales
   if (resultado.length === 0) {
     // Buscar después de separadores comunes
@@ -205,7 +205,7 @@ function extraerTodosLosTabsDeNombre(nombre: string): string[] {
       }
     }
   }
-  
+
   // Si aún no encontramos nada, buscar tab. en cualquier posición
   if (resultado.length === 0 && normalizado.includes('tab.')) {
     const inicio = normalizado.indexOf('tab.');
@@ -213,16 +213,16 @@ function extraerTodosLosTabsDeNombre(nombre: string): string[] {
     if (fin === -1) fin = normalizado.length;
     resultado.push(normalizado.substring(inicio, fin));
   }
-  
+
   // Eliminar sufijos numéricos comunes y versiones (por ejemplo, "tab.nombre 1" o "tab.nombre V01082024")
   const resultadoFinal = resultado.map(arbol => {
     // Eliminar números y versiones al final
     return arbol.replace(/\s+[0-9]+(\s+\([0-9]+\))?$/, '')  // Eliminar "tab.xxx 1" o "tab.xxx 1 (1)"
-                .replace(/\s+V[0-9]+$/i, '')                // Eliminar "tab.xxx V123"
-                .replace(/\.xlsx$/, '')                     // Eliminar extensiones de archivo
-                .trim();
+      .replace(/\s+V[0-9]+$/i, '')                // Eliminar "tab.xxx V123"
+      .replace(/\.xlsx$/, '')                     // Eliminar extensiones de archivo
+      .trim();
   });
-  
+
   // Si no encontramos un patrón tab, identificar palabras clave
   if (resultadoFinal.length === 0) {
     // Identificar por palabras clave comunes
@@ -230,41 +230,41 @@ function extraerTodosLosTabsDeNombre(nombre: string): string[] {
     if (normalizado.includes('soporte')) return ['soporte'];
     if (normalizado.includes('abono')) return ['tab.abono'];
     if (normalizado.includes('alto valor')) return ['tab.altovalor'];
-    
+
     return ['Sin clasificar'];
   }
-  
+
   return resultadoFinal;
 }
 
 // Agrupa tareas por árbol correctamente identificado
 function agruparPorArbol(tareas: any[]): { arbol: string; cantidad: number }[] {
   if (!tareas || !Array.isArray(tareas) || tareas.length === 0) return [];
-  
+
   const conteo: Record<string, number> = {};
-  
+
   // Procesar cada tarea y extraer todos los árboles que contiene
   tareas.forEach(tarea => {
     if (!tarea.nombre_tarea) return;
-    
+
     const arboles = extraerTodosLosTabsDeNombre(tarea.nombre_tarea);
-    
+
     arboles.forEach(arbol => {
       // Saltar árboles "Sin clasificar"
       if (esArbolExcluido(arbol)) return;
-      
+
       // Normalizar para evitar duplicados por mayúsculas/minúsculas
       const arbolNormalizado = arbol.toLowerCase();
       conteo[arbolNormalizado] = (conteo[arbolNormalizado] || 0) + 1;
     });
   });
-  
+
   // Convertir a formato para gráfica y ordenar por cantidad
   return Object.entries(conteo)
     .map(([arbol, cantidad]) => {
       // Mejorar la presentación para la gráfica
       let nombreMostrar = arbol;
-      
+
       // Si es una categoría especial sin tab. explícito
       if (arbol === 'customer' || arbol === 'soporte') {
         nombreMostrar = arbol.charAt(0).toUpperCase() + arbol.slice(1);
@@ -278,7 +278,7 @@ function agruparPorArbol(tareas: any[]): { arbol: string; cantidad: number }[] {
           nombreMostrar = arbolOficial; // Usar nombre oficial con mayúsculas correctas
         }
       }
-      
+
       return { arbol: nombreMostrar, cantidad };
     })
     .filter(item => !esArbolExcluido(item.arbol)) // Filtrar los no clasificados con función especializada
@@ -306,76 +306,76 @@ const TabulacionesDash = () => {
     try {
       const query = `year=${selectedYear}&month=${selectedMonth}`;
       const res = await axios.get(`http://localhost:5000/api/tabulaciones/stats?${query}`);
-      
+
       // Almacenar datos crudos para procesamiento local
       let tareasParaAnalizar: any[] = [];
-      
+
       // Si el backend envía rawTabulaciones, úsalas
       if (res.data.rawTabulaciones && Array.isArray(res.data.rawTabulaciones)) {
         tareasParaAnalizar = res.data.rawTabulaciones;
-      } 
+      }
       // Si no, tratar de extraer de las tareas existentes si están disponibles
       else if (res.data.tareas && Array.isArray(res.data.tareas)) {
         tareasParaAnalizar = res.data.tareas;
       }
-      
+
       // Si no hay datos crudos, usar el ranking existente pero filtrar estrictamente
       let rankingCalculado = (res.data.rankingTab || [])
-        .filter((item: any) => 
-          !esArbolExcluido(item.arbol) && 
-          item.arbol !== 'sin clasificar' && 
+        .filter((item: any) =>
+          !esArbolExcluido(item.arbol) &&
+          item.arbol !== 'sin clasificar' &&
           item.arbol?.toLowerCase() !== 'sin clasificar'
         )
         .slice(0, 10);
-      
+
       // Si tenemos datos para analizar, generar nuestro propio ranking
       if (tareasParaAnalizar.length > 0) {
         const rankingDetallado = agruparPorArbol(tareasParaAnalizar)
-          .filter(item => 
-            !esArbolExcluido(item.arbol) && 
-            item.arbol !== 'sin clasificar' && 
+          .filter(item =>
+            !esArbolExcluido(item.arbol) &&
+            item.arbol !== 'sin clasificar' &&
             item.arbol?.toLowerCase() !== 'sin clasificar'
           )
           .slice(0, 10);
-        
+
         // Usar siempre la vista detallada
         rankingCalculado = rankingDetallado;
-        
+
         setRawTabulaciones(tareasParaAnalizar);
       }
-      
+
       // Procesamiento de datos para asegurar que no haya valores nulos
       const processedData: TabulacionesStats = {
         total: res.data.total || 0,
-        
+
         // Filtrar fechas nulas y ordenar cronológicamente
         porFechaFinal: (res.data.porFechaFinal || [])
           .filter((item: any) => item && item.fecha)
           .sort((a: any, b: any) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()),
-        
+
         // Datos agrupados por mes
         porMes: res.data.porMes || [],
-        
+
         // Filtrar usuarios nulos y limitar a top 7
         completadoPor: (res.data.completadoPor || [])
           .filter((item: any) => item && item.usuario)
           .slice(0, 7),
-        
+
         // Filtrar usuarios nulos y limitar a top 7
         creadoPor: (res.data.creadoPor || [])
           .filter((item: any) => item && item.usuario)
           .slice(0, 7),
-        
+
         // Usar el ranking calculado
         rankingTab: rankingCalculado,
-          
+
         // Información de diagnóstico
         diagnostico: res.data.diagnostico,
-        
+
         // Agregar fecha de última actualización
         ultimaActualizacion: res.data.ultimaActualizacion
       };
-      
+
       setData(processedData);
     } catch (err) {
       setError('Error al obtener estadísticas');
@@ -399,22 +399,22 @@ const TabulacionesDash = () => {
 
   const agruparPorMes = (items: { fecha: string; cantidad: number }[]) => {
     const meses = Array(12).fill(0);
-  
+
     items.forEach((item) => {
       const fecha = new Date(item.fecha);
       const mes = fecha.getMonth(); // 0 = Enero
       meses[mes] += item.cantidad;
     });
-  
+
     const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-  
+
     return meses.map((cantidad, index) => ({
       mes: (index + 1).toString(),
       nombre: nombresMeses[index],
       cantidad,
     }));
   };
-  
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -464,47 +464,47 @@ const TabulacionesDash = () => {
           year: 'numeric'
         });
       }
-      
+
       const latestDate = data.ultimaActualizacion;
-      
+
       // Parsear la fecha (asumiendo que viene en formato dd/mm/yyyy o similar)
       const parts = latestDate.split('/');
       if (parts.length === 3) {
         // Si está en formato dd/mm/yyyy
         const [day, month, year] = parts;
-        
+
         // Crear fecha utilizando UTC para evitar ajustes de zona horaria
         const parsedDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
-        
+
         if (isNaN(parsedDate.getTime())) {
           return 'Fecha no válida';
         }
 
         // Formateamos la fecha para mostrarla en el formato 'dd/mm/yyyy'
-        return parsedDate.toLocaleDateString('es-ES', { 
-          day: '2-digit', 
-          month: '2-digit', 
+        return parsedDate.toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
           year: 'numeric',
           timeZone: 'UTC'
         });
       } else {
         // Intentar un formato estándar
         const parsedDate = new Date(latestDate);
-        
+
         if (isNaN(parsedDate.getTime())) {
           return 'Fecha no válida';
         }
-        
+
         // Crear una nueva fecha en UTC para eliminar el efecto de la zona horaria
         const utcDate = new Date(Date.UTC(
           parsedDate.getFullYear(),
           parsedDate.getMonth(),
           parsedDate.getDate()
         ));
-        
-        return utcDate.toLocaleDateString('es-ES', { 
-          day: '2-digit', 
-          month: '2-digit', 
+
+        return utcDate.toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
           year: 'numeric',
           timeZone: 'UTC'
         });
@@ -512,7 +512,7 @@ const TabulacionesDash = () => {
     };
 
     const latestInfo = getLatestUpdateDate();
-    
+
     return (
       <Card className="shadow-sm border-0 mb-4">
         <Card.Body className="p-4">
@@ -575,14 +575,19 @@ const TabulacionesDash = () => {
                           <h6 className="text-muted mb-1">Total Tareas</h6>
                           <h2 className="fw-bold mb-0">{formatNumber(data.total)}</h2>
                         </div>
-                        <div className="bg-light p-3 rounded-circle">
+                        <div className="bg-light rounded-circle d-flex align-items-center justify-content-center"
+                          style={{
+                            width: '3.5rem',
+                            height: '3.5rem',
+                            padding: 0
+                          }}>
                           <i className="bi bi-collection fs-3 text-dark" />
                         </div>
                       </div>
                     </Card.Body>
                   </Card>
                 </Col>
-                
+
                 {data.diagnostico && (
                   <>
                     <Col md={3}>
@@ -595,14 +600,19 @@ const TabulacionesDash = () => {
                                 {formatNumber(data.diagnostico.total_registros - data.diagnostico.sin_fecha_finalizacion)}
                               </h2>
                             </div>
-                            <div className="bg-primary bg-opacity-10 p-3 rounded-circle">
+                            <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                              style={{
+                                width: '3.5rem',
+                                height: '3.5rem',
+                                padding: 0
+                              }}>
                               <i className="bi bi-check-circle fs-3 text-primary" />
                             </div>
                           </div>
                         </Card.Body>
                       </Card>
                     </Col>
-                    
+
                     <Col md={3}>
                       <Card className="border-0 shadow-sm h-100">
                         <Card.Body>
@@ -613,14 +623,19 @@ const TabulacionesDash = () => {
                                 {formatNumber(data.diagnostico.sin_fecha_finalizacion)}
                               </h2>
                             </div>
-                            <div className="bg-warning bg-opacity-10 p-3 rounded-circle">
+                            <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                              style={{
+                                width: '3.5rem',
+                                height: '3.5rem',
+                                padding: 0
+                              }}>
                               <i className="bi bi-clock-history fs-3 text-warning" />
                             </div>
                           </div>
                         </Card.Body>
                       </Card>
                     </Col>
-                    
+
                     <Col md={3}>
                       <Card className="border-0 shadow-sm h-100">
                         <Card.Body>
@@ -631,7 +646,12 @@ const TabulacionesDash = () => {
                                 {formatNumber(data.diagnostico.sin_completado_por)}
                               </h2>
                             </div>
-                            <div className="bg-danger bg-opacity-10 p-3 rounded-circle">
+                            <div className="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                              style={{
+                                width: '3.5rem',
+                                height: '3.5rem',
+                                padding: 0
+                              }}>
                               <i className="bi bi-exclamation-triangle fs-3 text-danger" />
                             </div>
                           </div>
@@ -670,26 +690,26 @@ const TabulacionesDash = () => {
                     <Card.Body>
                       <h5 className="fw-bold mb-3">Tareas por Mes</h5>
                       <ResponsiveContainer width="100%" height={250}>
-                        <LineChart 
-                          data={data.porFechaFinal?.length > 0 
+                        <LineChart
+                          data={data.porFechaFinal?.length > 0
                             ? agruparPorMes(data.porFechaFinal)
                             : Array.from({ length: 12 }, (_, i) => ({
-                                mes: (i + 1).toString(),
-                                nombre: '',
-                                cantidad: 0
-                              }))
+                              mes: (i + 1).toString(),
+                              nombre: '',
+                              cantidad: 0
+                            }))
                           }
                         >
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                           <XAxis dataKey="nombre" />
-                           
+
                           <YAxis />
                           <Tooltip content={<CustomTooltip />} />
-                          <Line 
-                            type="monotone" 
-                            dataKey="cantidad" 
+                          <Line
+                            type="monotone"
+                            dataKey="cantidad"
                             name="Tareas"
-                            stroke={colors[0]} 
+                            stroke={colors[0]}
                             strokeWidth={2}
                             dot={{ r: 5, strokeWidth: 1 }}
                             activeDot={{ r: 7, stroke: colors[0] }}
@@ -709,22 +729,22 @@ const TabulacionesDash = () => {
                         <div className="d-flex justify-content-center">
                           <ResponsiveContainer width="80%" height={250}>
                             <PieChart>
-                              <Pie 
+                              <Pie
                                 data={[
-                                  { 
-                                    tipo: 'Finalizadas', 
-                                    value: data.diagnostico.total_registros - data.diagnostico.sin_fecha_finalizacion 
+                                  {
+                                    tipo: 'Finalizadas',
+                                    value: data.diagnostico.total_registros - data.diagnostico.sin_fecha_finalizacion
                                   },
-                                  { 
-                                    tipo: 'Pendientes', 
+                                  {
+                                    tipo: 'Pendientes',
                                     value: data.diagnostico.sin_fecha_finalizacion
                                   }
-                                ]} 
-                                cx="50%" 
-                                cy="50%" 
-                                outerRadius={100} 
+                                ]}
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={100}
                                 innerRadius={60}
-                                dataKey="value" 
+                                dataKey="value"
                                 nameKey="tipo"
                                 label={({ tipo, percent }) => `${tipo}: ${(percent * 100).toFixed(0)}%`}
                                 labelLine={false}
@@ -733,9 +753,9 @@ const TabulacionesDash = () => {
                                 <Cell fill={pieColors[1]} />
                               </Pie>
                               <Tooltip />
-                              <Legend 
-                                verticalAlign="bottom" 
-                                height={36} 
+                              <Legend
+                                verticalAlign="bottom"
+                                height={36}
                                 iconType="circle"
                               />
                             </PieChart>
@@ -759,23 +779,23 @@ const TabulacionesDash = () => {
                       <h5 className="fw-bold mb-3">Tareas Completadas por Usuario</h5>
                       {data.completadoPor && data.completadoPor.length > 0 ? (
                         <ResponsiveContainer width="100%" height={300}>
-                          <BarChart 
-                            data={data.completadoPor} 
+                          <BarChart
+                            data={data.completadoPor}
                             layout="vertical"
                             margin={{ left: 120 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
                             <XAxis type="number" />
-                            <YAxis 
-                              dataKey="usuario" 
-                              type="category" 
+                            <YAxis
+                              dataKey="usuario"
+                              type="category"
                               tick={{ fontSize: 10 }}
                             />
                             <Tooltip content={<CustomTooltip />} />
-                            <Bar 
-                              dataKey="cantidad" 
+                            <Bar
+                              dataKey="cantidad"
                               name="Tareas"
-                              fill={colors[2]} 
+                              fill={colors[2]}
                               radius={[0, 4, 4, 0]}
                             />
                           </BarChart>
@@ -796,23 +816,23 @@ const TabulacionesDash = () => {
                       <h5 className="fw-bold mb-3">Ranking Usuarios solicitantes</h5>
                       {data.creadoPor && data.creadoPor.length > 0 ? (
                         <ResponsiveContainer width="100%" height={300}>
-                          <BarChart 
-                            data={data.creadoPor} 
+                          <BarChart
+                            data={data.creadoPor}
                             layout="vertical"
                             margin={{ left: 120 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
                             <XAxis type="number" />
-                            <YAxis 
-                              dataKey="usuario" 
-                              type="category" 
+                            <YAxis
+                              dataKey="usuario"
+                              type="category"
                               tick={{ fontSize: 10 }}
                             />
                             <Tooltip content={<CustomTooltip />} />
-                            <Bar 
-                              dataKey="cantidad" 
+                            <Bar
+                              dataKey="cantidad"
                               name="Tareas"
-                              fill={colors[3]} 
+                              fill={colors[3]}
                               radius={[0, 4, 4, 0]}
                             />
                           </BarChart>
@@ -837,23 +857,23 @@ const TabulacionesDash = () => {
                       </div>
                       {data.rankingTab && data.rankingTab.length > 0 ? (
                         <ResponsiveContainer width="100%" height={300}>
-                          <BarChart 
-                            data={data.rankingTab.filter(item => !esArbolExcluido(item.arbol))} 
+                          <BarChart
+                            data={data.rankingTab.filter(item => !esArbolExcluido(item.arbol))}
                             layout="vertical"
                             margin={{ left: 120 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
                             <XAxis type="number" />
-                            <YAxis 
-                              dataKey="arbol" 
-                              type="category" 
+                            <YAxis
+                              dataKey="arbol"
+                              type="category"
                               tick={{ fontSize: 10 }}
                             />
                             <Tooltip content={<CustomTooltip />} />
-                            <Bar 
-                              dataKey="cantidad" 
+                            <Bar
+                              dataKey="cantidad"
                               name="Tabulaciones"
-                              fill={colors[1]} 
+                              fill={colors[1]}
                               radius={[0, 4, 4, 0]}
                               label={{ position: 'right', formatter: (val: any) => formatNumber(val) }}
                             />
@@ -864,7 +884,7 @@ const TabulacionesDash = () => {
                           <p>No hay datos de árboles de tabulación disponibles</p>
                         </div>
                       )}
-                      
+
                       {/* Información de procesamiento */}
                       <div className="mt-3">
                         <Alert variant="info" className="mb-0">
@@ -878,7 +898,7 @@ const TabulacionesDash = () => {
                   </Card>
                 </Col>
               </Row>
-              
+
               {/* Última actualización de datos al final */}
               {renderUltimaActualizacion()}
             </>

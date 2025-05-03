@@ -109,47 +109,47 @@ const ItrackerDash = () => {
           year: 'numeric'
         });
       }
-      
+
       const latestDate = data.ultimaActualizacion;
-      
+
       // Parsear la fecha (asumiendo que viene en formato dd/mm/yyyy o similar)
       const parts = latestDate.split('/');
       if (parts.length === 3) {
         // Si está en formato dd/mm/yyyy
         const [day, month, year] = parts;
-        
+
         // Crear fecha utilizando UTC para evitar ajustes de zona horaria
         const parsedDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
-        
+
         if (isNaN(parsedDate.getTime())) {
           return 'Fecha no válida';
         }
 
         // Formateamos la fecha para mostrarla en el formato 'dd/mm/yyyy'
-        return parsedDate.toLocaleDateString('es-ES', { 
-          day: '2-digit', 
-          month: '2-digit', 
+        return parsedDate.toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
           year: 'numeric',
           timeZone: 'UTC'
         });
       } else {
         // Intentar un formato estándar
         const parsedDate = new Date(latestDate);
-        
+
         if (isNaN(parsedDate.getTime())) {
           return 'Fecha no válida';
         }
-        
+
         // Crear una nueva fecha en UTC para eliminar el efecto de la zona horaria
         const utcDate = new Date(Date.UTC(
           parsedDate.getFullYear(),
           parsedDate.getMonth(),
           parsedDate.getDate()
         ));
-        
-        return utcDate.toLocaleDateString('es-ES', { 
-          day: '2-digit', 
-          month: '2-digit', 
+
+        return utcDate.toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
           year: 'numeric',
           timeZone: 'UTC'
         });
@@ -157,7 +157,7 @@ const ItrackerDash = () => {
     };
 
     const latestInfo = getLatestUpdateDate();
-    
+
     return (
       <Card className="shadow-sm border-0 mb-4">
         <Card.Body className="p-4">
@@ -220,7 +220,12 @@ const ItrackerDash = () => {
                           <h6 className="text-muted mb-1">Total Tickets</h6>
                           <h2 className="fw-bold mb-0">{formatNumber(data.total)}</h2>
                         </div>
-                        <div className="bg-light p-3 rounded-circle">
+                        <div className="bg-light rounded-circle d-flex align-items-center justify-content-center"
+                          style={{
+                            width: '3.5rem',
+                            height: '3.5rem',
+                            padding: 0
+                          }}>
                           <i className="bi bi-collection fs-3 text-dark" />
                         </div>
                       </div>
@@ -235,7 +240,12 @@ const ItrackerDash = () => {
                           <h6 className="text-muted mb-1">Masivos</h6>
                           <h2 className="fw-bold mb-0 text-primary">{formatNumber(data.masivos)}</h2>
                         </div>
-                        <div className="bg-primary bg-opacity-10 p-3 rounded-circle">
+                        <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                          style={{
+                            width: '3.5rem',
+                            height: '3.5rem',
+                            padding: 0
+                          }}>
                           <i className="bi bi-graph-up-arrow fs-3 text-primary" />
                         </div>
                       </div>
@@ -250,7 +260,12 @@ const ItrackerDash = () => {
                           <h6 className="text-muted mb-1">Puntuales</h6>
                           <h2 className="fw-bold mb-0 text-success">{formatNumber(data.puntuales)}</h2>
                         </div>
-                        <div className="bg-success bg-opacity-10 p-3 rounded-circle">
+                        <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                          style={{
+                            width: '3.5rem',
+                            height: '3.5rem',
+                            padding: 0
+                          }}>
                           <i className="bi bi-wrench-adjustable-circle fs-3 text-success" />
                         </div>
                       </div>
@@ -265,7 +280,12 @@ const ItrackerDash = () => {
                           <h6 className="text-muted mb-1">ABM</h6>
                           <h2 className="fw-bold mb-0 text-warning">{formatNumber(data.abm)}</h2>
                         </div>
-                        <div className="bg-warning bg-opacity-10 p-3 rounded-circle">
+                        <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                          style={{
+                            width: '3.5rem',
+                            height: '3.5rem',
+                            padding: 0
+                          }}>
                           <i className="bi bi-person-badge fs-3 text-warning" />
                         </div>
                       </div>
@@ -281,21 +301,21 @@ const ItrackerDash = () => {
                     <Card.Body>
                       <h5 className="fw-bold mb-3">Tickets por Mes</h5>
                       <ResponsiveContainer width="100%" height={250}>
-                      <LineChart data={data.porMes.map((d: { mes: number, cantidad: number }) => ({ mes: d.mes.toString(), cantidad: d.cantidad }))}>
+                        <LineChart data={data.porMes.map((d: { mes: number, cantidad: number }) => ({ mes: d.mes.toString(), cantidad: d.cantidad }))}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                           <XAxis dataKey="mes"
                             tickFormatter={(mes) => {
-                            const nombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-                            return nombres[parseInt(mes) - 1] || mes;
-                            }} 
-                            />
+                              const nombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+                              return nombres[parseInt(mes) - 1] || mes;
+                            }}
+                          />
                           <YAxis />
                           <Tooltip content={<CustomTooltip />} />
-                          <Line 
-                            type="monotone" 
-                            dataKey="cantidad" 
+                          <Line
+                            type="monotone"
+                            dataKey="cantidad"
                             name="Tickets"
-                            stroke={colors[0]} 
+                            stroke={colors[0]}
                             strokeWidth={2}
                             dot={{ r: 5, strokeWidth: 1 }}
                             activeDot={{ r: 7, stroke: colors[0] }}
@@ -314,17 +334,17 @@ const ItrackerDash = () => {
                       <div className="d-flex justify-content-center">
                         <ResponsiveContainer width="80%" height={250}>
                           <PieChart>
-                            <Pie 
+                            <Pie
                               data={[
-                                { tipo: 'Masivos', value: data.masivos }, 
+                                { tipo: 'Masivos', value: data.masivos },
                                 { tipo: 'Puntuales', value: data.puntuales },
                                 { tipo: 'ABM', value: data.abm }
-                              ]} 
-                              cx="50%" 
-                              cy="50%" 
-                              outerRadius={100} 
+                              ]}
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={100}
                               innerRadius={60}
-                              dataKey="value" 
+                              dataKey="value"
                               nameKey="tipo"
                               label={({ tipo, percent }) => `${tipo}: ${(percent * 100).toFixed(0)}%`}
                               labelLine={false}
@@ -338,9 +358,9 @@ const ItrackerDash = () => {
                               ))}
                             </Pie>
                             <Tooltip />
-                            <Legend 
-                              verticalAlign="bottom" 
-                              height={36} 
+                            <Legend
+                              verticalAlign="bottom"
+                              height={36}
                               iconType="circle"
                             />
                           </PieChart>
@@ -357,23 +377,23 @@ const ItrackerDash = () => {
                     <Card.Body>
                       <h5 className="fw-bold mb-3">Tickets por Herramienta</h5>
                       <ResponsiveContainer width="100%" height={300}>
-                        <BarChart 
-                          data={data.porCausa.slice(0, 7)} 
+                        <BarChart
+                          data={data.porCausa.slice(0, 7)}
                           layout="vertical"
                           margin={{ left: 120 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
                           <XAxis type="number" />
-                          <YAxis 
-                            dataKey="causa" 
-                            type="category" 
+                          <YAxis
+                            dataKey="causa"
+                            type="category"
                             tick={{ fontSize: 10 }}
                           />
                           <Tooltip content={<CustomTooltip />} />
-                          <Bar 
-                            dataKey="cantidad" 
+                          <Bar
+                            dataKey="cantidad"
                             name="Tickets"
-                            fill={colors[2]} 
+                            fill={colors[2]}
                             radius={[0, 4, 4, 0]}
                           />
                         </BarChart>
@@ -387,23 +407,23 @@ const ItrackerDash = () => {
                     <Card.Body>
                       <h5 className="fw-bold mb-3">Tickets por Centro</h5>
                       <ResponsiveContainer width="100%" height={300}>
-                        <BarChart 
-                          data={(centrosFiltrados || []).slice(0, 7)} 
+                        <BarChart
+                          data={(centrosFiltrados || []).slice(0, 7)}
                           layout="vertical"
                           margin={{ left: 120 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
                           <XAxis type="number" />
-                          <YAxis 
-                            dataKey="centro" 
-                            type="category" 
+                          <YAxis
+                            dataKey="centro"
+                            type="category"
                             tick={{ fontSize: 10 }}
                           />
                           <Tooltip content={<CustomTooltip />} />
-                          <Bar 
-                            dataKey="cantidad" 
+                          <Bar
+                            dataKey="cantidad"
                             name="Tickets"
-                            fill={colors[3]} 
+                            fill={colors[3]}
                             radius={[0, 4, 4, 0]}
                           />
                         </BarChart>
@@ -420,23 +440,23 @@ const ItrackerDash = () => {
                     <Card.Body>
                       <h5 className="fw-bold mb-3">Usuarios de Cierre</h5>
                       <ResponsiveContainer width="100%" height={250}>
-                        <BarChart 
-                          data={data.usuariosCierre.slice(0, 7)} 
+                        <BarChart
+                          data={data.usuariosCierre.slice(0, 7)}
                           layout="vertical"
                           margin={{ left: 120 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
                           <XAxis type="number" />
-                          <YAxis 
-                            dataKey="name" 
-                            type="category" 
+                          <YAxis
+                            dataKey="name"
+                            type="category"
                             tick={{ fontSize: 10 }}
                           />
                           <Tooltip content={<CustomTooltip />} />
-                          <Bar 
-                            dataKey="cantidad" 
+                          <Bar
+                            dataKey="cantidad"
                             name="Tickets"
-                            fill={colors[1]} 
+                            fill={colors[1]}
                             radius={[0, 4, 4, 0]}
                           />
                         </BarChart>
@@ -454,10 +474,10 @@ const ItrackerDash = () => {
                       <h5 className="fw-bold mb-3">Palabras más usadas en comentarios</h5>
                       <div className="d-flex flex-wrap gap-2 mt-3">
                         {data.tags.map((tag: { palabra: string; veces: number }, idx: number) => (
-                          <span 
-                            key={idx} 
-                            className="badge rounded-pill" 
-                            style={{ 
+                          <span
+                            key={idx}
+                            className="badge rounded-pill"
+                            style={{
                               backgroundColor: colors[idx % colors.length],
                               fontSize: `${Math.min(1 + (tag.veces / 10), 1.5)}rem`,
                               padding: '8px 12px'
@@ -478,7 +498,7 @@ const ItrackerDash = () => {
                   <ItrackerTable />
                 </Col>
               </Row>
-              
+
               {/* Última actualización de datos al final */}
               {renderUltimaActualizacion()}
             </>

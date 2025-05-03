@@ -23,6 +23,43 @@ export interface User {
   id_subtarea?: number;
 }
 
+// Interfaces adicionales para el panel de administración
+export interface UserAdmin extends User {
+  estado?: string;
+  roles?: string[];
+  ultimo_acceso?: string | Date;
+  imagen_perfil?: string;
+}
+
+export interface UserFilters {
+  nombre?: string;
+  email?: string;
+  rol?: string;
+  estado?: string;
+}
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: any;
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+// Interface para datos de formulario de usuario
+export interface UserFormData {
+  nombre: string;
+  email: string;
+  password?: string;
+  roles?: string[];
+  estado?: string;
+}
+
 // Tipos de elementos a los que se pueden asignar usuarios
 export type ItemType = 'project' | 'task' | 'subtask';
 
@@ -103,6 +140,117 @@ const getApiEndpoint = (itemType: ItemType, itemId: string): string => {
       throw new Error(`Tipo de elemento no soportado: ${itemType}`);
   }
 };
+
+// ========== NUEVAS FUNCIONES PARA PANEL DE ADMINISTRACIÓN ==========
+
+// Obtener usuarios con paginación y filtros para el panel admin
+export const fetchAdminUsers = async (
+  filters: UserFilters = {}, 
+  page: number = 1, 
+  limit: number = 10
+): Promise<ApiResponse<UserAdmin[]>> => {
+  try {
+    // Construir URL con parámetros
+    let url = `${API_BASE_URL}/users?page=${page}&limit=${limit}`;
+    
+    // Añadir filtros a la URL
+    if (filters.nombre) url += `&nombre=${encodeURIComponent(filters.nombre)}`;
+    if (filters.email) url += `&email=${encodeURIComponent(filters.email)}`;
+    if (filters.rol) url += `&rol=${encodeURIComponent(filters.rol)}`;
+    if (filters.estado) url += `&estado=${encodeURIComponent(filters.estado)}`;
+    
+    const response = await axios.get(url, getAuthConfig());
+    return response.data;
+  } catch (error: any) {
+    console.error('Error al obtener usuarios para administración:', error);
+    throw error;
+  }
+};
+
+// Obtener usuario por ID para el panel admin
+export const fetchUserById = async (userId: number | string): Promise<ApiResponse<UserAdmin>> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/users/${userId}`, getAuthConfig());
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error al obtener usuario con ID ${userId}:`, error);
+    throw error;
+  }
+};
+
+// Crear nuevo usuario
+export const createUser = async (userData: UserFormData): Promise<ApiResponse> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/users`, 
+      userData, 
+      getAuthConfig()
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('Error al crear usuario:', error);
+    throw error;
+  }
+};
+
+// Actualizar usuario
+export const updateUser = async (
+  userId: number | string, 
+  userData: UserFormData
+): Promise<ApiResponse> => {
+  try {
+    const response = await axios.put(
+      `${API_BASE_URL}/users/${userId}`, 
+      userData, 
+      getAuthConfig()
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error al actualizar usuario con ID ${userId}:`, error);
+    throw error;
+  }
+};
+
+// Eliminar usuario
+export const deleteUser = async (userId: number | string): Promise<ApiResponse> => {
+  try {
+    const response = await axios.delete(
+      `${API_BASE_URL}/users/${userId}`, 
+      getAuthConfig()
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error al eliminar usuario con ID ${userId}:`, error);
+    throw error;
+  }
+};
+
+// Obtener permisos de un usuario
+export const fetchUserPermissions = async (userId: number | string): Promise<ApiResponse<string[]>> => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/users/${userId}/permisos`, 
+      getAuthConfig()
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error(`Error al obtener permisos para el usuario ${userId}:`, error);
+    throw error;
+  }
+};
+
+// Obtener total de usuarios
+export const fetchUserCount = async (): Promise<ApiResponse & { count: number }> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/users/count`, getAuthConfig());
+    return response.data;
+  } catch (error: any) {
+    console.error('Error al obtener conteo de usuarios:', error);
+    throw error;
+  }
+};
+
+// ========== FUNCIONES ORIGINALES PARA GESTIÓN DE PROYECTOS ==========
 
 // Obtener todos los usuarios del sistema
 export const fetchAllUsers = async (): Promise<User[]> => {

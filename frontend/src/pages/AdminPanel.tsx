@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, Container, Row, Col, Form, Button, Badge, Modal, Spinner, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useSidebarVisibility } from '../services/SidebarVisibilityContext';
+import LightFooter from '../components/LightFooter';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
@@ -32,7 +33,6 @@ interface AdminStat {
   icon: string;
   color: string;
 }
-
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
   const { visibility, setVisibility } = useSidebarVisibility() as {
@@ -59,7 +59,6 @@ const AdminPanel: React.FC = () => {
   const [uploading, setUploading] = useState<boolean>(false);
   const [uploadMessage, setUploadMessage] = useState<string>('');
   const [uploadError, setUploadError] = useState<string>('');
-
   const toggleSidebarItem = (id: string): void => {
     const newState: SidebarVisibility = {
       ...localVisibility,
@@ -102,7 +101,6 @@ const AdminPanel: React.FC = () => {
     );
     setIsDirty(true);
   };
-
   const sidebarItemsMeta: SidebarItemMeta[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'bi-speedometer2', color: '#3498db' },
     { id: 'proyectos', label: 'Proyectos', icon: 'bi-diagram-3-fill', color: '#2ecc71' },
@@ -128,7 +126,6 @@ const AdminPanel: React.FC = () => {
     { title: 'Tareas Abiertas', value: 63, icon: 'bi-list-task', color: '#f1c40f' },
     { title: 'Archivos Cargados', value: 257, icon: 'bi-cloud-upload-fill', color: '#e74c3c' },
   ];
-
   // Función para manejar subida de archivos iTracker
   const handleItrackerUpload = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -230,7 +227,6 @@ const AdminPanel: React.FC = () => {
       setUploading(false);
     }
   };
-
   // Limpiar estados al cerrar los modales
   const resetItrackerModal = () => {
     setShowItrackerModal(false);
@@ -252,7 +248,6 @@ const AdminPanel: React.FC = () => {
     // Por ejemplo, actualizar contadores o estadísticas
     console.log('Carga de archivo ABM exitosa');
   };
-
   return (
     <Container fluid className="py-4 px-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -292,7 +287,6 @@ const AdminPanel: React.FC = () => {
           )}
         </div>
       </div>
-
       {/* Estadísticas rápidas */}
       <Row className="g-4 mb-4">
         {adminStats.map((stat, index) => (
@@ -304,7 +298,13 @@ const AdminPanel: React.FC = () => {
                     <h6 className="text-muted mb-1">{stat.title}</h6>
                     <h2 className="fw-bold mb-0">{stat.value}</h2>
                   </div>
-                  <div className="p-3 rounded-circle" style={{ backgroundColor: `${stat.color}20` }}>
+                  <div className="rounded-circle d-flex align-items-center justify-content-center" 
+                    style={{ 
+                      backgroundColor: `${stat.color}20`,
+                      width: '3.5rem',      // Ancho fijo
+                      height: '3.5rem',     // Alto igual al ancho
+                      padding: 0            // Quita el padding que causa la deformación
+                    }}>
                     <i className={`bi ${stat.icon} fs-3`} style={{ color: stat.color }} />
                   </div>
                 </div>
@@ -313,7 +313,6 @@ const AdminPanel: React.FC = () => {
           </Col>
         ))}
       </Row>
-
       {/* Configuración del Sidebar con Vista Previa */}
       <Card className="mb-4 border-0 shadow-sm">
         <Card.Header className="bg-white py-3">
@@ -373,7 +372,6 @@ const AdminPanel: React.FC = () => {
                 </Card.Body>
               </Card>
             </Col>
-
             {/* Opciones de configuración - Con ajuste de tamaño */}
             <Col md={9}>
               <div className="pb-2 d-flex align-items-center">
@@ -389,8 +387,19 @@ const AdminPanel: React.FC = () => {
                       <Card.Body className="p-3">
                         <div className="d-flex justify-content-between align-items-center">
                           <div className="d-flex align-items-center">
-                            <div className="p-2 rounded-circle me-3" style={{ backgroundColor: `${item.color}20` }}>
-                              <i className={`bi ${item.icon}`} style={{ color: item.color, fontSize: '1rem' }}></i>
+                            <div 
+                              className="rounded-circle me-3 d-flex align-items-center justify-content-center" 
+                              style={{ 
+                                backgroundColor: `${item.color}20`,
+                                width: '2.5rem',      // Ancho fijo
+                                height: '2.5rem',     // Alto igual al ancho
+                                padding: 0            // Quita el padding que causa la deformación
+                              }}
+                            >
+                              <i 
+                                className={`bi ${item.icon}`} 
+                                style={{ color: item.color, fontSize: '1rem' }}
+                              ></i>
                             </div>
                             <span className="fw-medium">{item.label}</span>
                           </div>
@@ -410,7 +419,6 @@ const AdminPanel: React.FC = () => {
           </Row>
         </Card.Body>
       </Card>
-
       {/* Configuración del Dashboard */}
       <Card className="mb-4 border-0 shadow-sm">
         <Card.Header className="bg-white py-3">
@@ -427,7 +435,13 @@ const AdminPanel: React.FC = () => {
                   <Card.Body className="p-3">
                     <div className="d-flex justify-content-between align-items-center">
                       <div className="d-flex align-items-center">
-                        <div className="p-2 rounded-circle me-3" style={{ backgroundColor: '#f8f9fa' }}>
+                        <div className="rounded-circle me-3 d-flex align-items-center justify-content-center" 
+                          style={{ 
+                            backgroundColor: '#f8f9fa',
+                            width: '2.5rem',
+                            height: '2.5rem',
+                            padding: 0
+                          }}>
                           <i className="bi bi-window-dock text-dark" style={{ fontSize: '1.2rem' }}></i>
                         </div>
                         <span className="fw-medium">{item.label}</span>
@@ -447,7 +461,6 @@ const AdminPanel: React.FC = () => {
           </Row>
         </Card.Body>
       </Card>
-
       {/* Accesos rápidos a herramientas */}
       <Card className="mb-4 border-0 shadow-sm">
         <Card.Header className="bg-white py-3">
@@ -466,7 +479,12 @@ const AdminPanel: React.FC = () => {
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     onClick={() => navigate('/admin/users')}
                   >
-                    <div className="bg-primary bg-opacity-10 p-3 rounded-circle mb-3">
+                    <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3" 
+                      style={{ 
+                        width: '3.5rem', 
+                        height: '3.5rem',
+                        padding: 0
+                      }}>
                       <i className="bi bi-people-fill fs-3 text-primary"></i>
                     </div>
                     <span className="fw-medium">Gestión de Usuarios</span>
@@ -482,7 +500,12 @@ const AdminPanel: React.FC = () => {
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     onClick={() => setShowItrackerModal(true)}
                   >
-                    <div className="bg-success bg-opacity-10 p-3 rounded-circle mb-3">
+                    <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3" 
+                      style={{ 
+                        width: '3.5rem', 
+                        height: '3.5rem',
+                        padding: 0
+                      }}>
                       <i className="bi bi-file-earmark-excel fs-3 text-success"></i>
                     </div>
                     <span className="fw-medium">Subir archivos iTracker</span>
@@ -498,7 +521,12 @@ const AdminPanel: React.FC = () => {
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     onClick={() => setShowTabulacionesModal(true)}
                   >
-                    <div className="bg-info bg-opacity-10 p-3 rounded-circle mb-3">
+                    <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3" 
+                      style={{ 
+                        width: '3.5rem', 
+                        height: '3.5rem',
+                        padding: 0
+                      }}>
                       <i className="bi bi-table fs-3 text-info"></i>
                     </div>
                     <span className="fw-medium">Subir archivos Tabulaciones</span>
@@ -514,7 +542,12 @@ const AdminPanel: React.FC = () => {
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     onClick={() => setShowAbmUploadModal(true)}
                   >
-                    <div className="bg-danger bg-opacity-10 p-3 rounded-circle mb-3">
+                    <div className="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3" 
+                      style={{ 
+                        width: '3.5rem', 
+                        height: '3.5rem',
+                        padding: 0
+                      }}>
                       <i className="bi bi-cloud-upload-fill fs-3 text-danger"></i>
                     </div>
                     <span className="fw-medium">Subir archivos PIC & Social</span>
@@ -530,7 +563,12 @@ const AdminPanel: React.FC = () => {
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     disabled
                   >
-                    <div className="bg-warning bg-opacity-10 p-3 rounded-circle mb-3">
+                    <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3" 
+                      style={{ 
+                        width: '3.5rem', 
+                        height: '3.5rem',
+                        padding: 0
+                      }}>
                       <i className="bi bi-clock-history fs-3 text-warning"></i>
                     </div>
                     <span className="fw-medium">Historial de cargas</span>
@@ -547,7 +585,12 @@ const AdminPanel: React.FC = () => {
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     disabled
                   >
-                    <div className="bg-dark bg-opacity-10 p-3 rounded-circle mb-3">
+                    <div className="bg-dark bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3" 
+                      style={{ 
+                        width: '3.5rem', 
+                        height: '3.5rem',
+                        padding: 0
+                      }}>
                       <i className="bi bi-journal-text fs-3 text-dark"></i>
                     </div>
                     <span className="fw-medium">Bitácora del sistema</span>
@@ -559,7 +602,6 @@ const AdminPanel: React.FC = () => {
           </Row>
         </Card.Body>
       </Card>
-
       {/* Modal para subir archivos iTracker */}
       <Modal
         show={showItrackerModal}
@@ -568,7 +610,12 @@ const AdminPanel: React.FC = () => {
       >
         <Modal.Header closeButton className="border-0 pb-0">
           <Modal.Title className="d-flex align-items-center">
-            <div className="bg-success bg-opacity-10 p-2 rounded-circle me-2">
+            <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" 
+              style={{ 
+                width: '2.5rem', 
+                height: '2.5rem',
+                padding: 0
+              }}>
               <i className="bi bi-file-earmark-excel text-success"></i>
             </div>
             Carga reporte iTracker
@@ -612,7 +659,7 @@ const AdminPanel: React.FC = () => {
                   new Event('submit', { cancelable: true, bubbles: true })
                 );
               }
-            }} 
+            }}
             disabled={uploading || !itrackerFile}
           >
             {uploading ? (
@@ -623,7 +670,6 @@ const AdminPanel: React.FC = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-
       {/* Modal para subir archivos Tabulaciones */}
       <Modal
         show={showTabulacionesModal}
@@ -632,7 +678,12 @@ const AdminPanel: React.FC = () => {
       >
         <Modal.Header closeButton className="border-0 pb-0">
           <Modal.Title className="d-flex align-items-center">
-            <div className="bg-info bg-opacity-10 p-2 rounded-circle me-2">
+            <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" 
+              style={{ 
+                width: '2.5rem', 
+                height: '2.5rem',
+                padding: 0
+              }}>
               <i className="bi bi-table text-info"></i>
             </div>
             Carga de Tabulaciones
@@ -687,13 +738,13 @@ const AdminPanel: React.FC = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-
       {/* Modal para subir archivos PIC y Social */}
       <AbmUploadModal 
         show={showAbmUploadModal} 
         onHide={() => setShowAbmUploadModal(false)}
         onSuccess={handleAbmUploadSuccess}
       />
+      <LightFooter />
     </Container>
   );
 };

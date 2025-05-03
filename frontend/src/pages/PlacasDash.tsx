@@ -377,7 +377,12 @@ const PlacasDash = () => {
                           <h6 className="text-muted mb-1">Incidentes - Impacto Alto</h6>
                           <h2 className="fw-bold mb-0 text-danger">{formatNumber(stats.por_impacto.alto)}</h2>
                         </div>
-                        <div className="bg-danger bg-opacity-10 p-3 rounded-circle">
+                        <div className="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                          style={{
+                            width: '3.5rem',
+                            height: '3.5rem',
+                            padding: 0
+                          }}>
                           <i className="bi bi-exclamation-triangle fs-3 text-danger" />
                         </div>
                       </div>
@@ -392,7 +397,12 @@ const PlacasDash = () => {
                           <h6 className="text-muted mb-1">Incidentes - Impacto Medio</h6>
                           <h2 className="fw-bold mb-0 text-warning">{formatNumber(stats.por_impacto.medio)}</h2>
                         </div>
-                        <div className="bg-warning bg-opacity-10 p-3 rounded-circle">
+                        <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                          style={{
+                            width: '3.5rem',
+                            height: '3.5rem',
+                            padding: 0
+                          }}>
                           <i className="bi bi-exclamation-circle fs-3 text-warning" />
                         </div>
                       </div>
@@ -407,7 +417,12 @@ const PlacasDash = () => {
                           <h6 className="text-muted mb-1">Incidentes - Impacto Bajo</h6>
                           <h2 className="fw-bold mb-0 text-success">{formatNumber(stats.por_impacto.bajo)}</h2>
                         </div>
-                        <div className="bg-success bg-opacity-10 p-3 rounded-circle">
+                        <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                          style={{
+                            width: '3.5rem',
+                            height: '3.5rem',
+                            padding: 0
+                          }}>
                           <i className="bi bi-info-circle fs-3 text-success" />
                         </div>
                       </div>
@@ -422,7 +437,12 @@ const PlacasDash = () => {
                           <h6 className="text-muted mb-1">Placas Pendientes</h6>
                           <h2 className="fw-bold mb-0 text-warning">{formatNumber(stats.estado.pendientes)}</h2>
                         </div>
-                        <div className="bg-warning bg-opacity-10 p-3 rounded-circle">
+                        <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                          style={{
+                            width: '3.5rem',
+                            height: '3.5rem',
+                            padding: 0
+                          }}>
                           <i className="bi bi-clock-history fs-3 text-warning" />
                         </div>
                       </div>

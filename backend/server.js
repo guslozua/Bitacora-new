@@ -17,6 +17,7 @@ const itrackerListRoutes = require('./routes/itrackerList');
 const tabulacionesRoutes = require('./routes/tabulaciones');
 const tabulacionesStatsRoutes = require('./routes/tabulacionesStats');
 const placasRoutes = require('./routes/placasRoutes');
+const roleRoutes = require('./routes/roleRoutes');
 
 // Importar el programador de limpieza
 const { scheduleCleanup, cleanupUploadsFolder } = require('./utils/cleanupScheduler');
@@ -58,6 +59,7 @@ app.use('/api/abm/pic', require('./routes/abmPic'));
 app.use('/api/abm/stats', require('./routes/abmStats'));
 app.use('/api/placas', placasRoutes);
 app.use('/api/permisos', require('./routes/permisoRoutes'));
+app.use('/api/roles', roleRoutes);
 
 // Depuración: Listar rutas registradas en Express
 app._router.stack.forEach((middleware) => {
