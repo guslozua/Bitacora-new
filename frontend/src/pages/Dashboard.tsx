@@ -16,6 +16,10 @@ import {
 import GanttChart from '../components/GanttChart';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
+import MiniCalendar from '../components/MiniCalendar/MiniCalendar';
+import { fetchEvents } from '../services/EventService';
+import { Event } from '../models/Event';
+
 // Importamos funciones del servicio de autenticación
 import { getUserName, logout, getToken } from '../services/authService';
 
@@ -33,6 +37,8 @@ const Dashboard = () => {
   const [apiResponses, setApiResponses] = useState<any>({});
   const [profileInfo, setProfileInfo] = useState<any>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [calendarEvents, setCalendarEvents] = useState<Event[]>([]);
+  const [calendarLoading, setCalendarLoading] = useState(true);
 
   // Obtenemos el token usando el servicio de autenticación
   const token = getToken();
@@ -44,6 +50,33 @@ const Dashboard = () => {
     // Log para depuración
     console.log("Estado actual de nombreUsuario:", nombreUsuario);
   }, [nombreUsuario]);
+
+  // Cargar eventos del calendario
+  useEffect(() => {
+    const loadCalendarEvents = async () => {
+      try {
+        setCalendarLoading(true);
+        const events = await fetchEvents();
+        setCalendarEvents(events);
+      } catch (error) {
+        console.error('Error al cargar eventos del calendario:', error);
+      } finally {
+        setCalendarLoading(false);
+      }
+    };
+
+    loadCalendarEvents();
+  }, []);
+
+  // Manejar clic en fecha del calendario
+  const handleDateClick = (date: Date) => {
+    navigate(`/calendar?date=${date.toISOString()}`);
+  };
+
+  // Manejar clic en evento del calendario
+  const handleEventClick = (event: Event) => {
+    navigate(`/calendar/event/${event.id}`);
+  };
 
   const chartData = [
     { nombre: 'Usuarios', cantidad: usuarios ?? 0 },
@@ -263,6 +296,15 @@ const Dashboard = () => {
           }
         });
 
+        // Añadir eventos recientes del calendario
+        const eventosRecientes = calendarEvents.slice(-3).reverse();
+        eventosRecientes.forEach((e: Event) => {
+          if (e && e.title) {
+            const tipoEvento = e.type === 'holiday' ? '🏖️ Feriado' : (e.type === 'task' ? '📝 Tarea' : '📅 Evento');
+            actividad.push(`${tipoEvento}: ${e.title}`);
+          }
+        });
+
         // Si no hay actividad, mostrar mensaje por defecto
         if (actividad.length === 0 && (projectCount > 0 || taskCount > 0)) {
           actividad.push('No se pudieron cargar detalles de actividad reciente');
@@ -286,7 +328,7 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, [token]);
+  }, [token, calendarEvents]);
 
   // Usar la función de logout del servicio de autenticación
   const handleLogout = () => {
@@ -476,6 +518,38 @@ const Dashboard = () => {
                 <Col md={6}>
                   <Card className="shadow-sm h-100 border-0">
                     <Card.Body>
+                      <div className="d-flex justify-content-between align-items-center mb-3">
+                        <h5 className="fw-bold mb-0">Calendario</h5>
+                        <Button 
+                          variant="link" 
+                          className="p-0 text-decoration-none" 
+                          onClick={() => navigate('/calendar')}
+                        >
+                          Ver completo
+                        </Button>
+                      </div>
+                      {calendarLoading ? (
+                        <div className="text-center py-4">
+                          <Spinner animation="border" size="sm" />
+                          <p className="text-muted mt-2 small">Cargando calendario...</p>
+                        </div>
+                      ) : (
+                        <MiniCalendar 
+                          events={calendarEvents} 
+                          onDateClick={handleDateClick}
+                          onEventClick={handleEventClick}
+                          showHeader={false} // Añadida la prop para no mostrar el encabezado duplicado
+                        />
+                      )}
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+
+              <Row className="g-4 mb-4">
+                <Col md={6}>
+                  <Card className="shadow-sm h-100 border-0">
+                    <Card.Body>
                       <h5 className="fw-bold mb-3">Reportes Rápidos</h5>
                       <ResponsiveContainer width="100%" height={200}>
                         <BarChart
@@ -502,6 +576,46 @@ const Dashboard = () => {
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                
+                <Col md={6}>
+                  <Card className="shadow-sm h-100 border-0">
+                    <Card.Body>
+                      <h5 className="fw-bold mb-3">Próximos Eventos</h5>
+                      <ListGroup variant="flush">
+                        {calendarEvents.length === 0 ? (
+                          <ListGroup.Item>No hay eventos próximos</ListGroup.Item>
+                        ) : (
+                          calendarEvents
+                            .filter(event => new Date(event.start) >= new Date())
+                            .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+                            .slice(0, 5)
+                            .map((event, idx) => (
+                              <ListGroup.Item 
+                                key={idx}
+                                className="d-flex justify-content-between align-items-center"
+                                action
+                                onClick={() => handleEventClick(event)}
+                              >
+                                <div>
+                                  <span className={`badge bg-${
+                                    event.type === 'holiday' ? 'danger' : 
+                                    event.type === 'task' ? 'primary' : 'success'
+                                  } me-2`}>
+                                    {event.type === 'holiday' ? 'Feriado' : 
+                                     event.type === 'task' ? 'Tarea' : 'Evento'}
+                                  </span>
+                                  {event.title}
+                                </div>
+                                <small className="text-muted">
+                                  {new Date(event.start).toLocaleDateString('es-AR')}
+                                </small>
+                              </ListGroup.Item>
+                            ))
+                        )}
+                      </ListGroup>
                     </Card.Body>
                   </Card>
                 </Col>

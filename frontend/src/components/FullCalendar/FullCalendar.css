@@ -1,0 +1,162 @@
+/* FullCalendar.css */
+.full-calendar-container {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+/* Ajustes para asegurar que el calendario no se salga del contenedor */
+.calendar-card {
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: none !important;
+  border-radius: 8px;
+}
+
+.calendar-container {
+  height: 600px;
+  width: 100%;
+  overflow: auto;
+}
+
+/* Asegurar que las celdas del calendario no se desborden */
+.rbc-month-view {
+  min-height: 580px;
+  max-height: 600px;
+  overflow: visible;
+}
+
+.rbc-month-row {
+  overflow: hidden;
+}
+
+/* Estilos para la cabecera con el título del mes */
+.calendar-header-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #343a40;
+  text-transform: uppercase;
+}
+
+/* Estilos para los eventos */
+.rbc-event {
+  padding: 2px 5px;
+  font-size: 0.8rem;
+  border-radius: 4px;
+}
+
+.rbc-event-label {
+  font-size: 0.7rem;
+}
+
+.rbc-agenda-event-cell {
+  font-size: 0.9rem;
+}
+
+/* Estilos para la vista de día */
+.rbc-time-view {
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rbc-time-header {
+  font-weight: 500;
+}
+
+.rbc-timeslot-group {
+  min-height: 40px;
+}
+
+.rbc-header {
+  text-transform: capitalize;
+  font-weight: 500;
+}
+
+/* Estilos para la vista de mes */
+.rbc-month-view {
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rbc-day-bg.rbc-today {
+  background-color: rgba(13, 110, 253, 0.1); /* Bootstrap primary con transparencia */
+}
+
+.rbc-off-range-bg {
+  background-color: #f8f9fa;
+}
+
+.rbc-off-range {
+  color: #adb5bd;
+}
+
+/* Estilos para la vista de agenda */
+.rbc-agenda-view {
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rbc-agenda-table {
+  border: none;
+}
+
+.rbc-agenda-table th {
+  font-weight: 500;
+  padding: 10px;
+  text-transform: capitalize;
+}
+
+.rbc-agenda-time-cell {
+  font-size: 0.8rem;
+}
+
+.rbc-agenda-date-cell {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Estilos para el toolbar */
+.rbc-toolbar {
+  margin-bottom: 20px;
+}
+
+.rbc-toolbar button {
+  transition: all 0.3s ease;
+  border-radius: 4px !important;
+  margin: 0 2px;
+}
+
+.rbc-toolbar button.rbc-active {
+  background-color: #0d6efd;
+  color: white;
+}
+
+/* Personalizar para mostrar más eventos en cada celda del mes */
+.rbc-month-view .rbc-row-content {
+  max-height: none;
+}
+
+.rbc-month-view .rbc-row-segment {
+  padding: 1px 2px;
+}
+
+.rbc-show-more {
+  color: #0d6efd;
+  font-weight: 500;
+  padding: 2px;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+  .rbc-toolbar {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .rbc-toolbar-label {
+    margin: 10px 0;
+  }
+  
+  .rbc-time-view {
+    font-size: 0.8rem;
+  }
+}

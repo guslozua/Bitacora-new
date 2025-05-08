@@ -114,7 +114,7 @@ const AdminPanel: React.FC = () => {
     { id: 'stats', label: 'Estadísticas', icon: 'bi-graph-up', color: '#e74c3c' },
     { id: 'admin', label: 'Configuración', icon: 'bi-gear-fill', color: '#9b59b6' },
     { id: 'reports', label: 'Informes', icon: 'bi-file-earmark-text', color: '#1abc9c' },
-    { id: 'calendar', label: 'Calendario', icon: 'bi-calendar-event', color: '#3498db' },
+    { id: 'calendar', label: 'Calendario', icon: 'bi-calendar-date', color: '#3498db' },
     { id: 'messages', label: 'Mensajes', icon: 'bi-chat-dots-fill', color: '#2ecc71' },
     { id: 'notifications', label: 'Notificaciones', icon: 'bi-bell-fill', color: '#f1c40f' },
   ];

@@ -187,7 +187,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     { id: 'stats', icon: 'bi-graph-up', label: 'Estadísticas', route: '/stats' },
     { id: 'admin', icon: 'bi-gear-fill', label: 'Configuración', route: '/admin' },
     { id: 'reports', icon: 'bi-file-earmark-text', label: 'Informes', route: '/reports' },
-    { id: 'calendar', icon: 'bi-calendar-event', label: 'Calendario', route: '/calendar' },
+    { id: 'calendar', icon: 'bi-calendar-date', label: 'Calendario', route: '/calendar' },
     { id: 'messages', icon: 'bi-chat-dots-fill', label: 'Mensajes', route: '/messages' },
     { id: 'notifications', icon: 'bi-bell-fill', label: 'Notificaciones', route: '/notifications' },
   ];
