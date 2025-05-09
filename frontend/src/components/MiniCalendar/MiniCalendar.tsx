@@ -94,6 +94,23 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({
     return <div className="days">{days}</div>;
   };
 
+  // Función para obtener el color según el tipo de evento
+  const getEventColor = (eventType: string, eventColor?: string): string => {
+    if (eventColor) return eventColor;
+    
+    switch (eventType) {
+      case 'holiday':
+        return '#dc3545'; // Bootstrap danger (rojo)
+      case 'task':
+        return '#0d6efd'; // Bootstrap primary (azul)
+      case 'guardia':
+        return '#9c27b0'; // Púrpura para guardias
+      case 'event':
+      default:
+        return '#198754'; // Bootstrap success (verde)
+    }
+  };
+
   const renderCells = () => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(monthStart);
@@ -134,9 +151,7 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({
               <div className="event-indicator">
                 <span className="dot" 
                   style={{ 
-                    backgroundColor: dayEvents[0].color || 
-                    (dayEvents[0].type === 'holiday' ? '#dc3545' : 
-                     dayEvents[0].type === 'task' ? '#0d6efd' : '#198754') 
+                    backgroundColor: getEventColor(dayEvents[0].type, dayEvents[0].color)
                   }}>
                 </span>
                 {dayEvents.length > 1 && <span className="event-count">+{dayEvents.length - 1}</span>}
@@ -167,6 +182,36 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({
     return <div className="body">{rows}</div>;
   };
 
+  // Función para obtener la variante del Badge según el tipo de evento
+  const getBadgeVariant = (eventType: string): string => {
+    switch (eventType) {
+      case 'holiday':
+        return 'danger';
+      case 'task':
+        return 'primary';
+      case 'guardia':
+        return 'secondary'; // Usaremos secondary y luego estilizaremos con CSS
+      case 'event':
+      default:
+        return 'success';
+    }
+  };
+
+  // Función para obtener el texto del tipo de evento en español
+  const getEventTypeText = (eventType: string): string => {
+    switch (eventType) {
+      case 'holiday':
+        return 'Feriado';
+      case 'task':
+        return 'Tarea';
+      case 'guardia':
+        return 'Guardia';
+      case 'event':
+      default:
+        return 'Evento';
+    }
+  };
+
   const renderUpcomingEvents = () => {
     if (upcomingEvents.length === 0) {
       return <p className="text-muted text-center">No hay eventos próximos</p>;
@@ -182,9 +227,7 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({
           <div 
             className="event-dot" 
             style={{ 
-              backgroundColor: event.color || 
-              (event.type === 'holiday' ? '#dc3545' : 
-               event.type === 'task' ? '#0d6efd' : '#198754') 
+              backgroundColor: getEventColor(event.type, event.color)
             }}
           ></div>
           <span className="event-title">{event.title}</span>
@@ -192,10 +235,11 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({
         <div className="event-date">
           {format(new Date(event.start), 'EEEE, d MMMM', { locale: es })}
           <Badge 
-            bg={event.type === 'holiday' ? 'danger' : event.type === 'task' ? 'primary' : 'success'}
+            bg={getBadgeVariant(event.type)}
             className="ms-2"
+            style={event.type === 'guardia' ? { backgroundColor: '#9c27b0' } : {}}
           >
-            {event.type === 'holiday' ? 'Feriado' : event.type === 'task' ? 'Tarea' : 'Evento'}
+            {getEventTypeText(event.type)}
           </Badge>
         </div>
       </div>

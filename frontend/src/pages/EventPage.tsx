@@ -52,7 +52,14 @@ const EventPage: React.FC = () => {
   };
 
   const handleEdit = () => {
-    navigate(`/calendar/admin?edit=${id}`);
+    // Si es una guardia, redirigir a la administración de guardias
+    if (event?.type === 'guardia') {
+      const guardiaId = event.id.replace('guardia-', '');
+      navigate(`/admin/guardias?edit=${guardiaId}`);
+    } else {
+      // De lo contrario, redirigir a la edición de eventos
+      navigate(`/calendar/admin?edit=${id}`);
+    }
   };
 
   const handleCompleteTask = async () => {
@@ -84,6 +91,8 @@ const EventPage: React.FC = () => {
         return 'Feriado';
       case 'event':
         return 'Evento';
+      case 'guardia':
+        return 'Guardia';
       default:
         return type;
     }
@@ -97,6 +106,8 @@ const EventPage: React.FC = () => {
         return 'danger';
       case 'event':
         return 'success';
+      case 'guardia':
+        return 'secondary'; // Usaremos secondary y luego estilizaremos con CSS
       default:
         return 'secondary';
     }
@@ -120,6 +131,14 @@ const EventPage: React.FC = () => {
     display: 'flex' as 'flex',
     flexDirection: 'column' as 'column',
     minHeight: '100vh',
+  };
+
+  // Extraer el nombre del usuario de guardia del título si es un evento de tipo guardia
+  const extractGuardiaUsername = (title: string) => {
+    if (title.startsWith('Guardia: ')) {
+      return title.replace('Guardia: ', '');
+    }
+    return title;
   };
 
   return (
@@ -152,10 +171,16 @@ const EventPage: React.FC = () => {
               <Card.Header className="bg-white py-3">
                 <div className="d-flex justify-content-between align-items-center">
                   <div>
-                    <Badge bg={getEventTypeColor(event.type)} className="me-2">
+                    <Badge 
+                      bg={getEventTypeColor(event.type)} 
+                      className="me-2"
+                      style={event.type === 'guardia' ? { backgroundColor: '#9c27b0' } : {}}
+                    >
                       {getEventTypeLabel(event.type)}
                     </Badge>
-                    <h3 className="mb-0 d-inline">{event.title}</h3>
+                    <h3 className="mb-0 d-inline">
+                      {event.type === 'guardia' ? extractGuardiaUsername(event.title) : event.title}
+                    </h3>
                   </div>
                   <div>
                     {event.type === 'task' && (
@@ -188,10 +213,13 @@ const EventPage: React.FC = () => {
                       <Col md={4} className="text-muted">Fecha de inicio:</Col>
                       <Col md={8}>{formatDate(event.start)}</Col>
                     </Row>
-                    <Row className="mb-3">
-                      <Col md={4} className="text-muted">Fecha de fin:</Col>
-                      <Col md={8}>{formatDate(event.end)}</Col>
-                    </Row>
+                    {/* Para guardias y feriados normalmente solo mostramos la fecha de inicio */}
+                    {(event.type !== 'guardia' && event.type !== 'holiday') && (
+                      <Row className="mb-3">
+                        <Col md={4} className="text-muted">Fecha de fin:</Col>
+                        <Col md={8}>{formatDate(event.end)}</Col>
+                      </Row>
+                    )}
                     {event.location && (
                       <Row className="mb-3">
                         <Col md={4} className="text-muted">Ubicación:</Col>
@@ -208,6 +236,20 @@ const EventPage: React.FC = () => {
                         </Col>
                       </Row>
                     )}
+                    {event.type === 'guardia' && (
+                      <Row className="mb-3">
+                        <Col md={4} className="text-muted">Usuario de guardia:</Col>
+                        <Col md={8}>{extractGuardiaUsername(event.title)}</Col>
+                      </Row>
+                    )}
+                    {event.allDay && (
+                      <Row className="mb-3">
+                        <Col md={4} className="text-muted">Duración:</Col>
+                        <Col md={8}>
+                          <Badge bg="info">Todo el día</Badge>
+                        </Col>
+                      </Row>
+                    )}
                     {event.createdAt && (
                       <Row className="mb-3">
                         <Col md={4} className="text-muted">Creado:</Col>
@@ -221,13 +263,13 @@ const EventPage: React.FC = () => {
                           <div style={{ 
                             width: '24px', 
                             height: '24px', 
-                            backgroundColor: event.color,
+                            backgroundColor: event.color || (event.type === 'guardia' ? '#9c27b0' : ''),
                             borderRadius: '4px',
                             display: 'inline-block',
                             verticalAlign: 'middle',
                             marginRight: '8px'
                           }}></div>
-                          {event.color}
+                          {event.color || (event.type === 'guardia' ? '#9c27b0' : '')}
                         </Col>
                       </Row>
                     )}

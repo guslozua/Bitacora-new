@@ -1,7 +1,7 @@
 // src/context/EventContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Event, EventFilters, EventType } from '../models/Event';
-import EventService from '../services/EventService';
+import * as EventService from '../services/EventService';
 
 // Definir la interfaz para el contexto
 interface EventContextType {
@@ -39,6 +39,7 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
     tasks: true,
     events: true,
     holidays: true,
+    guardias: true, // Añadido filtro para guardias
     searchTerm: ''
   });
 
@@ -52,7 +53,8 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await EventService.fetchEvents();
+      // Usar fetchAllCalendarItems en lugar de fetchEvents para incluir guardias
+      const data = await EventService.fetchAllCalendarItems();
       setEvents(data);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -149,7 +151,8 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
       if (
         (event.type === 'task' && !filters.tasks) ||
         (event.type === 'event' && !filters.events) ||
-        (event.type === 'holiday' && !filters.holidays)
+        (event.type === 'holiday' && !filters.holidays) ||
+        (event.type === 'guardia' && !filters.guardias) // Añadido filtro para guardias
       ) {
         return false;
       }
@@ -176,12 +179,12 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
     });
   };
 
-  // Importar eventos desde archivo - ACTUALIZADO
+  // Importar eventos desde archivo
   const importEvents = async (file: File) => {
     try {
       setLoading(true);
       setError(null);
-      await EventService.importEvents(file); // Método actualizado
+      await EventService.importEvents(file);
       await fetchAllEvents(); // Recargar después de importar
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -192,12 +195,12 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
     }
   };
 
-  // Exportar eventos a archivo - ACTUALIZADO
+  // Exportar eventos a archivo
   const exportEvents = async (format: 'csv' | 'json' | 'excel' = 'csv') => {
     try {
       setLoading(true);
       setError(null);
-      await EventService.exportEvents(format); // Método actualizado con formato
+      await EventService.exportEvents(format);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       setError(errorMessage);

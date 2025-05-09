@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
 import FullCalendar from '../components/FullCalendar/FullCalendar';
-import { fetchEvents, deleteEvent } from '../services/EventService';
+import { fetchAllCalendarItems, deleteEvent } from '../services/EventService';
 import { Event } from '../models/Event';
 
 const CalendarPage: React.FC = () => {
@@ -24,7 +24,8 @@ const CalendarPage: React.FC = () => {
     const loadEvents = async () => {
       try {
         setLoading(true);
-        const eventsData = await fetchEvents();
+        // Usar fetchAllCalendarItems en lugar de fetchEvents para incluir guardias
+        const eventsData = await fetchAllCalendarItems();
         setEvents(eventsData);
       } catch (error) {
         console.error('Error al cargar eventos:', error);
@@ -57,6 +58,11 @@ const CalendarPage: React.FC = () => {
     navigate('/calendar/admin');
   };
 
+  // Nuevo manejador para ir a la página de administración de guardias
+  const handleAdminGuardias = () => {
+    navigate('/admin/guardias');
+  };
+
   const contentStyle = {
     marginLeft: sidebarCollapsed ? '80px' : '250px',
     transition: 'all 0.3s',
@@ -82,6 +88,14 @@ const CalendarPage: React.FC = () => {
               <Button variant="outline-secondary" onClick={handleAdminMode}>
                 <i className="bi bi-gear me-2"></i>
                 Modo Administrador
+              </Button>
+              <Button 
+                variant="outline-secondary" 
+                onClick={handleAdminGuardias}
+                style={{ color: '#9c27b0', borderColor: '#9c27b0' }}
+              >
+                <i className="bi bi-shield-check me-2"></i>
+                Administrar Guardias
               </Button>
             </div>
           </div>

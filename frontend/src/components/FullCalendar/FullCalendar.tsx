@@ -6,7 +6,7 @@ import moment from 'moment';
 import 'moment/locale/es';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './FullCalendar.css';
-import { Event } from '../../models/Event'; // Importamos la interfaz desde el modelo centralizado
+import { Event, EventFilters } from '../../models/Event'; // Importamos las interfaces desde el modelo centralizado
 
 // Configurar localización en español
 moment.locale('es');
@@ -28,18 +28,33 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
   const [view, setView] = useState<View>(Views.MONTH);
   const [date, setDate] = useState(initialDate || new Date());
   const [filteredEvents, setFilteredEvents] = useState<Event[]>(events);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<EventFilters>({
     tasks: true,
     events: true,
-    holidays: true
+    holidays: true,
+    guardias: true, // Añadido para filtrar guardias
+    searchTerm: ''
   });
 
   useEffect(() => {
     // Aplicar filtros
     const filtered = events.filter(event => {
+      // Filtrar por tipo
       if (event.type === 'task' && !filters.tasks) return false;
       if (event.type === 'event' && !filters.events) return false;
       if (event.type === 'holiday' && !filters.holidays) return false;
+      if (event.type === 'guardia' && !filters.guardias) return false; // Filtro para guardias
+      
+      // Filtrar por término de búsqueda si existe
+      if (filters.searchTerm && filters.searchTerm.trim() !== '') {
+        const searchTerm = filters.searchTerm.toLowerCase();
+        return (
+          event.title.toLowerCase().includes(searchTerm) ||
+          (event.description || '').toLowerCase().includes(searchTerm) ||
+          (event.location || '').toLowerCase().includes(searchTerm)
+        );
+      }
+      
       return true;
     });
     
@@ -71,10 +86,10 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
   };
 
   // Manejar cambio de filtros
-  const handleFilterChange = (filterType: 'tasks' | 'events' | 'holidays') => {
+  const handleFilterChange = (filterType: 'tasks' | 'events' | 'holidays' | 'guardias') => {
     setFilters(prevFilters => ({
       ...prevFilters,
-      [filterType]: !prevFilters[filterType]
+      [filterType]: !prevFilters[filterType as keyof EventFilters] as boolean
     }));
   };
 
@@ -94,13 +109,19 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
         case 'event':
           backgroundColor = '#198754'; // Bootstrap success
           break;
+        case 'guardia':
+          backgroundColor = '#9c27b0'; // Púrpura para guardias
+          break;
       }
     }
+    
+    // Si es una tarea completada, añadir opacidad
+    const opacity = event.type === 'task' && event.completed ? 0.6 : 0.9;
     
     const style = {
       backgroundColor,
       borderRadius: '4px',
-      opacity: 0.9,
+      opacity,
       color: 'white',
       border: '0px',
       display: 'block'
@@ -195,6 +216,17 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
                   onClick={() => handleFilterChange('holidays')}
                 >
                   Feriados
+                </Button>
+                <Button 
+                  variant={filters.guardias ? 'secondary' : 'outline-secondary'}
+                  style={{ 
+                    backgroundColor: filters.guardias ? '#9c27b0' : 'transparent', 
+                    borderColor: '#9c27b0',
+                    color: filters.guardias ? 'white' : '#9c27b0'
+                  }}
+                  onClick={() => handleFilterChange('guardias')}
+                >
+                  Guardias
                 </Button>
               </ButtonGroup>
             </Col>

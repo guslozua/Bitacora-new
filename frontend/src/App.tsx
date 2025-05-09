@@ -25,6 +25,7 @@ import Error404 from './pages/Error404';
 import CalendarPage from './pages/CalendarPage';
 import AdminCalendarPage from './pages/AdminCalendarPage';
 import EventPage from './pages/EventPage';
+import AdminGuardiasPage from './pages/AdminGuardiasPage'; // Añadido para guardias
 
 // Nuevos imports para el panel de administración de usuarios
 import AdminUsersDashboard from './pages/AdminUsersDashboard';
@@ -124,6 +125,9 @@ const App: React.FC = () => {
           <Route path="/calendar" element={<ProtectedRoute element={<CalendarPage />} />} />
           <Route path="/calendar/admin" element={<ProtectedRoute element={<AdminCalendarPage />} />} />
           <Route path="/calendar/event/:id" element={<ProtectedRoute element={<EventPage />} />} />
+          
+          {/* Ruta para Guardias */}
+          <Route path="/admin/guardias" element={<ProtectedRoute element={<AdminGuardiasPage />} />} />
           
           {/* Rutas de administración de usuarios */}
           <Route 

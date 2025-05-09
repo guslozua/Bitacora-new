@@ -2,6 +2,8 @@
 import { Event } from '../models/Event';
 import axios from 'axios';
 import moment from 'moment';
+// Importar el servicio de guardias
+import GuardiaService, { convertirGuardiaAEvento } from './GuardiaService';
 
 // URL base de la API - Ajusta según la configuración de tu proyecto
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -44,9 +46,35 @@ export const fetchEvents = async (): Promise<Event[]> => {
   }
 };
 
+// Nueva función para obtener todos los elementos del calendario (eventos + guardias)
+export const fetchAllCalendarItems = async (): Promise<Event[]> => {
+  try {
+    // Obtener eventos regulares
+    const events = await fetchEvents();
+    
+    // Obtener guardias y convertirlas al formato de eventos
+    const guardias = await GuardiaService.fetchGuardias();
+    const guardiasComoEventos = guardias.map(convertirGuardiaAEvento);
+    
+    // Combinar ambos arrays
+    return [...events, ...guardiasComoEventos];
+  } catch (error) {
+    console.error('Error al obtener elementos del calendario:', error);
+    throw error;
+  }
+};
+
 // Obtener un evento por ID
 export const fetchEventById = async (id: string): Promise<Event> => {
   try {
+    // Si el ID comienza con "guardia-", obtener de guardias
+    if (id.startsWith('guardia-')) {
+      const guardiaId = parseInt(id.replace('guardia-', ''));
+      const guardia = await GuardiaService.fetchGuardiaById(guardiaId);
+      return convertirGuardiaAEvento(guardia);
+    }
+    
+    // De lo contrario, obtener de eventos
     const response = await axios.get(`${API_URL}/eventos/${id}`);
     return parseDates(response.data.data);
   } catch (error) {
@@ -92,9 +120,33 @@ export const updateEvent = async (event: Event): Promise<Event> => {
   }
 };
 
+// Marcar un evento como completado/pendiente (para tareas)
+export const markEventAsCompleted = async (id: string, completed: boolean): Promise<Event> => {
+  try {
+    const response = await axios.patch(`${API_URL}/eventos/${id}/complete`, { completed });
+    return parseDates(response.data.data);
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new ApiError(
+        error.response.data.message || 'Error al actualizar el estado de la tarea',
+        error.response.status
+      );
+    }
+    throw new Error('Error de conexión al actualizar el estado de la tarea');
+  }
+};
+
 // Eliminar un evento
 export const deleteEvent = async (id: string): Promise<boolean> => {
   try {
+    // Si el ID comienza con "guardia-", eliminar de guardias
+    if (id.startsWith('guardia-')) {
+      const guardiaId = parseInt(id.replace('guardia-', ''));
+      await GuardiaService.deleteGuardia(guardiaId);
+      return true;
+    }
+    
+    // De lo contrario, eliminar de eventos
     await axios.delete(`${API_URL}/eventos/${id}`);
     return true;
   } catch (error) {
@@ -109,8 +161,15 @@ export const deleteEvent = async (id: string): Promise<boolean> => {
 };
 
 // Obtener eventos por tipo
-export const fetchEventsByType = async (type: 'task' | 'event' | 'holiday'): Promise<Event[]> => {
+export const fetchEventsByType = async (type: 'task' | 'event' | 'holiday' | 'guardia'): Promise<Event[]> => {
   try {
+    // Si el tipo es 'guardia', obtener de guardias
+    if (type === 'guardia') {
+      const guardias = await GuardiaService.fetchGuardias();
+      return guardias.map(convertirGuardiaAEvento);
+    }
+    
+    // De lo contrario, obtener de eventos
     const response = await axios.get(`${API_URL}/eventos?type=${type}`);
     return response.data.data.map(parseDates);
   } catch (error) {
@@ -129,8 +188,22 @@ export const fetchEventsByDateRange = async (start: Date, end: Date): Promise<Ev
   try {
     const startStr = moment(start).format('YYYY-MM-DD');
     const endStr = moment(end).format('YYYY-MM-DD');
+    
+    // Obtener eventos regulares
     const response = await axios.get(`${API_URL}/eventos?start=${startStr}&end=${endStr}`);
-    return response.data.data.map(parseDates);
+    const eventos = response.data.data.map(parseDates);
+    
+    // Obtener guardias para el mismo rango
+    const guardias = await GuardiaService.fetchGuardias();
+    const guardiasEnRango = guardias
+      .filter(guardia => {
+        const fechaGuardia = new Date(guardia.fecha);
+        return fechaGuardia >= start && fechaGuardia <= end;
+      })
+      .map(convertirGuardiaAEvento);
+    
+    // Combinar y devolver
+    return [...eventos, ...guardiasEnRango];
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       throw new ApiError(
@@ -211,79 +284,4 @@ export const exportEvents = async (format: 'csv' | 'json' | 'excel' = 'csv'): Pr
     }
     throw new Error(`Error de conexión al exportar eventos en formato ${format}`);
   }
-};
-
-// Buscar eventos por término
-export const searchEvents = async (term: string): Promise<Event[]> => {
-  try {
-    const response = await axios.get(`${API_URL}/eventos/search?q=${encodeURIComponent(term)}`);
-    return response.data.data.map(parseDates);
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new ApiError(
-        error.response.data.message || 'Error al buscar eventos',
-        error.response.status
-      );
-    }
-    throw new Error('Error de conexión al buscar eventos');
-  }
-};
-
-// Verificar si hay conflictos con otros eventos
-export const checkEventConflicts = async (
-  start: Date, 
-  end: Date, 
-  excludeEventId?: string
-): Promise<boolean> => {
-  try {
-    const startStr = moment(start).format('YYYY-MM-DD[T]HH:mm:ss');
-    const endStr = moment(end).format('YYYY-MM-DD[T]HH:mm:ss');
-    let url = `${API_URL}/eventos/conflicts?start=${startStr}&end=${endStr}`;
-    
-    if (excludeEventId) {
-      url += `&excludeId=${excludeEventId}`;
-    }
-    
-    const response = await axios.get(url);
-    return response.data.hasConflicts;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new ApiError(
-        error.response.data.message || 'Error al verificar conflictos',
-        error.response.status
-      );
-    }
-    throw new Error('Error de conexión al verificar conflictos');
-  }
-};
-
-// Marcar un evento como completado (solo para tareas)
-export const markEventAsCompleted = async (id: string, completed: boolean = true): Promise<Event> => {
-  try {
-    const response = await axios.patch(`${API_URL}/eventos/${id}/complete`, { completed });
-    return parseDates(response.data.data);
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new ApiError(
-        error.response.data.message || 'Error al completar la tarea',
-        error.response.status
-      );
-    }
-    throw new Error('Error de conexión al completar la tarea');
-  }
-};
-
-export default {
-  fetchEvents,
-  fetchEventById,
-  createEvent,
-  updateEvent,
-  deleteEvent,
-  fetchEventsByType,
-  fetchEventsByDateRange,
-  importEvents,
-  exportEvents, // Método actualizado
-  searchEvents,
-  checkEventConflicts,
-  markEventAsCompleted
 };

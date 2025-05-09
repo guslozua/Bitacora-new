@@ -19,6 +19,7 @@ const tabulacionesStatsRoutes = require('./routes/tabulacionesStats');
 const placasRoutes = require('./routes/placasRoutes');
 const roleRoutes = require('./routes/roleRoutes');
 const eventosRoutes = require('./routes/eventos'); // Agregar la ruta de eventos
+const guardiasRoutes = require('./routes/guardias');
 
 // Importar el programador de limpieza
 const { scheduleCleanup, cleanupUploadsFolder } = require('./utils/cleanupScheduler');
@@ -62,6 +63,7 @@ app.use('/api/placas', placasRoutes);
 app.use('/api/permisos', require('./routes/permisoRoutes'));
 app.use('/api/roles', roleRoutes);
 app.use('/api/eventos', eventosRoutes); // Agregar la ruta de eventos al servidor
+app.use('/api/guardias', guardiasRoutes);
 
 // Depuración: Listar rutas registradas en Express
 app._router.stack.forEach((middleware) => {
