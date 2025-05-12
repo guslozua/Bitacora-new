@@ -9,8 +9,8 @@ import {
   createEvent, 
   updateEvent, 
   deleteEvent, 
-  importEvents, // Actualizado de importEventsFromCSV
-  exportEvents  // Actualizado de exportEventsToCSV
+  importEvents,
+  exportEvents
 } from '../services/EventService';
 import { Event } from '../models/Event';
 
@@ -28,6 +28,20 @@ const AdminCalendarPage: React.FC = () => {
   const editEventId = queryParams.get('edit');
   const startDate = queryParams.get('start');
   const endDate = queryParams.get('end');
+
+  // Función para cargar eventos - definida fuera del useEffect
+  const loadEvents = async () => {
+    try {
+      setLoading(true);
+      const eventsData = await fetchEvents();
+      setEvents(eventsData);
+    } catch (error) {
+      console.error('Error al cargar eventos:', error);
+      setError('No se pudieron cargar los eventos. Por favor intenta nuevamente más tarde.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const loadEvents = async () => {
@@ -85,15 +99,31 @@ const AdminCalendarPage: React.FC = () => {
     }
   };
 
-  const handleEventDelete = async (eventId: string) => {
+  const handleEventDelete = async (eventId: string | number) => {
     try {
+      setLoading(true);
+      
+      console.log(`AdminCalendarPage: Eliminando evento ${eventId}, tipo: ${typeof eventId}`);
+      
+      // Llamar al servicio para eliminar el evento
       await deleteEvent(eventId);
-      const updatedEvents = await fetchEvents();
-      setEvents(updatedEvents);
+      
+      console.log(`AdminCalendarPage: Eliminación exitosa`);
+      
+      // Actualizar la lista de eventos después de la eliminación
+      await loadEvents();
+      
       setSuccessMessage('Evento eliminado correctamente');
+      
+      return true;
     } catch (error) {
       console.error('Error al eliminar evento:', error);
-      setError('No se pudo eliminar el evento');
+      setError('No se pudo eliminar el evento. Por favor, intente nuevamente.');
+      
+      // Re-lanzar el error para que AdminCalendar pueda manejarlo y mostrar un mensaje al usuario
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 

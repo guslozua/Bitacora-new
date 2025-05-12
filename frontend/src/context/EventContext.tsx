@@ -14,7 +14,7 @@ interface EventContextType {
   fetchEventsByType: (type: EventType) => Promise<void>;
   addEvent: (event: Omit<Event, 'id'>) => Promise<void>;
   updateEvent: (event: Event) => Promise<void>;
-  deleteEvent: (id: string) => Promise<void>;
+  deleteEvent: (id: string | number) => Promise<void>;  // Actualizado para aceptar string | number
   setSelectedEvent: (event: Event | null) => void;
   setFilters: (filters: Partial<EventFilters>) => void;
   getFilteredEvents: () => Event[];
@@ -39,7 +39,11 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
     tasks: true,
     events: true,
     holidays: true,
-    guardias: true, // Añadido filtro para guardias
+    guardias: true,
+    birthdays: true,
+    daysoff: true,
+    gconect: true,    // Añadido filtro para Guardia Conectividad
+    vacation: true,   // Añadido filtro para Vacaciones
     searchTerm: ''
   });
 
@@ -69,6 +73,7 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
+      // Actualizado para incluir los nuevos tipos de eventos
       const data = await EventService.fetchEventsByType(type);
       setEvents(data);
     } catch (error) {
@@ -102,7 +107,7 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
       setError(null);
       await EventService.updateEvent(event);
       await fetchAllEvents(); // Recargar los eventos
-      
+
       // Actualizar el evento seleccionado si es el mismo
       if (selectedEvent && selectedEvent.id === event.id) {
         setSelectedEvent(event);
@@ -117,7 +122,7 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
   };
 
   // Eliminar un evento
-  const deleteEvent = async (id: string) => {
+  const deleteEvent = async (id: string | number) => {
     try {
       setLoading(true);
       setError(null);
@@ -152,7 +157,11 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
         (event.type === 'task' && !filters.tasks) ||
         (event.type === 'event' && !filters.events) ||
         (event.type === 'holiday' && !filters.holidays) ||
-        (event.type === 'guardia' && !filters.guardias) // Añadido filtro para guardias
+        (event.type === 'guardia' && !filters.guardias) ||
+        (event.type === 'birthday' && !filters.birthdays) || // Añadido filtro para cumpleaños
+        (event.type === 'dayoff' && !filters.daysoff) || // Añadido filtro para días a favor
+        (event.type === 'gconect' && !filters.gconect) ||    // Añadido filtro para Guardia Conectividad
+        (event.type === 'vacation' && !filters.vacation)     // Añadido filtro para Vacaciones
       ) {
         return false;
       }

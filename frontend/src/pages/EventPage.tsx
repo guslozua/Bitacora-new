@@ -54,11 +54,12 @@ const EventPage: React.FC = () => {
   const handleEdit = () => {
     // Si es una guardia, redirigir a la administración de guardias
     if (event?.type === 'guardia') {
-      const guardiaId = event.id.replace('guardia-', '');
+      // Convertir a string y luego usar replace
+      const guardiaId = String(event.id).replace('guardia-', '');
       navigate(`/admin/guardias?edit=${guardiaId}`);
     } else {
       // De lo contrario, redirigir a la edición de eventos
-      navigate(`/calendar/admin?edit=${id}`);
+      navigate(`/calendar/admin?edit=${event?.id}`);
     }
   };
 
@@ -67,7 +68,8 @@ const EventPage: React.FC = () => {
     
     try {
       const completed = !event.completed;
-      await markEventAsCompleted(event.id, completed);
+      // Convertir explícitamente id a string si es necesario
+      await markEventAsCompleted(String(event.id), completed);
       // Actualizar el estado local
       setEvent({
         ...event,
@@ -93,6 +95,10 @@ const EventPage: React.FC = () => {
         return 'Evento';
       case 'guardia':
         return 'Guardia';
+      case 'birthday':
+        return 'Cumpleaños';
+      case 'dayoff':
+        return 'Día a Favor';
       default:
         return type;
     }
@@ -108,6 +114,10 @@ const EventPage: React.FC = () => {
         return 'success';
       case 'guardia':
         return 'secondary'; // Usaremos secondary y luego estilizaremos con CSS
+      case 'birthday':
+        return 'warning';
+      case 'dayoff':
+        return 'success'; // Verde para día a favor, aplicaremos estilo personalizado
       default:
         return 'secondary';
     }
@@ -174,7 +184,11 @@ const EventPage: React.FC = () => {
                     <Badge 
                       bg={getEventTypeColor(event.type)} 
                       className="me-2"
-                      style={event.type === 'guardia' ? { backgroundColor: '#9c27b0' } : {}}
+                      style={
+                        event.type === 'guardia' ? { backgroundColor: '#9c27b0' } : 
+                        event.type === 'dayoff' ? { backgroundColor: '#4caf50' } : 
+                        event.type === 'birthday' ? { backgroundColor: '#ff9800' } : {}
+                      }
                     >
                       {getEventTypeLabel(event.type)}
                     </Badge>
@@ -213,8 +227,9 @@ const EventPage: React.FC = () => {
                       <Col md={4} className="text-muted">Fecha de inicio:</Col>
                       <Col md={8}>{formatDate(event.start)}</Col>
                     </Row>
-                    {/* Para guardias y feriados normalmente solo mostramos la fecha de inicio */}
-                    {(event.type !== 'guardia' && event.type !== 'holiday') && (
+                    {/* Para guardias, feriados, cumpleaños y días a favor normalmente solo mostramos la fecha de inicio */}
+                    {(event.type !== 'guardia' && event.type !== 'holiday' && 
+                      event.type !== 'birthday' && event.type !== 'dayoff') && (
                       <Row className="mb-3">
                         <Col md={4} className="text-muted">Fecha de fin:</Col>
                         <Col md={8}>{formatDate(event.end)}</Col>
@@ -263,13 +278,19 @@ const EventPage: React.FC = () => {
                           <div style={{ 
                             width: '24px', 
                             height: '24px', 
-                            backgroundColor: event.color || (event.type === 'guardia' ? '#9c27b0' : ''),
+                            backgroundColor: event.color || 
+                              (event.type === 'guardia' ? '#9c27b0' : 
+                               event.type === 'birthday' ? '#ff9800' : 
+                               event.type === 'dayoff' ? '#4caf50' : ''),
                             borderRadius: '4px',
                             display: 'inline-block',
                             verticalAlign: 'middle',
                             marginRight: '8px'
                           }}></div>
-                          {event.color || (event.type === 'guardia' ? '#9c27b0' : '')}
+                          {event.color || 
+                            (event.type === 'guardia' ? '#9c27b0' : 
+                             event.type === 'birthday' ? '#ff9800' : 
+                             event.type === 'dayoff' ? '#4caf50' : '')}
                         </Col>
                       </Row>
                     )}

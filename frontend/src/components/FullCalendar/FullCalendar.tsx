@@ -6,7 +6,7 @@ import moment from 'moment';
 import 'moment/locale/es';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './FullCalendar.css';
-import { Event, EventFilters } from '../../models/Event'; // Importamos las interfaces desde el modelo centralizado
+import { Event, EventFilters } from '../../models/Event';
 
 // Configurar localización en español
 moment.locale('es');
@@ -16,11 +16,11 @@ interface FullCalendarProps {
   events: Event[];
   onSelectEvent?: (event: Event) => void;
   onSelectSlot?: (slotInfo: any) => void;
-  initialDate?: Date; // Añadimos esta propiedad que usas en CalendarPage
+  initialDate?: Date;
 }
 
-const FullCalendar: React.FC<FullCalendarProps> = ({ 
-  events = [], 
+const FullCalendar: React.FC<FullCalendarProps> = ({
+  events = [],
   onSelectEvent,
   onSelectSlot,
   initialDate
@@ -32,7 +32,11 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
     tasks: true,
     events: true,
     holidays: true,
-    guardias: true, // Añadido para filtrar guardias
+    guardias: true,
+    birthdays: true, // Filtro para cumpleaños
+    daysoff: true,   // Filtro para días a favor
+    gconect: true,    // Añadido filtro para Guardia Conectividad
+    vacation: true,   // Añadido filtro para Vacaciones
     searchTerm: ''
   });
 
@@ -43,8 +47,12 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
       if (event.type === 'task' && !filters.tasks) return false;
       if (event.type === 'event' && !filters.events) return false;
       if (event.type === 'holiday' && !filters.holidays) return false;
-      if (event.type === 'guardia' && !filters.guardias) return false; // Filtro para guardias
-      
+      if (event.type === 'guardia' && !filters.guardias) return false;
+      if (event.type === 'birthday' && !filters.birthdays) return false; // Filtro para cumpleaños
+      if (event.type === 'dayoff' && !filters.daysoff) return false; // Filtro para días a favor
+      if (event.type === 'gconect' && !filters.gconect) return false;   // Filtro para Guardia Conectividad
+      if (event.type === 'vacation' && !filters.vacation) return false; // Filtro para Vacaciones
+
       // Filtrar por término de búsqueda si existe
       if (filters.searchTerm && filters.searchTerm.trim() !== '') {
         const searchTerm = filters.searchTerm.toLowerCase();
@@ -54,10 +62,10 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
           (event.location || '').toLowerCase().includes(searchTerm)
         );
       }
-      
+
       return true;
     });
-    
+
     setFilteredEvents(filtered);
   }, [events, filters]);
 
@@ -69,7 +77,7 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
   // Manejar navegación en el calendario
   const handleNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {
     const newDate = new Date(date);
-    
+
     if (action === 'PREV') {
       if (view === Views.MONTH) newDate.setMonth(date.getMonth() - 1);
       else if (view === Views.WEEK) newDate.setDate(date.getDate() - 7);
@@ -81,24 +89,25 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
     } else if (action === 'TODAY') {
       newDate.setTime(new Date().getTime());
     }
-    
+
     setDate(newDate);
   };
 
   // Manejar cambio de filtros
-  const handleFilterChange = (filterType: 'tasks' | 'events' | 'holidays' | 'guardias') => {
-    setFilters(prevFilters => ({
-      ...prevFilters,
-      [filterType]: !prevFilters[filterType as keyof EventFilters] as boolean
-    }));
+  const handleFilterChange = (filterType: keyof EventFilters) => {
+    if (typeof filters[filterType] === 'boolean') {
+      setFilters(prevFilters => ({
+        ...prevFilters,
+        [filterType]: !prevFilters[filterType]
+      }));
+    }
   };
 
   // Personalizar el aspecto de los eventos
   const eventStyleGetter = (event: Event) => {
     let backgroundColor = event.color || '#3174ad';
-    
+
     if (!event.color) {
-      // Ya que sabemos que type nunca es undefined (según nuestra interfaz Event)
       switch (event.type) {
         case 'task':
           backgroundColor = '#0d6efd'; // Bootstrap primary
@@ -112,12 +121,24 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
         case 'guardia':
           backgroundColor = '#9c27b0'; // Púrpura para guardias
           break;
+        case 'birthday':
+          backgroundColor = '#ff9800'; // Naranja para cumpleaños
+          break;
+        case 'dayoff':
+          backgroundColor = '#4caf50'; // Verde claro para días a favor
+          break;
+        case 'gconect':
+          backgroundColor = '#00bcd4'; // Azul celeste para Guardia Conectividad
+          break;
+        case 'vacation':
+          backgroundColor = '#9e9e9e'; // Gris para Vacaciones
+          break;
       }
     }
-    
+
     // Si es una tarea completada, añadir opacidad
     const opacity = event.type === 'task' && event.completed ? 0.6 : 0.9;
-    
+
     const style = {
       backgroundColor,
       borderRadius: '4px',
@@ -126,7 +147,7 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
       border: '0px',
       display: 'block'
     };
-    
+
     return {
       style
     };
@@ -167,25 +188,25 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
             </Col>
             <Col sm={4} className="text-end">
               <ButtonGroup>
-                <Button 
+                <Button
                   variant={view === Views.MONTH ? 'primary' : 'outline-primary'}
                   onClick={() => handleViewChange(Views.MONTH)}
                 >
                   Mes
                 </Button>
-                <Button 
+                <Button
                   variant={view === Views.WEEK ? 'primary' : 'outline-primary'}
                   onClick={() => handleViewChange(Views.WEEK)}
                 >
                   Semana
                 </Button>
-                <Button 
+                <Button
                   variant={view === Views.DAY ? 'primary' : 'outline-primary'}
                   onClick={() => handleViewChange(Views.DAY)}
                 >
                   Día
                 </Button>
-                <Button 
+                <Button
                   variant={view === Views.AGENDA ? 'primary' : 'outline-primary'}
                   onClick={() => handleViewChange(Views.AGENDA)}
                 >
@@ -197,36 +218,80 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
         </Card.Header>
         <Card.Body className="px-3 py-4">
           <Row className="mb-3">
-            <Col className="d-flex justify-content-end">
+            <Col className="d-flex flex-wrap justify-content-end gap-2">
               <ButtonGroup>
-                <Button 
+                <Button
                   variant={filters.tasks ? 'primary' : 'outline-primary'}
                   onClick={() => handleFilterChange('tasks')}
                 >
                   Tareas
                 </Button>
-                <Button 
+                <Button
                   variant={filters.events ? 'success' : 'outline-success'}
                   onClick={() => handleFilterChange('events')}
                 >
                   Eventos
                 </Button>
-                <Button 
+                <Button
                   variant={filters.holidays ? 'danger' : 'outline-danger'}
                   onClick={() => handleFilterChange('holidays')}
                 >
                   Feriados
                 </Button>
-                <Button 
+              </ButtonGroup>
+
+              <ButtonGroup>
+                <Button
                   variant={filters.guardias ? 'secondary' : 'outline-secondary'}
-                  style={{ 
-                    backgroundColor: filters.guardias ? '#9c27b0' : 'transparent', 
+                  style={{
+                    backgroundColor: filters.guardias ? '#9c27b0' : 'transparent',
                     borderColor: '#9c27b0',
                     color: filters.guardias ? 'white' : '#9c27b0'
                   }}
                   onClick={() => handleFilterChange('guardias')}
                 >
                   Guardias
+                </Button>
+                <Button
+                  variant={filters.birthdays ? 'warning' : 'outline-warning'}
+                  onClick={() => handleFilterChange('birthdays')}
+                >
+                  Cumpleaños
+                </Button>
+                <Button
+                  variant="outline-success"
+                  style={{
+                    backgroundColor: filters.daysoff ? '#4caf50' : 'transparent',
+                    borderColor: '#4caf50',
+                    color: filters.daysoff ? 'white' : '#4caf50'
+                  }}
+                  onClick={() => handleFilterChange('daysoff')}
+                >
+                  Días a Favor
+                </Button>
+                <Button
+                  variant="outline-info"
+                  style={{
+                    backgroundColor: filters.gconect ? '#00bcd4' : 'transparent',
+                    borderColor: '#00bcd4',
+                    color: filters.gconect ? 'white' : '#00bcd4'
+                  }}
+                  size="sm"
+                  onClick={() => handleFilterChange('gconect')}
+                >
+                  G. Conectividad
+                </Button>
+                <Button
+                  variant="outline-secondary"
+                  style={{
+                    backgroundColor: filters.vacation ? '#9e9e9e' : 'transparent',
+                    borderColor: '#9e9e9e',
+                    color: filters.vacation ? 'white' : '#9e9e9e'
+                  }}
+                  size="sm"
+                  onClick={() => handleFilterChange('vacation')}
+                >
+                  Vacaciones
                 </Button>
               </ButtonGroup>
             </Col>

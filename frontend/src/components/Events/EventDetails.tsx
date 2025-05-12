@@ -25,6 +25,14 @@ const EventDetails: React.FC<EventDetailsProps> = ({ event }) => {
         return 'primary';
       case 'guardia':
         return 'secondary'; // Para guardias se usa el componente GuardiaDetails
+      case 'birthday':
+        return 'warning';   // Naranja para cumpleaños
+      case 'dayoff':
+        return 'success';   // Verde para días a favor
+      case 'gconect':
+        return 'info';      // Azul info para G. Conectividad
+      case 'vacation':
+        return 'secondary'; // Gris para Vacaciones
       case 'event':
       default:
         return 'success';
@@ -39,7 +47,15 @@ const EventDetails: React.FC<EventDetailsProps> = ({ event }) => {
       case 'task':
         return 'Tarea';
       case 'guardia':
-        return 'Guardia'; // Para guardias se usa el componente GuardiaDetails
+        return 'Guardia';
+      case 'birthday':
+        return 'Cumpleaños';
+      case 'dayoff':
+        return 'Día a Favor';
+      case 'gconect':
+        return 'Guardia de Conectividad';
+      case 'vacation':
+        return 'Vacaciones';
       case 'event':
       default:
         return 'Evento';
@@ -49,72 +65,76 @@ const EventDetails: React.FC<EventDetailsProps> = ({ event }) => {
   return (
     <Card className="border-0 shadow-sm">
       <Card.Body>
-        <div className="mb-3 d-flex align-items-center">
-          <div 
-            className="event-dot me-2" 
-            style={{ 
-              backgroundColor: event.color || 
-                (event.type === 'holiday' ? '#dc3545' : 
-                 event.type === 'task' ? '#0d6efd' : '#198754'),
-              width: '12px',
-              height: '12px',
-              borderRadius: '50%'
-            }}
-          ></div>
+        <div
+          className="event-dot me-2"
+          style={{
+            backgroundColor: event.color ||
+              (event.type === 'holiday' ? '#dc3545' :
+              event.type === 'task' ? '#0d6efd' :
+              event.type === 'birthday' ? '#ff9800' :
+              event.type === 'dayoff' ? '#4caf50' :
+              event.type === 'gconect' ? '#00bcd4' :
+              event.type === 'vacation' ? '#9e9e9e' : '#198754'),
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%'
+          }}
+        ></div>
+        <div>
           <Badge bg={getBadgeVariant(event.type)}>
             {getEventTypeText(event.type)}
           </Badge>
-          
-          {event.type === 'task' && (
-            <Badge 
-              bg={event.completed ? 'success' : 'warning'}
-              className="ms-2"
-            >
-              {event.completed ? 'Completada' : 'Pendiente'}
-            </Badge>
-          )}
-        </div>
 
-        <h4 className="mb-3">{event.title}</h4>
-        
-        <Row className="mb-3">
-          <Col xs={4} className="text-muted">Fecha:</Col>
-          <Col>
-            {format(new Date(event.start), 'EEEE, d MMMM yyyy', { locale: es })}
-          </Col>
-        </Row>
-        
-        <Row className="mb-3">
-          <Col xs={4} className="text-muted">Hora:</Col>
-          <Col>
-            {event.allDay 
-              ? 'Todo el día' 
-              : `${format(new Date(event.start), 'HH:mm')} - ${format(new Date(event.end), 'HH:mm')}`}
-          </Col>
-        </Row>
-
-        {event.location && (
-          <Row className="mb-3">
-            <Col xs={4} className="text-muted">Ubicación:</Col>
-            <Col>{event.location}</Col>
-          </Row>
+        {event.type === 'task' && (
+          <Badge
+            bg={event.completed ? 'success' : 'warning'}
+            className="ms-2"
+          >
+            {event.completed ? 'Completada' : 'Pendiente'}
+          </Badge>
         )}
+      </div>
 
-        {event.description && (
-          <Row className="mb-3">
-            <Col xs={4} className="text-muted">Descripción:</Col>
-            <Col>{event.description}</Col>
-          </Row>
-        )}
+      <h4 className="mb-3">{event.title}</h4>
 
-        <Row>
-          <Col xs={4} className="text-muted">ID:</Col>
-          <Col>
-            <code>{event.id}</code>
-          </Col>
+      <Row className="mb-3">
+        <Col xs={4} className="text-muted">Fecha:</Col>
+        <Col>
+          {format(new Date(event.start), 'EEEE, d MMMM yyyy', { locale: es })}
+        </Col>
+      </Row>
+
+      <Row className="mb-3">
+        <Col xs={4} className="text-muted">Hora:</Col>
+        <Col>
+          {event.allDay
+            ? 'Todo el día'
+            : `${format(new Date(event.start), 'HH:mm')} - ${format(new Date(event.end), 'HH:mm')}`}
+        </Col>
+      </Row>
+
+      {event.location && (
+        <Row className="mb-3">
+          <Col xs={4} className="text-muted">Ubicación:</Col>
+          <Col>{event.location}</Col>
         </Row>
-      </Card.Body>
-    </Card>
+      )}
+
+      {event.description && (
+        <Row className="mb-3">
+          <Col xs={4} className="text-muted">Descripción:</Col>
+          <Col>{event.description}</Col>
+        </Row>
+      )}
+
+      <Row>
+        <Col xs={4} className="text-muted">ID:</Col>
+        <Col>
+          <code>{event.id}</code>
+        </Col>
+      </Row>
+    </Card.Body>
+    </Card >
   );
 };
 

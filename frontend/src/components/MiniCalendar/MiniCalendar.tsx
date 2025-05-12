@@ -105,6 +105,10 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({
         return '#0d6efd'; // Bootstrap primary (azul)
       case 'guardia':
         return '#9c27b0'; // Púrpura para guardias
+      case 'birthday':
+        return '#ff9800'; // Naranja para cumpleaños
+      case 'dayoff':
+        return '#4caf50'; // Verde claro para días a favor
       case 'event':
       default:
         return '#198754'; // Bootstrap success (verde)
@@ -191,6 +195,10 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({
         return 'primary';
       case 'guardia':
         return 'secondary'; // Usaremos secondary y luego estilizaremos con CSS
+      case 'birthday':
+        return 'warning';   // Naranja para cumpleaños
+      case 'dayoff':
+        return 'success';   // Verde para días a favor
       case 'event':
       default:
         return 'success';
@@ -206,6 +214,10 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({
         return 'Tarea';
       case 'guardia':
         return 'Guardia';
+      case 'birthday':
+        return 'Cumpleaños';
+      case 'dayoff':
+        return 'Día a Favor';
       case 'event':
       default:
         return 'Evento';
@@ -237,7 +249,11 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({
           <Badge 
             bg={getBadgeVariant(event.type)}
             className="ms-2"
-            style={event.type === 'guardia' ? { backgroundColor: '#9c27b0' } : {}}
+            style={
+              event.type === 'guardia' ? { backgroundColor: '#9c27b0' } : 
+              event.type === 'birthday' ? { backgroundColor: '#ff9800' } : 
+              event.type === 'dayoff' ? { backgroundColor: '#4caf50' } : {}
+            }
           >
             {getEventTypeText(event.type)}
           </Badge>

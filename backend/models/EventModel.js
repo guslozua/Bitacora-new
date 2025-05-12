@@ -1,4 +1,4 @@
-// models/EventModel.js
+// Updated models/EventModel.js
 const db = require('../config/db');
 const { validationResult } = require('express-validator');
 const logEvento = require('../utils/logEvento');
@@ -6,11 +6,18 @@ const fs = require('fs');
 const path = require('path');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const ExcelJS = require('exceljs');
+const csv = require('csv-parser'); // Asegúrate de instalar este paquete: npm install csv-parser
+
+// Constante para los tipos de eventos válidos
+const TIPOS_VALIDOS = ['task', 'event', 'holiday', 'guardia', 'birthday', 'dayoff', 'gconect', 'vacation'];
 
 // Obtener todos los eventos con filtros
 exports.getEvents = async (req, res) => {
   try {
     const { type, start, end, q } = req.query;
+    
+    // Log para depuración
+    console.log('Parámetros de filtro:', { type, start, end, q });
     
     let query = `
       SELECT e.*, u.nombre as usuario_nombre, u.email as usuario_email
@@ -22,6 +29,14 @@ exports.getEvents = async (req, res) => {
     const params = [];
 
     if (type) {
+      // Verificar que el tipo sea válido
+      if (!TIPOS_VALIDOS.includes(type)) {
+        return res.status(400).json({
+          success: false,
+          message: `El tipo '${type}' no es válido. Tipos válidos: ${TIPOS_VALIDOS.join(', ')}`
+        });
+      }
+      
       query += ' AND e.type = ?';
       params.push(type);
     }
@@ -97,10 +112,11 @@ exports.getEventById = async (req, res) => {
   }
 };
 
-// Crear un nuevo evento
+// Crear un nuevo evento - VERSIÓN CORREGIDA
 exports.createEvent = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('Errores de validación:', errors.array());
     return res.status(400).json({
       success: false,
       errors: errors.array()
@@ -108,11 +124,23 @@ exports.createEvent = async (req, res) => {
   }
 
   try {
+    // Log para depuración
+    console.log('Datos recibidos para crear evento:', req.body);
+    
     const { title, start, end, allDay, type, color, description, location } = req.body;
     const createdBy = req.user?.id;
-
-    // Verificar posibles conflictos
-    if (type === 'task' || type === 'event') {
+    
+    // Verificar que el tipo sea válido
+    if (!TIPOS_VALIDOS.includes(type)) {
+      console.log(`Tipo inválido: ${type}`);
+      return res.status(400).json({
+        success: false,
+        message: `El tipo '${type}' no es válido. Tipos válidos: ${TIPOS_VALIDOS.join(', ')}`
+      });
+    }
+    
+    // Verificar posibles conflictos - solo para tipos específicos
+    if (type === 'task' || type === 'event' || type === 'dayoff') {
       const [conflictingEvents] = await db.query(`
         SELECT * FROM eventos
         WHERE (
@@ -120,7 +148,7 @@ exports.createEvent = async (req, res) => {
           OR (start = ?)
           OR (end = ?)
         )
-        AND type IN ('task', 'event')
+        AND type IN ('task', 'event', 'dayoff')
       `, [end, start, start, end]);
 
       if (conflictingEvents.length > 0) {
@@ -153,7 +181,7 @@ exports.createEvent = async (req, res) => {
     if (createdBy) {
       await logEvento({
         tipo_evento: 'CREACIÓN',
-        descripcion: `Evento creado: ${title}`,
+        descripcion: `${getEventTypeText(type)} creado: ${title}`,
         id_usuario: createdBy
       });
     }
@@ -162,7 +190,7 @@ exports.createEvent = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Evento creado correctamente',
+      message: `${getEventTypeText(type)} creado correctamente`,
       data: newEvent[0]
     });
   } catch (error) {
@@ -175,10 +203,11 @@ exports.createEvent = async (req, res) => {
   }
 };
 
-// Actualizar un evento
+// Actualizar un evento - VERSIÓN CORREGIDA
 exports.updateEvent = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('Errores de validación al actualizar:', errors.array());
     return res.status(400).json({
       success: false,
       errors: errors.array()
@@ -186,6 +215,9 @@ exports.updateEvent = async (req, res) => {
   }
 
   try {
+    // Log para depuración
+    console.log('Datos recibidos para actualizar evento:', req.body);
+    
     const eventId = req.params.id;
     const { title, start, end, allDay, type, color, description, location, completed } = req.body;
     const userId = req.user?.id;
@@ -195,8 +227,19 @@ exports.updateEvent = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Evento no encontrado' });
     }
 
-    // Verificar posibles conflictos
-    if ((type === 'task' || type === 'event') && (start || end)) {
+    // Verificar que el tipo sea válido si se está actualizando
+    if (type && !TIPOS_VALIDOS.includes(type)) {
+      console.log(`Tipo inválido en actualización: ${type}`);
+      return res.status(400).json({
+        success: false,
+        message: `El tipo '${type}' no es válido. Tipos válidos: ${TIPOS_VALIDOS.join(', ')}`
+      });
+    }
+
+    // Verificar posibles conflictos - solo para tipos que requieren verificación
+    if ((type === 'task' || type === 'event' || type === 'dayoff' || 
+         existingEvents[0].type === 'task' || existingEvents[0].type === 'event' || existingEvents[0].type === 'dayoff') && 
+        (start || end)) {
       const startDate = start ? new Date(start) : existingEvents[0].start;
       const endDate = end ? new Date(end) : existingEvents[0].end;
       
@@ -207,7 +250,7 @@ exports.updateEvent = async (req, res) => {
           OR (start = ?)
           OR (end = ?)
         )
-        AND type IN ('task', 'event')
+        AND type IN ('task', 'event', 'dayoff')
         AND id != ?
       `, [endDate, startDate, startDate, endDate, eventId]);
 
@@ -219,7 +262,7 @@ exports.updateEvent = async (req, res) => {
         });
       }
     }
-
+    
     let query = 'UPDATE eventos SET updatedAt = NOW()';
     const updateFields = [];
     const params = [];
@@ -244,9 +287,10 @@ exports.updateEvent = async (req, res) => {
     await db.query(query, params);
 
     if (userId) {
+      const tipoEvento = type || existingEvents[0].type;
       await logEvento({
         tipo_evento: 'ACTUALIZACIÓN',
-        descripcion: `Evento actualizado: ${title || 'ID ' + eventId}`,
+        descripcion: `${getEventTypeText(tipoEvento)} actualizado: ${title || 'ID ' + eventId}`,
         id_usuario: userId
       });
     }
@@ -260,7 +304,7 @@ exports.updateEvent = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Evento actualizado correctamente',
+      message: `${getEventTypeText(updatedEvent[0].type)} actualizado correctamente`,
       data: updatedEvent[0]
     });
   } catch (error) {
@@ -273,34 +317,63 @@ exports.updateEvent = async (req, res) => {
   }
 };
 
-// Eliminar un evento
+// Eliminar un evento - VERSIÓN CORREGIDA
 exports.deleteEvent = async (req, res) => {
   try {
     const eventId = req.params.id;
     const userId = req.user?.id;
 
+    console.log(`Intentando eliminar evento ID: ${eventId}`);
+
     const [existingEvents] = await db.query('SELECT * FROM eventos WHERE id = ?', [eventId]);
     if (existingEvents.length === 0) {
+      console.log(`Evento ID: ${eventId} no encontrado`);
       return res.status(404).json({ success: false, message: 'Evento no encontrado' });
     }
 
     const eventTitle = existingEvents[0].title;
-    await db.query('DELETE FROM eventos WHERE id = ?', [eventId]);
+    const eventType = existingEvents[0].type;
+    console.log(`Eliminando ${getEventTypeText(eventType)}: "${eventTitle}" (ID: ${eventId})`);
+
+    // Ejecutar la consulta de eliminación con manejo de excepciones
+    try {
+      const [deleteResult] = await db.query('DELETE FROM eventos WHERE id = ?', [eventId]);
+      
+      // Verificar si se eliminó alguna fila
+      if (deleteResult.affectedRows === 0) {
+        console.log(`No se eliminó ninguna fila para el evento ID: ${eventId}`);
+        return res.status(500).json({
+          success: false,
+          message: 'No se pudo eliminar el evento'
+        });
+      }
+      
+      console.log(`Evento ID: ${eventId} eliminado correctamente. Filas afectadas: ${deleteResult.affectedRows}`);
+    } catch (dbError) {
+      console.error('Error al ejecutar la consulta DELETE:', dbError);
+      return res.status(500).json({
+        success: false,
+        message: 'Error en la base de datos al eliminar el evento',
+        error: dbError.message
+      });
+    }
 
     if (userId) {
       await logEvento({
         tipo_evento: 'ELIMINACIÓN',
-        descripcion: `Evento eliminado: ${eventTitle}`,
+        descripcion: `${getEventTypeText(eventType)} eliminado: ${eventTitle}`,
         id_usuario: userId
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Evento eliminado correctamente'
+      message: `${getEventTypeText(eventType)} eliminado correctamente`
     });
   } catch (error) {
-    console.error('Error al eliminar evento:', error);
+    console.error('Error general al eliminar evento:', error);
+    
+    // Responder con el error
     res.status(500).json({
       success: false,
       message: 'Error al eliminar el evento',
@@ -328,7 +401,7 @@ exports.checkConflicts = async (req, res) => {
         OR (start = ?)
         OR (end = ?)
       )
-      AND type IN ('task', 'event')
+      AND type IN ('task', 'event', 'dayoff')
     `;
     
     const params = [new Date(end), new Date(start), new Date(start), new Date(end)];
@@ -355,12 +428,14 @@ exports.checkConflicts = async (req, res) => {
   }
 };
 
-// Marcar una tarea como completada
+// Marcar una tarea como completada - VERSIÓN CORREGIDA
 exports.completeTask = async (req, res) => {
   try {
     const eventId = req.params.id;
     const { completed } = req.body;
     const userId = req.user?.id;
+
+    console.log(`Intentando marcar evento ID ${eventId} como ${completed ? 'completado' : 'pendiente'}`);
 
     const [event] = await db.query('SELECT * FROM eventos WHERE id = ?', [eventId]);
     
@@ -406,7 +481,7 @@ exports.completeTask = async (req, res) => {
   }
 };
 
-// Obtener estadísticas de eventos
+// Obtener estadísticas de eventos - VERSIÓN CORREGIDA
 exports.getEventStats = async (req, res) => {
   try {
     const [countsByType] = await db.query(`
@@ -415,6 +490,10 @@ exports.getEventStats = async (req, res) => {
         SUM(CASE WHEN type = 'event' THEN 1 ELSE 0 END) as eventos,
         SUM(CASE WHEN type = 'task' THEN 1 ELSE 0 END) as tareas,
         SUM(CASE WHEN type = 'holiday' THEN 1 ELSE 0 END) as feriados,
+        SUM(CASE WHEN type = 'birthday' THEN 1 ELSE 0 END) as cumpleanos,
+        SUM(CASE WHEN type = 'dayoff' THEN 1 ELSE 0 END) as diasAFavor,
+        SUM(CASE WHEN type = 'gconect' THEN 1 ELSE 0 END) as gconect,
+        SUM(CASE WHEN type = 'vacation' THEN 1 ELSE 0 END) as vacaciones,
         SUM(CASE WHEN type = 'task' AND completed = true THEN 1 ELSE 0 END) as tareasCompletadas
       FROM eventos
     `);
@@ -436,6 +515,10 @@ exports.getEventStats = async (req, res) => {
         eventos: countsByType[0].eventos,
         tareas: countsByType[0].tareas,
         feriados: countsByType[0].feriados,
+        cumpleanos: countsByType[0].cumpleanos,
+        diasAFavor: countsByType[0].diasAFavor,
+        gconect: countsByType[0].gconect,
+        vacaciones: countsByType[0].vacaciones,
         tareasCompletadas: countsByType[0].tareasCompletadas,
         proximosEventos: upcomingEvents[0].proximosEventos
       }
@@ -450,7 +533,7 @@ exports.getEventStats = async (req, res) => {
   }
 };
 
-// Exportar eventos en diferentes formatos (CSV, JSON, Excel)
+// Exportar eventos en diferentes formatos (CSV, JSON, Excel) - VERSIÓN CORREGIDA
 exports.exportEvents = async (req, res) => {
   try {
     const format = req.params.format;
@@ -475,24 +558,31 @@ exports.exportEvents = async (req, res) => {
     const params = [];
     
     if (type) {
+      // Verificar que el tipo sea válido
+      if (!TIPOS_VALIDOS.includes(type)) {
+        return res.status(400).json({
+          success: false,
+          message: `El tipo '${type}' no es válido. Tipos válidos: ${TIPOS_VALIDOS.join(', ')}`
+        });
+      }
+      
       query += ' AND e.type = ?';
       params.push(type);
     }
     
     if (start && end) {
-      query += ' AND ((e.start >= ? AND e.start <= ?) OR (e.end >= ? AND e.end <= ?) OR (e.start <= ? AND e.end >= ?))';
-      params.push(start, end, start, end, start, end);
+      query += ' AND e.start BETWEEN ? AND ?';
+      params.push(new Date(start), new Date(end));
     } else if (start) {
       query += ' AND e.start >= ?';
-      params.push(start);
+      params.push(new Date(start));
     } else if (end) {
       query += ' AND e.end <= ?';
-      params.push(end);
+      params.push(new Date(end));
     }
     
     query += ' ORDER BY e.start ASC';
     
-    // Obtener eventos
     const [events] = await db.query(query, params);
     
     // Crear directorio temporal si no existe
@@ -501,14 +591,17 @@ exports.exportEvents = async (req, res) => {
       fs.mkdirSync(tempDir, { recursive: true });
     }
     
+    let filePath;
+    let fileName;
+    
     switch (format) {
       case 'csv':
-        // Exportar a CSV
-        const csvPath = path.join(tempDir, 'eventos.csv');
+        filePath = path.join(tempDir, 'eventos.csv');
+        fileName = 'eventos.csv';
         
         // Configurar escritor CSV
         const csvWriter = createCsvWriter({
-          path: csvPath,
+          path: filePath,
           header: [
             { id: 'id', title: 'ID' },
             { id: 'title', title: 'Título' },
@@ -519,69 +612,41 @@ exports.exportEvents = async (req, res) => {
             { id: 'color', title: 'Color' },
             { id: 'description', title: 'Descripción' },
             { id: 'location', title: 'Ubicación' },
-            { id: 'usuario_nombre', title: 'Creado Por' }
+            { id: 'completed', title: 'Completado' },
+            { id: 'createdBy', title: 'Creado Por' },
+            { id: 'usuario_nombre', title: 'Nombre Usuario' },
+            { id: 'usuario_email', title: 'Email Usuario' }
           ]
         });
         
-        // Formatear datos para CSV
-        const csvRecords = events.map(event => ({
-          id: event.id,
-          title: event.title,
+        // Escribir datos a CSV
+        await csvWriter.writeRecords(events.map(event => ({
+          ...event,
           start: new Date(event.start).toISOString(),
           end: new Date(event.end).toISOString(),
           allDay: event.allDay ? 'Sí' : 'No',
-          type: event.type || 'event',
-          color: event.color || '',
-          description: event.description || '',
-          location: event.location || '',
-          usuario_nombre: event.usuario_nombre || ''
-        }));
-        
-        // Escribir CSV
-        await csvWriter.writeRecords(csvRecords);
-        
-        // Enviar archivo al cliente
-        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', 'attachment; filename=eventos.csv');
-        
-        // Leer el archivo y enviarlo
-        const fileStream = fs.createReadStream(csvPath);
-        fileStream.pipe(res);
-        
-        // Configurar limpieza del archivo temporal
-        fileStream.on('end', () => {
-          fs.unlinkSync(csvPath);
-        });
+          completed: event.completed ? 'Sí' : 'No',
+          type: event.type // Incluir el tipo tal cual
+        })));
         break;
         
       case 'json':
-        // Exportar a JSON
-        // Formatear datos
-        const jsonData = events.map(event => ({
-          id: event.id,
-          title: event.title,
-          start: new Date(event.start).toISOString(),
-          end: new Date(event.end).toISOString(),
-          allDay: Boolean(event.allDay),
-          type: event.type || 'event',
-          color: event.color || '',
-          description: event.description || '',
-          location: event.location || '',
-          createdBy: event.createdBy,
-          usuario_nombre: event.usuario_nombre || ''
-        }));
+        filePath = path.join(tempDir, 'eventos.json');
+        fileName = 'eventos.json';
         
-        // Enviar directamente como JSON
-        res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.setHeader('Content-Disposition', 'attachment; filename=eventos.json');
-        res.json(jsonData);
+        // Guardar como JSON
+        fs.writeFileSync(filePath, JSON.stringify(events.map(event => ({
+          ...event,
+          start: new Date(event.start).toISOString(),
+          end: new Date(event.end).toISOString()
+        })), null, 2));
         break;
         
       case 'excel':
-        // Exportar a Excel
-        const excelPath = path.join(tempDir, 'eventos.xlsx');
+        filePath = path.join(tempDir, 'eventos.xlsx');
+        fileName = 'eventos.xlsx';
         
-        // Crear nuevo workbook y hoja
+        // Crear workbook
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Eventos');
         
@@ -589,338 +654,342 @@ exports.exportEvents = async (req, res) => {
         worksheet.columns = [
           { header: 'ID', key: 'id', width: 10 },
           { header: 'Título', key: 'title', width: 30 },
-          { header: 'Fecha Inicio', key: 'start', width: 25 },
-          { header: 'Fecha Fin', key: 'end', width: 25 },
+          { header: 'Fecha Inicio', key: 'start', width: 20 },
+          { header: 'Fecha Fin', key: 'end', width: 20 },
           { header: 'Todo el Día', key: 'allDay', width: 12 },
           { header: 'Tipo', key: 'type', width: 15 },
-          { header: 'Color', key: 'color', width: 15 },
+          { header: 'Tipo (es)', key: 'tipo_es', width: 20 },
+          { header: 'Color', key: 'color', width: 12 },
           { header: 'Descripción', key: 'description', width: 40 },
-          { header: 'Ubicación', key: 'location', width: 30 },
-          { header: 'Creado Por', key: 'usuario_nombre', width: 20 }
+          { header: 'Ubicación', key: 'location', width: 25 },
+          { header: 'Completado', key: 'completed', width: 12 },
+          { header: 'Nombre Usuario', key: 'usuario_nombre', width: 25 },
+          { header: 'Email Usuario', key: 'usuario_email', width: 25 }
         ];
-        
-        // Estilo para encabezados
-        worksheet.getRow(1).font = { bold: true };
-        worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
         
         // Añadir datos
         events.forEach(event => {
           worksheet.addRow({
-            id: event.id,
-            title: event.title,
-            start: new Date(event.start).toISOString(),
-            end: new Date(event.end).toISOString(),
+            ...event,
+            start: new Date(event.start),
+            end: new Date(event.end),
             allDay: event.allDay ? 'Sí' : 'No',
-            type: event.type || 'event',
-            color: event.color || '',
-            description: event.description || '',
-            location: event.location || '',
-            usuario_nombre: event.usuario_nombre || ''
+            completed: event.completed ? 'Sí' : 'No',
+            type: event.type, // Código del tipo
+            tipo_es: getEventTypeText(event.type) // Nombre del tipo en español
           });
         });
         
-        // Formatear celdas de fecha
-        worksheet.eachRow((row, rowNumber) => {
-          if (rowNumber > 1) {
-            // Formatear columnas de fecha (índices 3 y 4 son fechas)
-            row.getCell(3).numFmt = 'dd/mm/yyyy hh:mm:ss';
-            row.getCell(4).numFmt = 'dd/mm/yyyy hh:mm:ss';
-          }
-        });
+        // Aplicar estilos
+        worksheet.getRow(1).font = { bold: true };
         
-        // Guardar el archivo
-        await workbook.xlsx.writeFile(excelPath);
-        
-        // Enviar archivo al cliente
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', 'attachment; filename=eventos.xlsx');
-        
-        // Leer el archivo y enviarlo
-        const excelStream = fs.createReadStream(excelPath);
-        excelStream.pipe(res);
-        
-        // Configurar limpieza del archivo temporal
-        excelStream.on('end', () => {
-          fs.unlinkSync(excelPath);
-        });
+        // Guardar
+        await workbook.xlsx.writeFile(filePath);
         break;
     }
     
-    // Registrar en bitácora si el usuario está autenticado
-    if (req.user) {
-      await logEvento({
-        tipo_evento: 'EXPORTACIÓN',
-        descripcion: `Eventos exportados en formato ${format.toUpperCase()}`,
-        id_usuario: req.user.id
-      });
-    }
-  } catch (error) {
-    console.error(`Error al exportar eventos en formato ${req.params.format}:`, error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al exportar eventos',
-      error: error.message
+    // Enviar archivo
+    res.download(filePath, fileName, err => {
+      if (err) {
+        console.error('Error al descargar archivo:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Error al descargar el archivo',
+          error: err.message
+        });
+      }
+      
+      // Eliminar archivo temporal después de enviarlo
+      setTimeout(() => {
+        fs.unlink(filePath, err => {
+          if (err) console.error('Error al eliminar archivo temporal:', err);
+        });
+      }, 5000);
     });
-  }
-};
-
-// Exportar eventos a CSV (versión original para compatibilidad)
-exports.exportEventsToCSV = async (req, res) => {
-  try {
-    const { type, start, end } = req.query;
-    
-    let query = `
-      SELECT e.*, u.nombre as usuario_nombre, u.email as usuario_email
-      FROM eventos e
-      LEFT JOIN usuarios u ON e.createdBy = u.id
-      WHERE 1=1
-    `;
-    
-    const params = [];
-    
-    if (type) {
-      query += ' AND e.type = ?';
-      params.push(type);
-    }
-    
-    if (start && end) {
-      query += ' AND ((e.start >= ? AND e.start <= ?) OR (e.end >= ? AND e.end <= ?) OR (e.start <= ? AND e.end >= ?))';
-      params.push(start, end, start, end, start, end);
-    } else if (start) {
-      query += ' AND e.start >= ?';
-      params.push(start);
-    } else if (end) {
-      query += ' AND e.end <= ?';
-      params.push(end);
-    }
-    
-    query += ' ORDER BY e.start ASC';
-    
-    const [events] = await db.query(query, params);
-    // Crear directorio temporal si no existe
-    const tempDir = path.join(__dirname, '../temp');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-    
-    // Para mantener compatibilidad con la versión anterior,
-    // redirigir a la nueva implementación con formato CSV
-    return exports.exportEvents({
-      ...req,
-      params: { format: 'csv' }
-    }, res);
   } catch (error) {
     console.error('Error al exportar eventos:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al exportar eventos',
+      message: 'Error al exportar los eventos',
       error: error.message
     });
   }
 };
 
-// Importar eventos desde un archivo
+// Importar eventos desde un archivo - VERSIÓN CORREGIDA
 exports.importEvents = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No se ha proporcionado ningún archivo' });
+      return res.status(400).json({
+        success: false,
+        message: 'No se ha proporcionado ningún archivo'
+      });
     }
-    
+
     const filePath = req.file.path;
     const fileExtension = path.extname(req.file.originalname).toLowerCase();
-    const userId = req.user?.id;
-    
     let events = [];
     
-    // Procesar según el formato del archivo
+    // Procesar archivo según su formato
     if (fileExtension === '.csv') {
-      // Procesar CSV
-      const csv = require('csv-parser');
+      // Importar desde CSV
       const results = [];
-      
       await new Promise((resolve, reject) => {
         fs.createReadStream(filePath)
           .pipe(csv())
           .on('data', (data) => results.push(data))
           .on('end', () => resolve())
-          .on('error', (error) => reject(error));
+          .on('error', reject);
       });
       
-      events = results.map(row => ({
-        title: row.title || row.Título || '',
-        start: new Date(row.start || row['Fecha Inicio'] || new Date()),
-        end: new Date(row.end || row['Fecha Fin'] || new Date()),
-        allDay: row.allDay === 'true' || row.allDay === 'Sí' || row['Todo el Día'] === 'true' || row['Todo el Día'] === 'Sí' || false,
-        type: row.type || row.Tipo || 'event',
-        color: row.color || row.Color || '',
-        description: row.description || row.Descripción || '',
-        location: row.location || row.Ubicación || '',
-        createdBy: userId || null
-      }));
+      // Mapear datos CSV a formato de eventos
+      events = results.map(row => {
+        let start = new Date(row.start || row.fecha_inicio || row['Fecha Inicio'] || new Date());
+        let end = new Date(row.end || row.fecha_fin || row['Fecha Fin'] || start);
+        
+        // Si hay problema con la zona horaria, ajustar
+        if (isNaN(start.getTime())) start = new Date();
+        if (isNaN(end.getTime())) end = new Date(start.getTime() + 3600000); // 1 hora después
+        
+        // Determinar el tipo de evento
+        let type = (row.type || row.tipo || row['Tipo'] || 'event').toLowerCase();
+        
+        // Mapear a tipos válidos
+        if (!TIPOS_VALIDOS.includes(type)) {
+          // Intenta mapear equivalentes en español a códigos
+          if (['tarea', 'tareas'].includes(type)) type = 'task';
+          else if (['evento', 'eventos'].includes(type)) type = 'event';
+          else if (['feriado', 'feriados', 'festivo', 'festivos'].includes(type)) type = 'holiday';
+          else if (['guardia', 'guardias'].includes(type)) type = 'guardia';
+          else if (['cumpleaños', 'cumple', 'cumples'].includes(type)) type = 'birthday';
+          else if (['día a favor', 'dias a favor', 'día libre', 'dia libre'].includes(type)) type = 'dayoff';
+          else if (['guardia de conectividad', 'g. conectividad', 'gconect'].includes(type)) type = 'gconect';
+          else if (['vacaciones', 'vacacion', 'vacas'].includes(type)) type = 'vacation';
+          else type = 'event'; // Fallback a evento por defecto
+        }
+        
+        return {
+          title: row.title || row.titulo || row['Título'] || 'Sin título',
+          start,
+          end,
+          allDay: row.allDay === 'true' || row.allDay === 'Sí' || row['Todo el Día'] === 'true' || false,
+          type,
+          color: row.color || row.Color || null,
+          description: row.description || row.descripcion || row['Descripción'] || null,
+          location: row.location || row.ubicacion || row['Ubicación'] || null
+        };
+      });
+      
     } else if (fileExtension === '.json') {
-      // Procesar JSON
+      // Importar desde JSON
       const fileContent = fs.readFileSync(filePath, 'utf8');
       const jsonData = JSON.parse(fileContent);
       
-      events = Array.isArray(jsonData) ? jsonData.map(item => ({
-        title: item.title || '',
-        start: new Date(item.start || new Date()),
-        end: new Date(item.end || new Date()),
-        allDay: Boolean(item.allDay),
-        type: item.type || 'event',
-        color: item.color || '',
-        description: item.description || '',
-        location: item.location || '',
-        createdBy: userId || null
-      })) : [];
+      if (Array.isArray(jsonData)) {
+        events = jsonData.map(item => {
+          // Determinar el tipo de evento
+          let type = (item.type || 'event').toLowerCase();
+          
+          // Verificar y mapear el tipo
+          if (!TIPOS_VALIDOS.includes(type)) {
+            // Intenta mapear equivalentes en español a códigos
+            if (['tarea', 'tareas'].includes(type)) type = 'task';
+            else if (['evento', 'eventos'].includes(type)) type = 'event';
+            else if (['feriado', 'feriados', 'festivo', 'festivos'].includes(type)) type = 'holiday';
+            else if (['guardia', 'guardias'].includes(type)) type = 'guardia';
+            else if (['cumpleaños', 'cumple', 'cumples'].includes(type)) type = 'birthday';
+            else if (['día a favor', 'dias a favor', 'día libre', 'dia libre'].includes(type)) type = 'dayoff';
+            else if (['guardia de conectividad', 'g. conectividad', 'gconect'].includes(type)) type = 'gconect';
+            else if (['vacaciones', 'vacacion', 'vacas'].includes(type)) type = 'vacation';
+            else type = 'event'; // Fallback a evento por defecto
+          }
+          
+          return {
+            title: item.title || 'Sin título',
+            start: new Date(item.start || new Date()),
+            end: new Date(item.end || new Date()),
+            allDay: Boolean(item.allDay),
+            type,
+            color: item.color || null,
+            description: item.description || null,
+            location: item.location || null
+          };
+        });
+      }
+      
     } else if (fileExtension === '.xlsx' || fileExtension === '.xls') {
-      // Procesar Excel
-      const ExcelJS = require('exceljs');
+      // Importar desde Excel
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.readFile(filePath);
       
       const worksheet = workbook.getWorksheet(1);
+      if (!worksheet) {
+        throw new Error('El archivo Excel no contiene hojas');
+      }
       
-      // Obtener encabezados
+      // Obtener los encabezados (primera fila)
       const headers = [];
-      worksheet.getRow(1).eachCell(cell => {
-        headers.push(cell.value);
+      worksheet.getRow(1).eachCell((cell, colNumber) => {
+        headers[colNumber - 1] = cell.value ? cell.value.toString().toLowerCase() : '';
       });
       
-      // Mapear columnas estándar a sus posibles equivalentes en español
-      const columnMappings = {
-        title: ['title', 'Título', 'Titulo', 'Nombre'],
-        start: ['start', 'Fecha Inicio', 'Inicio', 'FechaInicio'],
-        end: ['end', 'Fecha Fin', 'Fin', 'FechaFin'],
-        allDay: ['allDay', 'Todo el Día', 'TodoElDia', 'Día Completo'],
-        type: ['type', 'Tipo', 'Categoría', 'Categoria'],
-        color: ['color', 'Color'],
-        description: ['description', 'Descripción', 'Descripcion', 'Detalles'],
-        location: ['location', 'Ubicación', 'Ubicacion', 'Lugar']
-      };
-      
-      // Función para encontrar el índice de la columna
-      const findColumnIndex = (fieldName) => {
-        const possibleNames = columnMappings[fieldName];
+      // Mapear columnas
+      const findColumn = (possibleNames) => {
         for (const name of possibleNames) {
-          const index = headers.findIndex(h => 
-            h && typeof h === 'string' && h.toLowerCase() === name.toLowerCase()
-          );
-          if (index !== -1) return index;
+          const index = headers.findIndex(h => h.includes(name.toLowerCase()));
+          if (index !== -1) return index + 1;
         }
         return -1;
       };
       
-      // Mapear índices de columnas
-      const columnIndices = {
-        title: findColumnIndex('title'),
-        start: findColumnIndex('start'),
-        end: findColumnIndex('end'),
-        allDay: findColumnIndex('allDay'),
-        type: findColumnIndex('type'),
-        color: findColumnIndex('color'),
-        description: findColumnIndex('description'),
-        location: findColumnIndex('location')
-      };
+      const titleCol = findColumn(['title', 'titulo', 'título']);
+      const startCol = findColumn(['start', 'inicio', 'fecha inicio']);
+      const endCol = findColumn(['end', 'fin', 'fecha fin']);
+      const allDayCol = findColumn(['allday', 'todo el día', 'todo el dia']);
+      const typeCol = findColumn(['type', 'tipo']);
+      const colorCol = findColumn(['color']);
+      const descriptionCol = findColumn(['description', 'descripción', 'descripcion']);
+      const locationCol = findColumn(['location', 'ubicación', 'ubicacion']);
       
-      // Procesar filas
-      worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber > 1) { // Saltar encabezados
-          const event = {
-            title: '',
-            start: new Date(),
-            end: new Date(),
-            allDay: false,
-            type: 'event',
-            color: '',
-            description: '',
-            location: '',
-            createdBy: userId || null
-          };
-          
-          // Extraer valores para cada campo
-          for (const [field, index] of Object.entries(columnIndices)) {
-            if (index !== -1) {
-              const cell = row.getCell(index + 1);
-              if (cell && cell.value !== null && cell.value !== undefined) {
-                if (field === 'start' || field === 'end') {
-                  if (cell.value instanceof Date) {
-                    event[field] = cell.value;
-                  } else if (typeof cell.value === 'string') {
-                    event[field] = new Date(cell.value);
-                  } else if (typeof cell.value === 'number') {
-                    event[field] = new Date(Math.round((cell.value - 25569) * 86400 * 1000));
-                  }
-                } else if (field === 'allDay') {
-                  if (typeof cell.value === 'boolean') {
-                    event[field] = cell.value;
-                  } else if (typeof cell.value === 'string') {
-                    event[field] = ['true', 'sí', 'si', 'yes', '1'].includes(cell.value.toLowerCase());
-                  } else if (typeof cell.value === 'number') {
-                    event[field] = cell.value === 1;
-                  }
-                } else {
-                  event[field] = cell.value.toString();
-                }
-              }
+      // Recorrer filas (saltando la primera que son encabezados)
+      for (let i = 2; i <= worksheet.rowCount; i++) {
+        const row = worksheet.getRow(i);
+        if (row.values.filter(Boolean).length === 0) continue; // Saltar filas vacías
+        
+        let title = titleCol > 0 ? (row.getCell(titleCol).value || 'Sin título') : 'Sin título';
+        
+        // Extraer y validar fechas
+        let start, end;
+        if (startCol > 0) {
+          const startValue = row.getCell(startCol).value;
+          start = startValue instanceof Date ? startValue : new Date();
+        } else {
+          start = new Date();
+        }
+        
+        if (endCol > 0) {
+          const endValue = row.getCell(endCol).value;
+          end = endValue instanceof Date ? endValue : new Date(start.getTime() + 3600000);
+        } else {
+          end = new Date(start.getTime() + 3600000); // 1 hora después por defecto
+        }
+        
+        // Validar fechas
+        if (isNaN(start.getTime())) start = new Date();
+        if (isNaN(end.getTime())) end = new Date(start.getTime() + 3600000);
+        
+        // Determinar allDay
+        let allDay = false;
+        if (allDayCol > 0) {
+          const allDayValue = row.getCell(allDayCol).value;
+          allDay = allDayValue === true || 
+                  allDayValue === 'true' || 
+                  allDayValue === 'Sí' || 
+                  allDayValue === 'si' || 
+                  allDayValue === 'yes';
+        }
+        
+        // Determinar tipo
+        let type = 'event';
+        if (typeCol > 0) {
+          const typeValue = row.getCell(typeCol).value;
+          if (typeValue) {
+            const lowerType = typeValue.toString().toLowerCase();
+            
+            // Verificar si el tipo ya es válido
+            if (TIPOS_VALIDOS.includes(lowerType)) {
+              type = lowerType;
+            } else {
+              // Mapear a tipos válidos
+              if (['tarea', 'tareas'].includes(lowerType)) type = 'task';
+              else if (['evento', 'eventos'].includes(lowerType)) type = 'event';
+              else if (['feriado', 'feriados', 'festivo', 'festivos'].includes(lowerType)) type = 'holiday';
+              else if (['guardia', 'guardias'].includes(lowerType)) type = 'guardia';
+              else if (['cumpleaños', 'cumple', 'cumples'].includes(lowerType)) type = 'birthday';
+              else if (['día a favor', 'dias a favor', 'día libre', 'dia libre'].includes(lowerType)) type = 'dayoff';
+              else if (['guardia de conectividad', 'g. conectividad', 'gconect'].includes(lowerType)) type = 'gconect';
+              else if (['vacaciones', 'vacacion', 'vacas'].includes(lowerType)) type = 'vacation';
+              else type = 'event'; // Fallback a evento por defecto
             }
           }
-          
-          // Solo agregar eventos que tengan al menos título y fechas válidas
-          if (event.title && !isNaN(event.start) && !isNaN(event.end)) {
-            events.push(event);
-          }
         }
-      });
-    }
-    
-    // Insertar eventos en la base de datos
-    if (events.length > 0) {
-      const insertQuery = `
-        INSERT INTO eventos 
-        (title, start, end, allDay, type, color, description, location, createdBy, createdAt, updatedAt)
-        VALUES ?
-      `;
-      
-      const values = events.map(event => [
-        event.title,
-        event.start,
-        event.end,
-        event.allDay || false,
-        event.type || 'event',
-        event.color || null,
-        event.description || null,
-        event.location || null,
-        event.createdBy || null,
-        new Date(),
-        new Date()
-      ]);
-      
-      await db.query(insertQuery, [values]);
-      
-      if (userId) {
-        await logEvento({
-          tipo_evento: 'IMPORTACIÓN',
-          descripcion: `Importados ${events.length} eventos desde archivo ${fileExtension}`,
-          id_usuario: userId
+        
+        // Armar el objeto evento
+        events.push({
+          title,
+          start,
+          end,
+          allDay,
+          type,
+          color: colorCol > 0 ? row.getCell(colorCol).value || null : null,
+          description: descriptionCol > 0 ? row.getCell(descriptionCol).value || null : null,
+          location: locationCol > 0 ? row.getCell(locationCol).value || null : null
         });
       }
     }
     
-    // Eliminar archivo temporal
+    // Validar y filtrar eventos inválidos
+    events = events.filter(event => 
+      event.title && 
+      !isNaN(new Date(event.start).getTime()) && 
+      !isNaN(new Date(event.end).getTime())
+    );
+    
+    if (events.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se pudieron importar eventos válidos del archivo'
+      });
+    }
+    
+    // Insertar eventos en la base de datos
+    let insertedCount = 0;
+    for (const event of events) {
+      try {
+        const query = `
+          INSERT INTO eventos 
+          (title, start, end, allDay, type, color, description, location, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        `;
+        
+        const [result] = await db.query(query, [
+          event.title,
+          event.start,
+          event.end,
+          event.allDay || false,
+          event.type || 'event',
+          event.color || null,
+          event.description || null,
+          event.location || null
+        ]);
+        
+        if (result.insertId) insertedCount++;
+      } catch (err) {
+        console.error('Error al insertar evento:', err, event);
+        // Continuar con el siguiente evento
+      }
+    }
+    
+    // Eliminar el archivo temporal
     fs.unlinkSync(filePath);
     
     res.status(200).json({
       success: true,
-      message: 'Eventos importados correctamente',
-      count: events.length
+      message: `Se importaron ${insertedCount} eventos correctamente`,
+      count: insertedCount,
+      total: events.length
     });
+    
   } catch (error) {
     console.error('Error al importar eventos:', error);
     
-    // Limpiar archivo temporal si existe
+    // Limpiar el archivo si existe
     if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (e) {
+        console.error('Error al eliminar archivo temporal:', e);
+      }
     }
     
     res.status(500).json({
@@ -931,8 +1000,26 @@ exports.importEvents = async (req, res) => {
   }
 };
 
-// Importar eventos desde CSV (versión original para compatibilidad)
-exports.importEventsFromCSV = async (req, res) => {
-  // Redirigir a la nueva implementación para compatibilidad
-  return exports.importEvents(req, res);
-};
+// Función auxiliar para obtener el texto del tipo de evento
+function getEventTypeText(type) {
+  switch (type) {
+    case 'task':
+      return 'Tarea';
+    case 'event':
+      return 'Evento';
+    case 'holiday':
+      return 'Feriado';
+    case 'guardia':
+      return 'Guardia';
+    case 'birthday':
+      return 'Cumpleaños';
+    case 'dayoff':
+      return 'Día a Favor';
+    case 'gconect':
+      return 'Guardia de Conectividad';
+    case 'vacation':
+      return 'Vacaciones';
+    default:
+      return type;
+  }
+}

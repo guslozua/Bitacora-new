@@ -122,7 +122,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     // Verificar si hay conflictos (opcional)
-    if (req.body.type === 'task' || req.body.type === 'event') {
+    if (req.body.type === 'task' || req.body.type === 'event' || req.body.type === 'dayoff') {
       const { start, end } = req.body;
       const startDate = new Date(start);
       const endDate = new Date(end);
@@ -137,7 +137,7 @@ router.post('/', async (req, res) => {
             { start: startDate },
             { end: endDate }
           ],
-          type: { [Event.sequelize.Op.in]: ['task', 'event'] }
+          type: { [Event.sequelize.Op.in]: ['task', 'event', 'dayoff'] }
         }
       });
       
@@ -185,7 +185,7 @@ router.put('/:id', async (req, res) => {
     }
     
     // Verificar conflictos (opcional)
-    if (req.body.type === 'task' || req.body.type === 'event') {
+    if (req.body.type === 'task' || req.body.type === 'event' || req.body.type === 'dayoff') {
       const { start, end } = req.body;
       const startDate = new Date(start);
       const endDate = new Date(end);
@@ -201,7 +201,7 @@ router.put('/:id', async (req, res) => {
             { start: startDate },
             { end: endDate }
           ],
-          type: { [Event.sequelize.Op.in]: ['task', 'event'] }
+          type: { [Event.sequelize.Op.in]: ['task', 'event', 'dayoff'] }
         }
       });
       
@@ -287,7 +287,7 @@ router.get('/conflicts', async (req, res) => {
         { start: startDate },
         { end: endDate }
       ],
-      type: { [Event.sequelize.Op.in]: ['task', 'event'] }
+      type: { [Event.sequelize.Op.in]: ['task', 'event', 'dayoff'] }
     };
     
     // Excluir el evento actual si se proporciona un ID

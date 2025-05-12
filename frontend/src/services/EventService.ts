@@ -1,5 +1,5 @@
 // src/services/EventService.ts
-import { Event } from '../models/Event';
+import { Event, EventType } from '../models/Event';
 import axios from 'axios';
 import moment from 'moment';
 // Importar el servicio de guardias
@@ -65,11 +65,14 @@ export const fetchAllCalendarItems = async (): Promise<Event[]> => {
 };
 
 // Obtener un evento por ID
-export const fetchEventById = async (id: string): Promise<Event> => {
+export const fetchEventById = async (id: string | number): Promise<Event> => {
   try {
+    // Convertir id a string si es un número
+    const idString = String(id);
+    
     // Si el ID comienza con "guardia-", obtener de guardias
-    if (id.startsWith('guardia-')) {
-      const guardiaId = parseInt(id.replace('guardia-', ''));
+    if (idString.startsWith('guardia-')) {
+      const guardiaId = parseInt(idString.replace('guardia-', ''));
       const guardia = await GuardiaService.fetchGuardiaById(guardiaId);
       return convertirGuardiaAEvento(guardia);
     }
@@ -88,13 +91,23 @@ export const fetchEventById = async (id: string): Promise<Event> => {
   }
 };
 
-// Crear un nuevo evento
+// Crear un nuevo evento - VERSIÓN CORREGIDA
 export const createEvent = async (eventData: Omit<Event, 'id'>): Promise<Event> => {
   try {
-    const response = await axios.post(`${API_URL}/eventos`, eventData);
+    // Asegurarnos de que start y end sean strings en formato ISO
+    const formattedData = {
+      ...eventData,
+      start: eventData.start instanceof Date ? eventData.start.toISOString() : eventData.start,
+      end: eventData.end instanceof Date ? eventData.end.toISOString() : eventData.end
+    };
+
+    console.log('Creando evento con datos:', formattedData);
+    
+    const response = await axios.post(`${API_URL}/eventos`, formattedData);
     return parseDates(response.data.data);
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
+      console.error('Error de respuesta del servidor:', error.response.data);
       throw new ApiError(
         error.response.data.message || 'Error al crear el evento',
         error.response.status
@@ -104,13 +117,23 @@ export const createEvent = async (eventData: Omit<Event, 'id'>): Promise<Event> 
   }
 };
 
-// Actualizar un evento existente
+// Actualizar un evento existente - VERSIÓN CORREGIDA
 export const updateEvent = async (event: Event): Promise<Event> => {
   try {
-    const response = await axios.put(`${API_URL}/eventos/${event.id}`, event);
+    // Asegurarnos de que start y end sean strings en formato ISO
+    const formattedData = {
+      ...event,
+      start: event.start instanceof Date ? event.start.toISOString() : event.start,
+      end: event.end instanceof Date ? event.end.toISOString() : event.end
+    };
+
+    console.log('Actualizando evento con datos:', formattedData);
+    
+    const response = await axios.put(`${API_URL}/eventos/${event.id}`, formattedData);
     return parseDates(response.data.data);
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
+      console.error('Error de respuesta del servidor:', error.response.data);
       throw new ApiError(
         error.response.data.message || 'Error al actualizar el evento',
         error.response.status
@@ -120,9 +143,11 @@ export const updateEvent = async (event: Event): Promise<Event> => {
   }
 };
 
-// Marcar un evento como completado/pendiente (para tareas)
-export const markEventAsCompleted = async (id: string, completed: boolean): Promise<Event> => {
+// Marcar un evento como completado/pendiente (para tareas) - VERSIÓN CORREGIDA
+export const markEventAsCompleted = async (id: string | number, completed: boolean): Promise<Event> => {
   try {
+    console.log(`Marcando evento ${id} como ${completed ? 'completado' : 'pendiente'}`);
+    
     const response = await axios.patch(`${API_URL}/eventos/${id}/complete`, { completed });
     return parseDates(response.data.data);
   } catch (error) {
@@ -136,32 +161,61 @@ export const markEventAsCompleted = async (id: string, completed: boolean): Prom
   }
 };
 
-// Eliminar un evento
-export const deleteEvent = async (id: string): Promise<boolean> => {
+// Eliminar un evento - VERSIÓN CORREGIDA
+export const deleteEvent = async (id: string | number): Promise<boolean> => {
   try {
+    console.log(`Intentando eliminar evento con ID: ${id}, tipo: ${typeof id}`);
+    
+    // Convertir id a string si es un número para poder usar startsWith
+    const idString = String(id);
+    
     // Si el ID comienza con "guardia-", eliminar de guardias
-    if (id.startsWith('guardia-')) {
-      const guardiaId = parseInt(id.replace('guardia-', ''));
+    if (idString.startsWith('guardia-')) {
+      console.log(`Eliminando guardia: ${idString}`);
+      const guardiaId = parseInt(idString.replace('guardia-', ''));
       await GuardiaService.deleteGuardia(guardiaId);
       return true;
     }
     
-    // De lo contrario, eliminar de eventos
-    await axios.delete(`${API_URL}/eventos/${id}`);
-    return true;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new ApiError(
-        error.response.data.message || 'Error al eliminar el evento',
-        error.response.status
-      );
+    // Para todos los demás tipos de eventos (evento, tarea, feriado, cumpleaños, día a favor)
+    console.log(`Eliminando evento regular: ${id}`);
+    const response = await axios.delete(`${API_URL}/eventos/${id}`);
+    
+    // Verificar explícitamente el resultado
+    if (response.status === 200 && response.data.success) {
+      console.log(`Evento ${id} eliminado con éxito`);
+      return true;
+    } else {
+      console.error('Respuesta inesperada al eliminar evento:', response.data);
+      throw new Error(response.data.message || 'Error al eliminar el evento');
     }
-    throw new Error('Error de conexión al eliminar el evento');
+  } catch (error) {
+    console.error('Error en deleteEvent:', error);
+    
+    // Manejar errores de red o del servidor
+    if (axios.isAxiosError(error)) {
+      // Si tenemos una respuesta del servidor
+      if (error.response) {
+        console.error('Respuesta de error del servidor:', error.response.data);
+        throw new ApiError(
+          error.response.data.message || 'Error al eliminar el evento',
+          error.response.status
+        );
+      } 
+      // Si hay un error de red (sin respuesta)
+      else {
+        console.error('Error de red:', error.message);
+        throw new Error(`Error de conexión: ${error.message}`);
+      }
+    }
+    
+    // Para otros tipos de error
+    throw new Error('Error al eliminar el evento: ' + (error instanceof Error ? error.message : String(error)));
   }
 };
 
-// Obtener eventos por tipo
-export const fetchEventsByType = async (type: 'task' | 'event' | 'holiday' | 'guardia'): Promise<Event[]> => {
+// Obtener eventos por tipo - VERSIÓN CORREGIDA
+export const fetchEventsByType = async (type: EventType): Promise<Event[]> => {
   try {
     // Si el tipo es 'guardia', obtener de guardias
     if (type === 'guardia') {

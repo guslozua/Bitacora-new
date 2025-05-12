@@ -57,7 +57,10 @@ router.get('/export/:format', EventModel.exportEvents);
 // @route   GET /api/eventos/export
 // @desc    Exportar eventos a un archivo CSV (versión anterior)
 // @access  Public (temporalmente)
-router.get('/export', EventModel.exportEventsToCSV);
+router.get('/export', (req, res) => {
+  req.params.format = 'csv';
+  EventModel.exportEvents(req, res);
+});
 
 // @route   POST /api/eventos/import
 // @desc    Importar eventos desde un archivo
@@ -78,7 +81,7 @@ router.post('/',
     check('title', 'El título es obligatorio').not().isEmpty(),
     check('start', 'La fecha de inicio es obligatoria').not().isEmpty(),
     check('end', 'La fecha de fin es obligatoria').not().isEmpty(),
-    check('type', 'El tipo debe ser "task", "event" o "holiday"').isIn(['task', 'event', 'holiday'])
+    check('type', 'El tipo debe ser válido').isIn(['task', 'event', 'holiday', 'guardia', 'birthday', 'dayoff', 'gconect', 'vacation'])
   ],
   EventModel.createEvent
 );
@@ -94,7 +97,7 @@ router.get('/:id', EventModel.getEventById);
 // @access  Public (temporalmente)
 router.put('/:id',
   [
-    check('type', 'El tipo debe ser "task", "event" o "holiday"').optional().isIn(['task', 'event', 'holiday'])
+    check('type', 'El tipo debe ser válido').optional().isIn(['task', 'event', 'holiday', 'guardia', 'birthday', 'dayoff', 'gconect', 'vacation'])
   ],
   EventModel.updateEvent
 );

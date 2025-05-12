@@ -21,9 +21,9 @@ interface AdminCalendarProps {
   events: Event[];
   onEventAdd?: (event: Event) => void;
   onEventUpdate?: (event: Event) => void;
-  onEventDelete?: (eventId: string) => void;
+  onEventDelete?: (eventId: string | number) => void;  // Actualizado para aceptar string o number
   onImportEvents?: (file: File) => void;
-  onExportEvents?: (format?: string) => void; // Modificado para recibir formato
+  onExportEvents?: (format?: string) => void;
   editEventId?: string | null;
   initialStartDate?: Date;
   initialEndDate?: Date;
@@ -63,6 +63,10 @@ const AdminCalendar: React.FC<AdminCalendarProps> = ({
   const [tasksEvents, setTasksEvents] = useState<Event[]>([]);
   const [regularEvents, setRegularEvents] = useState<Event[]>([]);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [birthdayEvents, setBirthdayEvents] = useState<Event[]>([]);
+  const [daysOffEvents, setDaysOffEvents] = useState<Event[]>([]);
+  const [gconectEvents, setGconectEvents] = useState<Event[]>([]);
+  const [vacationEvents, setVacationEvents] = useState<Event[]>([]);
 
   // Verificar si hay un evento para editar al cargar
   useEffect(() => {
@@ -91,10 +95,18 @@ const AdminCalendar: React.FC<AdminCalendarProps> = ({
     const holidays = events.filter(event => event.type === 'holiday');
     const tasks = events.filter(event => event.type === 'task');
     const regular = events.filter(event => event.type === 'event');
+    const birthdays = events.filter(event => event.type === 'birthday'); // cumpleaños
+    const daysoff = events.filter(event => event.type === 'dayoff'); // días a favor
+    const gconect = events.filter(event => event.type === 'gconect');     // Guardia Conectividad
+    const vacation = events.filter(event => event.type === 'vacation');   // Vacaciones
 
     setHolidayList(holidays);
     setTasksEvents(tasks);
     setRegularEvents(regular);
+    setBirthdayEvents(birthdays); // Establecer cumpleaños
+    setDaysOffEvents(daysoff); // Establecer días a favor
+    setGconectEvents(gconect);       // Establecer eventos de Guardia Conectividad
+    setVacationEvents(vacation);     // Establecer eventos de Vacaciones
   }, [events]);
 
   // Mostrar mensaje de éxito temporalmente
@@ -341,7 +353,7 @@ const AdminCalendar: React.FC<AdminCalendarProps> = ({
     handleCloseModal();
   };
 
-  // Eliminar evento con SweetAlert2
+  // Eliminar evento con SweetAlert2 - Versión actualizada
   const handleDeleteEvent = () => {
     if (selectedEvent) {
       Swal.fire({
@@ -353,16 +365,45 @@ const AdminCalendar: React.FC<AdminCalendarProps> = ({
         cancelButtonColor: '#6c757d',
         confirmButtonText: 'Sí, eliminar',
         cancelButtonText: 'Cancelar'
-      }).then((result) => {
+      }).then(async (result) => {
         if (result.isConfirmed && onEventDelete) {
-          onEventDelete(selectedEvent.id);
-          Swal.fire({
-            title: '¡Eliminado!',
-            text: 'El evento ha sido eliminado correctamente.',
-            icon: 'success',
-            timer: 2000,
-            showConfirmButton: false
-          });
+          try {
+            // Mostrar indicador de carga
+            Swal.fire({
+              title: 'Eliminando...',
+              text: 'Por favor espere',
+              allowOutsideClick: false,
+              didOpen: () => {
+                Swal.showLoading();
+              }
+            });
+
+            console.log(`Intentando eliminar evento: ${selectedEvent.id} (${selectedEvent.type}), tipo de ID: ${typeof selectedEvent.id}`);
+
+            // Llamar a la función de eliminación
+            await onEventDelete(selectedEvent.id);
+
+            console.log(`Eliminación completada para: ${selectedEvent.id}`);
+
+            // Mostrar mensaje de éxito
+            Swal.fire({
+              title: '¡Eliminado!',
+              text: 'El evento ha sido eliminado correctamente.',
+              icon: 'success',
+              timer: 2000,
+              showConfirmButton: false
+            });
+          } catch (error) {
+            console.error('Error en handleDeleteEvent:', error);
+
+            // Mostrar mensaje de error
+            Swal.fire({
+              title: 'Error',
+              text: error instanceof Error ? error.message : 'No se pudo eliminar el evento',
+              icon: 'error',
+              confirmButtonText: 'Aceptar'
+            });
+          }
         }
       });
     }
@@ -457,6 +498,18 @@ const AdminCalendar: React.FC<AdminCalendarProps> = ({
           break;
         case 'event':
           backgroundColor = '#198754'; // Bootstrap success
+          break;
+        case 'birthday':
+          backgroundColor = '#ff9800'; // Naranja para cumpleaños
+          break;
+        case 'dayoff':
+          backgroundColor = '#4caf50'; // Verde claro para días a favor
+          break;
+        case 'gconect':
+          backgroundColor = '#00bcd4'; // Azul celeste para Guardia Conectividad
+          break;
+        case 'vacation':
+          backgroundColor = '#9e9e9e'; // Gris para Vacaciones
           break;
       }
     }
@@ -579,6 +632,18 @@ const AdminCalendar: React.FC<AdminCalendarProps> = ({
               </Nav.Item>
               <Nav.Item>
                 <Nav.Link eventKey="events">Eventos</Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="birthdays">Cumpleaños</Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="daysoff">Días a Favor</Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="gconect">Guardia Conectividad</Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="vacation">Vacaciones</Nav.Link>
               </Nav.Item>
               <Nav.Item>
                 <Nav.Link eventKey="import">Importar/Exportar</Nav.Link>
@@ -809,6 +874,296 @@ const AdminCalendar: React.FC<AdminCalendarProps> = ({
                   </Card.Body>
                 </Card>
               </Tab.Pane>
+              <Tab.Pane eventKey="birthdays">
+                <Card className="border-0 shadow-sm">
+                  <Card.Header className="d-flex justify-content-between align-items-center bg-white py-3">
+                    <h5 className="mb-0 fw-bold">Cumpleaños</h5>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedEvent(null);
+                        setEventForm({
+                          title: '',
+                          start: new Date(),
+                          end: new Date(),
+                          allDay: true,
+                          type: 'birthday',
+                          description: '',
+                          location: '',
+                          color: '#ff9800'
+                        });
+                        setShowModal(true);
+                      }}
+                    >
+                      Agregar Cumpleaños
+                    </Button>
+                  </Card.Header>
+                  <Card.Body>
+                    <Table striped hover responsive>
+                      <thead>
+                        <tr>
+                          <th>Persona</th>
+                          <th>Fecha</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {birthdayEvents.length === 0 ? (
+                          <tr>
+                            <td colSpan={3} className="text-center">No hay cumpleaños registrados</td>
+                          </tr>
+                        ) : (
+                          birthdayEvents.map(birthday => (
+                            <tr key={birthday.id}>
+                              <td>{birthday.title}</td>
+                              <td>{moment(birthday.start).format('DD/MM/YYYY')}</td>
+                              <td>
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  className="me-2"
+                                  onClick={() => handleSelectEvent(birthday)}
+                                >
+                                  Editar
+                                </Button>
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedEvent(birthday);
+                                    handleDeleteEvent();
+                                  }}
+                                >
+                                  Eliminar
+                                </Button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </Table>
+                  </Card.Body>
+                </Card>
+              </Tab.Pane>
+              <Tab.Pane eventKey="daysoff">
+                <Card className="border-0 shadow-sm">
+                  <Card.Header className="d-flex justify-content-between align-items-center bg-white py-3">
+                    <h5 className="mb-0 fw-bold">Días a Favor</h5>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedEvent(null);
+                        setEventForm({
+                          title: '',
+                          start: new Date(),
+                          end: new Date(),
+                          allDay: true,
+                          type: 'dayoff',
+                          description: '',
+                          location: '',
+                          color: '#4caf50'
+                        });
+                        setShowModal(true);
+                      }}
+                    >
+                      Agregar Día a Favor
+                    </Button>
+                  </Card.Header>
+                  <Card.Body>
+                    <Table striped hover responsive>
+                      <thead>
+                        <tr>
+                          <th>Descripción</th>
+                          <th>Fecha</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {daysOffEvents.length === 0 ? (
+                          <tr>
+                            <td colSpan={3} className="text-center">No hay días a favor registrados</td>
+                          </tr>
+                        ) : (
+                          daysOffEvents.map(dayoff => (
+                            <tr key={dayoff.id}>
+                              <td>{dayoff.title}</td>
+                              <td>{moment(dayoff.start).format('DD/MM/YYYY')}</td>
+                              <td>
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  className="me-2"
+                                  onClick={() => handleSelectEvent(dayoff)}
+                                >
+                                  Editar
+                                </Button>
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedEvent(dayoff);
+                                    handleDeleteEvent();
+                                  }}
+                                >
+                                  Eliminar
+                                </Button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </Table>
+                  </Card.Body>
+                </Card>
+              </Tab.Pane>
+              <Tab.Pane eventKey="gconect">
+                <Card className="border-0 shadow-sm">
+                  <Card.Header className="d-flex justify-content-between align-items-center bg-white py-3">
+                    <h5 className="mb-0 fw-bold">Guardias de Conectividad</h5>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedEvent(null);
+                        setEventForm({
+                          title: '',
+                          start: new Date(),
+                          end: new Date(),
+                          allDay: true,
+                          type: 'gconect',
+                          description: '',
+                          location: '',
+                          color: '#00bcd4'
+                        });
+                        setShowModal(true);
+                      }}
+                    >
+                      Agregar Guardia Conectividad
+                    </Button>
+                  </Card.Header>
+                  <Card.Body>
+                    <Table striped hover responsive>
+                      <thead>
+                        <tr>
+                          <th>Responsable</th>
+                          <th>Fecha</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {gconectEvents.length === 0 ? (
+                          <tr>
+                            <td colSpan={3} className="text-center">No hay guardias de conectividad registradas</td>
+                          </tr>
+                        ) : (
+                          gconectEvents.map(gconect => (
+                            <tr key={gconect.id}>
+                              <td>{gconect.title}</td>
+                              <td>{moment(gconect.start).format('DD/MM/YYYY')}</td>
+                              <td>
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  className="me-2"
+                                  onClick={() => handleSelectEvent(gconect)}
+                                >
+                                  Editar
+                                </Button>
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedEvent(gconect);
+                                    handleDeleteEvent();
+                                  }}
+                                >
+                                  Eliminar
+                                </Button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </Table>
+                  </Card.Body>
+                </Card>
+              </Tab.Pane>
+              <Tab.Pane eventKey="vacation">
+  <Card className="border-0 shadow-sm">
+    <Card.Header className="d-flex justify-content-between align-items-center bg-white py-3">
+      <h5 className="mb-0 fw-bold">Vacaciones</h5>
+      <Button
+        variant="primary"
+        size="sm"
+        onClick={() => {
+          setSelectedEvent(null);
+          setEventForm({
+            title: '',
+            start: new Date(),
+            end: new Date(),
+            allDay: true,
+            type: 'vacation',
+            description: '',
+            location: '',
+            color: '#9e9e9e'
+          });
+          setShowModal(true);
+        }}
+      >
+        Agregar Vacaciones
+      </Button>
+    </Card.Header>
+    <Card.Body>
+      <Table striped hover responsive>
+        <thead>
+          <tr>
+            <th>Empleado</th>
+            <th>Fecha Inicio</th>
+            <th>Fecha Fin</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {vacationEvents.length === 0 ? (
+            <tr>
+              <td colSpan={4} className="text-center">No hay vacaciones registradas</td>
+            </tr>
+          ) : (
+            vacationEvents.map(vacation => (
+              <tr key={vacation.id}>
+                <td>{vacation.title}</td>
+                <td>{moment(vacation.start).format('DD/MM/YYYY')}</td>
+                <td>{moment(vacation.end).format('DD/MM/YYYY')}</td>
+                <td>
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    className="me-2"
+                    onClick={() => handleSelectEvent(vacation)}
+                  >
+                    Editar
+                  </Button>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedEvent(vacation);
+                      handleDeleteEvent();
+                    }}
+                  >
+                    Eliminar
+                  </Button>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </Table>
+    </Card.Body>
+  </Card>
+</Tab.Pane>
               <Tab.Pane eventKey="import">
                 <Card className="border-0 shadow-sm">
                   <Card.Header className="bg-white py-3">
@@ -1001,6 +1356,10 @@ const AdminCalendar: React.FC<AdminCalendarProps> = ({
                 <option value="event">Evento</option>
                 <option value="task">Tarea</option>
                 <option value="holiday">Feriado</option>
+                <option value="birthday">Cumpleaños</option>
+                <option value="dayoff">Día a Favor</option>
+                <option value="gconect">G. Conectividad</option>
+                <option value="vacation">Vacaciones</option>
               </Form.Select>
             </Form.Group>
 
