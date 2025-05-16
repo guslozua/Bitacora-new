@@ -117,6 +117,8 @@ const AdminPanel: React.FC = () => {
     { id: 'calendar', label: 'Calendario', icon: 'bi-calendar-date', color: '#3498db' },
     { id: 'messages', label: 'Mensajes', icon: 'bi-chat-dots-fill', color: '#2ecc71' },
     { id: 'notifications', label: 'Notificaciones', icon: 'bi-bell-fill', color: '#f1c40f' },
+    { id: 'links', label: 'Links', icon: 'bi-link-45deg', color: '#e67e22' },  // Nuevo ítem Links
+    { id: 'glosario', label: 'Glosario', icon: 'bi-book', color: '#8e44ad' },  // Nuevo ítem Glosario
   ];
 
   // Estadísticas simuladas para el panel de administración

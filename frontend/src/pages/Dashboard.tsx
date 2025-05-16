@@ -330,6 +330,66 @@ const Dashboard = () => {
     fetchData();
   }, [token, calendarEvents]);
 
+  // Función para obtener la clase básica según el tipo de evento
+const getBadgeClassForEventType = (type: string): string => {
+  switch (type) {
+    case 'holiday':
+      return 'bg-danger';
+    case 'task':
+      return 'bg-primary';
+    case 'event':
+      return 'bg-success';
+    default:
+      return 'text-white'; // Los colores personalizados se aplicarán con el estilo
+  }
+};
+
+// Función para obtener el estilo según el tipo de evento
+const getStyleForEventType = (type: string): React.CSSProperties => {
+  switch (type) {
+    case 'holiday':
+    case 'task':
+    case 'event':
+      return {}; // No se necesita estilo adicional para estos que usan clases de Bootstrap
+    case 'birthday':
+      return { backgroundColor: '#ff9800' }; // Naranja para cumpleaños
+    case 'dayoff':
+      return { backgroundColor: '#4caf50' }; // Verde claro para días a favor
+    case 'gconect':
+      return { backgroundColor: '#00bcd4' }; // Azul celeste para G. Conectividad
+    case 'vacation':
+      return { backgroundColor: '#9e9e9e' }; // Gris para Vacaciones
+    case 'guardia':
+      return { backgroundColor: '#9c27b0' }; // Púrpura para Guardia
+    default:
+      return { backgroundColor: '#6c757d' }; // Gris oscuro para tipos desconocidos
+  }
+};
+
+// Función para obtener el texto del tipo de evento
+const getEventTypeText = (type: string): string => {
+  switch (type) {
+    case 'holiday':
+      return 'Feriado';
+    case 'task':
+      return 'Tarea';
+    case 'event':
+      return 'Evento';
+    case 'birthday':
+      return 'Cumpleaños';
+    case 'dayoff':
+      return 'Día a Favor';
+    case 'gconect':
+      return 'G. Conectividad';
+    case 'vacation':
+      return 'Vacaciones';
+    case 'guardia':
+      return 'Guardia';
+    default:
+      return type;
+  }
+};
+
   // Usar la función de logout del servicio de autenticación
   const handleLogout = () => {
     logout();
@@ -520,9 +580,9 @@ const Dashboard = () => {
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center mb-3">
                         <h5 className="fw-bold mb-0">Calendario</h5>
-                        <Button 
-                          variant="link" 
-                          className="p-0 text-decoration-none" 
+                        <Button
+                          variant="link"
+                          className="p-0 text-decoration-none"
                           onClick={() => navigate('/calendar')}
                         >
                           Ver completo
@@ -534,8 +594,8 @@ const Dashboard = () => {
                           <p className="text-muted mt-2 small">Cargando calendario...</p>
                         </div>
                       ) : (
-                        <MiniCalendar 
-                          events={calendarEvents} 
+                        <MiniCalendar
+                          events={calendarEvents}
                           onDateClick={handleDateClick}
                           onEventClick={handleEventClick}
                           showHeader={false} // Añadida la prop para no mostrar el encabezado duplicado
@@ -579,7 +639,7 @@ const Dashboard = () => {
                     </Card.Body>
                   </Card>
                 </Col>
-                
+
                 <Col md={6}>
                   <Card className="shadow-sm h-100 border-0">
                     <Card.Body>
@@ -593,19 +653,18 @@ const Dashboard = () => {
                             .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
                             .slice(0, 5)
                             .map((event, idx) => (
-                              <ListGroup.Item 
+                              <ListGroup.Item
                                 key={idx}
                                 className="d-flex justify-content-between align-items-center"
                                 action
                                 onClick={() => handleEventClick(event)}
                               >
                                 <div>
-                                  <span className={`badge bg-${
-                                    event.type === 'holiday' ? 'danger' : 
-                                    event.type === 'task' ? 'primary' : 'success'
-                                  } me-2`}>
-                                    {event.type === 'holiday' ? 'Feriado' : 
-                                     event.type === 'task' ? 'Tarea' : 'Evento'}
+                                  <span
+                                    className={`badge me-2 ${getBadgeClassForEventType(event.type)}`}
+                                    style={getStyleForEventType(event.type)}
+                                  >
+                                    {getEventTypeText(event.type)}
                                   </span>
                                   {event.title}
                                 </div>

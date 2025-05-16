@@ -19,6 +19,7 @@ import AbmDashboard from './pages/AbmDashboard';
 import AbmUpload from './pages/AbmUpload';
 import AdminPanel from './pages/AdminPanel';
 import PlacasDash from './pages/PlacasDash';
+import Glosario from './pages/Glosario';
 import Error404 from './pages/Error404';
 
 // Importaciones para el calendario
@@ -120,6 +121,7 @@ const App: React.FC = () => {
           <Route path="/abmdashboard" element={<ProtectedRoute element={<AbmDashboard />} />} />
           <Route path="/abm" element={<ProtectedRoute element={<AbmUpload />} />} />
           <Route path="/placasdash" element={<ProtectedRoute element={<PlacasDash />} />} />
+          <Route path="/glosario" element={<ProtectedRoute element={<Glosario />} />} />
           
           {/* Rutas del Calendario */}
           <Route path="/calendar" element={<ProtectedRoute element={<CalendarPage />} />} />

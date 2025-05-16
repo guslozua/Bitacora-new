@@ -190,6 +190,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     { id: 'calendar', icon: 'bi-calendar-date', label: 'Calendario', route: '/calendar' },
     { id: 'messages', icon: 'bi-chat-dots-fill', label: 'Mensajes', route: '/messages' },
     { id: 'notifications', icon: 'bi-bell-fill', label: 'Notificaciones', route: '/notifications' },
+    { id: 'links', icon: 'bi-link-45deg', label: 'Links', route: '/links' },  // Nuevo ítem Links
+    { id: 'glosario', icon: 'bi-book', label: 'Glosario', route: '/glosario' },  // Nuevo ítem Glosario
   ];
 
   return (
