@@ -5,8 +5,8 @@ import {
 } from 'react-bootstrap';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import axios from 'axios';
 import Swal from 'sweetalert2';
+import api from '../../services/api'; // Importamos nuestra instancia api en lugar de axios
 
 interface Codigo {
   id: number;
@@ -120,7 +120,8 @@ const IncidenteModal: React.FC<IncidenteModalProps> = ({
     try {
       setLoadingCodigos(true);
       
-      const response = await axios.get('/api/codigos', {
+      // Modificado: usando api en lugar de axios y quitando el prefijo '/api'
+      const response = await api.get('/codigos', {
         params: { estado: 'activo' }
       });
       
@@ -140,7 +141,8 @@ const IncidenteModal: React.FC<IncidenteModalProps> = ({
     try {
       setLoadingCodigos(true);
       
-      const response = await axios.get('/api/codigos/aplicables', {
+      // Modificado: usando api en lugar de axios y quitando el prefijo '/api'
+      const response = await api.get('/codigos/aplicables', {
         params: {
           fecha: format(fecha, 'yyyy-MM-dd'),
           hora_inicio: horaInicio,
@@ -302,11 +304,13 @@ const IncidenteModal: React.FC<IncidenteModalProps> = ({
       
       let response;
       if (incidente?.id) {
+        // Modificado: usando api en lugar de axios y quitando el prefijo '/api'
         // Actualizar incidente existente
-        response = await axios.put(`/api/incidentes/${incidente.id}`, datosAEnviar);
+        response = await api.put(`/incidentes/${incidente.id}`, datosAEnviar);
       } else {
+        // Modificado: usando api en lugar de axios y quitando el prefijo '/api'
         // Crear nuevo incidente
-        response = await axios.post('/api/incidentes', datosAEnviar);
+        response = await api.post('/incidentes', datosAEnviar);
       }
       
       if (response.data.success) {

@@ -83,26 +83,11 @@ const Incidente = {
   // Encontrar todos los incidentes con filtros opcionales
   findAll: async (options = {}) => {
     try {
+      // Consulta principal para obtener incidentes
       let query = `
         SELECT i.*,
                g.fecha as fecha_guardia,
-               g.usuario as usuario_guardia,
-               IFNULL(
-                 (SELECT JSON_ARRAYAGG(
-                   JSON_OBJECT(
-                     'id', ic.id,
-                     'id_codigo', ic.id_codigo,
-                     'codigo', c.codigo,
-                     'descripcion', c.descripcion,
-                     'minutos', ic.minutos,
-                     'importe', ic.importe
-                   )
-                 )
-                 FROM incidentes_codigos ic
-                 JOIN codigos_facturacion c ON ic.id_codigo = c.id
-                 WHERE ic.id_incidente = i.id
-                 GROUP BY ic.id_incidente
-                 ), '[]') as codigos_aplicados
+               g.usuario as usuario_guardia
         FROM incidentes_guardia i
         JOIN guardias g ON i.id_guardia = g.id
       `;
@@ -164,17 +149,23 @@ const Incidente = {
         }
       }
       
+      // Ejecutar consulta principal para obtener incidentes
       const [rows] = await pool.query(query, params);
       
-      // Procesar cada fila para convertir codigos_aplicados de JSON a objeto
-      return rows.map(row => {
-        try {
-          row.codigos_aplicados = JSON.parse(row.codigos_aplicados || '[]');
-        } catch (e) {
-          row.codigos_aplicados = [];
-        }
-        return Incidente.attachMethods(row);
-      });
+      // Para cada incidente, obtener sus códigos aplicados en una consulta separada
+      for (const incidente of rows) {
+        const [codigos] = await pool.query(`
+          SELECT ic.id, ic.id_codigo, c.codigo, c.descripcion, ic.minutos, ic.importe
+          FROM incidentes_codigos ic
+          JOIN codigos_facturacion c ON ic.id_codigo = c.id
+          WHERE ic.id_incidente = ?
+        `, [incidente.id]);
+        
+        incidente.codigos_aplicados = codigos;
+      }
+      
+      // Adjuntar métodos a cada incidente
+      return rows.map(row => Incidente.attachMethods(row));
     } catch (error) {
       console.error('Error al buscar incidentes:', error);
       throw error;
@@ -184,26 +175,11 @@ const Incidente = {
   // Encontrar un incidente por ID
   findByPk: async (id) => {
     try {
+      // Consulta principal para obtener el incidente
       const query = `
         SELECT i.*,
                g.fecha as fecha_guardia,
-               g.usuario as usuario_guardia,
-               IFNULL(
-                 (SELECT JSON_ARRAYAGG(
-                   JSON_OBJECT(
-                     'id', ic.id,
-                     'id_codigo', ic.id_codigo,
-                     'codigo', c.codigo,
-                     'descripcion', c.descripcion,
-                     'minutos', ic.minutos,
-                     'importe', ic.importe
-                   )
-                 )
-                 FROM incidentes_codigos ic
-                 JOIN codigos_facturacion c ON ic.id_codigo = c.id
-                 WHERE ic.id_incidente = i.id
-                 GROUP BY ic.id_incidente
-                 ), '[]') as codigos_aplicados
+               g.usuario as usuario_guardia
         FROM incidentes_guardia i
         JOIN guardias g ON i.id_guardia = g.id
         WHERE i.id = ?
@@ -213,12 +189,15 @@ const Incidente = {
       
       if (rows.length === 0) return null;
       
-      // Procesar codigos_aplicados de JSON a objeto
-      try {
-        rows[0].codigos_aplicados = JSON.parse(rows[0].codigos_aplicados || '[]');
-      } catch (e) {
-        rows[0].codigos_aplicados = [];
-      }
+      // Obtener códigos aplicados en una consulta separada
+      const [codigos] = await pool.query(`
+        SELECT ic.id, ic.id_codigo, c.codigo, c.descripcion, ic.minutos, ic.importe
+        FROM incidentes_codigos ic
+        JOIN codigos_facturacion c ON ic.id_codigo = c.id
+        WHERE ic.id_incidente = ?
+      `, [id]);
+      
+      rows[0].codigos_aplicados = codigos;
       
       return Incidente.attachMethods(rows[0]);
     } catch (error) {

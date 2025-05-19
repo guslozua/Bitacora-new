@@ -2,12 +2,15 @@
 import axios from 'axios';
 import { Incidente } from '../models/Event';
 
+// Añadir la URL base
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 // Servicio para operaciones con incidentes
 const IncidenteService = {
   // Obtener todos los incidentes con filtros opcionales
   fetchIncidentes: async (params = {}) => {
     try {
-      const response = await axios.get('/api/incidentes', { params });
+      const response = await axios.get(`${API_URL}/incidentes`, { params });
       return response.data.data;
     } catch (error) {
       console.error('Error al obtener incidentes:', error);
@@ -18,7 +21,7 @@ const IncidenteService = {
   // Obtener un incidente por ID
   fetchIncidenteById: async (id: number | string): Promise<Incidente> => {
     try {
-      const response = await axios.get(`/api/incidentes/${id}`);
+      const response = await axios.get(`${API_URL}/incidentes/${id}`);
       
       if (!response.data.success) {
         throw new Error(response.data.message || 'Error al obtener el incidente');
@@ -34,7 +37,7 @@ const IncidenteService = {
   // Obtener incidentes por guardia
   fetchIncidentesByGuardia: async (guardiaId: number | string) => {
     try {
-      const response = await axios.get(`/api/incidentes/guardia/${guardiaId}`);
+      const response = await axios.get(`${API_URL}/incidentes/guardia/${guardiaId}`);
       
       if (!response.data.success) {
         throw new Error(response.data.message || 'Error al obtener incidentes de guardia');
@@ -50,7 +53,7 @@ const IncidenteService = {
   // Crear un nuevo incidente
   createIncidente: async (incidente: Incidente) => {
     try {
-      const response = await axios.post('/api/incidentes', incidente);
+      const response = await axios.post(`${API_URL}/incidentes`, incidente);
       
       if (!response.data.success) {
         throw new Error(response.data.message || 'Error al crear el incidente');
@@ -70,7 +73,7 @@ const IncidenteService = {
     }
     
     try {
-      const response = await axios.put(`/api/incidentes/${incidente.id}`, incidente);
+      const response = await axios.put(`${API_URL}/incidentes/${incidente.id}`, incidente);
       
       if (!response.data.success) {
         throw new Error(response.data.message || 'Error al actualizar el incidente');
@@ -86,7 +89,7 @@ const IncidenteService = {
   // Eliminar un incidente
   deleteIncidente: async (id: number | string) => {
     try {
-      const response = await axios.delete(`/api/incidentes/${id}`);
+      const response = await axios.delete(`${API_URL}/incidentes/${id}`);
       
       if (!response.data.success) {
         throw new Error(response.data.message || 'Error al eliminar el incidente');
@@ -102,7 +105,7 @@ const IncidenteService = {
   // Cambiar estado de un incidente
   cambiarEstadoIncidente: async (id: number | string, estado: string) => {
     try {
-      const response = await axios.patch(`/api/incidentes/${id}/estado`, { estado });
+      const response = await axios.patch(`${API_URL}/incidentes/${id}/estado`, { estado });
       
       if (!response.data.success) {
         throw new Error(response.data.message || 'Error al cambiar estado del incidente');
@@ -118,7 +121,7 @@ const IncidenteService = {
   // Obtener estadísticas de incidentes (para reportes)
   getEstadisticasIncidentes: async (params = {}) => {
     try {
-      const response = await axios.get('/api/incidentes/estadisticas', { params });
+      const response = await axios.get(`${API_URL}/incidentes/estadisticas`, { params });
       
       if (!response.data.success) {
         throw new Error(response.data.message || 'Error al obtener estadísticas de incidentes');
@@ -134,7 +137,7 @@ const IncidenteService = {
   // Exportar incidentes a diferentes formatos
   exportarIncidentes: async (formato: 'csv' | 'excel' | 'pdf' = 'csv', filtros = {}) => {
     try {
-      const response = await axios.get(`/api/incidentes/exportar/${formato}`, {
+      const response = await axios.get(`${API_URL}/incidentes/exportar/${formato}`, {
         params: filtros,
         responseType: 'blob'
       });

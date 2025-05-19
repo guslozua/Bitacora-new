@@ -1,6 +1,9 @@
 // src/services/CodigoService.ts
 import axios from 'axios';
 
+// Añadir la URL base
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 export interface Codigo {
   id?: number;
   codigo: string;
@@ -20,7 +23,7 @@ const CodigoService = {
   // Obtener todos los códigos
   fetchCodigos: async (params = {}) => {
     try {
-      const response = await axios.get('/api/codigos', { params });
+      const response = await axios.get(`${API_URL}/codigos`, { params });
       return response.data.data;
     } catch (error) {
       console.error('Error al obtener códigos:', error);
@@ -31,7 +34,7 @@ const CodigoService = {
   // Obtener un código por ID
   fetchCodigoById: async (id: number | string) => {
     try {
-      const response = await axios.get(`/api/codigos/${id}`);
+      const response = await axios.get(`${API_URL}/codigos/${id}`);
       return response.data.data;
     } catch (error) {
       console.error(`Error al obtener código con ID ${id}:`, error);
@@ -42,7 +45,7 @@ const CodigoService = {
   // Obtener códigos aplicables a una fecha y horario
   fetchCodigosAplicables: async (fecha: string, horaInicio: string, horaFin: string) => {
     try {
-      const response = await axios.get('/api/codigos/aplicables', {
+      const response = await axios.get(`${API_URL}/codigos/aplicables`, {
         params: { fecha, hora_inicio: horaInicio, hora_fin: horaFin }
       });
       return response.data.data;
@@ -55,7 +58,7 @@ const CodigoService = {
   // Crear un nuevo código
   createCodigo: async (codigo: Codigo) => {
     try {
-      const response = await axios.post('/api/codigos', codigo);
+      const response = await axios.post(`${API_URL}/codigos`, codigo);
       return response.data.data;
     } catch (error) {
       console.error('Error al crear código:', error);
@@ -70,7 +73,7 @@ const CodigoService = {
     }
     
     try {
-      const response = await axios.put(`/api/codigos/${codigo.id}`, codigo);
+      const response = await axios.put(`${API_URL}/codigos/${codigo.id}`, codigo);
       return response.data.data;
     } catch (error) {
       console.error(`Error al actualizar código con ID ${codigo.id}:`, error);
@@ -81,7 +84,7 @@ const CodigoService = {
   // Desactivar un código
   deactivateCodigo: async (id: number | string) => {
     try {
-      const response = await axios.patch(`/api/codigos/${id}/deactivate`);
+      const response = await axios.patch(`${API_URL}/codigos/${id}/deactivate`);
       return response.data;
     } catch (error) {
       console.error(`Error al desactivar código con ID ${id}:`, error);
@@ -92,7 +95,7 @@ const CodigoService = {
   // Eliminar un código
   deleteCodigo: async (id: number | string) => {
     try {
-      const response = await axios.delete(`/api/codigos/${id}`);
+      const response = await axios.delete(`${API_URL}/codigos/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error al eliminar código con ID ${id}:`, error);

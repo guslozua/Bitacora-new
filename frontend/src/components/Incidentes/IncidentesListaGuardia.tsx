@@ -5,11 +5,11 @@ import {
 } from 'react-bootstrap';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import axios from 'axios';
 import Swal from 'sweetalert2';
 import IncidenteModal from './IncidenteModal';
 import DetalleIncidente from './DetalleIncidente';
 import { Incidente, CodigoAplicado } from '../../models/Event';
+import api from '../../services/api'; // Importamos nuestra instancia api en lugar de axios
 
 // Función auxiliar para formatear minutos como horas (HH:MM)
 const formatearMinutosComoHoras = (minutos: number): string => {
@@ -55,7 +55,8 @@ const IncidentesListaGuardia: React.FC<IncidentesListaGuardiaProps> = ({
       setLoading(true);
       setError(null);
       
-      const response = await axios.get(`/api/incidentes/guardia/${guardia.id}`);
+      // Cambiamos axios.get por api.get y quitamos el "/api" inicial
+      const response = await api.get(`/incidentes/guardia/${guardia.id}`);
       
       if (response.data.success) {
         setIncidentes(response.data.data);
@@ -100,7 +101,8 @@ const IncidentesListaGuardia: React.FC<IncidentesListaGuardiaProps> = ({
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const response = await axios.delete(`/api/incidentes/${incidente.id}`);
+          // Cambiamos axios.delete por api.delete y quitamos el "/api" inicial
+          const response = await api.delete(`/incidentes/${incidente.id}`);
           
           if (response.data.success) {
             Swal.fire({
@@ -134,7 +136,8 @@ const IncidentesListaGuardia: React.FC<IncidentesListaGuardiaProps> = ({
   // Cambiar estado de incidente
   const handleCambiarEstado = async (incidente: Incidente, nuevoEstado: string) => {
     try {
-      const response = await axios.patch(`/api/incidentes/${incidente.id}/estado`, {
+      // Cambiamos axios.patch por api.patch y quitamos el "/api" inicial
+      const response = await api.patch(`/incidentes/${incidente.id}/estado`, {
         estado: nuevoEstado
       });
       
