@@ -1,8 +1,9 @@
 // FullCalendar.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, momentLocalizer, View, Views } from 'react-big-calendar';
 import { Button, ButtonGroup, Card, Container, Row, Col } from 'react-bootstrap';
 import moment from 'moment';
+import axios from 'axios';
 import 'moment/locale/es';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './FullCalendar.css';
@@ -11,6 +12,25 @@ import { Event, EventFilters } from '../../models/Event';
 // Configurar localización en español
 moment.locale('es');
 const localizer = momentLocalizer(moment);
+
+// Interfaces adicionales para incidentes
+interface Incidente {
+  id: number;
+  id_guardia: number;
+  inicio: string;
+  fin: string;
+  descripcion: string;
+  estado: string;
+  observaciones?: string;
+  duracion_minutos?: number;
+}
+
+interface IncidenteEvent extends Event {
+  incidenteId: number;
+  guardiaId: number;
+  incidenteEstado: string;
+  isIncidente: true;
+}
 
 interface FullCalendarProps {
   events: Event[];
@@ -27,31 +47,117 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
 }) => {
   const [view, setView] = useState<View>(Views.MONTH);
   const [date, setDate] = useState(initialDate || new Date());
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>(events);
+  const [incidentes, setIncidentes] = useState<IncidenteEvent[]>([]);
   const [filters, setFilters] = useState<EventFilters>({
     tasks: true,
     events: true,
     holidays: true,
     guardias: true,
-    birthdays: true, // Filtro para cumpleaños
-    daysoff: true,   // Filtro para días a favor
-    gconect: true,    // Añadido filtro para Guardia Conectividad
-    vacation: true,   // Añadido filtro para Vacaciones
+    birthdays: true,
+    daysoff: true,
+    gconect: true,
+    vacation: true,
     searchTerm: ''
   });
 
+  // Cargar incidentes cuando cambien los eventos o el filtro de guardias
   useEffect(() => {
-    // Aplicar filtros
+    // Cargar los incidentes solo si están habilitados en los filtros
+    if (filters.guardias) {
+      loadIncidentes();
+    }
+  }, [events, filters.guardias]);
+
+  // Función para cargar incidentes
+  const loadIncidentes = async () => {
+    try {
+      // Filtrar solo eventos de tipo guardia
+      const guardias = events.filter(event => event.type === 'guardia');
+
+      if (guardias.length === 0) return;
+
+      // Obtener IDs de guardias
+      const guardiaIds = guardias.map(guardia => {
+        if (typeof guardia.id === 'string' && guardia.id.startsWith('guardia-')) {
+          return parseInt(guardia.id.replace('guardia-', ''));
+        }
+        return parseInt(String(guardia.id).replace('guardia-', ''));
+      });
+
+      // Consultar incidentes para estas guardias
+      const requests = guardiaIds.map(id =>
+        axios.get(`/api/incidentes/guardia/${id}`)
+          .then(response => response.data.data)
+          .catch(error => {
+            console.error(`Error al cargar incidentes para guardia ${id}:`, error);
+            return [];
+          })
+      );
+
+      const results = await Promise.all(requests);
+
+      // Aplanar los resultados y convertirlos al formato de eventos
+      const incidentesEvents: IncidenteEvent[] = [];
+
+      results.forEach(guardiaIncidentes => {
+        guardiaIncidentes.forEach((incidente: Incidente) => {
+          const guardia = guardias.find(g => {
+            const guardiaId = typeof g.id === 'string' && g.id.startsWith('guardia-')
+              ? parseInt(g.id.replace('guardia-', ''))
+              : parseInt(String(g.id).replace('guardia-', ''));
+            return guardiaId === incidente.id_guardia;
+          });
+
+          if (guardia) {
+            incidentesEvents.push({
+              id: `incidente-${incidente.id}`,
+              title: `Incidente: ${incidente.descripcion.substring(0, 20)}${incidente.descripcion.length > 20 ? '...' : ''}`,
+              start: new Date(incidente.inicio),
+              end: new Date(incidente.fin),
+              allDay: false,
+              type: 'guardia', // Para aplicar el mismo filtro que las guardias
+              color: getIncidenteColor(incidente.estado),
+              description: incidente.descripcion,
+              incidenteId: incidente.id,
+              guardiaId: incidente.id_guardia,
+              incidenteEstado: incidente.estado,
+              isIncidente: true
+            });
+          }
+        });
+      });
+
+      setIncidentes(incidentesEvents);
+    } catch (error) {
+      console.error('Error al cargar incidentes:', error);
+    }
+  };
+
+  // Función para obtener el color según el estado del incidente
+  const getIncidenteColor = (estado: string) => {
+    switch (estado) {
+      case 'registrado': return '#5c6bc0'; // Indigo
+      case 'revisado': return '#26c6da';   // Cyan
+      case 'aprobado': return '#66bb6a';   // Verde claro
+      case 'rechazado': return '#ef5350';  // Rojo claro
+      case 'liquidado': return '#78909c';  // Gris azulado
+      default: return '#9c27b0';           // Color de guardia por defecto
+    }
+  };
+
+  // Filtrar eventos y combinar con incidentes
+  const filteredEvents = useMemo(() => {
+    // Primero filtrar los eventos normales
     const filtered = events.filter(event => {
       // Filtrar por tipo
       if (event.type === 'task' && !filters.tasks) return false;
       if (event.type === 'event' && !filters.events) return false;
       if (event.type === 'holiday' && !filters.holidays) return false;
       if (event.type === 'guardia' && !filters.guardias) return false;
-      if (event.type === 'birthday' && !filters.birthdays) return false; // Filtro para cumpleaños
-      if (event.type === 'dayoff' && !filters.daysoff) return false; // Filtro para días a favor
-      if (event.type === 'gconect' && !filters.gconect) return false;   // Filtro para Guardia Conectividad
-      if (event.type === 'vacation' && !filters.vacation) return false; // Filtro para Vacaciones
+      if (event.type === 'birthday' && !filters.birthdays) return false;
+      if (event.type === 'dayoff' && !filters.daysoff) return false;
+      if (event.type === 'gconect' && !filters.gconect) return false;
+      if (event.type === 'vacation' && !filters.vacation) return false;
 
       // Filtrar por término de búsqueda si existe
       if (filters.searchTerm && filters.searchTerm.trim() !== '') {
@@ -66,8 +172,15 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
       return true;
     });
 
-    setFilteredEvents(filtered);
-  }, [events, filters]);
+    // Luego agregar los incidentes si las guardias están habilitadas
+    const result = [...filtered];
+
+    if (filters.guardias) {
+      result.push(...incidentes);
+    }
+
+    return result;
+  }, [events, incidentes, filters]);
 
   // Manejar cambio de vista
   const handleViewChange = (newView: View) => {
@@ -139,7 +252,8 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
     // Si es una tarea completada, añadir opacidad
     const opacity = event.type === 'task' && event.completed ? 0.6 : 0.9;
 
-    const style = {
+    // Establecer estilo base
+    const style: React.CSSProperties = {
       backgroundColor,
       borderRadius: '4px',
       opacity,
@@ -148,9 +262,38 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
       display: 'block'
     };
 
+    // Si es un incidente, agregar un borde punteado
+    if ((event as IncidenteEvent).isIncidente) {
+      style.borderLeft = '3px solid white';
+      style.fontStyle = 'italic';
+    }
+
     return {
       style
     };
+  };
+
+  // Modificar onSelectEvent para manejar clics en incidentes
+  const handleSelectEvent = (event: Event) => {
+    if ((event as IncidenteEvent).isIncidente) {
+      // Para incidentes, redirigir a la vista de guardia con la pestaña de incidentes activa
+      const guardiaEvent = events.find(e => {
+        const guardiaId = typeof e.id === 'string' && e.id.startsWith('guardia-')
+          ? parseInt(e.id.replace('guardia-', ''))
+          : parseInt(String(e.id).replace('guardia-', ''));
+        return guardiaId === (event as IncidenteEvent).guardiaId;
+      });
+
+      if (guardiaEvent && onSelectEvent) {
+        // Usar asType para ayudar a TypeScript
+        onSelectEvent({
+          ...guardiaEvent,
+          openIncidentesTab: true
+        } as Event);
+      }
+    } else if (onSelectEvent) {
+      onSelectEvent(event);
+    }
   };
 
   // Formato para las horas
@@ -311,7 +454,7 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
                   onView={(newView) => setView(newView)}
                   eventPropGetter={eventStyleGetter}
                   selectable={true}
-                  onSelectEvent={(event) => onSelectEvent && onSelectEvent(event as Event)}
+                  onSelectEvent={handleSelectEvent}
                   onSelectSlot={(slotInfo) => onSelectSlot && onSelectSlot(slotInfo)}
                   formats={formats}
                   popup={true}

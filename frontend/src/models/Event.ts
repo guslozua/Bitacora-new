@@ -1,4 +1,4 @@
-// src/models/Event.ts - Actualización con nuevos tipos de eventos
+// src/models/Event.ts - Actualización con nuevos tipos de eventos y propiedades para incidentes
 
 // Definición del tipo de evento con los nuevos tipos añadidos
 export type EventType = 'task' | 'event' | 'holiday' | 'guardia' | 'birthday' | 'dayoff' | 'gconect' | 'vacation';
@@ -18,6 +18,14 @@ export interface Event {
   createdBy?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  
+  // Propiedades adicionales para incidentes
+  isIncidente?: boolean;
+  incidenteId?: number;
+  guardiaId?: number;
+  incidenteEstado?: string;
+  guardiaUsuario?: string;
+  openIncidentesTab?: boolean;
 }
 
 // Interfaz para formularios (sin id)
@@ -83,3 +91,43 @@ export const getEventTypeText = (type: EventType): string => {
       return type;
   }
 };
+
+// Interfaz para incidentes (para uso en componentes)
+export interface Incidente {
+  id: number;
+  id_guardia: number;
+  inicio: string | Date;
+  fin: string | Date;
+  descripcion: string;
+  estado: string;
+  observaciones?: string;
+  duracion_minutos?: number;
+  codigos_aplicados?: any[];
+  usuario_guardia?: string; // Añadir esta propiedad
+  fecha_guardia?: string | Date; // Añadir esta propiedad
+}
+
+// Interfaz para códigos de facturación
+export interface CodigoFacturacion {
+  id: number;
+  codigo: string;
+  descripcion: string;
+  tipo: string;
+  dias_aplicables: string;
+  hora_inicio?: string | null;
+  hora_fin?: string | null;
+  factor_multiplicador: number;
+  fecha_vigencia_desde: string | Date;
+  fecha_vigencia_hasta?: string | Date | null;
+  estado: string;
+}
+
+// Interfaz para código aplicado a un incidente
+export interface CodigoAplicado {
+  id_codigo: number;
+  codigo?: string;
+  descripcion?: string;
+  minutos: number;
+  importe: number | null;
+  observacion?: string;
+}

@@ -1,5 +1,5 @@
 // src/services/EventService.ts
-import { Event, EventType } from '../models/Event';
+import { Event, EventType, Incidente } from '../models/Event';
 import axios from 'axios';
 import moment from 'moment';
 // Importar el servicio de guardias
@@ -7,6 +7,18 @@ import GuardiaService, { convertirGuardiaAEvento } from './GuardiaService';
 
 // URL base de la API - Ajusta según la configuración de tu proyecto
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+// Definir interfaz para incidentes obtenidos de la API
+interface ApiIncidente {
+  id: number;
+  id_guardia: number;
+  inicio: string;
+  fin: string;
+  descripcion: string;
+  estado: string;
+  observaciones?: string;
+  duracion_minutos?: number;
+}
 
 // Clase para manejar errores de la API
 class ApiError extends Error {
@@ -46,7 +58,19 @@ export const fetchEvents = async (): Promise<Event[]> => {
   }
 };
 
-// Nueva función para obtener todos los elementos del calendario (eventos + guardias)
+// Función para obtener color según estado del incidente
+const getIncidenteStatusColor = (estado: string) => {
+  switch (estado) {
+    case 'registrado': return '#5c6bc0'; // Indigo
+    case 'revisado': return '#26c6da';   // Cyan
+    case 'aprobado': return '#66bb6a';   // Verde claro
+    case 'rechazado': return '#ef5350';  // Rojo claro
+    case 'liquidado': return '#78909c';  // Gris azulado
+    default: return '#9c27b0';           // Color de guardia por defecto
+  }
+};
+
+// Nueva función para obtener todos los elementos del calendario (eventos + guardias + incidentes)
 export const fetchAllCalendarItems = async (): Promise<Event[]> => {
   try {
     // Obtener eventos regulares
@@ -56,10 +80,42 @@ export const fetchAllCalendarItems = async (): Promise<Event[]> => {
     const guardias = await GuardiaService.fetchGuardias();
     const guardiasComoEventos = guardias.map(convertirGuardiaAEvento);
     
-    // Combinar ambos arrays
-    return [...events, ...guardiasComoEventos];
+    // Obtener incidentes para todas las guardias
+    const incidentes: Event[] = [];
+    for (const guardia of guardias) {
+      try {
+        const guardiaId = guardia.id;
+        
+        const guardiaIncidentes = await axios.get(`${API_URL}/incidentes/guardia/${guardiaId}`);
+        
+        if (guardiaIncidentes.data.success && guardiaIncidentes.data.data) {
+          // Convertir incidentes a formato de eventos
+          guardiaIncidentes.data.data.forEach((incidente: ApiIncidente) => {
+            incidentes.push({
+              id: `incidente-${incidente.id}`,
+              title: `Incidente: ${incidente.descripcion.substring(0, 20)}${incidente.descripcion.length > 20 ? '...' : ''}`,
+              start: new Date(incidente.inicio),
+              end: new Date(incidente.fin),
+              allDay: false,
+              type: 'guardia' as EventType, // Usar el mismo tipo para filtrado
+              color: getIncidenteStatusColor(incidente.estado),
+              description: incidente.descripcion,
+              incidenteId: incidente.id,
+              guardiaId: incidente.id_guardia,
+              incidenteEstado: incidente.estado,
+              isIncidente: true
+            });
+          });
+        }
+      } catch (error) {
+        console.error(`Error al obtener incidentes para guardia ${guardia.id}:`, error);
+      }
+    }
+    
+    // Combinar todos los items
+    return [...events, ...guardiasComoEventos, ...incidentes];
   } catch (error) {
-    console.error('Error al obtener elementos del calendario:', error);
+    console.error('Error al obtener todos los elementos del calendario:', error);
     throw error;
   }
 };
@@ -69,6 +125,39 @@ export const fetchEventById = async (id: string | number): Promise<Event> => {
   try {
     // Convertir id a string si es un número
     const idString = String(id);
+    
+    // Si es un incidente (comienza con 'incidente-')
+    if (idString.startsWith('incidente-')) {
+      const incidenteId = parseInt(idString.replace('incidente-', ''));
+      
+      // Obtener el incidente
+      const response = await axios.get(`${API_URL}/incidentes/${incidenteId}`);
+      
+      if (response.data.success) {
+        const incidente = response.data.data;
+        
+        // Obtener la guardia relacionada
+        const guardiaResponse = await axios.get(`${API_URL}/guardias/${incidente.id_guardia}`);
+        const guardia = guardiaResponse.data.data;
+        
+        // Convertir a formato de evento con la marca isIncidente
+        return {
+          id: `incidente-${incidente.id}`,
+          title: `Incidente: ${incidente.descripcion}`,
+          start: new Date(incidente.inicio),
+          end: new Date(incidente.fin),
+          allDay: false,
+          type: 'guardia' as EventType, // Usar el mismo tipo para filtrado
+          color: getIncidenteStatusColor(incidente.estado),
+          description: incidente.descripcion,
+          incidenteId: incidente.id,
+          guardiaId: incidente.id_guardia,
+          incidenteEstado: incidente.estado,
+          isIncidente: true,
+          guardiaUsuario: guardia.usuario
+        };
+      }
+    }
     
     // Si el ID comienza con "guardia-", obtener de guardias
     if (idString.startsWith('guardia-')) {
@@ -91,7 +180,7 @@ export const fetchEventById = async (id: string | number): Promise<Event> => {
   }
 };
 
-// Crear un nuevo evento - VERSIÓN CORREGIDA
+// Crear un nuevo evento
 export const createEvent = async (eventData: Omit<Event, 'id'>): Promise<Event> => {
   try {
     // Asegurarnos de que start y end sean strings en formato ISO
@@ -117,7 +206,7 @@ export const createEvent = async (eventData: Omit<Event, 'id'>): Promise<Event> 
   }
 };
 
-// Actualizar un evento existente - VERSIÓN CORREGIDA
+// Actualizar un evento existente
 export const updateEvent = async (event: Event): Promise<Event> => {
   try {
     // Asegurarnos de que start y end sean strings en formato ISO
@@ -143,7 +232,7 @@ export const updateEvent = async (event: Event): Promise<Event> => {
   }
 };
 
-// Marcar un evento como completado/pendiente (para tareas) - VERSIÓN CORREGIDA
+// Marcar un evento como completado/pendiente (para tareas)
 export const markEventAsCompleted = async (id: string | number, completed: boolean): Promise<Event> => {
   try {
     console.log(`Marcando evento ${id} como ${completed ? 'completado' : 'pendiente'}`);
@@ -161,13 +250,21 @@ export const markEventAsCompleted = async (id: string | number, completed: boole
   }
 };
 
-// Eliminar un evento - VERSIÓN CORREGIDA
+// Eliminar un evento
 export const deleteEvent = async (id: string | number): Promise<boolean> => {
   try {
     console.log(`Intentando eliminar evento con ID: ${id}, tipo: ${typeof id}`);
     
     // Convertir id a string si es un número para poder usar startsWith
     const idString = String(id);
+    
+    // Si es un incidente
+    if (idString.startsWith('incidente-')) {
+      console.log(`Eliminando incidente: ${idString}`);
+      const incidenteId = parseInt(idString.replace('incidente-', ''));
+      const response = await axios.delete(`${API_URL}/incidentes/${incidenteId}`);
+      return response.data.success;
+    }
     
     // Si el ID comienza con "guardia-", eliminar de guardias
     if (idString.startsWith('guardia-')) {
@@ -214,7 +311,7 @@ export const deleteEvent = async (id: string | number): Promise<boolean> => {
   }
 };
 
-// Obtener eventos por tipo - VERSIÓN CORREGIDA
+// Obtener eventos por tipo
 export const fetchEventsByType = async (type: EventType): Promise<Event[]> => {
   try {
     // Si el tipo es 'guardia', obtener de guardias
@@ -256,8 +353,49 @@ export const fetchEventsByDateRange = async (start: Date, end: Date): Promise<Ev
       })
       .map(convertirGuardiaAEvento);
     
+    // Obtener incidentes para todas las guardias en rango
+    const incidentes: Event[] = [];
+    for (const guardia of guardiasEnRango) {
+      try {
+        const guardiaId = typeof guardia.id === 'string' && guardia.id.startsWith('guardia-')
+          ? parseInt(guardia.id.replace('guardia-', ''))
+          : parseInt(String(guardia.id).replace('guardia-', ''));
+        
+        const guardiaIncidentes = await axios.get(`${API_URL}/incidentes/guardia/${guardiaId}`);
+        
+        if (guardiaIncidentes.data.success && guardiaIncidentes.data.data) {
+          // Filtrar solo incidentes en el rango de fechas
+          const incidentesEnRango = guardiaIncidentes.data.data
+            .filter((incidente: ApiIncidente) => {
+              const inicioIncidente = new Date(incidente.inicio);
+              const finIncidente = new Date(incidente.fin);
+              return (inicioIncidente >= start && inicioIncidente <= end) || 
+                    (finIncidente >= start && finIncidente <= end);
+            })
+            .map((incidente: ApiIncidente) => ({
+              id: `incidente-${incidente.id}`,
+              title: `Incidente: ${incidente.descripcion.substring(0, 20)}${incidente.descripcion.length > 20 ? '...' : ''}`,
+              start: new Date(incidente.inicio),
+              end: new Date(incidente.fin),
+              allDay: false,
+              type: 'guardia' as EventType, // Usar el mismo tipo para filtrado
+              color: getIncidenteStatusColor(incidente.estado),
+              description: incidente.descripcion,
+              incidenteId: incidente.id,
+              guardiaId: incidente.id_guardia,
+              incidenteEstado: incidente.estado,
+              isIncidente: true
+            }));
+          
+          incidentes.push(...incidentesEnRango);
+        }
+      } catch (error) {
+        console.error(`Error al obtener incidentes para guardia ${guardia.id}:`, error);
+      }
+    }
+    
     // Combinar y devolver
-    return [...eventos, ...guardiasEnRango];
+    return [...eventos, ...guardiasEnRango, ...incidentes];
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       throw new ApiError(

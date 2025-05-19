@@ -192,6 +192,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     { id: 'notifications', icon: 'bi-bell-fill', label: 'Notificaciones', route: '/notifications' },
     { id: 'links', icon: 'bi-link-45deg', label: 'Links', route: '/links' },  // Nuevo ítem Links
     { id: 'glosario', icon: 'bi-book', label: 'Glosario', route: '/glosario' },  // Nuevo ítem Glosario
+    { id: 'informes', icon: 'bi-bar-chart-fill', label: 'Informes y Estadísticas', route: '/informes' },
   ];
 
   return (

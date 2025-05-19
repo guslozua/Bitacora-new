@@ -22,6 +22,9 @@ const eventosRoutes = require('./routes/eventos'); // Agregar la ruta de eventos
 const guardiasRoutes = require('./routes/guardias');
 const glosarioRoutes = require('./routes/glosarioRoutes');
 const enlacesRoutes = require('./routes/enlacesRoutes');
+const incidentesRoutes = require('./routes/incidentes.routes');
+const codigosRoutes = require('./routes/codigos.routes');
+const informesRoutes = require('./routes/informes.routes');
 
 // Importar el programador de limpieza
 const { scheduleCleanup, cleanupUploadsFolder } = require('./utils/cleanupScheduler');
@@ -68,6 +71,9 @@ app.use('/api/eventos', eventosRoutes); // Agregar la ruta de eventos al servido
 app.use('/api/guardias', guardiasRoutes);
 app.use('/api/glosario', glosarioRoutes);
 app.use('/api/enlaces', enlacesRoutes);
+app.use('/api/incidentes', incidentesRoutes);
+app.use('/api/codigos', codigosRoutes);
+app.use('/api/informes', informesRoutes);
 
 // Depuración: Listar rutas registradas en Express
 app._router.stack.forEach((middleware) => {

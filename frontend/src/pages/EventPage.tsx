@@ -1,10 +1,13 @@
+// src/pages/EventPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Card, Button, Row, Col, Badge, Spinner, Alert } from 'react-bootstrap';
 import { fetchEventById, deleteEvent, markEventAsCompleted } from '../services/EventService';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
-import { Event } from '../models/Event';
+import { Event, EventType } from '../models/Event';
+import EventDetails from '../components/Events/EventDetails';
+import GuardiaDetails from '../components/Events/GuardiaDetails';
 
 const EventPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,7 +24,16 @@ const EventPage: React.FC = () => {
       try {
         setLoading(true);
         const eventData = await fetchEventById(id);
-        setEvent(eventData);
+        
+        // Si el evento tiene la marca openIncidentesTab, necesitamos hacerlo saber al componente GuardiaDetails
+        if (eventData.openIncidentesTab) {
+          setEvent({
+            ...eventData,
+            openIncidentesTab: true
+          });
+        } else {
+          setEvent(eventData);
+        }
       } catch (error) {
         console.error('Error al cargar el evento:', error);
         setError('No se pudo cargar la información del evento');
@@ -53,7 +65,7 @@ const EventPage: React.FC = () => {
 
   const handleEdit = () => {
     // Si es una guardia, redirigir a la administración de guardias
-    if (event?.type === 'guardia') {
+    if (event?.type === 'guardia' as EventType) {
       // Convertir a string y luego usar replace
       const guardiaId = String(event.id).replace('guardia-', '');
       navigate(`/admin/guardias?edit=${guardiaId}`);
@@ -85,7 +97,19 @@ const EventPage: React.FC = () => {
     navigate('/calendar');
   };
 
-  const getEventTypeLabel = (type: string) => {
+  const handleEventUpdated = async () => {
+    // Recargar el evento después de una actualización (ej: cuando se agrega/edita un incidente)
+    if (id) {
+      try {
+        const updatedEvent = await fetchEventById(id);
+        setEvent(updatedEvent);
+      } catch (error) {
+        console.error('Error al recargar evento:', error);
+      }
+    }
+  };
+
+  const getEventTypeLabel = (type: EventType) => {
     switch (type) {
       case 'task':
         return 'Tarea';
@@ -99,12 +123,16 @@ const EventPage: React.FC = () => {
         return 'Cumpleaños';
       case 'dayoff':
         return 'Día a Favor';
+      case 'gconect':
+        return 'Guardia Conectividad';
+      case 'vacation':
+        return 'Vacaciones';
       default:
         return type;
     }
   };
 
-  const getEventTypeColor = (type: string) => {
+  const getEventTypeColor = (type: EventType) => {
     switch (type) {
       case 'task':
         return 'primary';
@@ -118,6 +146,10 @@ const EventPage: React.FC = () => {
         return 'warning';
       case 'dayoff':
         return 'success'; // Verde para día a favor, aplicaremos estilo personalizado
+      case 'gconect':
+        return 'info';
+      case 'vacation':
+        return 'secondary';
       default:
         return 'secondary';
     }
@@ -177,144 +209,152 @@ const EventPage: React.FC = () => {
               <p className="mt-3 text-muted">Cargando información del evento...</p>
             </div>
           ) : event ? (
-            <Card className="shadow-sm border-0">
-              <Card.Header className="bg-white py-3">
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <Badge 
-                      bg={getEventTypeColor(event.type)} 
-                      className="me-2"
-                      style={
-                        event.type === 'guardia' ? { backgroundColor: '#9c27b0' } : 
-                        event.type === 'dayoff' ? { backgroundColor: '#4caf50' } : 
-                        event.type === 'birthday' ? { backgroundColor: '#ff9800' } : {}
-                      }
-                    >
-                      {getEventTypeLabel(event.type)}
-                    </Badge>
-                    <h3 className="mb-0 d-inline">
-                      {event.type === 'guardia' ? extractGuardiaUsername(event.title) : event.title}
-                    </h3>
-                  </div>
-                  <div>
-                    {event.type === 'task' && (
-                      <Button
-                        variant={event.completed ? 'outline-success' : 'success'}
+            event.type === 'guardia' as EventType ? (
+              <GuardiaDetails 
+                event={event} 
+                onEventUpdate={handleEventUpdated} 
+                openIncidentesTab={event.openIncidentesTab}
+              />
+            ) : (
+              <Card className="shadow-sm border-0">
+                <Card.Header className="bg-white py-3">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <Badge 
+                        bg={getEventTypeColor(event.type)} 
                         className="me-2"
-                        onClick={handleCompleteTask}
+                        style={
+                          event.type === 'guardia' as EventType ? { backgroundColor: '#9c27b0' } : 
+                          event.type === 'dayoff' as EventType ? { backgroundColor: '#4caf50' } : 
+                          event.type === 'birthday' as EventType ? { backgroundColor: '#ff9800' } : {}
+                        }
                       >
-                        <i className={`bi ${event.completed ? 'bi-x-circle' : 'bi-check-circle'} me-1`}></i>
-                        {event.completed ? 'Marcar como Pendiente' : 'Marcar como Completada'}
+                        {getEventTypeLabel(event.type)}
+                      </Badge>
+                      <h3 className="mb-0 d-inline">
+                        {event.type === 'guardia' as EventType ? extractGuardiaUsername(event.title) : event.title}
+                      </h3>
+                    </div>
+                    <div>
+                      {event.type === 'task' && (
+                        <Button
+                          variant={event.completed ? 'outline-success' : 'success'}
+                          className="me-2"
+                          onClick={handleCompleteTask}
+                        >
+                          <i className={`bi ${event.completed ? 'bi-x-circle' : 'bi-check-circle'} me-1`}></i>
+                          {event.completed ? 'Marcar como Pendiente' : 'Marcar como Completada'}
+                        </Button>
+                      )}
+                      <Button variant="outline-primary" className="me-2" onClick={handleEdit}>
+                        <i className="bi bi-pencil me-1"></i>
+                        Editar
                       </Button>
-                    )}
-                    <Button variant="outline-primary" className="me-2" onClick={handleEdit}>
-                      <i className="bi bi-pencil me-1"></i>
-                      Editar
-                    </Button>
-                    <Button variant="outline-danger" onClick={handleDelete}>
-                      <i className="bi bi-trash me-1"></i>
-                      Eliminar
-                    </Button>
+                      <Button variant="outline-danger" onClick={handleDelete}>
+                        <i className="bi bi-trash me-1"></i>
+                        Eliminar
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col md={8}>
-                    <Card.Title>Información del Evento</Card.Title>
-                    <hr />
-                    <Row className="mb-3">
-                      <Col md={4} className="text-muted">Fecha de inicio:</Col>
-                      <Col md={8}>{formatDate(event.start)}</Col>
-                    </Row>
-                    {/* Para guardias, feriados, cumpleaños y días a favor normalmente solo mostramos la fecha de inicio */}
-                    {(event.type !== 'guardia' && event.type !== 'holiday' && 
-                      event.type !== 'birthday' && event.type !== 'dayoff') && (
+                </Card.Header>
+                <Card.Body>
+                  <Row>
+                    <Col md={8}>
+                      <Card.Title>Información del Evento</Card.Title>
+                      <hr />
                       <Row className="mb-3">
-                        <Col md={4} className="text-muted">Fecha de fin:</Col>
-                        <Col md={8}>{formatDate(event.end)}</Col>
+                        <Col md={4} className="text-muted">Fecha de inicio:</Col>
+                        <Col md={8}>{formatDate(event.start)}</Col>
                       </Row>
-                    )}
-                    {event.location && (
-                      <Row className="mb-3">
-                        <Col md={4} className="text-muted">Ubicación:</Col>
-                        <Col md={8}>{event.location}</Col>
-                      </Row>
-                    )}
-                    {event.type === 'task' && (
-                      <Row className="mb-3">
-                        <Col md={4} className="text-muted">Estado:</Col>
-                        <Col md={8}>
-                          <Badge bg={event.completed ? 'success' : 'warning'}>
-                            {event.completed ? 'Completada' : 'Pendiente'}
-                          </Badge>
-                        </Col>
-                      </Row>
-                    )}
-                    {event.type === 'guardia' && (
-                      <Row className="mb-3">
-                        <Col md={4} className="text-muted">Usuario de guardia:</Col>
-                        <Col md={8}>{extractGuardiaUsername(event.title)}</Col>
-                      </Row>
-                    )}
-                    {event.allDay && (
-                      <Row className="mb-3">
-                        <Col md={4} className="text-muted">Duración:</Col>
-                        <Col md={8}>
-                          <Badge bg="info">Todo el día</Badge>
-                        </Col>
-                      </Row>
-                    )}
-                    {event.createdAt && (
-                      <Row className="mb-3">
-                        <Col md={4} className="text-muted">Creado:</Col>
-                        <Col md={8}>{new Date(event.createdAt).toLocaleString('es-AR')}</Col>
-                      </Row>
-                    )}
-                    {event.color && (
-                      <Row className="mb-3">
-                        <Col md={4} className="text-muted">Color:</Col>
-                        <Col md={8}>
-                          <div style={{ 
-                            width: '24px', 
-                            height: '24px', 
-                            backgroundColor: event.color || 
-                              (event.type === 'guardia' ? '#9c27b0' : 
-                               event.type === 'birthday' ? '#ff9800' : 
-                               event.type === 'dayoff' ? '#4caf50' : ''),
-                            borderRadius: '4px',
-                            display: 'inline-block',
-                            verticalAlign: 'middle',
-                            marginRight: '8px'
-                          }}></div>
-                          {event.color || 
-                            (event.type === 'guardia' ? '#9c27b0' : 
-                             event.type === 'birthday' ? '#ff9800' : 
-                             event.type === 'dayoff' ? '#4caf50' : '')}
-                        </Col>
-                      </Row>
-                    )}
-                  </Col>
-                  <Col md={4}>
-                    <Card className="bg-light">
-                      <Card.Body>
-                        <Card.Title>Descripción</Card.Title>
-                        <hr />
-                        <p>{event.description || 'No hay descripción disponible'}</p>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                </Row>
-              </Card.Body>
-              <Card.Footer className="bg-white border-top-0 text-end">
-                <Button variant="outline-secondary" className="me-2" onClick={handleBack}>
-                  Volver
-                </Button>
-                <Button variant="outline-primary" onClick={handleEdit}>
-                  Editar
-                </Button>
-              </Card.Footer>
-            </Card>
+                      {/* Para guardias, feriados, cumpleaños y días a favor normalmente solo mostramos la fecha de inicio */}
+                      {(event.type !== 'guardia' as EventType && event.type !== 'holiday' as EventType && 
+                        event.type !== 'birthday' as EventType && event.type !== 'dayoff' as EventType) && (
+                        <Row className="mb-3">
+                          <Col md={4} className="text-muted">Fecha de fin:</Col>
+                          <Col md={8}>{formatDate(event.end)}</Col>
+                        </Row>
+                      )}
+                      {event.location && (
+                        <Row className="mb-3">
+                          <Col md={4} className="text-muted">Ubicación:</Col>
+                          <Col md={8}>{event.location}</Col>
+                        </Row>
+                      )}
+                      {event.type === 'task' && (
+                        <Row className="mb-3">
+                          <Col md={4} className="text-muted">Estado:</Col>
+                          <Col md={8}>
+                            <Badge bg={event.completed ? 'success' : 'warning'}>
+                              {event.completed ? 'Completada' : 'Pendiente'}
+                            </Badge>
+                          </Col>
+                        </Row>
+                      )}
+                      {event.type === 'guardia' as EventType && (
+                        <Row className="mb-3">
+                          <Col md={4} className="text-muted">Usuario de guardia:</Col>
+                          <Col md={8}>{extractGuardiaUsername(event.title)}</Col>
+                        </Row>
+                      )}
+                      {event.allDay && (
+                        <Row className="mb-3">
+                          <Col md={4} className="text-muted">Duración:</Col>
+                          <Col md={8}>
+                            <Badge bg="info">Todo el día</Badge>
+                          </Col>
+                        </Row>
+                      )}
+                      {event.createdAt && (
+                        <Row className="mb-3">
+                          <Col md={4} className="text-muted">Creado:</Col>
+                          <Col md={8}>{new Date(event.createdAt).toLocaleString('es-AR')}</Col>
+                        </Row>
+                      )}
+                      {event.color && (
+                        <Row className="mb-3">
+                          <Col md={4} className="text-muted">Color:</Col>
+                          <Col md={8}>
+                            <div style={{ 
+                              width: '24px', 
+                              height: '24px', 
+                              backgroundColor: event.color || 
+                                (event.type === 'guardia' as EventType ? '#9c27b0' : 
+                                event.type === 'birthday' as EventType ? '#ff9800' : 
+                                event.type === 'dayoff' as EventType ? '#4caf50' : ''),
+                              borderRadius: '4px',
+                              display: 'inline-block',
+                              verticalAlign: 'middle',
+                              marginRight: '8px'
+                            }}></div>
+                            {event.color || 
+                              (event.type === 'guardia' as EventType ? '#9c27b0' : 
+                              event.type === 'birthday' as EventType ? '#ff9800' : 
+                              event.type === 'dayoff' as EventType ? '#4caf50' : '')}
+                          </Col>
+                        </Row>
+                      )}
+                    </Col>
+                    <Col md={4}>
+                      <Card className="bg-light">
+                        <Card.Body>
+                          <Card.Title>Descripción</Card.Title>
+                          <hr />
+                          <p>{event.description || 'No hay descripción disponible'}</p>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  </Row>
+                </Card.Body>
+                <Card.Footer className="bg-white border-top-0 text-end">
+                  <Button variant="outline-secondary" className="me-2" onClick={handleBack}>
+                    Volver
+                  </Button>
+                  <Button variant="outline-primary" onClick={handleEdit}>
+                    Editar
+                  </Button>
+                </Card.Footer>
+              </Card>
+            )
           ) : (
             <Alert variant="warning">
               No se encontró el evento solicitado. Puede que haya sido eliminado o no tengas permisos para verlo.
