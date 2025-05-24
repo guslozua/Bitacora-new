@@ -1,8 +1,134 @@
-// controllers/incidentes.controller.js
+// controllers/incidentes.controller.js - VERSIÓN CORREGIDA COMPLETA
 const Incidente = require('../models/incidente.model');
 const Guardia = require('../models/guardia.model');
 const Codigo = require('../models/codigo.model');
 const { Op } = require('../models/db.operators');
+const { enviarNotificacion } = require('../utils/notificaciones');
+const db = require('../config/db');
+
+// ✨ FUNCIÓN HELPER PARA PARSEAR FECHAS DE MANERA SEGURA
+const parsearFechaSafe = (fecha) => {
+  try {
+    if (!fecha) return null;
+    
+    // Si ya es un objeto Date válido, devolverlo
+    if (fecha instanceof Date && !isNaN(fecha.getTime())) {
+      return fecha;
+    }
+    
+    // Si es string, parsearlo
+    if (typeof fecha === 'string') {
+      const fechaParseada = new Date(fecha);
+      if (isNaN(fechaParseada.getTime())) {
+        throw new Error(`Fecha inválida: ${fecha}`);
+      }
+      return fechaParseada;
+    }
+    
+    throw new Error(`Tipo de fecha no reconocido: ${typeof fecha}`);
+  } catch (error) {
+    console.error('Error al parsear fecha:', error.message);
+    throw error;
+  }
+};
+
+// ✨ FUNCIÓN HELPER PARA FORMATEAR FECHA PARA MYSQL
+const formatearFechaParaMySQL = (fecha) => {
+  try {
+    const fechaObj = parsearFechaSafe(fecha);
+    if (!fechaObj) return null;
+    
+    // Formatear como YYYY-MM-DD HH:MM:SS para MySQL
+    const year = fechaObj.getFullYear();
+    const month = String(fechaObj.getMonth() + 1).padStart(2, '0');
+    const day = String(fechaObj.getDate()).padStart(2, '0');
+    const hours = String(fechaObj.getHours()).padStart(2, '0');
+    const minutes = String(fechaObj.getMinutes()).padStart(2, '0');
+    const seconds = String(fechaObj.getSeconds()).padStart(2, '0');
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  } catch (error) {
+    console.error('Error al formatear fecha para MySQL:', error);
+    throw error;
+  }
+};
+
+// Función helper para registrar cambio de estado en el historial - CORREGIDA
+const registrarCambioEstado = async (idIncidente, estadoAnterior, estadoNuevo, idUsuario, observaciones = null) => {
+  try {
+    console.log('📋 REGISTRANDO CAMBIO DE ESTADO:', {
+      idIncidente,
+      estadoAnterior,
+      estadoNuevo,
+      idUsuario,
+      observaciones
+    });
+
+    // ✨ CONVERTIR UNDEFINED A NULL PARA MYSQL2
+    const estadoAnteriorLimpio = estadoAnterior === undefined ? null : estadoAnterior;
+    const estadoNuevoLimpio = estadoNuevo === undefined ? null : estadoNuevo;
+    const idUsuarioLimpio = idUsuario === undefined ? null : idUsuario;
+    const observacionesLimpias = observaciones === undefined ? null : observaciones;
+
+    console.log('📋 PARÁMETROS LIMPIADOS:', {
+      idIncidente,
+      estadoAnteriorLimpio,
+      estadoNuevoLimpio,
+      idUsuarioLimpio,
+      observacionesLimpias
+    });
+
+    const query = `
+      INSERT INTO incidentes_estado_historico 
+      (id_incidente, estado_anterior, estado_nuevo, id_usuario, fecha_cambio, observaciones) 
+      VALUES (?, ?, ?, ?, NOW(), ?)
+    `;
+    
+    const [result] = await db.execute(query, [
+      idIncidente, 
+      estadoAnteriorLimpio, 
+      estadoNuevoLimpio, 
+      idUsuarioLimpio, 
+      observacionesLimpias
+    ]);
+
+    console.log('✅ HISTORIAL REGISTRADO EXITOSAMENTE:', {
+      insertId: result.insertId,
+      affectedRows: result.affectedRows
+    });
+
+    return result;
+  } catch (error) {
+    console.error('❌ ERROR AL REGISTRAR CAMBIO DE ESTADO:', error);
+    console.error('❌ PARÁMETROS QUE CAUSARON EL ERROR:', {
+      idIncidente,
+      estadoAnterior,
+      estadoNuevo,
+      idUsuario,
+      observaciones
+    });
+    throw error;
+  }
+};
+
+// Función helper para obtener supervisores para notificaciones
+const obtenerSupervisores = async () => {
+  try {
+    const query = `
+      SELECT DISTINCT u.id, u.nombre, u.email 
+      FROM Usuarios u 
+      JOIN usuario_rol ur ON u.id = ur.id_usuario 
+      JOIN Roles r ON ur.id_rol = r.id 
+      WHERE r.nombre IN ('Admin', 'SuperAdmin', 'Supervisor') 
+      AND u.estado = 'activo'
+    `;
+    const [supervisores] = await db.execute(query);
+    return supervisores;
+  } catch (error) {
+    console.error('Error al obtener supervisores:', error);
+    return [];
+  }
+};
 
 // Obtener todos los incidentes con filtros opcionales
 exports.getIncidentes = async (req, res) => {
@@ -60,9 +186,11 @@ exports.getIncidentes = async (req, res) => {
   }
 };
 
-// Obtener un incidente por ID
+// ✨ OBTENER UN INCIDENTE POR ID - MEJORADO CON LOGS
 exports.getIncidenteById = async (req, res) => {
   try {
+    console.log('🔍 OBTENER INCIDENTE - ID solicitado:', req.params.id);
+    
     const incidente = await Incidente.findByPk(req.params.id);
     
     if (!incidente) {
@@ -72,9 +200,46 @@ exports.getIncidenteById = async (req, res) => {
       });
     }
     
+    console.log('🔍 INCIDENTE ENCONTRADO - Datos originales de DB:', {
+      id: incidente.id,
+      inicio: incidente.inicio,
+      fin: incidente.fin,
+      inicio_type: typeof incidente.inicio,
+      fin_type: typeof incidente.fin
+    });
+    
+    // Obtener historial de estados
+    const queryHistorial = `
+      SELECT 
+        ieh.*,
+        u.nombre as usuario_cambio_nombre
+      FROM incidentes_estado_historico ieh
+      LEFT JOIN Usuarios u ON ieh.id_usuario = u.id
+      WHERE ieh.id_incidente = ?
+      ORDER BY ieh.fecha_cambio DESC
+    `;
+    
+    const [historial] = await db.execute(queryHistorial, [req.params.id]);
+    
+    // Convertir el incidente a objeto plano y agregar historial
+    const incidenteData = typeof incidente.toJSON === 'function' 
+      ? incidente.toJSON() 
+      : { ...incidente };
+    
+    console.log('🔍 DATOS ENVIADOS AL FRONTEND:', {
+      id: incidenteData.id,
+      inicio: incidenteData.inicio,
+      fin: incidenteData.fin,
+      inicio_type: typeof incidenteData.inicio,
+      fin_type: typeof incidenteData.fin
+    });
+    
     res.status(200).json({
       success: true,
-      data: incidente
+      data: {
+        ...incidenteData,
+        historial_estados: historial
+      }
     });
   } catch (error) {
     console.error('Error al obtener incidente:', error);
@@ -86,13 +251,22 @@ exports.getIncidenteById = async (req, res) => {
   }
 };
 
-// Crear un nuevo incidente
+// ✨ CREAR UN NUEVO INCIDENTE - CORREGIDO PARA MYSQL DIRECTO
 exports.createIncidente = async (req, res) => {
   try {
+    console.log('🚀 CREAR INCIDENTE - Body recibido:', req.body);
+    
     const { 
       id_guardia, inicio, fin, descripcion, 
-      observaciones, codigos_ids 
+      observaciones, codigos 
     } = req.body;
+    
+    console.log('🚀 FECHAS RECIBIDAS:', {
+      inicio: inicio,
+      fin: fin,
+      inicio_type: typeof inicio,
+      fin_type: typeof fin
+    });
     
     // Verificar que la guardia existe
     const guardia = await Guardia.findByPk(id_guardia);
@@ -103,8 +277,17 @@ exports.createIncidente = async (req, res) => {
       });
     }
     
+    // ✨ PARSEAR FECHAS DE MANERA SEGURA
+    const inicioParseado = parsearFechaSafe(inicio);
+    const finParseado = parsearFechaSafe(fin);
+    
+    console.log('🚀 FECHAS PARSEADAS:', {
+      inicioParseado: inicioParseado,
+      finParseado: finParseado
+    });
+    
     // Verificar que las fechas son válidas
-    if (new Date(fin) <= new Date(inicio)) {
+    if (finParseado <= inicioParseado) {
       return res.status(400).json({
         success: false,
         message: 'La fecha de fin debe ser posterior a la fecha de inicio'
@@ -113,13 +296,12 @@ exports.createIncidente = async (req, res) => {
     
     // Verificar si la fecha corresponde a la guardia
     const guardiaDate = new Date(guardia.fecha);
-    const incidenteDate = new Date(inicio);
     
     // Verificar que el incidente ocurre en el mismo día que la guardia
     if (
-      incidenteDate.getDate() !== guardiaDate.getDate() || 
-      incidenteDate.getMonth() !== guardiaDate.getMonth() || 
-      incidenteDate.getFullYear() !== guardiaDate.getFullYear()
+      inicioParseado.getDate() !== guardiaDate.getDate() || 
+      inicioParseado.getMonth() !== guardiaDate.getMonth() || 
+      inicioParseado.getFullYear() !== guardiaDate.getFullYear()
     ) {
       return res.status(400).json({
         success: false,
@@ -127,88 +309,193 @@ exports.createIncidente = async (req, res) => {
       });
     }
     
-    // Preparar el objeto de incidente
-    const incidenteData = {
-      id_guardia,
-      inicio,
-      fin,
-      descripcion,
-      id_usuario_registro: req.user?.id,
-      observaciones,
-      estado: 'registrado'
-    };
+    // ✨ PREPARAR FECHAS PARA MYSQL
+    const inicioMySQL = formatearFechaParaMySQL(inicioParseado);
+    const finMySQL = formatearFechaParaMySQL(finParseado);
     
-    // Si se proporcionaron códigos, obtenerlos
-    let codigos = [];
-    if (codigos_ids && Array.isArray(codigos_ids) && codigos_ids.length > 0) {
-      // Buscar cada código por ID
-      const codigosPromises = codigos_ids.map(id => Codigo.findByPk(id));
-      const codigosEncontrados = await Promise.all(codigosPromises);
-      
-      // Filtrar los códigos que no existen
-      codigos = codigosEncontrados
-        .filter(codigo => codigo !== null)
-        .map(codigo => {
-          // Calcular minutos aplicables (inicialmente, todos los minutos del incidente)
-          const duracionMinutos = 
-            Math.floor((new Date(fin) - new Date(inicio)) / (1000 * 60));
-          
-          return {
-            id_codigo: codigo.id,
-            minutos: duracionMinutos,
-            importe: null // Se calculará después si es necesario
-          };
-        });
+    console.log('🚀 FECHAS PARA MySQL:', {
+      inicioMySQL: inicioMySQL,
+      finMySQL: finMySQL
+    });
+    
+    // ✨ PREPARAR CÓDIGOS ANTES DE CREAR EL INCIDENTE
+    let codigosParaInsertar = [];
+    
+    if (codigos && Array.isArray(codigos) && codigos.length > 0) {
+      console.log('🔄 USANDO CÓDIGOS PROPORCIONADOS:', codigos);
+      codigosParaInsertar = codigos;
     } else {
-      // Si no se proporcionaron códigos, buscar códigos aplicables automáticamente
-      const horaInicio = new Date(inicio).toTimeString().substring(0, 8); // HH:MM:SS
-      const horaFin = new Date(fin).toTimeString().substring(0, 8); // HH:MM:SS
+      console.log('🔍 BUSCANDO CÓDIGOS APLICABLES...');
       
-      const codigosAplicables = await Codigo.findApplicable(
-        guardiaDate,
-        horaInicio,
-        horaFin
-      );
-      
-      // Calcular duración total del incidente en minutos
-      const duracionMinutos = 
-        Math.floor((new Date(fin) - new Date(inicio)) / (1000 * 60));
-      
-      // Convertir los códigos aplicables al formato necesario
-      codigos = codigosAplicables.map(codigo => ({
-        id_codigo: codigo.id,
-        minutos: duracionMinutos,
-        importe: null // Se calculará después si es necesario
-      }));
+      // Buscar códigos aplicables automáticamente
+      try {
+        const horaInicio = inicioParseado.toTimeString().substring(0, 8);
+        const horaFin = finParseado.toTimeString().substring(0, 8);
+        
+        const codigosAplicables = await Codigo.findApplicable(
+          guardiaDate,
+          horaInicio,
+          horaFin
+        );
+        
+        const duracionMinutos = Math.floor((finParseado - inicioParseado) / (1000 * 60));
+        
+        console.log('🔍 CÓDIGOS APLICABLES ENCONTRADOS:', codigosAplicables.length);
+        
+        codigosParaInsertar = codigosAplicables.map(codigo => ({
+          id_codigo: codigo.id,
+          minutos: duracionMinutos,
+          importe: null
+        }));
+      } catch (error) {
+        console.error('❌ Error al buscar códigos aplicables:', error);
+        // Continuar sin códigos aplicables
+      }
     }
     
-    incidenteData.codigos = codigos;
+    // ✨ PREPARAR DATOS DEL INCIDENTE - CORREGIDO PARA UNDEFINED
+    const incidenteData = {
+      id_guardia,
+      inicio: inicioMySQL,
+      fin: finMySQL,
+      descripcion,
+      id_usuario_registro: req.user?.id || null, // ✨ CONVERTIR UNDEFINED A NULL
+      observaciones: observaciones || null,      // ✨ CONVERTIR UNDEFINED A NULL
+      estado: 'registrado',
+      codigos: codigosParaInsertar
+    };
     
-    // Crear el incidente
-    const nuevoIncidente = await Incidente.create(incidenteData);
+    console.log('🚀 DATOS DEL INCIDENTE A CREAR:', {
+      ...incidenteData,
+      codigos: `${codigosParaInsertar.length} códigos`
+    });
+    
+    // ✨ CREAR EL INCIDENTE USANDO EL MODELO PERSONALIZADO
+    let nuevoIncidente;
+    try {
+      nuevoIncidente = await Incidente.create(incidenteData);
+      console.log('✅ INCIDENTE CREADO EXITOSAMENTE:', {
+        id: nuevoIncidente?.id,
+        tipo: typeof nuevoIncidente,
+        propiedades: nuevoIncidente ? Object.keys(nuevoIncidente) : 'undefined'
+      });
+      
+      if (!nuevoIncidente || !nuevoIncidente.id) {
+        throw new Error('El modelo no devolvió un incidente válido');
+      }
+      
+    } catch (errorCreacion) {
+      console.error('❌ ERROR EN INCIDENTE.CREATE:', errorCreacion);
+      console.error('❌ STACK TRACE:', errorCreacion.stack);
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Error al crear el incidente en la base de datos',
+        error: errorCreacion.message
+      });
+    }
+    
+    // ✨ REGISTRAR EL ESTADO INICIAL EN EL HISTORIAL
+    try {
+      await registrarCambioEstado(
+        nuevoIncidente.id, 
+        null, 
+        'registrado', 
+        req.user?.id, 
+        'Incidente creado'
+      );
+      console.log('✅ HISTORIAL DE ESTADO REGISTRADO');
+    } catch (errorHistorial) {
+      console.error('❌ Error al registrar historial:', errorHistorial);
+      // No fallar la creación por esto
+    }
+    
+    // ✨ NOTIFICAR A SUPERVISORES (ASYNC, NO BLOQUEAR RESPUESTA)
+    setImmediate(async () => {
+      try {
+        const supervisores = await obtenerSupervisores();
+        for (const supervisor of supervisores) {
+          await enviarNotificacion({
+            id_usuario: supervisor.id,
+            tipo: 'nuevo_incidente',
+            titulo: 'Nuevo Incidente Registrado',
+            mensaje: `Se ha registrado un nuevo incidente: ${descripcion.substring(0, 50)}...`,
+            datos_adicionales: {
+              id_incidente: nuevoIncidente.id,
+              id_guardia: id_guardia,
+              usuario_guardia: guardia.usuario
+            }
+          });
+        }
+        console.log('✅ NOTIFICACIONES ENVIADAS A SUPERVISORES');
+      } catch (errorNotificacion) {
+        console.error('❌ Error al enviar notificaciones:', errorNotificacion);
+        // No afecta la creación del incidente
+      }
+    });
+    
+    // ✨ PREPARAR RESPUESTA FINAL SEGURA
+    const incidenteRespuesta = {
+      id: nuevoIncidente.id,
+      id_guardia: nuevoIncidente.id_guardia,
+      inicio: nuevoIncidente.inicio,
+      fin: nuevoIncidente.fin,
+      descripcion: nuevoIncidente.descripcion,
+      observaciones: nuevoIncidente.observaciones,
+      estado: nuevoIncidente.estado,
+      duracion_minutos: nuevoIncidente.duracion_minutos,
+      codigos_aplicados: nuevoIncidente.codigos_aplicados || [],
+      fecha_guardia: nuevoIncidente.fecha_guardia,
+      usuario_guardia: nuevoIncidente.usuario_guardia,
+      created_at: nuevoIncidente.created_at,
+      updated_at: nuevoIncidente.updated_at
+    };
+    
+    console.log('✅ RESPUESTA FINAL PREPARADA:', {
+      id: incidenteRespuesta.id,
+      codigos_count: incidenteRespuesta.codigos_aplicados.length
+    });
     
     res.status(201).json({
       success: true,
       message: 'Incidente creado correctamente',
-      data: nuevoIncidente
+      data: incidenteRespuesta
     });
+    
   } catch (error) {
-    console.error('Error al crear incidente:', error);
+    console.error('❌ ERROR GENERAL AL CREAR INCIDENTE:', error);
+    console.error('❌ STACK TRACE COMPLETO:', error.stack);
+    
+    // ✨ RESPUESTA DE ERROR MÁS DETALLADA
     res.status(500).json({
       success: false,
-      message: 'Error al crear incidente',
-      error: error.message
+      message: 'Error interno del servidor al crear incidente',
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? {
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      } : undefined
     });
   }
 };
 
-// Actualizar un incidente existente
+// ✨ ACTUALIZAR UN INCIDENTE EXISTENTE - CORREGIDO
 exports.updateIncidente = async (req, res) => {
   try {
+    console.log('🔄 ACTUALIZAR INCIDENTE - ID:', req.params.id);
+    console.log('🔄 BODY COMPLETO RECIBIDO:', req.body);
+    
     const { 
       id_guardia, inicio, fin, descripcion, 
       observaciones, estado, codigos 
     } = req.body;
+    
+    console.log('🔄 FECHAS RECIBIDAS PARA ACTUALIZAR:', {
+      inicio: inicio,
+      fin: fin,
+      inicio_type: typeof inicio,
+      fin_type: typeof fin
+    });
     
     // Verificar que el incidente existe
     const incidente = await Incidente.findByPk(req.params.id);
@@ -218,6 +505,14 @@ exports.updateIncidente = async (req, res) => {
         message: 'Incidente no encontrado'
       });
     }
+    
+    console.log('🔄 INCIDENTE ACTUAL EN DB:', {
+      id: incidente.id,
+      inicio_actual: incidente.inicio,
+      fin_actual: incidente.fin,
+      inicio_type: typeof incidente.inicio,
+      fin_type: typeof incidente.fin
+    });
     
     // Si se va a cambiar la guardia, verificar que exista
     if (id_guardia && id_guardia !== incidente.id_guardia) {
@@ -230,31 +525,96 @@ exports.updateIncidente = async (req, res) => {
       }
     }
     
-    // Verificar que las fechas son válidas si se están actualizando
-    if (inicio && fin && new Date(fin) <= new Date(inicio)) {
-      return res.status(400).json({
-        success: false,
-        message: 'La fecha de fin debe ser posterior a la fecha de inicio'
-      });
-    }
-    
     // Preparar datos para actualización
     const datosActualizacion = {};
     
     if (id_guardia !== undefined) datosActualizacion.id_guardia = id_guardia;
-    if (inicio !== undefined) datosActualizacion.inicio = inicio;
-    if (fin !== undefined) datosActualizacion.fin = fin;
     if (descripcion !== undefined) datosActualizacion.descripcion = descripcion;
     if (observaciones !== undefined) datosActualizacion.observaciones = observaciones;
-    if (estado !== undefined) datosActualizacion.estado = estado;
+    
+    // ✨ MANEJAR FECHAS DE MANERA SEGURA
+    if (inicio !== undefined) {
+      const inicioParseado = parsearFechaSafe(inicio);
+      const inicioMySQL = formatearFechaParaMySQL(inicioParseado);
+      datosActualizacion.inicio = inicioMySQL;
+      
+      console.log('🔄 INICIO PROCESADO:', {
+        original: inicio,
+        parseado: inicioParseado,
+        mysql: inicioMySQL
+      });
+    }
+    
+    if (fin !== undefined) {
+      const finParseado = parsearFechaSafe(fin);
+      const finMySQL = formatearFechaParaMySQL(finParseado);
+      datosActualizacion.fin = finMySQL;
+      
+      console.log('🔄 FIN PROCESADO:', {
+        original: fin,
+        parseado: finParseado,
+        mysql: finMySQL
+      });
+    }
+    
+    // Verificar que las fechas son válidas si se están actualizando ambas
+    if (datosActualizacion.inicio && datosActualizacion.fin) {
+      const inicioCheck = new Date(datosActualizacion.inicio);
+      const finCheck = new Date(datosActualizacion.fin);
+      
+      if (finCheck <= inicioCheck) {
+        return res.status(400).json({
+          success: false,
+          message: 'La fecha de fin debe ser posterior a la fecha de inicio'
+        });
+      }
+    }
+    
+    // Si se proporciona un nuevo estado, registrar el cambio
+    if (estado !== undefined && estado !== incidente.estado) {
+      datosActualizacion.estado = estado;
+      
+      // Registrar cambio de estado en el historial
+      await registrarCambioEstado(
+        incidente.id,
+        incidente.estado,
+        estado,
+        req.user?.id,
+        observaciones || 'Estado actualizado'
+      );
+      
+      // Enviar notificaciones según el nuevo estado
+      const supervisores = await obtenerSupervisores();
+      for (const supervisor of supervisores) {
+        await enviarNotificacion({
+          id_usuario: supervisor.id,
+          tipo: 'cambio_estado',
+          titulo: `Incidente ${estado}`,
+          mensaje: `El incidente #${incidente.id} cambió a estado: ${estado}`,
+          datos_adicionales: {
+            id_incidente: incidente.id,
+            estado_anterior: incidente.estado,
+            estado_nuevo: estado
+          }
+        });
+      }
+    }
     
     // Si se proporcionaron códigos, incluirlos
     if (codigos !== undefined) {
       datosActualizacion.codigos = codigos;
     }
     
+    console.log('🔄 DATOS FINALES PARA ACTUALIZAR:', datosActualizacion);
+    
     // Actualizar el incidente
     const incidenteActualizado = await incidente.update(datosActualizacion);
+    
+    console.log('✅ INCIDENTE ACTUALIZADO:', {
+      id: incidenteActualizado.id,
+      inicio_actualizado: incidenteActualizado.inicio,
+      fin_actualizado: incidenteActualizado.fin
+    });
     
     res.status(200).json({
       success: true,
@@ -262,7 +622,7 @@ exports.updateIncidente = async (req, res) => {
       data: incidenteActualizado
     });
   } catch (error) {
-    console.error('Error al actualizar incidente:', error);
+    console.error('❌ Error al actualizar incidente:', error);
     res.status(500).json({
       success: false,
       message: 'Error al actualizar incidente',
@@ -307,10 +667,14 @@ exports.deleteIncidente = async (req, res) => {
   }
 };
 
-// Cambiar estado de un incidente
+// Cambiar estado de un incidente con validación de workflow - CORREGIDA
 exports.cambiarEstadoIncidente = async (req, res) => {
   try {
-    const { estado } = req.body;
+    console.log('🔄 CAMBIAR ESTADO - Request body:', req.body);
+    console.log('🔄 CAMBIAR ESTADO - User:', req.user);
+    console.log('🔄 CAMBIAR ESTADO - Params:', req.params);
+
+    const { estado, observaciones } = req.body;
     
     if (!['registrado', 'revisado', 'aprobado', 'rechazado', 'liquidado'].includes(estado)) {
       return res.status(400).json({
@@ -327,6 +691,11 @@ exports.cambiarEstadoIncidente = async (req, res) => {
         message: 'Incidente no encontrado'
       });
     }
+
+    console.log('🔄 INCIDENTE ENCONTRADO:', {
+      id: incidente.id,
+      estadoActual: incidente.estado
+    });
     
     // Verificar transiciones de estado permitidas
     const estadoActual = incidente.estado;
@@ -347,16 +716,62 @@ exports.cambiarEstadoIncidente = async (req, res) => {
       });
     }
     
-    // Actualizar estado
+    // Actualizar estado del incidente
     await incidente.update({ estado });
+    console.log('✅ ESTADO DEL INCIDENTE ACTUALIZADO');
+    
+    // ✨ REGISTRAR CAMBIO EN EL HISTORIAL CON PARÁMETROS LIMPIOS
+    try {
+      await registrarCambioEstado(
+        incidente.id,
+        estadoActual,
+        estado,
+        req.user?.id || null, // ✨ CONVERTIR UNDEFINED A NULL
+        observaciones || null  // ✨ CONVERTIR UNDEFINED A NULL
+      );
+      console.log('✅ HISTORIAL DE CAMBIO REGISTRADO');
+    } catch (errorHistorial) {
+      console.error('❌ ERROR AL REGISTRAR HISTORIAL:', errorHistorial);
+      // No fallar toda la operación por esto, pero loggear el error
+    }
+    
+    // ✨ NOTIFICACIONES (ASYNC, NO BLOQUEAR RESPUESTA)
+    setImmediate(async () => {
+      try {
+        const supervisores = await obtenerSupervisores();
+        for (const supervisor of supervisores) {
+          await enviarNotificacion({
+            id_usuario: supervisor.id,
+            tipo: 'cambio_estado',
+            titulo: `Incidente ${estado}`,
+            mensaje: `El incidente #${incidente.id} cambió de "${estadoActual}" a "${estado}"`,
+            datos_adicionales: {
+              id_incidente: incidente.id,
+              estado_anterior: estadoActual,
+              estado_nuevo: estado,
+              observaciones: observaciones || null
+            }
+          });
+        }
+        console.log('✅ NOTIFICACIONES ENVIADAS A SUPERVISORES');
+      } catch (errorNotificacion) {
+        console.error('❌ Error al enviar notificaciones:', errorNotificacion);
+        // No afecta la operación principal
+      }
+    });
     
     res.status(200).json({
       success: true,
       message: 'Estado del incidente actualizado correctamente',
-      data: { id: incidente.id, estado }
+      data: { 
+        id: incidente.id, 
+        estado, 
+        estado_anterior: estadoActual,
+        observaciones: observaciones || null
+      }
     });
   } catch (error) {
-    console.error('Error al cambiar estado del incidente:', error);
+    console.error('❌ ERROR AL CAMBIAR ESTADO DEL INCIDENTE:', error);
     res.status(500).json({
       success: false,
       message: 'Error al cambiar estado del incidente',
@@ -393,6 +808,67 @@ exports.getIncidentesByGuardia = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error al obtener incidentes por guardia',
+      error: error.message
+    });
+  }
+};
+
+// NUEVOS ENDPOINTS PARA WORKFLOW
+
+// Obtener historial de estados de un incidente
+exports.getHistorialEstados = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        ieh.*,
+        u.nombre as usuario_cambio_nombre,
+        u.email as usuario_cambio_email
+      FROM incidentes_estado_historico ieh
+      LEFT JOIN Usuarios u ON ieh.id_usuario = u.id
+      WHERE ieh.id_incidente = ?
+      ORDER BY ieh.fecha_cambio DESC
+    `;
+    
+    const [historial] = await db.execute(query, [req.params.id]);
+    
+    res.status(200).json({
+      success: true,
+      data: historial
+    });
+  } catch (error) {
+    console.error('Error al obtener historial de estados:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener historial de estados',
+      error: error.message
+    });
+  }
+};
+
+// Obtener estadísticas de incidentes por estado
+exports.getEstadisticasEstados = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        estado,
+        COUNT(*) as cantidad,
+        COUNT(*) * 100.0 / (SELECT COUNT(*) FROM incidentes_guardia) as porcentaje
+      FROM incidentes_guardia
+      GROUP BY estado
+      ORDER BY cantidad DESC
+    `;
+    
+    const [estadisticas] = await db.execute(query);
+    
+    res.status(200).json({
+      success: true,
+      data: estadisticas
+    });
+  } catch (error) {
+    console.error('Error al obtener estadísticas de estados:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener estadísticas de estados',
       error: error.message
     });
   }

@@ -39,6 +39,7 @@ const InformeLiquidacionesComponent: React.FC = () => {
   const [estadisticas, setEstadisticas] = useState<Estadisticas | null>(null);
   const [filtros, setFiltros] = useState<InformeLiquidacionesParams>({});
   const [cargando, setCargando] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Colores para los gráficos
   const COLORES_ESTADOS = {
@@ -56,14 +57,55 @@ const InformeLiquidacionesComponent: React.FC = () => {
   // Función para obtener el informe
   const obtenerInforme = async (params: InformeLiquidacionesParams = {}) => {
     setCargando(true);
+    setError(null);
     try {
+      console.log('Obteniendo informe con parámetros:', params);
       const respuesta = await InformeService.getInformeLiquidaciones(params);
-      if (respuesta.success) {
-        setLiquidaciones(respuesta.data.liquidaciones);
-        setEstadisticas(respuesta.data.estadisticas);
+      console.log('Respuesta del servicio:', respuesta);
+      
+      if (respuesta && respuesta.success && respuesta.data) {
+        // Validar estructura de datos
+        const { liquidaciones: liquidacionesData = [], estadisticas: estadisticasData } = respuesta.data;
+        
+        setLiquidaciones(Array.isArray(liquidacionesData) ? liquidacionesData : []);
+        
+        // Validar estadísticas
+        if (estadisticasData && typeof estadisticasData === 'object') {
+          setEstadisticas({
+            totalLiquidaciones: estadisticasData.totalLiquidaciones || 0,
+            totalImporte: estadisticasData.totalImporte || 0,
+            porEstado: estadisticasData.porEstado || {},
+            porPeriodo: estadisticasData.porPeriodo || {}
+          });
+        } else {
+          // Estadísticas por defecto si no vienen del backend
+          setEstadisticas({
+            totalLiquidaciones: liquidacionesData.length || 0,
+            totalImporte: 0,
+            porEstado: {},
+            porPeriodo: {}
+          });
+        }
+      } else {
+        console.warn('Respuesta inválida del servicio:', respuesta);
+        setLiquidaciones([]);
+        setEstadisticas({
+          totalLiquidaciones: 0,
+          totalImporte: 0,
+          porEstado: {},
+          porPeriodo: {}
+        });
       }
     } catch (error) {
       console.error('Error al obtener informe de liquidaciones:', error);
+      setError(error instanceof Error ? error.message : 'Error desconocido');
+      setLiquidaciones([]);
+      setEstadisticas({
+        totalLiquidaciones: 0,
+        totalImporte: 0,
+        porEstado: {},
+        porPeriodo: {}
+      });
     } finally {
       setCargando(false);
     }
@@ -96,18 +138,18 @@ const InformeLiquidacionesComponent: React.FC = () => {
     }
   };
 
-  // Preparar datos para los gráficos
-  const datosEstados = estadisticas ? 
-    Object.entries(estadisticas.porEstado).map(([estado, cantidad]) => ({
+  // Preparar datos para los gráficos - CON VALIDACIÓN
+  const datosEstados = estadisticas && estadisticas.porEstado ? 
+    Object.entries(estadisticas.porEstado || {}).map(([estado, cantidad]) => ({
       name: estado,
-      value: cantidad
+      value: typeof cantidad === 'number' ? cantidad : 0
     })) : [];
 
-  const datosPeriodos = estadisticas ? 
-    Object.entries(estadisticas.porPeriodo).map(([periodo, datos]) => ({
+  const datosPeriodos = estadisticas && estadisticas.porPeriodo ? 
+    Object.entries(estadisticas.porPeriodo || {}).map(([periodo, datos]) => ({
       name: periodo,
-      cantidad: datos.cantidad,
-      importe: datos.importe
+      cantidad: (datos && typeof datos === 'object' && typeof datos.cantidad === 'number') ? datos.cantidad : 0,
+      importe: (datos && typeof datos === 'object' && typeof datos.importe === 'number') ? datos.importe : 0
     })) : [];
 
   // Custom tooltip para los gráficos
@@ -130,6 +172,33 @@ const InformeLiquidacionesComponent: React.FC = () => {
     }
     return null;
   };
+
+  // Mostrar error si existe
+  if (error) {
+    return (
+      <div className="informe-liquidaciones">
+        <InformeFilters 
+          tipo="liquidaciones" 
+          onFilter={aplicarFiltros} 
+          onExport={exportarInforme} 
+        />
+        <Card className="mt-3">
+          <Card.Body>
+            <div className="alert alert-danger">
+              <h4>Error al cargar el informe</h4>
+              <p>{error}</p>
+              <button 
+                className="btn btn-primary" 
+                onClick={() => obtenerInforme(filtros)}
+              >
+                Reintentar
+              </button>
+            </div>
+          </Card.Body>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="informe-liquidaciones">
@@ -171,66 +240,81 @@ const InformeLiquidacionesComponent: React.FC = () => {
                   </Col>
                 </Row>
 
-                <Row className="mt-4">
-                  <Col md={6} className="mb-4">
-                    <h6 className="text-center mb-3">Liquidaciones por Estado</h6>
-                    <div style={{ height: '250px' }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={datosEstados}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={true}
-                            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {datosEstados.map((entry, index) => (
-                              <Cell 
-                                key={`cell-${index}`} 
-                                fill={COLORES_ESTADOS[entry.name as keyof typeof COLORES_ESTADOS] || COLORES_GENERALES[index % COLORES_GENERALES.length]} 
+                {/* Solo mostrar gráficos si hay datos */}
+                {(datosEstados.length > 0 || datosPeriodos.length > 0) && (
+                  <Row className="mt-4">
+                    {datosEstados.length > 0 && (
+                      <Col md={6} className="mb-4">
+                        <h6 className="text-center mb-3">Liquidaciones por Estado</h6>
+                        <div style={{ height: '250px' }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={datosEstados}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={true}
+                                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                dataKey="value"
+                              >
+                                {datosEstados.map((entry, index) => (
+                                  <Cell 
+                                    key={`cell-${index}`} 
+                                    fill={COLORES_ESTADOS[entry.name as keyof typeof COLORES_ESTADOS] || COLORES_GENERALES[index % COLORES_GENERALES.length]} 
+                                  />
+                                ))}
+                              </Pie>
+                              <Tooltip content={<CustomTooltip />} />
+                              <Legend />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </Col>
+                    )}
+                    
+                    {datosPeriodos.length > 0 && (
+                      <Col md={datosEstados.length > 0 ? 6 : 12} className="mb-4">
+                        <h6 className="text-center mb-3">Liquidaciones por Periodo</h6>
+                        <div style={{ height: '250px' }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                              data={datosPeriodos}
+                              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="name" />
+                              <YAxis yAxisId="left" orientation="left" stroke="#3498db" />
+                              <YAxis yAxisId="right" orientation="right" stroke="#e74c3c" />
+                              <Tooltip content={<CustomTooltip />} />
+                              <Legend />
+                              <Bar 
+                                dataKey="cantidad" 
+                                name="Liquidaciones" 
+                                yAxisId="left"
+                                fill="#3498db" 
                               />
-                            ))}
-                          </Pie>
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </Col>
-                  <Col md={6} className="mb-4">
-                    <h6 className="text-center mb-3">Liquidaciones por Periodo</h6>
-                    <div style={{ height: '250px' }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={datosPeriodos}
-                          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis yAxisId="left" orientation="left" stroke="#3498db" />
-                          <YAxis yAxisId="right" orientation="right" stroke="#e74c3c" />
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend />
-                          <Bar 
-                            dataKey="cantidad" 
-                            name="Liquidaciones" 
-                            yAxisId="left"
-                            fill="#3498db" 
-                          />
-                          <Bar 
-                            dataKey="importe" 
-                            name="Importe" 
-                            yAxisId="right"
-                            fill="#e74c3c" 
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </Col>
-                </Row>
+                              <Bar 
+                                dataKey="importe" 
+                                name="Importe" 
+                                yAxisId="right"
+                                fill="#e74c3c" 
+                              />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </Col>
+                    )}
+                  </Row>
+                )}
+
+                {/* Mensaje si no hay datos para gráficos */}
+                {datosEstados.length === 0 && datosPeriodos.length === 0 && (
+                  <div className="text-center mt-4">
+                    <p className="text-muted">No hay datos suficientes para mostrar gráficos</p>
+                  </div>
+                )}
               </Card.Body>
             </Card>
           )}
@@ -280,14 +364,22 @@ const InformeLiquidacionesComponent: React.FC = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {liquidacion.detalles.map((detalle) => (
-                                <tr key={detalle.id}>
-                                  <td>{detalle.usuario}</td>
-                                  <td>{detalle.fecha}</td>
-                                  <td>{detalle.totalMinutos} min</td>
-                                  <td>${detalle.totalImporte.toFixed(2)}</td>
+                              {liquidacion.detalles && liquidacion.detalles.length > 0 ? (
+                                liquidacion.detalles.map((detalle) => (
+                                  <tr key={detalle.id}>
+                                    <td>{detalle.usuario}</td>
+                                    <td>{detalle.fecha}</td>
+                                    <td>{detalle.totalMinutos} min</td>
+                                    <td>${detalle.totalImporte.toFixed(2)}</td>
+                                  </tr>
+                                ))
+                              ) : (
+                                <tr>
+                                  <td colSpan={4} className="text-center text-muted">
+                                    No hay detalles disponibles
+                                  </td>
                                 </tr>
-                              ))}
+                              )}
                               <tr className="table-info">
                                 <td colSpan={2} className="text-end">
                                   <strong>Totales:</strong>
@@ -307,7 +399,9 @@ const InformeLiquidacionesComponent: React.FC = () => {
                   ))
                 ) : (
                   <div className="p-4 text-center">
-                    No se encontraron liquidaciones con los filtros aplicados
+                    <p className="text-muted mb-0">
+                      No se encontraron liquidaciones con los filtros aplicados
+                    </p>
                   </div>
                 )}
               </Accordion>

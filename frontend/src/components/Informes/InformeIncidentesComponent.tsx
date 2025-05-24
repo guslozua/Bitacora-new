@@ -101,14 +101,14 @@ const InformeIncidentesComponent: React.FC = () => {
     }
   };
 
-  // Preparar datos para los gráficos
-  const datosEstados = estadisticas ? 
+  // Preparar datos para los gráficos - CON VALIDACIONES
+  const datosEstados = estadisticas?.porEstado ? 
     Object.entries(estadisticas.porEstado).map(([estado, cantidad]) => ({
       name: estado,
       value: cantidad
     })) : [];
 
-  const datosUsuarios = estadisticas ? 
+  const datosUsuarios = estadisticas?.porUsuario ? 
     Object.entries(estadisticas.porUsuario).map(([usuario, cantidad]) => ({
       name: usuario,
       cantidad: cantidad

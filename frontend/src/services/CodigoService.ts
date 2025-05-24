@@ -8,6 +8,7 @@ export interface Codigo {
   id?: number;
   codigo: string;
   descripcion: string;
+  notas?: string; // ✨ Nuevo campo agregado
   tipo: string;
   dias_aplicables: string;
   hora_inicio?: string | null;

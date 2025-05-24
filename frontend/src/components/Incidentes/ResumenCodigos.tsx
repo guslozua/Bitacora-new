@@ -31,18 +31,20 @@ const ResumenCodigos: React.FC<ResumenCodigosProps> = ({ incidente, codigos }) =
     generarResumen();
   }, [incidente, codigos]);
   
-  // Generar resumen de códigos
-  const generarResumen = () => {
+  // Generar resumen de códigos - FUNCIÓN ASÍNCRONA
+  const generarResumen = async () => {
     try {
       setLoading(true);
+      setError(null);
       
       if (!incidente || codigos.length === 0) {
         setResumen(null);
+        setLoading(false);
         return;
       }
       
-      // Usar el servicio de cálculo para generar el resumen
-      const resumenData = CalculadoraService.generarResumen(incidente, codigos);
+      // Usar el servicio de cálculo para generar el resumen - AWAIT
+      const resumenData = await CalculadoraService.generarResumen(incidente, codigos);
       setResumen(resumenData);
     } catch (error: any) {
       console.error('Error al generar resumen:', error);

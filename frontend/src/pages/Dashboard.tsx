@@ -19,6 +19,7 @@ import Footer from '../components/Footer';
 import MiniCalendar from '../components/MiniCalendar/MiniCalendar';
 import { fetchEvents } from '../services/EventService';
 import { Event } from '../models/Event';
+import CampanillaNot from '../components/notificaciones/CampanillaNot'; //notificaciones
 
 // Importamos funciones del servicio de autenticación
 import { getUserName, logout, getToken } from '../services/authService';
@@ -331,64 +332,64 @@ const Dashboard = () => {
   }, [token, calendarEvents]);
 
   // Función para obtener la clase básica según el tipo de evento
-const getBadgeClassForEventType = (type: string): string => {
-  switch (type) {
-    case 'holiday':
-      return 'bg-danger';
-    case 'task':
-      return 'bg-primary';
-    case 'event':
-      return 'bg-success';
-    default:
-      return 'text-white'; // Los colores personalizados se aplicarán con el estilo
-  }
-};
+  const getBadgeClassForEventType = (type: string): string => {
+    switch (type) {
+      case 'holiday':
+        return 'bg-danger';
+      case 'task':
+        return 'bg-primary';
+      case 'event':
+        return 'bg-success';
+      default:
+        return 'text-white'; // Los colores personalizados se aplicarán con el estilo
+    }
+  };
 
-// Función para obtener el estilo según el tipo de evento
-const getStyleForEventType = (type: string): React.CSSProperties => {
-  switch (type) {
-    case 'holiday':
-    case 'task':
-    case 'event':
-      return {}; // No se necesita estilo adicional para estos que usan clases de Bootstrap
-    case 'birthday':
-      return { backgroundColor: '#ff9800' }; // Naranja para cumpleaños
-    case 'dayoff':
-      return { backgroundColor: '#4caf50' }; // Verde claro para días a favor
-    case 'gconect':
-      return { backgroundColor: '#00bcd4' }; // Azul celeste para G. Conectividad
-    case 'vacation':
-      return { backgroundColor: '#9e9e9e' }; // Gris para Vacaciones
-    case 'guardia':
-      return { backgroundColor: '#9c27b0' }; // Púrpura para Guardia
-    default:
-      return { backgroundColor: '#6c757d' }; // Gris oscuro para tipos desconocidos
-  }
-};
+  // Función para obtener el estilo según el tipo de evento
+  const getStyleForEventType = (type: string): React.CSSProperties => {
+    switch (type) {
+      case 'holiday':
+      case 'task':
+      case 'event':
+        return {}; // No se necesita estilo adicional para estos que usan clases de Bootstrap
+      case 'birthday':
+        return { backgroundColor: '#ff9800' }; // Naranja para cumpleaños
+      case 'dayoff':
+        return { backgroundColor: '#4caf50' }; // Verde claro para días a favor
+      case 'gconect':
+        return { backgroundColor: '#00bcd4' }; // Azul celeste para G. Conectividad
+      case 'vacation':
+        return { backgroundColor: '#9e9e9e' }; // Gris para Vacaciones
+      case 'guardia':
+        return { backgroundColor: '#9c27b0' }; // Púrpura para Guardia
+      default:
+        return { backgroundColor: '#6c757d' }; // Gris oscuro para tipos desconocidos
+    }
+  };
 
-// Función para obtener el texto del tipo de evento
-const getEventTypeText = (type: string): string => {
-  switch (type) {
-    case 'holiday':
-      return 'Feriado';
-    case 'task':
-      return 'Tarea';
-    case 'event':
-      return 'Evento';
-    case 'birthday':
-      return 'Cumpleaños';
-    case 'dayoff':
-      return 'Día a Favor';
-    case 'gconect':
-      return 'G. Conectividad';
-    case 'vacation':
-      return 'Vacaciones';
-    case 'guardia':
-      return 'Guardia';
-    default:
-      return type;
-  }
-};
+  // Función para obtener el texto del tipo de evento
+  const getEventTypeText = (type: string): string => {
+    switch (type) {
+      case 'holiday':
+        return 'Feriado';
+      case 'task':
+        return 'Tarea';
+      case 'event':
+        return 'Evento';
+      case 'birthday':
+        return 'Cumpleaños';
+      case 'dayoff':
+        return 'Día a Favor';
+      case 'gconect':
+        return 'G. Conectividad';
+      case 'vacation':
+        return 'Vacaciones';
+      case 'guardia':
+        return 'Guardia';
+      default:
+        return type;
+    }
+  };
 
   // Usar la función de logout del servicio de autenticación
   const handleLogout = () => {
@@ -430,7 +431,13 @@ const getEventTypeText = (type: string): string => {
       <div style={contentStyle}>
         <Container className="py-4 px-4">
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h2 className="mb-0 fw-bold">Bienvenido, {nombreUsuario}</h2>
+            <div className="d-flex align-items-center gap-3">
+              <h2 className="mb-0 fw-bold">Bienvenido, {nombreUsuario}</h2>
+              <CampanillaNot
+                userId={profileInfo?.id || 3}
+                refreshInterval={30000}
+              />
+            </div>
             <div className="d-flex gap-2">
               <Button variant="outline-info" className="me-2" onClick={handleRefresh}>
                 <i className="bi bi-arrow-clockwise me-1"></i>

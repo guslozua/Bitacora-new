@@ -26,6 +26,9 @@ const incidentesRoutes = require('./routes/incidentes.routes');
 const codigosRoutes = require('./routes/codigos.routes');
 const informesRoutes = require('./routes/informes.routes');
 
+// 🔔 AGREGAR IMPORT DE NOTIFICACIONES
+const notificacionesRoutes = require('./routes/notificaciones.routes');
+
 // Importar el programador de limpieza
 const { scheduleCleanup, cleanupUploadsFolder } = require('./utils/cleanupScheduler');
 
@@ -75,6 +78,9 @@ app.use('/api/incidentes', incidentesRoutes);
 app.use('/api/codigos', codigosRoutes);
 app.use('/api/informes', informesRoutes);
 
+// 🔔 AGREGAR RUTA DE NOTIFICACIONES - ¡ESTO FALTABA!
+app.use('/api/notificaciones', notificacionesRoutes);
+
 // Depuración: Listar rutas registradas en Express
 app._router.stack.forEach((middleware) => {
   if (middleware.route) { 
@@ -113,4 +119,7 @@ app.listen(PORT, () => {
   // Programar limpiezas periódicas
   scheduleCleanup();
   console.log('Sistema de limpieza automática de archivos configurado 🧹');
+  
+  // 🔔 MENSAJE DE CONFIRMACIÓN PARA NOTIFICACIONES
+  console.log('✅ Rutas de notificaciones registradas correctamente');
 });

@@ -1,4 +1,4 @@
-// src/components/Codigos/CodigoModal.tsx
+// src/components/Codigos/CodigoModal.tsx - CON SOPORTE PARA MEDIANOCHE
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import { Codigo } from '../../services/CodigoService';
@@ -7,6 +7,8 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import Swal from 'sweetalert2';
+import api from '../../services/api';
 
 interface CodigoModalProps {
   show: boolean;
@@ -18,6 +20,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
   const [formData, setFormData] = useState<Codigo>({
     codigo: '',
     descripcion: '',
+    notas: '',
     tipo: 'guardia_pasiva',
     dias_aplicables: 'L,M,X,J,V,S,D',
     hora_inicio: null,
@@ -33,6 +36,32 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
   const [error, setError] = useState<string | null>(null);
   const [usarHorario, setUsarHorario] = useState(false);
   const [usarVigenciaHasta, setUsarVigenciaHasta] = useState(false);
+  const [cruzaMedianoche, setCruzaMedianoche] = useState(false); // ✨ NUEVO ESTADO
+
+  // ✨ FUNCIÓN PARA DETECTAR SI UN HORARIO CRUZA MEDIANOCHE
+  const detectaCruzaMedianoche = (horaInicio: string, horaFin: string): boolean => {
+    if (!horaInicio || !horaFin) return false;
+    
+    // Convertir a minutos desde 00:00
+    const [inicioHoras, inicioMinutos] = horaInicio.split(':').map(Number);
+    const [finHoras, finMinutos] = horaFin.split(':').map(Number);
+    
+    const inicioEnMinutos = inicioHoras * 60 + inicioMinutos;
+    const finEnMinutos = finHoras * 60 + finMinutos;
+    
+    return finEnMinutos < inicioEnMinutos;
+  };
+
+  // ✨ FUNCIÓN PARA OBTENER DESCRIPCIÓN DEL HORARIO
+  const getDescripcionHorario = (): string => {
+    if (!formData.hora_inicio || !formData.hora_fin) return '';
+    
+    if (cruzaMedianoche) {
+      return `${formData.hora_inicio} (día actual) hasta ${formData.hora_fin} (día siguiente)`;
+    } else {
+      return `${formData.hora_inicio} hasta ${formData.hora_fin} (mismo día)`;
+    }
+  };
   
   // Cargar datos para edición
   useEffect(() => {
@@ -49,17 +78,25 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
       
       setFormData({
         ...codigo,
+        notas: codigo.notas || '',
         fecha_vigencia_desde: fechaVigenciaDesde,
         fecha_vigencia_hasta: fechaVigenciaHasta
       });
       
       setUsarHorario(!!codigo.hora_inicio && !!codigo.hora_fin);
       setUsarVigenciaHasta(!!codigo.fecha_vigencia_hasta);
+      
+      // ✨ DETECTAR SI EL CÓDIGO EXISTENTE CRUZA MEDIANOCHE
+      if (codigo.hora_inicio && codigo.hora_fin) {
+        const cruza = detectaCruzaMedianoche(codigo.hora_inicio, codigo.hora_fin);
+        setCruzaMedianoche(cruza);
+      }
     } else if (show) {
       // Reset para nuevo código
       setFormData({
         codigo: '',
         descripcion: '',
+        notas: '',
         tipo: 'guardia_pasiva',
         dias_aplicables: 'L,M,X,J,V,S,D',
         hora_inicio: null,
@@ -71,12 +108,23 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
       });
       setUsarHorario(false);
       setUsarVigenciaHasta(false);
+      setCruzaMedianoche(false); // ✨ RESETEAR CHECKBOX
     }
     
     // Limpiar errores
     setErrors({});
     setError(null);
   }, [show, codigo]);
+
+  // ✨ DETECTAR AUTOMÁTICAMENTE CUANDO CAMBIAN LAS HORAS
+  useEffect(() => {
+    if (formData.hora_inicio && formData.hora_fin && !errors.hora_inicio && !errors.hora_fin) {
+      const cruza = detectaCruzaMedianoche(formData.hora_inicio, formData.hora_fin);
+      if (cruza !== cruzaMedianoche) {
+        setCruzaMedianoche(cruza);
+      }
+    }
+  }, [formData.hora_inicio, formData.hora_fin]);
   
   // Manejar cambios en inputs
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -133,8 +181,25 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
     
     if (!checked) {
       setFormData({ ...formData, hora_inicio: null, hora_fin: null });
+      setCruzaMedianoche(false); // ✨ RESETEAR CHECKBOX
     } else {
-      setFormData({ ...formData, hora_inicio: '00:00', hora_fin: '23:59' });
+      setFormData({ ...formData, hora_inicio: '09:00', hora_fin: '17:00' });
+      setCruzaMedianoche(false);
+    }
+  };
+
+  // ✨ MANEJAR CAMBIO EN CHECKBOX "CRUZA MEDIANOCHE"
+  const handleCruzaMedianocheChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    setCruzaMedianoche(checked);
+    
+    // Sugerir horarios típicos cuando se activa
+    if (checked && (!formData.hora_inicio || !formData.hora_fin)) {
+      setFormData({ 
+        ...formData, 
+        hora_inicio: '21:00', 
+        hora_fin: '06:00' 
+      });
     }
   };
   
@@ -153,7 +218,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
     }
   };
   
-  // Validar formulario
+  // ✨ VALIDAR FORMULARIO CON LÓGICA DE MEDIANOCHE
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
     
@@ -178,8 +243,20 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
         newErrors.hora_fin = 'La hora de fin es obligatoria';
       }
       
-      if (formData.hora_inicio && formData.hora_fin && formData.hora_inicio >= formData.hora_fin) {
-        newErrors.hora_fin = 'La hora de fin debe ser posterior a la hora de inicio';
+      // ✨ VALIDACIÓN MEJORADA PARA HORARIOS QUE CRUZAN MEDIANOCHE
+      if (formData.hora_inicio && formData.hora_fin) {
+        const horasIguales = formData.hora_inicio === formData.hora_fin;
+        
+        if (horasIguales) {
+          newErrors.hora_fin = 'La hora de fin no puede ser igual a la hora de inicio';
+        } else if (!cruzaMedianoche && formData.hora_inicio >= formData.hora_fin) {
+          newErrors.hora_fin = 'La hora de fin debe ser posterior a la hora de inicio, o marque "Cruza medianoche"';
+        }
+        
+        // Validar que si se marca "cruza medianoche", las horas realmente lo hagan
+        if (cruzaMedianoche && formData.hora_inicio <= formData.hora_fin) {
+          newErrors.hora_inicio = 'Si cruza medianoche, la hora de inicio debe ser mayor que la de fin';
+        }
       }
     }
     
@@ -218,23 +295,84 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
       
       // Preparar datos para enviar
       const dataToSend = {
-        ...formData
+        ...formData,
+        notas: formData.notas || null
+        // Nota: No necesitamos enviar el flag cruzaMedianoche al backend
+        // porque se puede inferir comparando hora_inicio con hora_fin
       };
       
       let response;
-      if (codigo?.id) {
-        // Actualizar
-        response = await CodigoService.updateCodigo(dataToSend);
+      const isEditing = codigo?.id;
+      
+      if (isEditing) {
+        response = await api.put(`/codigos/${codigo.id}`, dataToSend);
       } else {
-        // Crear nuevo
-        response = await CodigoService.createCodigo(dataToSend);
+        response = await api.post('/codigos', dataToSend);
       }
       
-      // Cerrar modal y recargar datos
+      // Mostrar confirmación de éxito
+      await Swal.fire({
+        title: isEditing ? '¡Código actualizado!' : '¡Código creado!',
+        html: `
+          <div>
+            <p><strong>Código:</strong> ${formData.codigo}</p>
+            <p><strong>Descripción:</strong> ${formData.descripcion}</p>
+            ${formData.hora_inicio && formData.hora_fin ? 
+              `<p><strong>Horario:</strong> ${getDescripcionHorario()}</p>` : 
+              ''
+            }
+          </div>
+        `,
+        icon: 'success',
+        confirmButtonColor: '#28a745',
+        confirmButtonText: 'Perfecto',
+        timer: 4000,
+        timerProgressBar: true,
+        showClass: {
+          popup: 'animate__animated animate__fadeInDown'
+        },
+        hideClass: {
+          popup: 'animate__animated animate__fadeOutUp'
+        }
+      });
+      
       onHide(true);
+      
     } catch (error: any) {
       console.error('Error al guardar código:', error);
-      setError(error.response?.data?.message || 'Error al guardar el código');
+      
+      if (error.response?.status === 409) {
+        Swal.fire({
+          title: 'Código duplicado',
+          text: error.response?.data?.message || `El código "${formData.codigo}" ya existe en el sistema.`,
+          icon: 'warning',
+          confirmButtonColor: '#ffc107',
+          confirmButtonText: 'Entendido',
+          allowOutsideClick: false,
+          showClass: {
+            popup: 'animate__animated animate__shakeX'
+          }
+        }).then(() => {
+          const codigoInput = document.getElementById('formCodigo');
+          if (codigoInput) {
+            (codigoInput as HTMLInputElement).select();
+            codigoInput.focus();
+          }
+        });
+      } else {
+        Swal.fire({
+          title: 'Error al guardar',
+          text: error.response?.data?.message || 'Ocurrió un error inesperado.',
+          icon: 'error',
+          confirmButtonColor: '#dc3545',
+          confirmButtonText: 'Entendido',
+          showClass: {
+            popup: 'animate__animated animate__shakeX'
+          }
+        });
+        
+        setError(error.response?.data?.message || 'Error al guardar el código');
+      }
     } finally {
       setLoading(false);
     }
@@ -320,6 +458,21 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
               {errors.descripcion}
             </Form.Control.Feedback>
           </Form.Group>
+
+          <Form.Group className="mb-3" controlId="formNotas">
+            <Form.Label>Notas Informativas</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              name="notas"
+              value={formData.notas || ''}
+              onChange={handleInputChange}
+              placeholder="Información adicional sobre la aplicación de este código..."
+            />
+            <Form.Text className="text-muted">
+              Campo opcional para agregar detalles sobre cuándo y cómo se aplica este código.
+            </Form.Text>
+          </Form.Group>
           
           <Row className="mb-3">
             <Col>
@@ -342,6 +495,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
                       key={dia}
                       variant={isActive ? 'primary' : 'outline-secondary'}
                       className="py-1 px-2"
+                      type="button"
                       onClick={() => handleDiasChange(dia)}
                     >
                       {label}
@@ -371,39 +525,76 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
           </Row>
           
           {usarHorario && (
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group controlId="formHoraInicio">
-                  <Form.Label>Hora de inicio</Form.Label>
-                  <Form.Control
-                    type="time"
-                    name="hora_inicio"
-                    value={formData.hora_inicio || ''}
-                    onChange={handleInputChange}
-                    isInvalid={!!errors.hora_inicio}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.hora_inicio}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
-              
-              <Col md={6}>
-                <Form.Group controlId="formHoraFin">
-                  <Form.Label>Hora de fin</Form.Label>
-                  <Form.Control
-                    type="time"
-                    name="hora_fin"
-                    value={formData.hora_fin || ''}
-                    onChange={handleInputChange}
-                    isInvalid={!!errors.hora_fin}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.hora_fin}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
-            </Row>
+            <>
+              {/* ✨ NUEVO CHECKBOX PARA MEDIANOCHE */}
+              <Row className="mb-3">
+                <Col>
+                  <Form.Group controlId="formCruzaMedianoche">
+                    <Form.Check
+                      type="switch"
+                      label="Horario cruza medianoche (ej: 21:00 - 06:00)"
+                      checked={cruzaMedianoche}
+                      onChange={handleCruzaMedianocheChange}
+                    />
+                    <Form.Text className="text-muted">
+                      Active esta opción para horarios que van de un día al siguiente
+                    </Form.Text>
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              <Row className="mb-3">
+                <Col md={6}>
+                  <Form.Group controlId="formHoraInicio">
+                    <Form.Label>
+                      Hora de inicio {cruzaMedianoche && <span className="text-primary">(día actual)</span>}
+                    </Form.Label>
+                    <Form.Control
+                      type="time"
+                      name="hora_inicio"
+                      value={formData.hora_inicio || ''}
+                      onChange={handleInputChange}
+                      isInvalid={!!errors.hora_inicio}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.hora_inicio}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </Col>
+                
+                <Col md={6}>
+                  <Form.Group controlId="formHoraFin">
+                    <Form.Label>
+                      Hora de fin {cruzaMedianoche && <span className="text-warning">(día siguiente)</span>}
+                    </Form.Label>
+                    <Form.Control
+                      type="time"
+                      name="hora_fin"
+                      value={formData.hora_fin || ''}
+                      onChange={handleInputChange}
+                      isInvalid={!!errors.hora_fin}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.hora_fin}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              {/* ✨ MOSTRAR DESCRIPCIÓN DEL HORARIO */}
+              {formData.hora_inicio && formData.hora_fin && (
+                <Row className="mb-3">
+                  <Col>
+                    <Alert variant={cruzaMedianoche ? "warning" : "info"} className="py-2">
+                      <small>
+                        <i className="bi bi-clock me-1"></i>
+                        <strong>Horario configurado:</strong> {getDescripcionHorario()}
+                      </small>
+                    </Alert>
+                  </Col>
+                </Row>
+              )}
+            </>
           )}
           
           <Row className="mb-3">

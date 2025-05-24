@@ -77,6 +77,31 @@ const Glosario = () => {
     }
   };
 
+  // ✨ FUNCIÓN MEJORADA PARA ORDENAR TÉRMINOS (NUMÉRICOS AL FINAL)
+  const ordenarTerminos = (terminos: TerminoGlosario[]) => {
+    return terminos.sort((a, b) => {
+      const aEsNumerico = /^[0-9]/.test(a.termino);
+      const bEsNumerico = /^[0-9]/.test(b.termino);
+      
+      // Si uno es numérico y el otro no, el numérico va al final
+      if (aEsNumerico && !bEsNumerico) return 1;
+      if (!aEsNumerico && bEsNumerico) return -1;
+      
+      // Si ambos son numéricos, ordenar numéricamente
+      if (aEsNumerico && bEsNumerico) {
+        const numeroA = parseInt(a.termino.match(/^\d+/)?.[0] || '0');
+        const numeroB = parseInt(b.termino.match(/^\d+/)?.[0] || '0');
+        return numeroA - numeroB;
+      }
+      
+      // Si ambos son alfabéticos, ordenar alfabéticamente
+      return a.termino.toLowerCase().localeCompare(b.termino.toLowerCase(), 'es', {
+        sensitivity: 'base',
+        numeric: true
+      });
+    });
+  };
+
   // Función para obtener todos los términos del glosario
   const fetchTerminos = async () => {
     setLoading(true);
@@ -99,11 +124,15 @@ const Glosario = () => {
           return term;
         });
         
-        setTerminos(terminosConColorCategoria);
-        setTerminosFiltrados(terminosConColorCategoria);
+        // ✨ APLICAR ORDENAMIENTO CON NUMÉRICOS AL FINAL
+        const terminosOrdenados = ordenarTerminos(terminosConColorCategoria);
+        setTerminos(terminosOrdenados);
+        setTerminosFiltrados(terminosOrdenados);
       } else {
-        setTerminos(res.data);
-        setTerminosFiltrados(res.data);
+        // ✨ APLICAR ORDENAMIENTO CON NUMÉRICOS AL FINAL
+        const terminosOrdenados = ordenarTerminos(res.data);
+        setTerminos(terminosOrdenados);
+        setTerminosFiltrados(terminosOrdenados);
       }
       
       setLoading(false);
@@ -148,7 +177,7 @@ const Glosario = () => {
     }
   };
 
-  // Función que aplica todos los filtros (letra, categoría, búsqueda)
+  // ✨ FUNCIÓN MEJORADA QUE APLICA TODOS LOS FILTROS Y MANTIENE EL ORDENAMIENTO
   const applyFilters = (letra: string, categoriaId: number | null, sourceTerminos = terminos) => {
     let filtered = [...sourceTerminos];
     
@@ -174,7 +203,9 @@ const Glosario = () => {
       );
     }
     
-    setTerminosFiltrados(filtered);
+    // ✨ APLICAR ORDENAMIENTO DESPUÉS DEL FILTRADO
+    const filteredOrdenados = ordenarTerminos(filtered);
+    setTerminosFiltrados(filteredOrdenados);
   };
 
   // Función para filtrar por término de búsqueda
@@ -344,7 +375,7 @@ const Glosario = () => {
     return categoriaCount;
   };
 
-  // Cargar términos y categorías al montar el componente
+  // ✨ CARGAR TÉRMINOS Y CATEGORÍAS AL MONTAR EL COMPONENTE CON ORDENAMIENTO
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -374,11 +405,15 @@ const Glosario = () => {
           
           console.log("Términos procesados:", terminosConCategorias);
           
-          setTerminos(terminosConCategorias);
-          setTerminosFiltrados(terminosConCategorias);
+          // ✨ APLICAR ORDENAMIENTO CON NUMÉRICOS AL FINAL
+          const terminosOrdenados = ordenarTerminos(terminosConCategorias);
+          setTerminos(terminosOrdenados);
+          setTerminosFiltrados(terminosOrdenados);
         } else {
-          setTerminos(res.data);
-          setTerminosFiltrados(res.data);
+          // ✨ APLICAR ORDENAMIENTO CON NUMÉRICOS AL FINAL
+          const terminosOrdenados = ordenarTerminos(res.data);
+          setTerminos(terminosOrdenados);
+          setTerminosFiltrados(terminosOrdenados);
         }
         
         setLoading(false);
@@ -392,7 +427,7 @@ const Glosario = () => {
     fetchData();
   }, []);
 
-  // Actualizar colores de categoría en los términos cuando cambien las categorías
+  // ✨ ACTUALIZAR COLORES DE CATEGORÍA EN LOS TÉRMINOS CUANDO CAMBIEN LAS CATEGORÍAS (CON ORDENAMIENTO)
   useEffect(() => {
     if (categorias.length > 0 && terminos.length > 0) {
       const terminosActualizados = terminos.map((term: TerminoGlosario) => {
@@ -409,10 +444,12 @@ const Glosario = () => {
         return term;
       });
       
-      setTerminos(terminosActualizados);
+      // ✨ APLICAR ORDENAMIENTO
+      const terminosOrdenados = ordenarTerminos(terminosActualizados);
+      setTerminos(terminosOrdenados);
       
       // También actualizar los filtrados manteniendo los filtros actuales
-      applyFilters(letraActiva, categoriaActiva, terminosActualizados);
+      applyFilters(letraActiva, categoriaActiva, terminosOrdenados);
     }
   }, [categorias]);
 

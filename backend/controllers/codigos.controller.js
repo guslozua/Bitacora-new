@@ -1,4 +1,4 @@
-// controllers/codigos.controller.js
+// controllers/codigos.controller.js - VERSIÓN CON DEBUG
 const Codigo = require('../models/codigo.model');
 
 // Obtener todos los códigos con filtros opcionales
@@ -74,39 +74,18 @@ exports.getCodigoById = async (req, res) => {
 // Crear un nuevo código
 exports.createCodigo = async (req, res) => {
   try {
+    console.log('🚀 CREAR CÓDIGO - Body completo recibido:', req.body);
+    
     const { 
-      codigo, descripcion, tipo, dias_aplicables, 
+      codigo, descripcion, notas, tipo, dias_aplicables, 
       hora_inicio, hora_fin, factor_multiplicador,
       fecha_vigencia_desde, fecha_vigencia_hasta, estado 
     } = req.body;
     
-    // Validaciones
-    if (!codigo || !descripcion || !tipo || !fecha_vigencia_desde) {
-      return res.status(400).json({
-        success: false,
-        message: 'Faltan campos obligatorios'
-      });
-    }
-    
-    // Verificar si ya existe un código con el mismo código y vigencia
-    const codigosExistentes = await Codigo.findAll({
-      where: {
-        codigo,
-        fecha_vigencia_desde
-      }
-    });
-    
-    if (codigosExistentes.length > 0) {
-      return res.status(409).json({
-        success: false,
-        message: 'Ya existe un código con el mismo código y fecha de vigencia'
-      });
-    }
-    
-    // Crear el código
-    const nuevoCodigo = await Codigo.create({
+    console.log('🚀 CREAR CÓDIGO - Campos extraídos:', {
       codigo,
       descripcion,
+      notas: notas, // Ver exactamente qué llega
       tipo,
       dias_aplicables,
       hora_inicio,
@@ -117,16 +96,55 @@ exports.createCodigo = async (req, res) => {
       estado
     });
     
+    // Validaciones
+    if (!codigo || !descripcion || !tipo || !fecha_vigencia_desde) {
+      return res.status(400).json({
+        success: false,
+        message: 'Faltan campos obligatorios'
+      });
+    }
+    
+    // Verificar si ya existe un código con el mismo código
+    const codigosExistentes = await Codigo.findAll({
+      where: {
+        codigo
+      }
+    });
+    
+    if (codigosExistentes.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: `El código "${codigo}" ya existe en el sistema.`
+      });
+    }
+    
+    // Crear el código
+    const nuevoCodigo = await Codigo.create({
+      codigo,
+      descripcion,
+      notas, // ✨ Incluir el campo notas
+      tipo,
+      dias_aplicables,
+      hora_inicio,
+      hora_fin,
+      factor_multiplicador,
+      fecha_vigencia_desde,
+      fecha_vigencia_hasta,
+      estado
+    });
+    
+    console.log('✅ CÓDIGO CREADO EXITOSAMENTE:', nuevoCodigo);
+    
     res.status(201).json({
       success: true,
       message: 'Código creado correctamente',
       data: nuevoCodigo
     });
   } catch (error) {
-    console.error('Error al crear código:', error);
-    res.status(500).json({
+    console.error('❌ Error al crear código:', error);
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: 'Error al crear código',
+      message: error.message || 'Error al crear código',
       error: error.message
     });
   }
@@ -135,11 +153,28 @@ exports.createCodigo = async (req, res) => {
 // Actualizar un código existente
 exports.updateCodigo = async (req, res) => {
   try {
+    console.log('🔄 ACTUALIZAR CÓDIGO - Body completo recibido:', req.body);
+    console.log('🔄 ACTUALIZAR CÓDIGO - ID:', req.params.id);
+    
     const { 
-      codigo, descripcion, tipo, dias_aplicables, 
+      codigo, descripcion, notas, tipo, dias_aplicables, 
       hora_inicio, hora_fin, factor_multiplicador,
       fecha_vigencia_desde, fecha_vigencia_hasta, estado 
     } = req.body;
+    
+    console.log('🔄 ACTUALIZAR CÓDIGO - Campos extraídos:', {
+      codigo,
+      descripcion,
+      notas: notas, // Ver exactamente qué llega
+      tipo,
+      dias_aplicables,
+      hora_inicio,
+      hora_fin,
+      factor_multiplicador,
+      fecha_vigencia_desde,
+      fecha_vigencia_hasta,
+      estado
+    });
     
     // Verificar que el código existe
     const codigoObj = await Codigo.findByPk(req.params.id);
@@ -150,20 +185,18 @@ exports.updateCodigo = async (req, res) => {
       });
     }
     
-    // Si se va a cambiar el código o fecha de vigencia, verificar que no haya conflictos
-    if ((codigo && codigo !== codigoObj.codigo) || 
-        (fecha_vigencia_desde && fecha_vigencia_desde !== codigoObj.fecha_vigencia_desde.toISOString().substring(0, 10))) {
+    // Si se va a cambiar el código, verificar que no haya conflictos
+    if (codigo && codigo !== codigoObj.codigo) {
       const codConflicto = await Codigo.findAll({
         where: {
-          codigo: codigo || codigoObj.codigo,
-          fecha_vigencia_desde: fecha_vigencia_desde || codigoObj.fecha_vigencia_desde
+          codigo
         }
       });
       
       if (codConflicto.some(c => c.id !== parseInt(req.params.id))) {
         return res.status(409).json({
           success: false,
-          message: 'Ya existe un código con el mismo código y fecha de vigencia'
+          message: `El código "${codigo}" ya existe en el sistema.`
         });
       }
     }
@@ -172,6 +205,7 @@ exports.updateCodigo = async (req, res) => {
     const codigoActualizado = await codigoObj.update({
       codigo,
       descripcion,
+      notas, // ✨ Incluir el campo notas
       tipo,
       dias_aplicables,
       hora_inicio,
@@ -182,16 +216,18 @@ exports.updateCodigo = async (req, res) => {
       estado
     });
     
+    console.log('✅ CÓDIGO ACTUALIZADO EXITOSAMENTE:', codigoActualizado);
+    
     res.status(200).json({
       success: true,
       message: 'Código actualizado correctamente',
       data: codigoActualizado
     });
   } catch (error) {
-    console.error('Error al actualizar código:', error);
-    res.status(500).json({
+    console.error('❌ Error al actualizar código:', error);
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: 'Error al actualizar código',
+      message: error.message || 'Error al actualizar código',
       error: error.message
     });
   }

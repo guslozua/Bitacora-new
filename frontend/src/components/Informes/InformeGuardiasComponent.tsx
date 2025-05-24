@@ -1,6 +1,6 @@
 // components/Informes/InformeGuardiasComponent.tsx
 import React, { useEffect, useState } from 'react';
-import { Table, Card, Badge, Row, Col } from 'react-bootstrap';
+import { Table, Card, Badge, Row, Col, Spinner, Alert, Pagination } from 'react-bootstrap';
 import InformeService, { InformeGuardiasParams } from '../../services/InformeService';
 import InformeFilters from './InformeFilters';
 import {
@@ -25,295 +25,527 @@ interface Estadisticas {
   porDiaSemana: Record<string, number>;
   guardiasEnFeriados: number;
   guardiasEnFinDeSemana: number;
+  conIncidentes?: number;
+  sinIncidentes?: number;
 }
+
+// Funciones helper existentes
+const formatearFecha = (fechaStr: string): string => {
+  const [year, month, day] = fechaStr.split('-').map(Number);
+  const fecha = new Date(year, month - 1, day);
+  return fecha.toLocaleDateString('es-ES');
+};
+
+const fechaATimestamp = (fechaStr: string): number => {
+  const [year, month, day] = fechaStr.split('-').map(Number);
+  const fecha = new Date(year, month - 1, day);
+  return fecha.getTime();
+};
+
+type OrdenColumna = 'fecha' | 'usuario' | 'diaSemana' | 'tipoDia';
+type DireccionOrden = 'asc' | 'desc';
 
 const InformeGuardiasComponent: React.FC = () => {
   const [guardias, setGuardias] = useState<Guardia[]>([]);
   const [estadisticas, setEstadisticas] = useState<Estadisticas | null>(null);
   const [filtros, setFiltros] = useState<InformeGuardiasParams>({});
   const [cargando, setCargando] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
-  // Colores para los gráficos
-  const COLORES_DIAS_SEMANA = {
-    'Lunes': '#3498db',
-    'Martes': '#2ecc71',
-    'Miércoles': '#9b59b6',
-    'Jueves': '#f39c12',
-    'Viernes': '#e74c3c',
-    'Sábado': '#f1c40f',
-    'Domingo': '#1abc9c'
-  };
+  // Estados para paginación
+  const [paginaActual, setPaginaActual] = useState<number>(1);
+  const [elementosPorPagina] = useState<number>(20);
 
-  const COLORES_TIPO_DIAS = ['#3498db', '#f1c40f', '#e74c3c'];
-  
-  const COLORES_GENERALES = [
-    '#3498db', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6',
-    '#1abc9c', '#f39c12', '#d35400', '#c0392b', '#8e44ad'
-  ];
+  // Estados para ordenamiento
+  const [columnaOrden, setColumnaOrden] = useState<OrdenColumna>('fecha');
+  const [direccionOrden, setDireccionOrden] = useState<DireccionOrden>('desc');
+
+  // Estado para determinar si mostrar tabla completa (cuando hay filtro de mes específico)
+  const [mostrarTablaCompleta, setMostrarTablaCompleta] = useState<boolean>(false);
+
+  // Colores modernos
+  const colors = ['#3498db', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6', '#1abc9c'];
 
   // Función para obtener el informe
   const obtenerInforme = async (params: InformeGuardiasParams = {}) => {
     setCargando(true);
+    setError('');
     try {
       const respuesta = await InformeService.getInformeGuardias(params);
       if (respuesta.success) {
         setGuardias(respuesta.data.guardias);
         setEstadisticas(respuesta.data.estadisticas);
+        setPaginaActual(1); // Resetear a primera página
+        
+        // Determinar si mostrar tabla completa
+        // Si hay filtro específico de fecha (mes/año), mostrar todo
+        const tieneFiltroPorMes = params.desde && params.hasta && 
+          new Date(params.desde).getMonth() === new Date(params.hasta).getMonth();
+        setMostrarTablaCompleta(!!tieneFiltroPorMes);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener informe de guardias:', error);
+      setError('Error al cargar el informe de guardias');
     } finally {
       setCargando(false);
     }
   };
 
-  // Cargar informe al montar el componente
+  // Función unificada para aplicar filtros
+  const aplicarFiltros = (nuevosFiltros: InformeGuardiasParams) => {
+    setFiltros(nuevosFiltros);
+    obtenerInforme(nuevosFiltros);
+    // Resetear ordenamiento al aplicar nuevos filtros
+    setColumnaOrden('fecha');
+    setDireccionOrden('asc');
+  };
+
   useEffect(() => {
     obtenerInforme();
   }, []);
 
-  // Función para aplicar filtros
-  const aplicarFiltros = (nuevosFiltros: InformeGuardiasParams) => {
-    setFiltros(nuevosFiltros);
-    obtenerInforme(nuevosFiltros);
-  };
-
-  // Función para exportar informe
   const exportarInforme = (formato: 'excel' | 'pdf' | 'csv') => {
     InformeService.exportarInformeGuardias(formato, filtros);
   };
 
-  // Preparar datos para los gráficos
-  const datosDiasSemana = estadisticas ? 
-    Object.entries(estadisticas.porDiaSemana).map(([dia, cantidad]) => ({
-      name: dia,
-      value: cantidad
-    })) : [];
+  // Función para manejar ordenamiento de tabla
+  const manejarOrdenamiento = (columna: OrdenColumna) => {
+    let nuevaDireccion: DireccionOrden = 'asc';
+    
+    // Si es la misma columna, cambiar dirección
+    if (columnaOrden === columna) {
+      nuevaDireccion = direccionOrden === 'asc' ? 'desc' : 'asc';
+    }
+    
+    setColumnaOrden(columna);
+    setDireccionOrden(nuevaDireccion);
+    setPaginaActual(1); // Resetear a primera página al ordenar
+  };
 
-  const datosUsuarios = estadisticas ? 
+  // Función para ordenar guardias
+  const guardiasOrdenadas = [...guardias].sort((a, b) => {
+    let valorA: any;
+    let valorB: any;
+
+    switch (columnaOrden) {
+      case 'fecha':
+        valorA = fechaATimestamp(a.fecha);
+        valorB = fechaATimestamp(b.fecha);
+        break;
+      case 'usuario':
+        valorA = a.usuario.toLowerCase();
+        valorB = b.usuario.toLowerCase();
+        break;
+      case 'diaSemana':
+        valorA = a.diaSemana;
+        valorB = b.diaSemana;
+        break;
+      case 'tipoDia':
+        // Orden: Día hábil < Fin de semana < Feriado
+        const getTipoOrden = (guardia: Guardia) => {
+          if (guardia.esFeriado) return 3;
+          if (guardia.esFinSemana) return 2;
+          return 1;
+        };
+        valorA = getTipoOrden(a);
+        valorB = getTipoOrden(b);
+        break;
+      default:
+        valorA = fechaATimestamp(a.fecha);
+        valorB = fechaATimestamp(b.fecha);
+    }
+
+    if (valorA < valorB) return direccionOrden === 'asc' ? -1 : 1;
+    if (valorA > valorB) return direccionOrden === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  // Preparar datos para los gráficos
+  const datosUsuarios = estadisticas?.porUsuario ? 
     Object.entries(estadisticas.porUsuario).map(([usuario, cantidad]) => ({
       name: usuario,
       cantidad: cantidad
     })) : [];
 
-  const datosTiposDias = estadisticas ? [
+  // Guardias con y sin incidentes
+  const datosIncidentes = estadisticas ? [
     {
-      name: 'Días hábiles',
-      value: estadisticas.totalGuardias - estadisticas.guardiasEnFinDeSemana - estadisticas.guardiasEnFeriados
+      name: 'Con Incidentes',
+      value: estadisticas.conIncidentes || 0,
+      color: '#e74c3c'
     },
     {
-      name: 'Fines de semana',
-      value: estadisticas.guardiasEnFinDeSemana
-    },
-    {
-      name: 'Feriados',
-      value: estadisticas.guardiasEnFeriados
+      name: 'Sin Incidentes',
+      value: estadisticas.sinIncidentes || (estadisticas.totalGuardias - (estadisticas.conIncidentes || 0)),
+      color: '#2ecc71'
     }
   ] : [];
 
-  // Custom tooltip para los gráficos
+  // Lógica de paginación
+  let guardiasParaMostrar: Guardia[];
+  let totalPaginas = 1;
+
+  if (mostrarTablaCompleta) {
+    // Mostrar todas las guardias cuando hay filtro específico
+    guardiasParaMostrar = guardiasOrdenadas;
+  } else {
+    // Paginación normal
+    const indiceUltimoElemento = paginaActual * elementosPorPagina;
+    const indicePrimerElemento = indiceUltimoElemento - elementosPorPagina;
+    guardiasParaMostrar = guardiasOrdenadas.slice(indicePrimerElemento, indiceUltimoElemento);
+    totalPaginas = Math.ceil(guardiasOrdenadas.length / elementosPorPagina);
+  }
+
+  // Generar páginas para el componente Pagination
+  const generarPaginas = () => {
+    const paginas = [];
+    const rango = 2; // Mostrar 2 páginas a cada lado de la actual
+
+    // Botón "Primera"
+    if (paginaActual > 1) {
+      paginas.push(
+        <Pagination.First key="first" onClick={() => setPaginaActual(1)} />
+      );
+      paginas.push(
+        <Pagination.Prev key="prev" onClick={() => setPaginaActual(paginaActual - 1)} />
+      );
+    }
+
+    // Páginas numeradas
+    for (let i = Math.max(1, paginaActual - rango); i <= Math.min(totalPaginas, paginaActual + rango); i++) {
+      paginas.push(
+        <Pagination.Item
+          key={i}
+          active={i === paginaActual}
+          onClick={() => setPaginaActual(i)}
+        >
+          {i}
+        </Pagination.Item>
+      );
+    }
+
+    // Botón "Última"
+    if (paginaActual < totalPaginas) {
+      paginas.push(
+        <Pagination.Next key="next" onClick={() => setPaginaActual(paginaActual + 1)} />
+      );
+      paginas.push(
+        <Pagination.Last key="last" onClick={() => setPaginaActual(totalPaginas)} />
+      );
+    }
+
+    return paginas;
+  };
+
+  // Helper functions
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('es-ES').format(num);
+  };
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-2 border shadow-sm rounded">
-          <p className="mb-0"><strong>{payload[0].name}</strong></p>
-          <p className="mb-0">
-            {payload[0].value} ({payload[0].payload.percent ? `${(payload[0].payload.percent * 100).toFixed(1)}%` : ''})
-          </p>
+        <div className="bg-white p-3 border shadow-sm rounded">
+          <p className="mb-1 fw-bold">{payload[0].name || label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} className="mb-0" style={{ color: entry.color }}>
+              {entry.dataKey}: {formatNumber(entry.value)}
+              {entry.payload.percent && ` (${(entry.payload.percent * 100).toFixed(1)}%)`}
+            </p>
+          ))}
         </div>
       );
     }
     return null;
   };
 
+  const getBadgeVariant = (guardia: Guardia) => {
+    if (guardia.esFeriado) return 'danger';
+    if (guardia.esFinSemana) return 'warning';
+    return 'info';
+  };
+
+  const getTipoDiaTexto = (guardia: Guardia) => {
+    if (guardia.esFeriado) return 'Feriado';
+    if (guardia.esFinSemana) return 'Fin de semana';
+    return 'Día hábil';
+  };
+
+  // Función para obtener icono de ordenamiento
+  const getIconoOrden = (columna: OrdenColumna) => {
+    if (columnaOrden !== columna) {
+      return <i className="bi bi-arrow-down-up text-muted ms-1"></i>;
+    }
+    return direccionOrden === 'asc' 
+      ? <i className="bi bi-arrow-up text-primary ms-1"></i>
+      : <i className="bi bi-arrow-down text-primary ms-1"></i>;
+  };
+
   return (
     <div className="informe-guardias">
-      {/* Filtros */}
+      {/* Header */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 className="mb-0 fw-bold">Informe de Guardias</h2>
+      </div>
+
+      {/* Filtros únicos */}
       <InformeFilters 
         tipo="guardias" 
         onFilter={aplicarFiltros} 
         onExport={exportarInforme} 
       />
 
+      {error && (
+        <Alert variant="danger" className="mb-4">
+          {error}
+        </Alert>
+      )}
+
       {cargando ? (
-        <div className="text-center my-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Cargando...</span>
-          </div>
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="primary" />
           <p className="mt-2">Cargando datos del informe...</p>
         </div>
       ) : (
         <>
-          {/* Estadísticas */}
+          {/* KPIs */}
           {estadisticas && (
-            <Card className="mb-4">
-              <Card.Header>
-                <h5 className="m-0">Estadísticas generales</h5>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col md={3} className="mb-4">
-                    <div className="d-flex flex-column align-items-center">
-                      <h6 className="text-muted">Total de guardias</h6>
-                      <h2 className="mb-0">{estadisticas.totalGuardias}</h2>
+            <Row className="g-4 mb-4">
+              {/* 1. Total Guardias */}
+              <Col md={3}>
+                <Card className="border-0 shadow-sm h-100">
+                  <Card.Body>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 className="text-muted mb-1">Total Guardias</h6>
+                        <h2 className="fw-bold mb-0 text-primary">{formatNumber(estadisticas.totalGuardias)}</h2>
+                      </div>
+                      <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                        style={{ width: '3.5rem', height: '3.5rem' }}>
+                        <i className="bi bi-shield-check fs-3 text-primary" />
+                      </div>
                     </div>
-                  </Col>
-                  <Col md={3} className="mb-4">
-                    <div className="d-flex flex-column align-items-center">
-                      <h6 className="text-muted">Guardias en feriados</h6>
-                      <h2 className="mb-0">{estadisticas.guardiasEnFeriados}</h2>
-                      <small className="text-muted">
-                        ({Math.round((estadisticas.guardiasEnFeriados / estadisticas.totalGuardias) * 100)}%)
-                      </small>
+                  </Card.Body>
+                </Card>
+              </Col>
+              
+              {/* 2. Días Hábiles */}
+              <Col md={3}>
+                <Card className="border-0 shadow-sm h-100">
+                  <Card.Body>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 className="text-muted mb-1">Días Hábiles</h6>
+                        <h2 className="fw-bold mb-0 text-success">
+                          {formatNumber(estadisticas.totalGuardias - estadisticas.guardiasEnFeriados - estadisticas.guardiasEnFinDeSemana)}
+                        </h2>
+                        <small className="text-muted">
+                          ({estadisticas.totalGuardias > 0 ? (((estadisticas.totalGuardias - estadisticas.guardiasEnFeriados - estadisticas.guardiasEnFinDeSemana) / estadisticas.totalGuardias) * 100).toFixed(1) : '0'}%)
+                        </small>
+                      </div>
+                      <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                        style={{ width: '3.5rem', height: '3.5rem' }}>
+                        <i className="bi bi-calendar-check fs-3 text-success" />
+                      </div>
                     </div>
-                  </Col>
-                  <Col md={3} className="mb-4">
-                    <div className="d-flex flex-column align-items-center">
-                      <h6 className="text-muted">Guardias en fin de semana</h6>
-                      <h2 className="mb-0">{estadisticas.guardiasEnFinDeSemana}</h2>
-                      <small className="text-muted">
-                        ({Math.round((estadisticas.guardiasEnFinDeSemana / estadisticas.totalGuardias) * 100)}%)
-                      </small>
-                    </div>
-                  </Col>
-                  <Col md={3} className="mb-4">
-                    <div className="d-flex flex-column align-items-center">
-                      <h6 className="text-muted">Guardias en días hábiles</h6>
-                      <h2 className="mb-0">
-                        {estadisticas.totalGuardias - estadisticas.guardiasEnFeriados - estadisticas.guardiasEnFinDeSemana}
-                      </h2>
-                      <small className="text-muted">
-                        ({Math.round(((estadisticas.totalGuardias - estadisticas.guardiasEnFeriados - estadisticas.guardiasEnFinDeSemana) / estadisticas.totalGuardias) * 100)}%)
-                      </small>
-                    </div>
-                  </Col>
-                </Row>
+                  </Card.Body>
+                </Card>
+              </Col>
 
-                <Row className="mt-4">
-                  <Col md={4} className="mb-4">
-                    <h6 className="text-center mb-3">Guardias por Día de la Semana</h6>
-                    <div style={{ height: '250px' }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={datosDiasSemana}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={true}
-                            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {datosDiasSemana.map((entry, index) => (
-                              <Cell 
-                                key={`cell-${index}`} 
-                                fill={COLORES_DIAS_SEMANA[entry.name as keyof typeof COLORES_DIAS_SEMANA] || COLORES_GENERALES[index % COLORES_GENERALES.length]} 
-                              />
-                            ))}
-                          </Pie>
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
+              {/* 3. Fines de Semana */}
+              <Col md={3}>
+                <Card className="border-0 shadow-sm h-100">
+                  <Card.Body>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 className="text-muted mb-1">Fines de Semana</h6>
+                        <h2 className="fw-bold mb-0 text-warning">{formatNumber(estadisticas.guardiasEnFinDeSemana)}</h2>
+                        <small className="text-muted">
+                          ({estadisticas.totalGuardias > 0 ? ((estadisticas.guardiasEnFinDeSemana / estadisticas.totalGuardias) * 100).toFixed(1) : '0'}%)
+                        </small>
+                      </div>
+                      <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                        style={{ width: '3.5rem', height: '3.5rem' }}>
+                        <i className="bi bi-calendar2-week fs-3 text-warning" />
+                      </div>
                     </div>
-                  </Col>
-                  <Col md={4} className="mb-4">
-                    <h6 className="text-center mb-3">Guardias por Tipo de Día</h6>
-                    <div style={{ height: '250px' }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={datosTiposDias}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={true}
-                            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {datosTiposDias.map((entry, index) => (
-                              <Cell 
-                                key={`cell-${index}`} 
-                                fill={COLORES_TIPO_DIAS[index % COLORES_TIPO_DIAS.length]} 
-                              />
-                            ))}
-                          </Pie>
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
+                  </Card.Body>
+                </Card>
+              </Col>
+
+              {/* 4. Feriados */}
+              <Col md={3}>
+                <Card className="border-0 shadow-sm h-100">
+                  <Card.Body>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 className="text-muted mb-1">Feriados</h6>
+                        <h2 className="fw-bold mb-0 text-danger">{formatNumber(estadisticas.guardiasEnFeriados)}</h2>
+                        <small className="text-muted">
+                          ({estadisticas.totalGuardias > 0 ? ((estadisticas.guardiasEnFeriados / estadisticas.totalGuardias) * 100).toFixed(1) : '0'}%)
+                        </small>
+                      </div>
+                      <div className="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                        style={{ width: '3.5rem', height: '3.5rem' }}>
+                        <i className="bi bi-calendar-x fs-3 text-danger" />
+                      </div>
                     </div>
-                  </Col>
-                  <Col md={4} className="mb-4">
-                    <h6 className="text-center mb-3">Guardias por Usuario</h6>
-                    <div style={{ height: '250px' }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={datosUsuarios}
-                          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          <Bar 
-                            dataKey="cantidad" 
-                            name="Guardias" 
-                            fill="#3498db" 
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
           )}
 
-          {/* Tabla de guardias */}
-          <Card>
-            <Card.Header>
-              <h5 className="m-0">Listado de guardias</h5>
+          {/* Gráficos */}
+          {estadisticas && (
+            <Row className="g-4 mb-4">
+              {/* Guardias con/sin incidentes */}
+              <Col md={6}>
+                <Card className="border-0 shadow-sm h-100">
+                  <Card.Body>
+                    <h5 className="fw-bold mb-3">Guardias con/sin Incidentes</h5>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={datosIncidentes}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={100}
+                          innerRadius={60}
+                          dataKey="value"
+                          nameKey="name"
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          labelLine={false}
+                        >
+                          {datosIncidentes.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend 
+                          verticalAlign="bottom" 
+                          height={36}
+                          iconType="circle"
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </Card.Body>
+                </Card>
+              </Col>
+              
+              {/* Guardias por Usuario */}
+              <Col md={6}>
+                <Card className="border-0 shadow-sm h-100">
+                  <Card.Body>
+                    <h5 className="fw-bold mb-3">Guardias por Usuario</h5>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart
+                        data={datosUsuarios}
+                        layout="vertical"
+                        margin={{ left: 80 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                        <XAxis type="number" />
+                        <YAxis 
+                          dataKey="name" 
+                          type="category"
+                          tick={{ fontSize: 11 }}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Bar 
+                          dataKey="cantidad" 
+                          name="Guardias"
+                          radius={[0, 4, 4, 0]}
+                        >
+                          {datosUsuarios.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={colors[index % colors.length]}
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
+          )}
+
+          {/* Tabla con ordenamiento */}
+          <Card className="border-0 shadow-sm">
+            <Card.Header className="bg-white py-3 d-flex justify-content-between align-items-center">
+              <h5 className="mb-0 fw-bold">Listado de Guardias</h5>
+              <div className="text-muted">
+                {mostrarTablaCompleta ? (
+                  <span>Mostrando todas las {guardiasParaMostrar.length} guardias del período</span>
+                ) : (
+                  <span>
+                    Mostrando {((paginaActual - 1) * elementosPorPagina) + 1}-{Math.min(paginaActual * elementosPorPagina, guardiasOrdenadas.length)} de {guardiasOrdenadas.length} guardias
+                  </span>
+                )}
+              </div>
             </Card.Header>
             <Card.Body className="p-0">
               <div className="table-responsive">
-                <Table striped bordered hover>
-                  <thead>
+                <Table hover>
+                  <thead className="table-light">
                     <tr>
-                      <th>ID</th>
-                      <th>Fecha</th>
-                      <th>Usuario</th>
-                      <th>Día de la Semana</th>
-                      <th>Tipo de Día</th>
+                      <th 
+                        role="button" 
+                        onClick={() => manejarOrdenamiento('fecha')}
+                        className="user-select-none"
+                      >
+                        Fecha {getIconoOrden('fecha')}
+                      </th>
+                      <th 
+                        role="button" 
+                        onClick={() => manejarOrdenamiento('usuario')}
+                        className="user-select-none"
+                      >
+                        Usuario {getIconoOrden('usuario')}
+                      </th>
+                      <th 
+                        role="button" 
+                        onClick={() => manejarOrdenamiento('diaSemana')}
+                        className="user-select-none"
+                      >
+                        Día de la Semana {getIconoOrden('diaSemana')}
+                      </th>
+                      <th 
+                        role="button" 
+                        onClick={() => manejarOrdenamiento('tipoDia')}
+                        className="user-select-none"
+                      >
+                        Tipo de Día {getIconoOrden('tipoDia')}
+                      </th>
                       <th>Notas</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {guardias.length > 0 ? (
-                      guardias.map((guardia) => (
+                    {guardiasParaMostrar.length > 0 ? (
+                      guardiasParaMostrar.map((guardia) => (
                         <tr key={guardia.id}>
-                          <td>{guardia.id}</td>
-                          <td>{guardia.fecha}</td>
-                          <td>{guardia.usuario}</td>
-                          <td>{guardia.diaSemana}</td>
-                          <td>
-                            {guardia.esFeriado ? (
-                              <Badge bg="danger">Feriado</Badge>
-                            ) : guardia.esFinSemana ? (
-                              <Badge bg="warning">Fin de semana</Badge>
-                            ) : (
-                              <Badge bg="info">Día hábil</Badge>
-                            )}
+                          <td className="fw-bold">
+                            {formatearFecha(guardia.fecha)}
                           </td>
-                          <td>{guardia.notas}</td>
+                          <td>{guardia.usuario}</td>
+                          <td>
+                            <Badge bg="secondary">
+                              {guardia.diaSemana}
+                            </Badge>
+                          </td>
+                          <td>
+                            <Badge bg={getBadgeVariant(guardia)} className="px-3 py-2">
+                              {getTipoDiaTexto(guardia)}
+                            </Badge>
+                          </td>
+                          <td>{guardia.notas || '-'}</td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={6} className="text-center">
+                        <td colSpan={5} className="text-center py-4 text-muted">
                           No se encontraron guardias con los filtros aplicados
                         </td>
                       </tr>
@@ -322,11 +554,15 @@ const InformeGuardiasComponent: React.FC = () => {
                 </Table>
               </div>
             </Card.Body>
-            <Card.Footer>
-              <small className="text-muted">
-                Total: {guardias.length} guardias
-              </small>
-            </Card.Footer>
+            
+            {/* Paginación - Solo si no se muestra tabla completa */}
+            {!mostrarTablaCompleta && totalPaginas > 1 && (
+              <Card.Footer className="bg-light d-flex justify-content-center">
+                <Pagination className="mb-0">
+                  {generarPaginas()}
+                </Pagination>
+              </Card.Footer>
+            )}
           </Card>
         </>
       )}

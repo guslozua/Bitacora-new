@@ -52,7 +52,7 @@ const AdminPanel: React.FC = () => {
   const [showItrackerModal, setShowItrackerModal] = useState<boolean>(false);
   const [showTabulacionesModal, setShowTabulacionesModal] = useState<boolean>(false);
   const [showAbmUploadModal, setShowAbmUploadModal] = useState<boolean>(false);
-  
+
   // Estados para carga de archivos
   const [itrackerFile, setItrackerFile] = useState<File | null>(null);
   const [tabulacionesFile, setTabulacionesFile] = useState<File | null>(null);
@@ -71,7 +71,7 @@ const AdminPanel: React.FC = () => {
   const saveChanges = (): void => {
     setVisibility(localVisibility);
     setIsDirty(false);
-    
+
     // Mostrar SweetAlert en lugar de alert
     Swal.fire({
       title: '¡Cambios guardados!',
@@ -155,7 +155,7 @@ const AdminPanel: React.FC = () => {
       const { total_insertados, total_duplicados } = responseData;
 
       setUploadMessage(`✔ Registros nuevos: ${total_insertados} | Repetidos: ${total_duplicados}`);
-      
+
       // SweetAlert después de subir con éxito
       Swal.fire({
         title: '¡Archivo subido!',
@@ -167,7 +167,7 @@ const AdminPanel: React.FC = () => {
     } catch (err) {
       setUploadError('Error al subir el archivo. Verificá que sea un .xlsx válido.');
       console.error('Error de carga:', err);
-      
+
       // SweetAlert para errores
       Swal.fire({
         title: 'Error',
@@ -205,7 +205,7 @@ const AdminPanel: React.FC = () => {
       const { total_insertados, total_duplicados } = responseData;
 
       setUploadMessage(`✔ Registros nuevos: ${total_insertados} | Repetidos: ${total_duplicados}`);
-      
+
       // SweetAlert después de subir con éxito
       Swal.fire({
         title: '¡Archivo subido!',
@@ -217,7 +217,7 @@ const AdminPanel: React.FC = () => {
     } catch (err) {
       setUploadError('Error al subir el archivo. Verificá que sea un .xlsx válido.');
       console.error('Error de carga:', err);
-      
+
       // SweetAlert para errores
       Swal.fire({
         title: 'Error',
@@ -270,14 +270,14 @@ const AdminPanel: React.FC = () => {
 
         <div className="d-flex">
           {/* Botón para ir al dashboard */}
-          <Button 
-            variant="outline-primary" 
-            className="me-2 shadow-sm" 
+          <Button
+            variant="outline-primary"
+            className="me-2 shadow-sm"
             onClick={() => navigate('/dashboard')}
           >
             <i className="bi bi-house-door me-1"></i> Dashboard Principal
           </Button>
-          
+
           {isDirty && (
             <>
               <Button variant="success" className="me-2 shadow-sm" onClick={saveChanges}>
@@ -301,8 +301,8 @@ const AdminPanel: React.FC = () => {
                     <h6 className="text-muted mb-1">{stat.title}</h6>
                     <h2 className="fw-bold mb-0">{stat.value}</h2>
                   </div>
-                  <div className="rounded-circle d-flex align-items-center justify-content-center" 
-                    style={{ 
+                  <div className="rounded-circle d-flex align-items-center justify-content-center"
+                    style={{
                       backgroundColor: `${stat.color}20`,
                       width: '3.5rem',      // Ancho fijo
                       height: '3.5rem',     // Alto igual al ancho
@@ -390,17 +390,17 @@ const AdminPanel: React.FC = () => {
                       <Card.Body className="p-3">
                         <div className="d-flex justify-content-between align-items-center">
                           <div className="d-flex align-items-center">
-                            <div 
-                              className="rounded-circle me-3 d-flex align-items-center justify-content-center" 
-                              style={{ 
+                            <div
+                              className="rounded-circle me-3 d-flex align-items-center justify-content-center"
+                              style={{
                                 backgroundColor: `${item.color}20`,
                                 width: '2.5rem',      // Ancho fijo
                                 height: '2.5rem',     // Alto igual al ancho
                                 padding: 0            // Quita el padding que causa la deformación
                               }}
                             >
-                              <i 
-                                className={`bi ${item.icon}`} 
+                              <i
+                                className={`bi ${item.icon}`}
                                 style={{ color: item.color, fontSize: '1rem' }}
                               ></i>
                             </div>
@@ -438,8 +438,8 @@ const AdminPanel: React.FC = () => {
                   <Card.Body className="p-3">
                     <div className="d-flex justify-content-between align-items-center">
                       <div className="d-flex align-items-center">
-                        <div className="rounded-circle me-3 d-flex align-items-center justify-content-center" 
-                          style={{ 
+                        <div className="rounded-circle me-3 d-flex align-items-center justify-content-center"
+                          style={{
                             backgroundColor: '#f8f9fa',
                             width: '2.5rem',
                             height: '2.5rem',
@@ -482,9 +482,9 @@ const AdminPanel: React.FC = () => {
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     onClick={() => navigate('/admin/users')}
                   >
-                    <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3" 
-                      style={{ 
-                        width: '3.5rem', 
+                    <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                      style={{
+                        width: '3.5rem',
                         height: '3.5rem',
                         padding: 0
                       }}>
@@ -503,9 +503,9 @@ const AdminPanel: React.FC = () => {
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     onClick={() => setShowItrackerModal(true)}
                   >
-                    <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3" 
-                      style={{ 
-                        width: '3.5rem', 
+                    <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                      style={{
+                        width: '3.5rem',
                         height: '3.5rem',
                         padding: 0
                       }}>
@@ -524,9 +524,9 @@ const AdminPanel: React.FC = () => {
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     onClick={() => setShowTabulacionesModal(true)}
                   >
-                    <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3" 
-                      style={{ 
-                        width: '3.5rem', 
+                    <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                      style={{
+                        width: '3.5rem',
                         height: '3.5rem',
                         padding: 0
                       }}>
@@ -545,9 +545,9 @@ const AdminPanel: React.FC = () => {
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     onClick={() => setShowAbmUploadModal(true)}
                   >
-                    <div className="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3" 
-                      style={{ 
-                        width: '3.5rem', 
+                    <div className="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                      style={{
+                        width: '3.5rem',
                         height: '3.5rem',
                         padding: 0
                       }}>
@@ -564,11 +564,32 @@ const AdminPanel: React.FC = () => {
                   <Button
                     variant="light"
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
+                    onClick={() => navigate('/admin/codigos')}
+                  >
+                    <div className="bg-purple bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                      style={{
+                        width: '3.5rem',
+                        height: '3.5rem',
+                        padding: 0
+                      }}>
+                      <i className="bi bi-upc-scan fs-3 text-purple"></i>
+                    </div>
+                    <span className="fw-medium">Códigos Guardias</span>
+                  </Button>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={4} className="mb-3">
+              <Card className="h-100 border-0 shadow-sm">
+                <Card.Body className="p-0">
+                  <Button
+                    variant="light"
+                    className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     disabled
                   >
-                    <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3" 
-                      style={{ 
-                        width: '3.5rem', 
+                    <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                      style={{
+                        width: '3.5rem',
                         height: '3.5rem',
                         padding: 0
                       }}>
@@ -588,9 +609,9 @@ const AdminPanel: React.FC = () => {
                     className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                     disabled
                   >
-                    <div className="bg-dark bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3" 
-                      style={{ 
-                        width: '3.5rem', 
+                    <div className="bg-dark bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                      style={{
+                        width: '3.5rem',
                         height: '3.5rem',
                         padding: 0
                       }}>
@@ -613,9 +634,9 @@ const AdminPanel: React.FC = () => {
       >
         <Modal.Header closeButton className="border-0 pb-0">
           <Modal.Title className="d-flex align-items-center">
-            <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" 
-              style={{ 
-                width: '2.5rem', 
+            <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
+              style={{
+                width: '2.5rem',
                 height: '2.5rem',
                 padding: 0
               }}>
@@ -648,14 +669,14 @@ const AdminPanel: React.FC = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer className="border-0 pt-0">
-          <Button 
-            variant="secondary" 
+          <Button
+            variant="secondary"
             onClick={resetItrackerModal}
           >
             Cancelar
           </Button>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={() => {
               if (itrackerFormRef.current) {
                 itrackerFormRef.current.dispatchEvent(
@@ -681,9 +702,9 @@ const AdminPanel: React.FC = () => {
       >
         <Modal.Header closeButton className="border-0 pb-0">
           <Modal.Title className="d-flex align-items-center">
-            <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" 
-              style={{ 
-                width: '2.5rem', 
+            <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
+              style={{
+                width: '2.5rem',
                 height: '2.5rem',
                 padding: 0
               }}>
@@ -716,21 +737,21 @@ const AdminPanel: React.FC = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer className="border-0 pt-0">
-          <Button 
-            variant="secondary" 
+          <Button
+            variant="secondary"
             onClick={resetTabulacionesModal}
           >
             Cancelar
           </Button>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={() => {
               if (tabulacionesFormRef.current) {
                 tabulacionesFormRef.current.dispatchEvent(
                   new Event('submit', { cancelable: true, bubbles: true })
                 );
               }
-            }} 
+            }}
             disabled={uploading || !tabulacionesFile}
           >
             {uploading ? (
@@ -742,8 +763,8 @@ const AdminPanel: React.FC = () => {
         </Modal.Footer>
       </Modal>
       {/* Modal para subir archivos PIC y Social */}
-      <AbmUploadModal 
-        show={showAbmUploadModal} 
+      <AbmUploadModal
+        show={showAbmUploadModal}
         onHide={() => setShowAbmUploadModal(false)}
         onSuccess={handleAbmUploadSuccess}
       />

@@ -36,6 +36,16 @@ import AdminUsersDashboard from './pages/AdminUsersDashboard';
 import UserDetail from './components/users/UserDetail';
 import UserForm from './components/users/UserForm';
 
+// 🔔 NUEVO IMPORT PARA NOTIFICACIONES
+import NotificacionesList from './components/notificaciones/NotificacionesList';
+
+// Función helper para obtener el userId actual
+const getCurrentUserId = (): number => {
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  return user?.id || 0;
+};
+
 // Componente para rutas protegidas
 interface ProtectedRouteProps {
   element: React.ReactNode;
@@ -128,6 +138,16 @@ const App: React.FC = () => {
           <Route path="/links" element={<ProtectedRoute element={<Enlaces />} />} />
           <Route path="/informes" element={<InformesPage />} />
           <Route path="/admin/codigos" element={<ProtectedRoute element={<CodigosPage />} />} />
+          
+          {/* 🔔 NUEVA RUTA PARA NOTIFICACIONES */}
+          <Route 
+            path="/notificaciones" 
+            element={
+              <ProtectedRoute 
+                element={<NotificacionesList userId={getCurrentUserId()} />} 
+              />
+            } 
+          />
           
           {/* Rutas del Calendario */}
           <Route path="/calendar" element={<ProtectedRoute element={<CalendarPage />} />} />

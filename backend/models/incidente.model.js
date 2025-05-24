@@ -1,4 +1,4 @@
-// models/incidente.model.js
+// models/incidente.model.js - VERSIÓN CORREGIDA COMPLETA
 const pool = require('../config/db');
 const { Op } = require('./db.operators');
 
@@ -175,6 +175,8 @@ const Incidente = {
   // Encontrar un incidente por ID
   findByPk: async (id) => {
     try {
+      console.log('🔍 MODELO: Buscando incidente por ID:', id);
+      
       // Consulta principal para obtener el incidente
       const query = `
         SELECT i.*,
@@ -187,7 +189,16 @@ const Incidente = {
       
       const [rows] = await pool.query(query, [id]);
       
-      if (rows.length === 0) return null;
+      if (rows.length === 0) {
+        console.log('❌ MODELO: Incidente no encontrado con ID:', id);
+        return null;
+      }
+      
+      console.log('✅ MODELO: Incidente encontrado:', {
+        id: rows[0].id,
+        inicio: rows[0].inicio,
+        fin: rows[0].fin
+      });
       
       // Obtener códigos aplicados en una consulta separada
       const [codigos] = await pool.query(`
@@ -198,60 +209,136 @@ const Incidente = {
       `, [id]);
       
       rows[0].codigos_aplicados = codigos;
+      console.log('✅ MODELO: Códigos cargados:', codigos.length);
       
       return Incidente.attachMethods(rows[0]);
     } catch (error) {
-      console.error(`Error al buscar incidente con ID ${id}:`, error);
+      console.error(`❌ MODELO: Error al buscar incidente con ID ${id}:`, error);
       throw error;
     }
   },
   
-  // Crear un nuevo incidente
+  // ✨ CREAR UN NUEVO INCIDENTE - CORREGIDO PARA UNDEFINED
   create: async (data) => {
+    const connection = await pool.getConnection();
+    
     try {
-      const { id_guardia, inicio, fin, descripcion, estado = 'registrado', id_usuario_registro, observaciones } = data;
+      console.log('📝 MODELO: Iniciando creación de incidente:', {
+        id_guardia: data.id_guardia,
+        inicio: data.inicio,
+        fin: data.fin,
+        descripcion: data.descripcion?.substring(0, 50),
+        codigos_count: data.codigos?.length || 0
+      });
+      
+      const { 
+        id_guardia, 
+        inicio, 
+        fin, 
+        descripcion, 
+        estado = 'registrado', 
+        id_usuario_registro, 
+        observaciones, 
+        codigos 
+      } = data;
+      
+      // ✨ CONVERTIR UNDEFINED A NULL PARA MYSQL2
+      const usuarioRegistro = id_usuario_registro === undefined ? null : id_usuario_registro;
+      const observacionesLimpias = observaciones === undefined ? null : observaciones;
+      
+      console.log('📝 MODELO: Parámetros limpiados:', {
+        id_guardia,
+        inicio,
+        fin,
+        descripcion: descripcion?.substring(0, 30),
+        estado,
+        usuarioRegistro,
+        observacionesLimpias
+      });
       
       // Iniciar transacción
-      await pool.query('START TRANSACTION');
+      await connection.beginTransaction();
+      console.log('🔄 TRANSACCIÓN INICIADA');
       
-      // Insertar incidente
-      const [resultIncidente] = await pool.query(
+      // ✨ INSERTAR INCIDENTE CON PARÁMETROS LIMPIOS
+      const [resultIncidente] = await connection.execute(
         'INSERT INTO incidentes_guardia (id_guardia, inicio, fin, descripcion, estado, id_usuario_registro, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [id_guardia, inicio, fin, descripcion, estado, id_usuario_registro, observaciones]
+        [id_guardia, inicio, fin, descripcion, estado, usuarioRegistro, observacionesLimpias]
       );
       
       const incidenteId = resultIncidente.insertId;
+      console.log('✅ INCIDENTE INSERTADO CON ID:', incidenteId);
       
       // Si hay códigos aplicados, insertarlos
-      if (data.codigos && Array.isArray(data.codigos)) {
-        for (const codigo of data.codigos) {
-          await pool.query(
-            'INSERT INTO incidentes_codigos (id_incidente, id_codigo, minutos, importe, observacion) VALUES (?, ?, ?, ?, ?)',
-            [incidenteId, codigo.id_codigo, codigo.minutos, codigo.importe || null, codigo.observacion || null]
-          );
+      if (codigos && Array.isArray(codigos) && codigos.length > 0) {
+        console.log('🔄 INSERTANDO CÓDIGOS:', codigos.length);
+        
+        for (const codigo of codigos) {
+          try {
+            // ✨ LIMPIAR UNDEFINED EN CÓDIGOS TAMBIÉN
+            const importeLimpio = codigo.importe === undefined ? null : codigo.importe;
+            const observacionLimpia = codigo.observacion === undefined ? null : codigo.observacion;
+            
+            await connection.execute(
+              'INSERT INTO incidentes_codigos (id_incidente, id_codigo, minutos, importe, observacion) VALUES (?, ?, ?, ?, ?)',
+              [incidenteId, codigo.id_codigo, codigo.minutos, importeLimpio, observacionLimpia]
+            );
+            console.log(`✅ CÓDIGO INSERTADO: ${codigo.id_codigo} - ${codigo.minutos} min`);
+          } catch (errorCodigo) {
+            console.error('❌ Error al insertar código:', errorCodigo);
+            // No fallar toda la transacción por un código
+          }
         }
       }
       
       // Confirmar transacción
-      await pool.query('COMMIT');
+      await connection.commit();
+      console.log('✅ TRANSACCIÓN CONFIRMADA');
       
-      // Devolver el incidente creado
-      return Incidente.findByPk(incidenteId);
+      // ✨ BUSCAR Y DEVOLVER EL INCIDENTE CREADO
+      const incidenteCreado = await Incidente.findByPk(incidenteId);
+      
+      if (!incidenteCreado) {
+        throw new Error(`No se pudo recuperar el incidente creado con ID: ${incidenteId}`);
+      }
+      
+      console.log('✅ INCIDENTE RECUPERADO EXITOSAMENTE:', {
+        id: incidenteCreado.id,
+        códigos: incidenteCreado.codigos_aplicados?.length || 0
+      });
+      
+      return incidenteCreado;
+      
     } catch (error) {
       // Revertir transacción en caso de error
-      await pool.query('ROLLBACK');
-      console.error('Error al crear incidente:', error);
+      try {
+        await connection.rollback();
+        console.log('🔄 TRANSACCIÓN REVERTIDA');
+      } catch (rollbackError) {
+        console.error('❌ Error al revertir transacción:', rollbackError);
+      }
+      
+      console.error('❌ ERROR EN MODELO CREATE:', error);
       throw error;
+    } finally {
+      // Liberar conexión
+      connection.release();
+      console.log('🔄 CONEXIÓN LIBERADA');
     }
   },
   
   // Actualizar un incidente existente
   update: async (id, values) => {
+    const connection = await pool.getConnection();
+    
     try {
+      console.log('🔄 MODELO: Actualizando incidente ID:', id);
+      console.log('🔄 MODELO: Valores a actualizar:', values);
+      
       const { id_guardia, inicio, fin, descripcion, estado, id_usuario_registro, observaciones, codigos } = values;
       
       // Iniciar transacción
-      await pool.query('START TRANSACTION');
+      await connection.beginTransaction();
       
       // Actualizar campos del incidente
       const updates = [];
@@ -295,47 +382,70 @@ const Incidente = {
       if (updates.length > 0) {
         params.push(id); // Para la cláusula WHERE
         
-        await pool.query(
+        await connection.execute(
           `UPDATE incidentes_guardia SET ${updates.join(', ')} WHERE id = ?`,
           params
         );
+        
+        console.log('✅ MODELO: Incidente actualizado');
       }
       
       // Si hay códigos aplicados, actualizar la relación
       if (codigos !== undefined && Array.isArray(codigos)) {
+        console.log('🔄 MODELO: Actualizando códigos:', codigos.length);
+        
         // Eliminar códigos existentes
-        await pool.query('DELETE FROM incidentes_codigos WHERE id_incidente = ?', [id]);
+        await connection.execute('DELETE FROM incidentes_codigos WHERE id_incidente = ?', [id]);
         
         // Insertar nuevos códigos
         for (const codigo of codigos) {
-          await pool.query(
+          await connection.execute(
             'INSERT INTO incidentes_codigos (id_incidente, id_codigo, minutos, importe, observacion) VALUES (?, ?, ?, ?, ?)',
             [id, codigo.id_codigo, codigo.minutos, codigo.importe || null, codigo.observacion || null]
           );
         }
+        
+        console.log('✅ MODELO: Códigos actualizados');
       }
       
       // Confirmar transacción
-      await pool.query('COMMIT');
+      await connection.commit();
       
       // Devolver el incidente actualizado
-      return Incidente.findByPk(id);
+      const incidenteActualizado = await Incidente.findByPk(id);
+      console.log('✅ MODELO: Incidente actualizado y recuperado');
+      
+      return incidenteActualizado;
     } catch (error) {
       // Revertir transacción en caso de error
-      await pool.query('ROLLBACK');
-      console.error('Error al actualizar incidente:', error);
+      try {
+        await connection.rollback();
+        console.log('🔄 TRANSACCIÓN REVERTIDA EN UPDATE');
+      } catch (rollbackError) {
+        console.error('❌ Error al revertir transacción en update:', rollbackError);
+      }
+      
+      console.error('❌ MODELO: Error al actualizar incidente:', error);
       throw error;
+    } finally {
+      connection.release();
     }
   },
   
   // Eliminar un incidente
   destroy: async (id) => {
     try {
+      console.log('🗑️ MODELO: Eliminando incidente ID:', id);
+      
       // Las relaciones tienen ON DELETE CASCADE
       const [result] = await pool.query('DELETE FROM incidentes_guardia WHERE id = ?', [id]);
-      return result.affectedRows > 0;
+      
+      const success = result.affectedRows > 0;
+      console.log(success ? '✅ MODELO: Incidente eliminado' : '❌ MODELO: No se pudo eliminar');
+      
+      return success;
     } catch (error) {
-      console.error('Error al eliminar incidente:', error);
+      console.error('❌ MODELO: Error al eliminar incidente:', error);
       throw error;
     }
   },

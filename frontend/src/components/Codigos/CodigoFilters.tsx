@@ -65,7 +65,7 @@ const CodigoFilters: React.FC<CodigoFiltersProps> = ({ filters, onFilterChange }
             <InputGroup>
               <Form.Control
                 type="text"
-                placeholder="Código o descripción..."
+                placeholder="Código, descripción o notas..." // ✨ Texto actualizado
                 value={filters.search}
                 onChange={(e) => onFilterChange({ search: e.target.value })}
               />

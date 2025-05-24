@@ -1,6 +1,6 @@
 // pages/InformesPage.tsx
 import React, { useState } from 'react';
-import { Container, Nav, Tab, Row, Col } from 'react-bootstrap';
+import { Container, Nav, Tab, Row, Col, Badge } from 'react-bootstrap';
 import DashboardResumen from '../components/Informes/DashboardResumen';
 import InformeIncidentesComponent from '../components/Informes/InformeIncidentesComponent';
 import InformeGuardiasComponent from '../components/Informes/InformeGuardiasComponent';
@@ -32,23 +32,38 @@ const InformesPage: React.FC = () => {
       <Sidebar collapsed={sidebarCollapsed} toggle={toggleSidebar} onLogout={handleLogout} />
       <div style={contentStyle}>
         <Container fluid className="py-4 px-4">
-          <h2 className="mb-4">Informes y Estadísticas</h2>
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h2 className="mb-0 fw-bold">Informes y Estadísticas</h2>
+            <div className="d-flex gap-2">
+              <Badge bg="success" className="fs-6 px-3 py-2">
+                <i className="bi bi-graph-up me-1"></i> Analytics
+              </Badge>
+            </div>
+          </div>
           
           <Tab.Container id="informes-tabs" activeKey={activeTab} onSelect={(k) => k && setActiveTab(k)}>
             <Row>
               <Col md={12}>
                 <Nav variant="tabs" className="mb-4">
                   <Nav.Item>
-                    <Nav.Link eventKey="dashboard">Dashboard</Nav.Link>
+                    <Nav.Link eventKey="dashboard">
+                      <i className="bi bi-speedometer2 me-2"></i>Dashboard
+                    </Nav.Link>
                   </Nav.Item>
                   <Nav.Item>
-                    <Nav.Link eventKey="incidentes">Incidentes</Nav.Link>
+                    <Nav.Link eventKey="guardias">
+                      <i className="bi bi-shield-check me-2"></i>Guardias
+                    </Nav.Link>
                   </Nav.Item>
                   <Nav.Item>
-                    <Nav.Link eventKey="guardias">Guardias</Nav.Link>
+                    <Nav.Link eventKey="incidentes">
+                      <i className="bi bi-exclamation-triangle me-2"></i>Incidentes
+                    </Nav.Link>
                   </Nav.Item>
                   <Nav.Item>
-                    <Nav.Link eventKey="liquidaciones">Liquidaciones</Nav.Link>
+                    <Nav.Link eventKey="liquidaciones">
+                      <i className="bi bi-cash-coin me-2"></i>Liquidaciones
+                    </Nav.Link>
                   </Nav.Item>
                 </Nav>
               </Col>
@@ -60,11 +75,11 @@ const InformesPage: React.FC = () => {
                   <Tab.Pane eventKey="dashboard">
                     <DashboardResumen />
                   </Tab.Pane>
-                  <Tab.Pane eventKey="incidentes">
-                    <InformeIncidentesComponent />
-                  </Tab.Pane>
                   <Tab.Pane eventKey="guardias">
                     <InformeGuardiasComponent />
+                  </Tab.Pane>
+                  <Tab.Pane eventKey="incidentes">
+                    <InformeIncidentesComponent />
                   </Tab.Pane>
                   <Tab.Pane eventKey="liquidaciones">
                     <InformeLiquidacionesComponent />
