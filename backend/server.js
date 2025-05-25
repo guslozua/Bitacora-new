@@ -25,6 +25,7 @@ const enlacesRoutes = require('./routes/enlacesRoutes');
 const incidentesRoutes = require('./routes/incidentes.routes');
 const codigosRoutes = require('./routes/codigos.routes');
 const informesRoutes = require('./routes/informes.routes');
+const tarifasRoutes = require('./routes/tarifas.routes');
 
 // 🔔 AGREGAR IMPORT DE NOTIFICACIONES
 const notificacionesRoutes = require('./routes/notificaciones.routes');
@@ -77,8 +78,9 @@ app.use('/api/enlaces', enlacesRoutes);
 app.use('/api/incidentes', incidentesRoutes);
 app.use('/api/codigos', codigosRoutes);
 app.use('/api/informes', informesRoutes);
+app.use('/api/tarifas', tarifasRoutes);
 
-// 🔔 AGREGAR RUTA DE NOTIFICACIONES - ¡ESTO FALTABA!
+// 🔔 RUTA DE NOTIFICACIONES - 
 app.use('/api/notificaciones', notificacionesRoutes);
 
 // Depuración: Listar rutas registradas en Express
