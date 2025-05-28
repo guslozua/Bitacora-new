@@ -1,6 +1,43 @@
-// controllers/tarifas.controller.js - CONTROLADOR DE TARIFAS CORREGIDO
+// controllers/tarifas.controller.js - CONTROLADOR DE TARIFAS CON CORRECCIÓN DE FECHAS
 const Tarifa = require('../models/tarifa.model');
 const Codigo = require('../models/codigo.model');
+
+// ✨ FUNCIÓN HELPER PARA MANEJAR FECHAS CORRECTAMENTE
+const procesarFechaLocal = (fechaString) => {
+  try {
+    // Si la fecha viene en formato YYYY-MM-DD, la procesamos como fecha local
+    if (/^\d{4}-\d{2}-\d{2}$/.test(fechaString)) {
+      // Crear fecha local sin conversión de zona horaria
+      const [year, month, day] = fechaString.split('-');
+      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    }
+    
+    // Si viene con hora, procesarla normalmente
+    return new Date(fechaString);
+  } catch (error) {
+    console.error('❌ Error procesando fecha:', fechaString, error);
+    return new Date(fechaString); // Fallback
+  }
+};
+
+// ✨ FUNCIÓN HELPER MEJORADA PARA CREAR FECHAS CON HORAS
+const crearFechaConHora = (fecha, hora) => {
+  try {
+    // Usar fecha local para evitar conversiones de zona horaria
+    const fechaBase = procesarFechaLocal(fecha);
+    const [hours, minutes] = hora.split(':');
+    
+    fechaBase.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    
+    console.log(`🕐 Fecha con hora creada: ${fecha} ${hora} -> ${fechaBase.toString()}`);
+    
+    return fechaBase;
+  } catch (error) {
+    console.error('❌ Error creando fecha con hora:', error);
+    // Fallback al método anterior
+    return new Date(`${fecha}T${hora}:00`);
+  }
+};
 
 // ✨ FUNCIONES HELPER PARA CÁLCULOS - CORREGIDAS
 const calcularMinutosNocturnos = (inicio, fin) => {
@@ -41,9 +78,11 @@ const calcularMinutosNocturnos = (inicio, fin) => {
   }
 };
 
+// ✨ FUNCIÓN HELPER MEJORADA PARA DETERMINAR TIPO DE DÍA
 const determinarTipoDia = (fecha) => {
   try {
-    const fechaObj = new Date(fecha);
+    // Usar la nueva función para procesar fechas
+    const fechaObj = procesarFechaLocal(fecha);
     
     // Protección contra fechas inválidas
     if (isNaN(fechaObj.getTime())) {
@@ -57,6 +96,8 @@ const determinarTipoDia = (fecha) => {
     }
     
     const diaSemana = fechaObj.getDay(); // 0=domingo, 6=sábado
+    
+    console.log(`📅 Fecha procesada: ${fecha} -> ${fechaObj.toLocaleDateString()} -> Día: ${diaSemana}`);
     
     return {
       es_fin_semana: diaSemana === 0 || diaSemana === 6,
@@ -399,7 +440,7 @@ exports.deleteTarifa = async (req, res) => {
   }
 };
 
-// ✨ SIMULADOR DE CÁLCULOS - ENDPOINT PRINCIPAL - CORREGIDO
+// ✨ SIMULADOR DE CÁLCULOS MEJORADO - CON CÓDIGOS APLICADOS Y FECHAS CORREGIDAS
 exports.simularCalculo = async (req, res) => {
   try {
     console.log('🧮 TARIFAS CONTROLLER: Simulando cálculo con parámetros:', req.body);
@@ -408,11 +449,11 @@ exports.simularCalculo = async (req, res) => {
       fecha,
       hora_inicio,
       hora_fin,
-      tipo_guardia, // 'pasiva' | 'activa' | 'ambas'
-      id_tarifa // Opcional, si no se proporciona usa la vigente
+      tipo_guardia,
+      id_tarifa
     } = req.body;
     
-    // ✅ VALIDACIONES MEJORADAS
+    // ✅ VALIDACIONES (mantener las existentes)
     if (!fecha || !hora_inicio || !hora_fin || !tipo_guardia) {
       return res.status(400).json({
         success: false,
@@ -420,26 +461,18 @@ exports.simularCalculo = async (req, res) => {
       });
     }
 
-    // Validar formato de fecha
+    // Validaciones de formato (mantener las existentes)
     const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!fechaRegex.test(fecha)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Formato de fecha inválido. Use YYYY-MM-DD'
-      });
-    }
-
-    // Validar formato de horas
     const horaRegex = /^\d{2}:\d{2}$/;
-    if (!horaRegex.test(hora_inicio) || !horaRegex.test(hora_fin)) {
+    const tiposValidos = ['pasiva', 'activa', 'ambas'];
+    
+    if (!fechaRegex.test(fecha) || !horaRegex.test(hora_inicio) || !horaRegex.test(hora_fin)) {
       return res.status(400).json({
         success: false,
-        message: 'Formato de hora inválido. Use HH:MM'
+        message: 'Formatos inválidos. Use fecha: YYYY-MM-DD, hora: HH:MM'
       });
     }
 
-    // Validar tipo de guardia
-    const tiposValidos = ['pasiva', 'activa', 'ambas'];
     if (!tiposValidos.includes(tipo_guardia)) {
       return res.status(400).json({
         success: false,
@@ -447,11 +480,10 @@ exports.simularCalculo = async (req, res) => {
       });
     }
     
-    // ✅ OBTENER TARIFA CON MANEJO DE ERRORES MEJORADO
+    // ✅ OBTENER TARIFA (mantener lógica existente)
     let tarifa;
     try {
       if (id_tarifa) {
-        console.log('🔍 Buscando tarifa por ID:', id_tarifa);
         tarifa = await Tarifa.findByPk(id_tarifa);
         if (!tarifa) {
           return res.status(404).json({
@@ -460,7 +492,6 @@ exports.simularCalculo = async (req, res) => {
           });
         }
       } else {
-        console.log('🔍 Buscando tarifa vigente para fecha:', fecha);
         tarifa = await Tarifa.findVigenteEnFecha(fecha);
         if (!tarifa) {
           return res.status(404).json({
@@ -470,16 +501,7 @@ exports.simularCalculo = async (req, res) => {
         }
       }
       
-      console.log('✅ Tarifa obtenida:', {
-        id: tarifa.id,
-        nombre: tarifa.nombre,
-        valores: {
-          guardia_pasiva: tarifa.valor_guardia_pasiva,
-          hora_activa: tarifa.valor_hora_activa,
-          nocturno_habil: tarifa.valor_adicional_nocturno_habil,
-          nocturno_no_habil: tarifa.valor_adicional_nocturno_no_habil
-        }
-      });
+      console.log('✅ Tarifa obtenida:', tarifa.nombre);
       
     } catch (modelError) {
       console.error('❌ Error accediendo al modelo Tarifa:', modelError);
@@ -490,11 +512,11 @@ exports.simularCalculo = async (req, res) => {
       });
     }
     
-    // ✅ ANÁLISIS TEMPORAL CON VALIDACIÓN
+    // ✅ ANÁLISIS TEMPORAL (VERSIÓN CORREGIDA)
     let tipoDia;
     try {
       tipoDia = determinarTipoDia(fecha);
-      console.log('📅 Análisis temporal:', tipoDia);
+      console.log('📅 Análisis temporal corregido:', tipoDia);
     } catch (tipoError) {
       console.error('❌ Error en análisis temporal:', tipoError);
       return res.status(400).json({
@@ -503,29 +525,26 @@ exports.simularCalculo = async (req, res) => {
       });
     }
     
-    const esDiaNoLaboral = tipoDia.es_fin_semana; // Simplificado, se podría agregar feriados
+    const esDiaNoLaboral = tipoDia.es_fin_semana;
     
-    // ✅ CREAR OBJETOS DATE CON VALIDACIÓN
+    // ✅ CREAR OBJETOS DATE (VERSIÓN CORREGIDA)
     let inicio, fin;
     try {
-      inicio = new Date(`${fecha}T${hora_inicio}:00`);
-      fin = new Date(`${fecha}T${hora_fin}:00`);
+      // Usar las nuevas funciones para evitar problemas de zona horaria
+      inicio = crearFechaConHora(fecha, hora_inicio);
+      fin = crearFechaConHora(fecha, hora_fin);
       
-      // Validar que las fechas son válidas
       if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) {
         throw new Error('Fechas u horas inválidas');
       }
       
-      // Si hora_fin < hora_inicio, significa que cruza medianoche
+      // Si la hora de fin es menor o igual a la de inicio, asumir que cruza medianoche
       if (fin <= inicio) {
         fin.setDate(fin.getDate() + 1);
-        console.log('🌙 Horario cruza medianoche');
+        console.log('🌙 Horario cruza medianoche - ajustado correctamente');
       }
       
-      console.log('⏰ Horarios calculados:', {
-        inicio: inicio.toISOString(),
-        fin: fin.toISOString()
-      });
+      console.log(`📅 Fechas procesadas - Inicio: ${inicio.toString()}, Fin: ${fin.toString()}`);
       
     } catch (fechaError) {
       console.error('❌ Error creando fechas:', fechaError);
@@ -535,24 +554,14 @@ exports.simularCalculo = async (req, res) => {
       });
     }
     
-    // ✅ CÁLCULOS DE DURACIÓN CON VALIDACIÓN
+    // ✅ CÁLCULOS DE DURACIÓN (mantener lógica existente)
     let duracionMinutos, duracionHoras, minutosNocturnos, horasNocturnas;
     try {
       duracionMinutos = Math.floor((fin - inicio) / (1000 * 60));
-      duracionHoras = Math.ceil(duracionMinutos / 60); // Fraccionamiento por hora
-      
-      // Calcular minutos nocturnos
+      duracionHoras = Math.ceil(duracionMinutos / 60);
       minutosNocturnos = calcularMinutosNocturnos(inicio, fin);
       horasNocturnas = Math.ceil(minutosNocturnos / 60);
       
-      console.log('⏱️ Duraciones calculadas:', {
-        minutos: duracionMinutos,
-        horas: duracionHoras,
-        minutosNocturnos,
-        horasNocturnas
-      });
-      
-      // Validar que los cálculos son razonables
       if (duracionMinutos < 0 || duracionHoras < 0) {
         throw new Error('Duración calculada inválida');
       }
@@ -564,8 +573,19 @@ exports.simularCalculo = async (req, res) => {
         message: 'Error al calcular las duraciones'
       });
     }
+
+    // ✨ NUEVO: OBTENER CÓDIGOS APLICABLES
+    let codigosAplicables = [];
+    try {
+      console.log('🔍 Buscando códigos aplicables...');
+      codigosAplicables = await Codigo.findApplicable(fecha, hora_inicio, hora_fin);
+      console.log(`✅ Se encontraron ${codigosAplicables.length} códigos aplicables`);
+    } catch (codigoError) {
+      console.error('❌ Error al obtener códigos aplicables:', codigoError);
+      // No fallar por esto, continuar sin códigos
+    }
     
-    // ✅ INICIALIZAR RESULTADO CON ESTRUCTURA COMPLETA
+    // ✅ INICIALIZAR RESULTADO CON ESTRUCTURA COMPLETA + CÓDIGOS
     const resultado = {
       tarifa_utilizada: {
         id: tarifa.id,
@@ -596,73 +616,51 @@ exports.simularCalculo = async (req, res) => {
         adicional_nocturno: 0,
         total: 0
       },
-      detalle: []
+      detalle: [],
+      // ✨ NUEVA SECCIÓN: CÓDIGOS APLICABLES
+      codigos_aplicables: codigosAplicables.map(codigo => ({
+        id: codigo.id,
+        codigo: codigo.codigo,
+        descripcion: codigo.descripcion,
+        tipo: codigo.tipo,
+        factor_multiplicador: codigo.factor_multiplicador,
+        dias_aplicables: codigo.dias_aplicables,
+        horario: {
+          inicio: codigo.hora_inicio,
+          fin: codigo.hora_fin,
+          cruza_medianoche: codigo.hora_inicio && codigo.hora_fin ? 
+            Codigo.cruzaMedianoche(codigo.hora_inicio, codigo.hora_fin) : false
+        },
+        aplicabilidad: {
+          aplica_por_dia: true, // Ya filtrado por el modelo
+          aplica_por_horario: true, // Ya filtrado por el modelo
+          motivo: exports.obtenerMotivoAplicabilidad(codigo, tipoDia)
+        }
+      }))
     };
     
-    // ✅ CÁLCULOS SEGÚN TIPO DE GUARDIA CON MANEJO DE ERRORES
+    // ✅ CÁLCULOS SEGÚN TIPO DE GUARDIA (mantener lógica existente pero mejorada)
     try {
       if (tipo_guardia === 'pasiva' || tipo_guardia === 'ambas') {
-        // Guardia Pasiva - valor fijo según el día
-        let valorGuardiaP = parseFloat(tarifa.valor_guardia_pasiva);
-        let descripcionGuardiaP = 'Guardia pasiva estándar';
-        
-        if (tipoDia.es_sabado) {
-          const horaInicioNum = parseInt(hora_inicio.split(':')[0]);
-          if (horaInicioNum >= 7 && horaInicioNum < 13) {
-            // Sábado mañana (6h)
-            valorGuardiaP = valorGuardiaP * 0.75;
-            descripcionGuardiaP = 'Guardia pasiva sábado mañana (6h)';
-          } else {
-            // Sábado tarde (11h)
-            valorGuardiaP = valorGuardiaP * 1.375;
-            descripcionGuardiaP = 'Guardia pasiva sábado tarde (11h)';
-          }
-        } else if (tipoDia.es_domingo) {
-          // Domingo (17h)
-          valorGuardiaP = valorGuardiaP * 2.125;
-          descripcionGuardiaP = 'Guardia pasiva domingo (17h)';
-        }
-        
-        resultado.calculos.guardia_pasiva = parseFloat(valorGuardiaP.toFixed(2));
-        resultado.detalle.push({
-          concepto: 'Guardia Pasiva',
-          descripcion: descripcionGuardiaP,
-          calculo: `${tarifa.valor_guardia_pasiva} × factor`,
-          importe: resultado.calculos.guardia_pasiva
-        });
+        const resultadoGuardiaP = exports.calcularGuardiasPasivas(tarifa, tipoDia, hora_inicio);
+        resultado.calculos.guardia_pasiva = resultadoGuardiaP.importe;
+        resultado.detalle.push(resultadoGuardiaP.detalle);
       }
       
       if (tipo_guardia === 'activa' || tipo_guardia === 'ambas') {
-        // Guardia Activa - por horas solo si hay incidente
-        let tarifaHoraActiva = parseFloat(tarifa.valor_hora_activa);
-        
-        if (esDiaNoLaboral) {
-          tarifaHoraActiva *= 1.5; // +50% para días no laborales
-        }
-        
-        const importeGuardiaA = tarifaHoraActiva * duracionHoras;
-        resultado.calculos.guardia_activa = parseFloat(importeGuardiaA.toFixed(2));
-        resultado.detalle.push({
-          concepto: 'Guardia Activa',
-          descripcion: `${duracionHoras}h de incidente${esDiaNoLaboral ? ' (día no laboral)' : ''}`,
-          calculo: `${duracionHoras}h × ${tarifaHoraActiva.toFixed(2)}`,
-          importe: resultado.calculos.guardia_activa
-        });
+        const resultadoGuardiaA = exports.calcularGuardiasActivas(
+          tarifa, duracionHoras, esDiaNoLaboral
+        );
+        resultado.calculos.guardia_activa = resultadoGuardiaA.importe;
+        resultado.detalle.push(resultadoGuardiaA.detalle);
         
         // Adicional Nocturno si aplica
         if (horasNocturnas > 0) {
-          const valorNocturno = esDiaNoLaboral ? 
-            parseFloat(tarifa.valor_adicional_nocturno_no_habil) : 
-            parseFloat(tarifa.valor_adicional_nocturno_habil);
-          
-          const importeNocturno = valorNocturno * horasNocturnas;
-          resultado.calculos.adicional_nocturno = parseFloat(importeNocturno.toFixed(2));
-          resultado.detalle.push({
-            concepto: 'Adicional Nocturno',
-            descripcion: `${horasNocturnas}h nocturnas ${esDiaNoLaboral ? '(no hábil)' : '(hábil)'}`,
-            calculo: `${horasNocturnas}h × ${valorNocturno.toFixed(2)}`,
-            importe: resultado.calculos.adicional_nocturno
-          });
+          const resultadoNocturno = exports.calcularAdicionalNocturno(
+            tarifa, horasNocturnas, esDiaNoLaboral
+          );
+          resultado.calculos.adicional_nocturno = resultadoNocturno.importe;
+          resultado.detalle.push(resultadoNocturno.detalle);
         }
       }
       
@@ -674,6 +672,7 @@ exports.simularCalculo = async (req, res) => {
       ).toFixed(2));
       
       console.log('✅ Simulación completada. Total:', resultado.calculos.total);
+      console.log(`✅ Códigos aplicables incluidos: ${resultado.codigos_aplicables.length}`);
       
     } catch (calcError) {
       console.error('❌ Error en cálculos de tarifa:', calcError);
@@ -697,6 +696,100 @@ exports.simularCalculo = async (req, res) => {
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
+};
+
+// ✨ FUNCIONES AUXILIARES PARA EL SIMULADOR
+
+// Obtener motivo de aplicabilidad de un código
+exports.obtenerMotivoAplicabilidad = (codigo, tipoDia) => {
+  const motivos = [];
+  
+  if (codigo.dias_aplicables.includes('F') && tipoDia.es_fin_semana) {
+    motivos.push('Es fin de semana');
+  }
+  
+  if (codigo.dias_aplicables.includes(tipoDia.dia_semana_nombre.charAt(0))) {
+    motivos.push(`Aplica para ${tipoDia.dia_semana_nombre}`);
+  }
+  
+  if (codigo.hora_inicio && codigo.hora_fin) {
+    const cruzaMedianoche = Codigo.cruzaMedianoche(codigo.hora_inicio, codigo.hora_fin);
+    motivos.push(`Horario: ${codigo.hora_inicio}-${codigo.hora_fin}${cruzaMedianoche ? ' (cruza medianoche)' : ''}`);
+  } else {
+    motivos.push('Sin restricción horaria');
+  }
+  
+  return motivos.join(', ');
+};
+
+// Calcular guardias pasivas con detalles
+exports.calcularGuardiasPasivas = (tarifa, tipoDia, horaInicio) => {
+  let valorGuardiaP = parseFloat(tarifa.valor_guardia_pasiva);
+  let descripcionGuardiaP = 'Guardia pasiva estándar';
+  
+  if (tipoDia.es_sabado) {
+    const horaInicioNum = parseInt(horaInicio.split(':')[0]);
+    if (horaInicioNum >= 7 && horaInicioNum < 13) {
+      valorGuardiaP = valorGuardiaP * 0.75;
+      descripcionGuardiaP = 'Guardia pasiva sábado mañana (6h)';
+    } else {
+      valorGuardiaP = valorGuardiaP * 1.375;
+      descripcionGuardiaP = 'Guardia pasiva sábado tarde (11h)';
+    }
+  } else if (tipoDia.es_domingo) {
+    valorGuardiaP = valorGuardiaP * 2.125;
+    descripcionGuardiaP = 'Guardia pasiva domingo (17h)';
+  }
+  
+  return {
+    importe: parseFloat(valorGuardiaP.toFixed(2)),
+    detalle: {
+      concepto: 'Guardia Pasiva',
+      descripcion: descripcionGuardiaP,
+      calculo: `${tarifa.valor_guardia_pasiva} × factor`,
+      importe: parseFloat(valorGuardiaP.toFixed(2))
+    }
+  };
+};
+
+// Calcular guardias activas con detalles
+exports.calcularGuardiasActivas = (tarifa, duracionHoras, esDiaNoLaboral) => {
+  let tarifaHoraActiva = parseFloat(tarifa.valor_hora_activa);
+  
+  if (esDiaNoLaboral) {
+    tarifaHoraActiva *= 1.5;
+  }
+  
+  const importeGuardiaA = tarifaHoraActiva * duracionHoras;
+  
+  return {
+    importe: parseFloat(importeGuardiaA.toFixed(2)),
+    detalle: {
+      concepto: 'Guardia Activa',
+      descripcion: `${duracionHoras}h de incidente${esDiaNoLaboral ? ' (día no laboral)' : ''}`,
+      calculo: `${duracionHoras}h × ${tarifaHoraActiva.toFixed(2)}`,
+      importe: parseFloat(importeGuardiaA.toFixed(2))
+    }
+  };
+};
+
+// Calcular adicional nocturno con detalles
+exports.calcularAdicionalNocturno = (tarifa, horasNocturnas, esDiaNoLaboral) => {
+  const valorNocturno = esDiaNoLaboral ? 
+    parseFloat(tarifa.valor_adicional_nocturno_no_habil) : 
+    parseFloat(tarifa.valor_adicional_nocturno_habil);
+  
+  const importeNocturno = valorNocturno * horasNocturnas;
+  
+  return {
+    importe: parseFloat(importeNocturno.toFixed(2)),
+    detalle: {
+      concepto: 'Adicional Nocturno',
+      descripcion: `${horasNocturnas}h nocturnas ${esDiaNoLaboral ? '(no hábil)' : '(hábil)'}`,
+      calculo: `${horasNocturnas}h × ${valorNocturno.toFixed(2)}`,
+      importe: parseFloat(importeNocturno.toFixed(2))
+    }
+  };
 };
 
 // ✨ ANALIZAR CÓDIGOS APLICABLES PARA UNA FECHA/HORA

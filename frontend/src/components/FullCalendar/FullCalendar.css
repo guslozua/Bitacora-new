@@ -160,3 +160,103 @@
     font-size: 0.8rem;
   }
 }
+/* Reemplazar los estilos anteriores de filtros por estos nuevos */
+
+/* Estilos para los iconos de filtro tipo pills */
+.filter-icon {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  user-select: none;
+}
+
+.filter-icon:hover {
+  transform: scale(1.15) !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2) !important;
+}
+
+.filter-icon.active {
+  animation: filter-pulse 3s infinite;
+}
+
+.filter-icon:active {
+  transform: scale(0.95) !important;
+}
+
+/* Animación de pulso para iconos activos */
+@keyframes filter-pulse {
+  0% {
+    box-shadow: 0 4px 12px currentColor, 0 0 0 0 currentColor;
+  }
+  50% {
+    box-shadow: 0 4px 12px currentColor, 0 0 0 8px rgba(0,0,0,0);
+  }
+  100% {
+    box-shadow: 0 4px 12px currentColor, 0 0 0 0 rgba(0,0,0,0);
+  }
+}
+
+/* Animación del anillo pulsante */
+@keyframes pulse-ring {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+}
+
+/* Efecto de enfoque para accesibilidad */
+.filter-icon:focus-visible {
+  outline: 3px solid rgba(13, 110, 253, 0.5);
+  outline-offset: 2px;
+}
+
+/* Responsive para iconos en pantallas pequeñas */
+@media (max-width: 768px) {
+  .filter-icon {
+    width: 42px !important;
+    height: 42px !important;
+  }
+  
+  .filter-icon i {
+    font-size: 18px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .filter-icon {
+    width: 38px !important;
+    height: 38px !important;
+    margin: 2px !important;
+  }
+  
+  .filter-icon i {
+    font-size: 16px !important;
+  }
+}
+
+/* Contenedor de filtros sin fondo */
+.filters-container-clean {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+}
+
+/* Mejorar la transición del tooltip */
+.tooltip {
+  transition: opacity 0.2s ease !important;
+}
+
+/* Estilo especial para el hover del tooltip */
+.filter-icon[aria-describedby] {
+  z-index: 1000;
+}

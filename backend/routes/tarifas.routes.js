@@ -1,4 +1,4 @@
-// routes/tarifas.routes.js - RUTAS DE TARIFAS SIGUIENDO PATRÓN DEL PROYECTO
+// routes/tarifas.routes.js - RUTAS DE TARIFAS CORREGIDAS - ORDEN IMPORTANTE
 const express = require('express');
 const router = express.Router();
 const tarifasController = require('../controllers/tarifas.controller');
@@ -12,22 +12,9 @@ const tarifasController = require('../controllers/tarifas.controller');
 // GET /api/tarifas - Obtener todas las tarifas
 router.get('/', tarifasController.getTarifas);
 
-// GET /api/tarifas/:id - Obtener una tarifa por ID
-router.get('/:id', tarifasController.getTarifaById);
+// ===== RUTAS ESPECIALIZADAS - DEBEN IR ANTES QUE /:id =====
 
-// POST /api/tarifas - Crear nueva tarifa
-router.post('/', tarifasController.createTarifa);
-
-// PUT /api/tarifas/:id - Actualizar tarifa existente
-router.put('/:id', tarifasController.updateTarifa);
-
-// PATCH /api/tarifas/:id/deactivate - Desactivar tarifa
-router.patch('/:id/deactivate', tarifasController.deactivateTarifa);
-
-// DELETE /api/tarifas/:id - Eliminar tarifa
-router.delete('/:id', tarifasController.deleteTarifa);
-
-// ===== RUTAS ESPECIALIZADAS =====
+// ✨ ESTAS RUTAS DEBEN IR ANTES QUE /:id PARA EVITAR CONFLICTOS
 
 // GET /api/tarifas/vigente?fecha=YYYY-MM-DD - Obtener tarifa vigente para una fecha específica
 router.get('/vigente', tarifasController.getTarifaVigente);
@@ -43,6 +30,23 @@ router.get('/ejemplos', tarifasController.obtenerEjemplos);
 
 // GET /api/tarifas/estadisticas - Obtener estadísticas de tarifas
 router.get('/estadisticas', tarifasController.getEstadisticasTarifas);
+
+// ===== RUTAS CON PARÁMETROS - DEBEN IR AL FINAL =====
+
+// GET /api/tarifas/:id - Obtener una tarifa por ID (DEBE IR DESPUÉS DE LAS RUTAS ESPECÍFICAS)
+router.get('/:id', tarifasController.getTarifaById);
+
+// POST /api/tarifas - Crear nueva tarifa
+router.post('/', tarifasController.createTarifa);
+
+// PUT /api/tarifas/:id - Actualizar tarifa existente
+router.put('/:id', tarifasController.updateTarifa);
+
+// PATCH /api/tarifas/:id/deactivate - Desactivar tarifa
+router.patch('/:id/deactivate', tarifasController.deactivateTarifa);
+
+// DELETE /api/tarifas/:id - Eliminar tarifa
+router.delete('/:id', tarifasController.deleteTarifa);
 
 // ===== RUTAS CON AUTENTICACIÓN (OPCIONAL) =====
 // Descomenta estas líneas si necesitas autenticación para ciertas operaciones

@@ -1,4 +1,4 @@
-// src/services/TarifaService.ts - SERVICIO FRONTEND PARA TARIFAS - VERSIÓN CORREGIDA
+// src/services/TarifaService.ts - SERVICIO FRONTEND COMPLETO CON CÓDIGOS Y FECHAS CORREGIDAS
 import axios from 'axios';
 
 // URL base de la API
@@ -31,6 +31,26 @@ export interface TarifaCreacion {
     vigencia_hasta?: string | null;
     estado: 'activo' | 'inactivo';
     observaciones?: string | null;
+}
+
+// ✨ INTERFAZ PARA CÓDIGOS APLICABLES
+export interface CodigoAplicable {
+    id: number;
+    codigo: string;
+    descripcion: string;
+    tipo: string;
+    factor_multiplicador: number;
+    dias_aplicables: string;
+    horario: {
+        inicio: string | null;
+        fin: string | null;
+        cruza_medianoche: boolean;
+    };
+    aplicabilidad: {
+        aplica_por_dia: boolean;
+        aplica_por_horario: boolean;
+        motivo: string;
+    };
 }
 
 export interface ResultadoSimulacion {
@@ -69,6 +89,8 @@ export interface ResultadoSimulacion {
         calculo: string;
         importe: number;
     }>;
+    // ✨ NUEVA PROPIEDAD: CÓDIGOS APLICABLES
+    codigos_aplicables?: CodigoAplicable[];
 }
 
 export interface ParametrosSimulacion {
@@ -90,9 +112,64 @@ class ApiError extends Error {
     }
 }
 
+// ✨ FUNCIONES AUXILIARES PARA MANEJAR FECHAS CORRECTAMENTE
+
+/**
+ * ✨ FUNCIÓN AUXILIAR PARA MANEJAR FECHAS LOCALES CORRECTAMENTE
+ */
+export const formatearFechaLocal = (fecha: string): string => {
+  try {
+    // Si ya está en formato YYYY-MM-DD, devolverla tal como está
+    if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+      return fecha;
+    }
+    
+    // Si es un objeto Date, formatearla como YYYY-MM-DD local
+    const fechaObj = new Date(fecha);
+    const year = fechaObj.getFullYear();
+    const month = String(fechaObj.getMonth() + 1).padStart(2, '0');
+    const day = String(fechaObj.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.error('❌ Error formateando fecha:', error);
+    return fecha; // Fallback
+  }
+};
+
+/**
+ * ✨ FUNCIÓN AUXILIAR PARA VALIDAR Y FORMATEAR PARÁMETROS DE SIMULACIÓN
+ */
+export const prepararParametrosSimulacionSegura = (
+  fecha: string,
+  horaInicio: string,
+  horaFin: string,
+  tipoGuardia: 'pasiva' | 'activa' | 'ambas',
+  idTarifa?: number
+): ParametrosSimulacion => {
+  // Asegurar que la fecha esté en formato correcto
+  const fechaFormateada = formatearFechaLocal(fecha);
+  
+  console.log('📅 FRONTEND: Preparando parámetros con fecha local:', {
+    fechaOriginal: fecha,
+    fechaFormateada: fechaFormateada,
+    horaInicio,
+    horaFin,
+    tipoGuardia
+  });
+  
+  return {
+    fecha: fechaFormateada,
+    hora_inicio: horaInicio,
+    hora_fin: horaFin,
+    tipo_guardia: tipoGuardia,
+    ...(idTarifa && { id_tarifa: idTarifa })
+  };
+};
+
 /**
  * Servicio para operaciones con tarifas
- * ✅ COMPLETAMENTE INTEGRADO CON EL BACKEND - TIPOS CORREGIDOS
+ * ✅ COMPLETAMENTE INTEGRADO CON EL BACKEND - TIPOS CORREGIDOS + CÓDIGOS APLICABLES + FECHAS CORREGIDAS
  */
 const TarifaService = {
     // ===== OPERACIONES CRUD BÁSICAS =====
@@ -167,8 +244,11 @@ const TarifaService = {
      */
     fetchTarifaVigente: async (fecha: string): Promise<Tarifa> => {
         try {
+            // ✨ USAR FECHA FORMATEADA CORRECTAMENTE
+            const fechaFormateada = formatearFechaLocal(fecha);
+            
             const response = await axios.get(`${API_URL}/tarifas/vigente`, {
-                params: { fecha }
+                params: { fecha: fechaFormateada }
             });
 
             if (!response.data.success) {
@@ -282,30 +362,57 @@ const TarifaService = {
     // ===== FUNCIONES ESPECIALIZADAS =====
 
     /**
-     * ✨ SIMULADOR DE CÁLCULOS - FUNCIÓN PRINCIPAL
+     * ✨ SIMULADOR DE CÁLCULOS - FUNCIÓN PRINCIPAL CON CÓDIGOS APLICABLES Y FECHAS CORREGIDAS
      */
     simularCalculo: async (parametros: ParametrosSimulacion): Promise<ResultadoSimulacion> => {
         try {
-            const response = await axios.post(`${API_URL}/tarifas/simular`, parametros);
-
+            console.log('🧮 FRONTEND: Enviando datos para simulación con códigos y fechas corregidas:', parametros);
+            
+            // ✨ USAR PARÁMETROS SEGUROS CON FECHAS FORMATEADAS
+            const parametrosSeguras = prepararParametrosSimulacionSegura(
+                parametros.fecha,
+                parametros.hora_inicio,
+                parametros.hora_fin,
+                parametros.tipo_guardia,
+                parametros.id_tarifa
+            );
+            
+            const response = await axios.post(`${API_URL}/tarifas/simular`, parametrosSeguras);
+            
+            console.log('✅ FRONTEND: Resultado recibido con códigos:', response.data);
+            
             if (!response.data.success) {
-                throw new ApiError(response.data.message || 'Error en simulación', response.status);
+                throw new Error(response.data.message || 'Error en la simulación');
             }
-
-            return response.data.data;
+            
+            // El resultado ya viene con códigos_aplicables del backend
+            const resultado = response.data.data;
+            
+            return {
+                ...resultado,
+                // Los códigos ya vienen incluidos en el response del backend
+                codigos_aplicables: resultado.codigos_aplicables || []
+            };
+            
         } catch (error) {
-            if (axios.isAxiosError(error) && error.response) {
-                throw new ApiError(
-                    error.response.data.message || 'Error en simulación de cálculo',
-                    error.response.status
-                );
+            console.error('❌ FRONTEND ERROR en simulación con códigos:', error);
+            
+            if (axios.isAxiosError(error)) {
+                if (error.response?.status === 404) {
+                    throw new Error('Tarifa no encontrada');
+                } else if (error.response?.status === 400) {
+                    throw new Error(error.response.data?.message || 'Datos inválidos');
+                } else if ((error.response?.status ?? 0) >= 500) {
+                    throw new Error('Error interno del servidor');
+                }
             }
-            throw new Error('Error de conexión en simulación');
+            
+            throw new Error('Error al simular el cálculo con códigos');
         }
     },
 
     /**
-     * Analizar códigos aplicables para una fecha y horario
+     * ✨ FUNCIÓN AUXILIAR PARA ANALIZAR CÓDIGOS APLICABLES
      */
     analizarCodigosAplicables: async (
         fecha: string,
@@ -316,24 +423,16 @@ const TarifaService = {
         hora_inicio: string;
         hora_fin: string;
         tarifa_vigente: Tarifa | null;
-        codigos_aplicables: Array<{
-            id: number;
-            codigo: string;
-            descripcion: string;
-            tipo: string;
-            factor_multiplicador: number;
-            dias_aplicables: string;
-            horario: {
-                inicio: string | null;
-                fin: string | null;
-            };
-        }>;
+        codigos_aplicables: CodigoAplicable[];
         total_codigos: number;
     }> => {
         try {
+            // ✨ USAR FECHA FORMATEADA CORRECTAMENTE
+            const fechaFormateada = formatearFechaLocal(fecha);
+            
             const response = await axios.get(`${API_URL}/tarifas/analizar-codigos`, {
                 params: {
-                    fecha,
+                    fecha: fechaFormateada,
                     hora_inicio: horaInicio,
                     hora_fin: horaFin
                 }
@@ -566,7 +665,7 @@ const TarifaService = {
     },
 
     /**
-     * ✨ NUEVA: Preparar datos para el simulador del frontend
+     * ✨ NUEVA: Preparar datos para el simulador del frontend (MEJORADA CON FECHAS)
      */
     prepararParametrosSimulacion: (
         fecha: string,
@@ -575,13 +674,8 @@ const TarifaService = {
         tipoGuardia: 'pasiva' | 'activa' | 'ambas',
         idTarifa?: number
     ): ParametrosSimulacion => {
-        return {
-            fecha,
-            hora_inicio: horaInicio,
-            hora_fin: horaFin,
-            tipo_guardia: tipoGuardia,
-            ...(idTarifa && { id_tarifa: idTarifa })
-        };
+        // ✨ USAR LA FUNCIÓN SEGURA PARA FECHAS
+        return prepararParametrosSimulacionSegura(fecha, horaInicio, horaFin, tipoGuardia, idTarifa);
     },
 
     /**
@@ -630,6 +724,34 @@ const TarifaService = {
             observaciones: tarifa.observaciones
         };
     }
+};
+
+// ✨ FUNCIONES AUXILIARES PARA CÓDIGOS APLICABLES
+
+/**
+ * Función para formatear códigos aplicables
+ */
+export const formatearCodigoAplicable = (codigo: CodigoAplicable): string => {
+    const horario = codigo.horario.inicio && codigo.horario.fin 
+        ? `${codigo.horario.inicio}-${codigo.horario.fin}${codigo.horario.cruza_medianoche ? ' (cruza medianoche)' : ''}`
+        : 'Todo el día';
+        
+    return `${codigo.codigo}: ${codigo.descripcion} (${horario}) - Factor: x${codigo.factor_multiplicador}`;
+};
+
+/**
+ * Función para obtener color del badge por tipo de código
+ */
+export const getColorTipoCodigo = (tipo: string): string => {
+    const colores: { [key: string]: string } = {
+        'nocturno': 'primary',
+        'fin_semana': 'success',
+        'feriado': 'warning',
+        'especial': 'info',
+        'default': 'secondary'
+    };
+    
+    return colores[tipo.toLowerCase()] || colores.default;
 };
 
 // Export de interfaces y servicio

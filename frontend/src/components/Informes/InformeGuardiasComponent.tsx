@@ -1,11 +1,12 @@
 // components/Informes/InformeGuardiasComponent.tsx
 import React, { useEffect, useState } from 'react';
-import { Table, Card, Badge, Row, Col, Spinner, Alert, Pagination } from 'react-bootstrap';
+import { Table, Card, Badge, Row, Col, Spinner, Alert, Pagination, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import InformeService, { InformeGuardiasParams } from '../../services/InformeService';
 import InformeFilters from './InformeFilters';
+import api from '../../services/api'; // Para consultar incidentes
 import {
   PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, Cell
+  Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Cell
 } from 'recharts';
 
 interface Guardia {
@@ -17,6 +18,10 @@ interface Guardia {
   esFinSemana: boolean;
   notas: string;
   fechaCreacion: string;
+  // Nuevas propiedades para incidentes
+  tieneIncidentes?: boolean;
+  cantidadIncidentes?: number;
+  estadosIncidentes?: string[];
 }
 
 interface Estadisticas {
@@ -42,7 +47,7 @@ const fechaATimestamp = (fechaStr: string): number => {
   return fecha.getTime();
 };
 
-type OrdenColumna = 'fecha' | 'usuario' | 'diaSemana' | 'tipoDia';
+type OrdenColumna = 'fecha' | 'usuario' | 'diaSemana' | 'tipoDia' | 'incidentes';
 type DireccionOrden = 'asc' | 'desc';
 
 const InformeGuardiasComponent: React.FC = () => {
@@ -51,6 +56,7 @@ const InformeGuardiasComponent: React.FC = () => {
   const [filtros, setFiltros] = useState<InformeGuardiasParams>({});
   const [cargando, setCargando] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [cargandoIncidentes, setCargandoIncidentes] = useState<boolean>(false);
 
   // Estados para paginación
   const [paginaActual, setPaginaActual] = useState<number>(1);
@@ -66,22 +72,125 @@ const InformeGuardiasComponent: React.FC = () => {
   // Colores modernos
   const colors = ['#3498db', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6', '#1abc9c'];
 
-  // Función para obtener el informe
+  // Función para cargar incidentes de las guardias
+  const cargarIncidentesGuardias = async (guardiasData: Guardia[]) => {
+    try {
+      setCargandoIncidentes(true);
+      
+      // Obtener IDs de guardias
+      const guardiaIds = guardiasData.map(g => g.id);
+      
+      if (guardiaIds.length === 0) {
+        return guardiasData;
+      }
+
+      // Consultar incidentes para todas las guardias
+      const response = await api.post('/incidentes/guardias/resumen', {
+        guardia_ids: guardiaIds
+      });
+
+      if (response.data.success) {
+        const incidentesData = response.data.data;
+        
+        // Mapear los datos de incidentes a las guardias
+        const guardiasConIncidentes = guardiasData.map(guardia => {
+          const incidentesGuardia = incidentesData.find((inc: any) => inc.guardia_id === guardia.id);
+          
+          return {
+            ...guardia,
+            tieneIncidentes: incidentesGuardia ? incidentesGuardia.cantidad > 0 : false,
+            cantidadIncidentes: incidentesGuardia ? incidentesGuardia.cantidad : 0,
+            estadosIncidentes: incidentesGuardia ? incidentesGuardia.estados : []
+          };
+        });
+
+        return guardiasConIncidentes;
+      }
+    } catch (error: any) {
+      console.error('Error al cargar incidentes de guardias:', error);
+      
+      // Si falla, usar método individual (fallback)
+      return await cargarIncidentesIndividual(guardiasData);
+    } finally {
+      setCargandoIncidentes(false);
+    }
+    
+    return guardiasData;
+  };
+
+  // Método de fallback para cargar incidentes individualmente
+  const cargarIncidentesIndividual = async (guardiasData: Guardia[]) => {
+    const BATCH_SIZE = 5;
+    const guardiasConIncidentes = [...guardiasData];
+    
+    for (let i = 0; i < guardiasData.length; i += BATCH_SIZE) {
+      const batch = guardiasData.slice(i, i + BATCH_SIZE);
+      
+      const promesas = batch.map(async (guardia) => {
+        try {
+          const response = await api.get(`/incidentes/guardia/${guardia.id}`);
+          const incidentes = response.data.success ? response.data.data : [];
+          
+          return {
+            id: guardia.id,
+            tieneIncidentes: incidentes.length > 0,
+            cantidadIncidentes: incidentes.length,
+            estadosIncidentes: incidentes.map((inc: any) => inc.estado)
+          };
+        } catch (error) {
+          // Si da 404, significa que no hay incidentes
+          return {
+            id: guardia.id,
+            tieneIncidentes: false,
+            cantidadIncidentes: 0,
+            estadosIncidentes: []
+          };
+        }
+      });
+      
+      const resultadosBatch = await Promise.all(promesas);
+      
+      // Actualizar guardias con información de incidentes
+      resultadosBatch.forEach(resultado => {
+        const index = guardiasConIncidentes.findIndex(g => g.id === resultado.id);
+        if (index !== -1) {
+          guardiasConIncidentes[index] = {
+            ...guardiasConIncidentes[index],
+            ...resultado
+          };
+        }
+      });
+      
+      // Pequeña pausa entre batches
+      if (i + BATCH_SIZE < guardiasData.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    return guardiasConIncidentes;
+  };
+
+  // Función para obtener el informe - MODIFICADA
   const obtenerInforme = async (params: InformeGuardiasParams = {}) => {
     setCargando(true);
     setError('');
     try {
       const respuesta = await InformeService.getInformeGuardias(params);
       if (respuesta.success) {
-        setGuardias(respuesta.data.guardias);
+        // Primero establecer las guardias básicas
+        const guardiasBasicas = respuesta.data.guardias;
+        setGuardias(guardiasBasicas);
         setEstadisticas(respuesta.data.estadisticas);
-        setPaginaActual(1); // Resetear a primera página
+        setPaginaActual(1);
         
         // Determinar si mostrar tabla completa
-        // Si hay filtro específico de fecha (mes/año), mostrar todo
         const tieneFiltroPorMes = params.desde && params.hasta && 
           new Date(params.desde).getMonth() === new Date(params.hasta).getMonth();
         setMostrarTablaCompleta(!!tieneFiltroPorMes);
+        
+        // Luego cargar información de incidentes
+        const guardiasConIncidentes = await cargarIncidentesGuardias(guardiasBasicas);
+        setGuardias(guardiasConIncidentes);
       }
     } catch (error: any) {
       console.error('Error al obtener informe de guardias:', error);
@@ -122,7 +231,7 @@ const InformeGuardiasComponent: React.FC = () => {
     setPaginaActual(1); // Resetear a primera página al ordenar
   };
 
-  // Función para ordenar guardias
+  // Función para ordenar guardias - MODIFICADA
   const guardiasOrdenadas = [...guardias].sort((a, b) => {
     let valorA: any;
     let valorB: any;
@@ -149,6 +258,11 @@ const InformeGuardiasComponent: React.FC = () => {
         };
         valorA = getTipoOrden(a);
         valorB = getTipoOrden(b);
+        break;
+      case 'incidentes':
+        // Ordenar por cantidad de incidentes
+        valorA = a.cantidadIncidentes || 0;
+        valorB = b.cantidadIncidentes || 0;
         break;
       default:
         valorA = fechaATimestamp(a.fecha);
@@ -281,6 +395,50 @@ const InformeGuardiasComponent: React.FC = () => {
       : <i className="bi bi-arrow-down text-primary ms-1"></i>;
   };
 
+  // Función para renderizar la columna de incidentes
+  const renderIncidentes = (guardia: Guardia) => {
+    if (cargandoIncidentes) {
+      return <Spinner animation="border" size="sm" />;
+    }
+
+    if (!guardia.tieneIncidentes) {
+      return (
+        <Badge bg="light" text="muted">
+          <i className="bi bi-check-circle me-1"></i>
+          Sin incidentes
+        </Badge>
+      );
+    }
+
+    const estadosUnicos = Array.from(new Set(guardia.estadosIncidentes || []));
+    const tooltipContent = (
+      <div>
+        <strong>{guardia.cantidadIncidentes} incidente{guardia.cantidadIncidentes !== 1 ? 's' : ''}</strong>
+        {estadosUnicos.length > 0 && (
+          <div className="mt-1">
+            Estados: {estadosUnicos.join(', ')}
+          </div>
+        )}
+      </div>
+    );
+
+    return (
+      <OverlayTrigger
+        placement="top"
+        overlay={<Tooltip>{tooltipContent}</Tooltip>}
+      >
+        <Badge 
+          bg={guardia.cantidadIncidentes && guardia.cantidadIncidentes > 0 ? "warning" : "light"} 
+          className="d-flex align-items-center gap-1"
+          style={{ cursor: 'pointer' }}
+        >
+          <i className="bi bi-exclamation-triangle"></i>
+          {guardia.cantidadIncidentes}
+        </Badge>
+      </OverlayTrigger>
+    );
+  };
+
   return (
     <div className="informe-guardias">
       {/* Header */}
@@ -301,10 +459,12 @@ const InformeGuardiasComponent: React.FC = () => {
         </Alert>
       )}
 
-      {cargando ? (
+      {(cargando || cargandoIncidentes) ? (
         <div className="text-center py-5">
           <Spinner animation="border" variant="primary" />
-          <p className="mt-2">Cargando datos del informe...</p>
+          <p className="mt-2">
+            {cargando ? 'Cargando datos del informe...' : 'Cargando información de incidentes...'}
+          </p>
         </div>
       ) : (
         <>
@@ -421,7 +581,7 @@ const InformeGuardiasComponent: React.FC = () => {
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip content={<CustomTooltip />} />
+                        <RechartsTooltip content={<CustomTooltip />} />
                         <Legend 
                           verticalAlign="bottom" 
                           height={36}
@@ -451,7 +611,7 @@ const InformeGuardiasComponent: React.FC = () => {
                           type="category"
                           tick={{ fontSize: 11 }}
                         />
-                        <Tooltip content={<CustomTooltip />} />
+                        <RechartsTooltip content={<CustomTooltip />} />
                         <Bar 
                           dataKey="cantidad" 
                           name="Guardias"
@@ -472,7 +632,7 @@ const InformeGuardiasComponent: React.FC = () => {
             </Row>
           )}
 
-          {/* Tabla con ordenamiento */}
+          {/* Tabla con ordenamiento - MODIFICADA CON COLUMNA DE INCIDENTES */}
           <Card className="border-0 shadow-sm">
             <Card.Header className="bg-white py-3 d-flex justify-content-between align-items-center">
               <h5 className="mb-0 fw-bold">Listado de Guardias</h5>
@@ -519,6 +679,13 @@ const InformeGuardiasComponent: React.FC = () => {
                       >
                         Tipo de Día {getIconoOrden('tipoDia')}
                       </th>
+                      <th 
+                        role="button" 
+                        onClick={() => manejarOrdenamiento('incidentes')}
+                        className="user-select-none"
+                      >
+                        Incidentes {getIconoOrden('incidentes')}
+                      </th>
                       <th>Notas</th>
                     </tr>
                   </thead>
@@ -540,12 +707,15 @@ const InformeGuardiasComponent: React.FC = () => {
                               {getTipoDiaTexto(guardia)}
                             </Badge>
                           </td>
+                          <td>
+                            {renderIncidentes(guardia)}
+                          </td>
                           <td>{guardia.notas || '-'}</td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="text-center py-4 text-muted">
+                        <td colSpan={6} className="text-center py-4 text-muted">
                           No se encontraron guardias con los filtros aplicados
                         </td>
                       </tr>

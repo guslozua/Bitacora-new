@@ -874,4 +874,59 @@ exports.getEstadisticasEstados = async (req, res) => {
   }
 };
 
+// Obtener resumen de incidentes para múltiples guardias - NUEVO ENDPOINT OPTIMIZADO
+exports.getResumenIncidentesGuardias = async (req, res) => {
+  try {
+    console.log('📊 RESUMEN INCIDENTES - Body recibido:', req.body);
+    
+    const { guardia_ids } = req.body;
+    
+    if (!guardia_ids || !Array.isArray(guardia_ids) || guardia_ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requiere un array de IDs de guardias'
+      });
+    }
+    
+    console.log('📊 IDs de guardias a consultar:', guardia_ids.length);
+    
+    // Consulta optimizada para obtener resumen de incidentes por guardia
+    const query = `
+      SELECT 
+        i.id_guardia as guardia_id,
+        COUNT(*) as cantidad,
+        GROUP_CONCAT(DISTINCT i.estado) as estados
+      FROM incidentes_guardia i
+      WHERE i.id_guardia IN (${guardia_ids.map(() => '?').join(',')})
+      GROUP BY i.id_guardia
+    `;
+    
+    const [results] = await pool.execute(query, guardia_ids);
+    
+    console.log('📊 Resultados obtenidos:', results.length);
+    
+    // Procesar los resultados para convertir estados a array
+    const resumenProcesado = results.map(row => ({
+      guardia_id: row.guardia_id,
+      cantidad: row.cantidad,
+      estados: row.estados ? row.estados.split(',') : []
+    }));
+    
+    console.log('📊 Resumen procesado:', resumenProcesado.length, 'guardias con incidentes');
+    
+    res.status(200).json({
+      success: true,
+      data: resumenProcesado
+    });
+    
+  } catch (error) {
+    console.error('❌ Error al obtener resumen de incidentes por guardias:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener resumen de incidentes',
+      error: error.message
+    });
+  }
+};
+
 module.exports = exports;

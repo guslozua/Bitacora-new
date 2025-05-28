@@ -16,6 +16,8 @@ router.get('/:id/historial', incidentesController.getHistorialEstados);
 
 // Rutas de consultas específicas
 router.get('/guardia/:id_guardia', incidentesController.getIncidentesByGuardia);
+router.post('/guardias/resumen', incidentesController.getResumenIncidentesGuardias);
+
 
 // Rutas de estadísticas y reportes
 router.get('/estadisticas/estados', incidentesController.getEstadisticasEstados);

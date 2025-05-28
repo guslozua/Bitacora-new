@@ -1,7 +1,7 @@
 // FullCalendar.tsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, momentLocalizer, View, Views } from 'react-big-calendar';
-import { Button, ButtonGroup, Card, Container, Row, Col } from 'react-bootstrap';
+import { Button, ButtonGroup, Card, Container, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import moment from 'moment';
 import axios from 'axios';
 import 'moment/locale/es';
@@ -39,6 +39,58 @@ interface FullCalendarProps {
   initialDate?: Date;
 }
 
+// Definir los filtros con iconos y colores
+const filterConfig = {
+  tasks: {
+    icon: 'bi-list-check',
+    label: 'Tareas',
+    color: '#0d6efd',
+    variant: 'primary'
+  },
+  events: {
+    icon: 'bi-calendar-event',
+    label: 'Eventos',
+    color: '#198754',
+    variant: 'success'
+  },
+  holidays: {
+    icon: 'bi-calendar-x',
+    label: 'Feriados',
+    color: '#dc3545',
+    variant: 'danger'
+  },
+  guardias: {
+    icon: 'bi-shield-check',
+    label: 'Guardias',
+    color: '#9c27b0',
+    variant: 'secondary'
+  },
+  birthdays: {
+    icon: 'bi-gift',
+    label: 'Cumpleaños',
+    color: '#ff9800',
+    variant: 'warning'
+  },
+  daysoff: {
+    icon: 'bi-calendar-plus',
+    label: 'Días a Favor',
+    color: '#4caf50',
+    variant: 'success'
+  },
+  gconect: {
+    icon: 'bi-wifi',
+    label: 'G. Conectividad',
+    color: '#00bcd4',
+    variant: 'info'
+  },
+  vacation: {
+    icon: 'bi-airplane',
+    label: 'Vacaciones',
+    color: '#9e9e9e',
+    variant: 'secondary'
+  }
+};
+
 const FullCalendar: React.FC<FullCalendarProps> = ({
   events = [],
   onSelectEvent,
@@ -48,15 +100,17 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
   const [view, setView] = useState<View>(Views.MONTH);
   const [date, setDate] = useState(initialDate || new Date());
   const [incidentes, setIncidentes] = useState<IncidenteEvent[]>([]);
+  
+  // Cambiar el estado inicial - solo guardias activado por defecto
   const [filters, setFilters] = useState<EventFilters>({
-    tasks: true,
-    events: true,
-    holidays: true,
-    guardias: true,
-    birthdays: true,
-    daysoff: true,
-    gconect: true,
-    vacation: true,
+    tasks: false,
+    events: false,
+    holidays: false,
+    guardias: true, // Solo este activado por defecto
+    birthdays: false,
+    daysoff: false,
+    gconect: false,
+    vacation: false,
     searchTerm: ''
   });
 
@@ -68,13 +122,16 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
     }
   }, [events, filters.guardias]);
 
-  // Función para cargar incidentes
+  // Función para cargar incidentes - VERSIÓN OPTIMIZADA
   const loadIncidentes = async () => {
     try {
       // Filtrar solo eventos de tipo guardia
       const guardias = events.filter(event => event.type === 'guardia');
 
-      if (guardias.length === 0) return;
+      if (guardias.length === 0) {
+        setIncidentes([]);
+        return;
+      }
 
       // Obtener IDs de guardias
       const guardiaIds = guardias.map(guardia => {
@@ -82,25 +139,24 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
           return parseInt(guardia.id.replace('guardia-', ''));
         }
         return parseInt(String(guardia.id).replace('guardia-', ''));
-      });
+      }).filter(id => !isNaN(id)); // Filtrar IDs inválidos
 
-      // Consultar incidentes para estas guardias
-      const requests = guardiaIds.map(id =>
-        axios.get(`/api/incidentes/guardia/${id}`)
-          .then(response => response.data.data)
-          .catch(error => {
-            console.error(`Error al cargar incidentes para guardia ${id}:`, error);
-            return [];
-          })
-      );
+      if (guardiaIds.length === 0) {
+        setIncidentes([]);
+        return;
+      }
 
-      const results = await Promise.all(requests);
-
-      // Aplanar los resultados y convertirlos al formato de eventos
-      const incidentesEvents: IncidenteEvent[] = [];
-
-      results.forEach(guardiaIncidentes => {
-        guardiaIncidentes.forEach((incidente: Incidente) => {
+      // Hacer una sola petición para obtener todos los incidentes de las guardias
+      // en lugar de múltiples peticiones individuales
+      try {
+        const response = await axios.post('/api/incidentes/guardias/multiple', {
+          guardia_ids: guardiaIds
+        });
+        
+        const incidentesData = response.data.data || [];
+        
+        // Convertir incidentes al formato de eventos
+        const incidentesEvents: IncidenteEvent[] = incidentesData.map((incidente: Incidente) => {
           const guardia = guardias.find(g => {
             const guardiaId = typeof g.id === 'string' && g.id.startsWith('guardia-')
               ? parseInt(g.id.replace('guardia-', ''))
@@ -108,28 +164,89 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
             return guardiaId === incidente.id_guardia;
           });
 
-          if (guardia) {
-            incidentesEvents.push({
-              id: `incidente-${incidente.id}`,
-              title: `Incidente: ${incidente.descripcion.substring(0, 20)}${incidente.descripcion.length > 20 ? '...' : ''}`,
-              start: new Date(incidente.inicio),
-              end: new Date(incidente.fin),
-              allDay: false,
-              type: 'guardia', // Para aplicar el mismo filtro que las guardias
-              color: getIncidenteColor(incidente.estado),
-              description: incidente.descripcion,
-              incidenteId: incidente.id,
-              guardiaId: incidente.id_guardia,
-              incidenteEstado: incidente.estado,
-              isIncidente: true
-            });
-          }
-        });
-      });
+          if (!guardia) return null;
 
-      setIncidentes(incidentesEvents);
+          return {
+            id: `incidente-${incidente.id}`,
+            title: `Incidente: ${incidente.descripcion.substring(0, 20)}${incidente.descripcion.length > 20 ? '...' : ''}`,
+            start: new Date(incidente.inicio),
+            end: new Date(incidente.fin),
+            allDay: false,
+            type: 'guardia',
+            color: getIncidenteColor(incidente.estado),
+            description: incidente.descripcion,
+            incidenteId: incidente.id,
+            guardiaId: incidente.id_guardia,
+            incidenteEstado: incidente.estado,
+            isIncidente: true
+          };
+        }).filter(Boolean); // Filtrar elementos nulos
+
+        setIncidentes(incidentesEvents);
+        
+      } catch (apiError) {
+        // Si el endpoint múltiple no existe, usar el método original pero con manejo mejorado
+        console.warn('Endpoint múltiple no disponible, usando método individual con manejo optimizado');
+        
+        // Limitar las peticiones concurrentes para evitar sobrecarga
+        const BATCH_SIZE = 5;
+        const incidentesEvents: IncidenteEvent[] = [];
+        
+        for (let i = 0; i < guardiaIds.length; i += BATCH_SIZE) {
+          const batch = guardiaIds.slice(i, i + BATCH_SIZE);
+          
+          const batchPromises = batch.map(async (id) => {
+            try {
+              const response = await axios.get(`/api/incidentes/guardia/${id}`);
+              return { guardiaId: id, incidentes: response.data.data || [] };
+            } catch (error) {
+              // Silenciosamente manejar errores 404 - es normal que algunas guardias no tengan incidentes
+              if (axios.isAxiosError(error) && error.response?.status === 404) {
+                return { guardiaId: id, incidentes: [] };
+              }
+              console.warn(`Error al cargar incidentes para guardia ${id}:`, error);
+              return { guardiaId: id, incidentes: [] };
+            }
+          });
+          
+          const batchResults = await Promise.all(batchPromises);
+          
+          // Procesar resultados del batch
+          batchResults.forEach(({ guardiaId, incidentes: guardiaIncidentes }) => {
+            guardiaIncidentes.forEach((incidente: Incidente) => {
+              const guardia = guardias.find(g => {
+                const gId = typeof g.id === 'string' && g.id.startsWith('guardia-')
+                  ? parseInt(g.id.replace('guardia-', ''))
+                  : parseInt(String(g.id).replace('guardia-', ''));
+                return gId === guardiaId;
+              });
+
+              if (guardia) {
+                incidentesEvents.push({
+                  id: `incidente-${incidente.id}`,
+                  title: `Incidente: ${incidente.descripcion.substring(0, 20)}${incidente.descripcion.length > 20 ? '...' : ''}`,
+                  start: new Date(incidente.inicio),
+                  end: new Date(incidente.fin),
+                  allDay: false,
+                  type: 'guardia',
+                  color: getIncidenteColor(incidente.estado),
+                  description: incidente.descripcion,
+                  incidenteId: incidente.id,
+                  guardiaId: incidente.id_guardia,
+                  incidenteEstado: incidente.estado,
+                  isIncidente: true
+                });
+              }
+            });
+          });
+        }
+        
+        setIncidentes(incidentesEvents);
+      }
+      
     } catch (error) {
-      console.error('Error al cargar incidentes:', error);
+      console.error('Error general al cargar incidentes:', error);
+      setIncidentes([]); // En caso de error, limpiar incidentes
     }
   };
 
@@ -307,6 +424,106 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
 
   // Formatear el mes actual en mayúsculas
   const currentMonthYear = moment(date).format('MMMM YYYY').toUpperCase();
+  
+  // Formatear el día actual para la vista de día
+  const currentDayFormatted = moment(date).format('dddd DD [de] MMMM [de] YYYY').toUpperCase();
+  
+  // Función para obtener el título según la vista
+  const getTitleByView = () => {
+    switch (view) {
+      case Views.DAY:
+        return currentDayFormatted;
+      case Views.WEEK:
+        const startWeek = moment(date).startOf('week');
+        const endWeek = moment(date).endOf('week');
+        return `${startWeek.format('DD [de] MMMM')} - ${endWeek.format('DD [de] MMMM YYYY')}`.toUpperCase();
+      case Views.AGENDA:
+        return `AGENDA - ${currentMonthYear}`;
+      default: // MONTH
+        return currentMonthYear;
+    }
+  };
+
+  // Renderizar botón de filtro con icono - estilo similar al alfabético del glosario
+  const renderFilterButton = (filterKey: keyof typeof filterConfig) => {
+    const config = filterConfig[filterKey];
+    const isActive = filters[filterKey as keyof EventFilters];
+    
+    return (
+      <OverlayTrigger
+        key={filterKey}
+        placement="top"
+        overlay={<Tooltip id={`tooltip-${filterKey}`}>{config.label}</Tooltip>}
+      >
+        <span
+          onClick={() => handleFilterChange(filterKey as keyof EventFilters)}
+          className={`filter-icon ${isActive ? 'active' : ''}`}
+          style={{
+            backgroundColor: isActive ? config.color : '#f8f9fa',
+            color: isActive ? 'white' : config.color,
+            width: '48px',
+            height: '48px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '50%',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            margin: '4px',
+            border: isActive ? `2px solid ${config.color}` : '2px solid transparent',
+            boxShadow: isActive 
+              ? `0 4px 12px ${config.color}40, 0 0 0 3px ${config.color}20` 
+              : '0 2px 8px rgba(0,0,0,0.1)',
+            transform: isActive ? 'scale(1.1)' : 'scale(1)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          <i 
+            className={config.icon} 
+            style={{ 
+              fontSize: '20px',
+              fontWeight: 'bold',
+              filter: isActive ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' : 'none',
+              zIndex: 1
+            }}
+          />
+          {isActive && (
+            <>
+              {/* Efecto de brillo interno */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '10%',
+                  left: '10%',
+                  right: '60%',
+                  bottom: '60%',
+                  background: 'rgba(255,255,255,0.3)',
+                  borderRadius: '50%',
+                  filter: 'blur(8px)'
+                }}
+              />
+              {/* Anillo exterior pulsante */}
+              <div
+                className="pulse-ring"
+                style={{
+                  position: 'absolute',
+                  top: '-2px',
+                  left: '-2px',
+                  right: '-2px',
+                  bottom: '-2px',
+                  borderRadius: '50%',
+                  border: `2px solid ${config.color}`,
+                  opacity: 0.6,
+                  animation: 'pulse-ring 2s infinite'
+                }}
+              />
+            </>
+          )}
+        </span>
+      </OverlayTrigger>
+    );
+  };
 
   return (
     <Container fluid className="full-calendar-container">
@@ -314,7 +531,21 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
         <Card.Header className="py-3">
           <Row className="align-items-center">
             <Col sm={4}>
-              <h4 className="mb-0 fw-bold">{currentMonthYear}</h4>
+              <h4 className="mb-0 fw-bold" style={{ fontSize: view === Views.DAY ? '1.1rem' : '1.5rem' }}>
+                {getTitleByView()}
+              </h4>
+              {view === Views.DAY && (
+                <small className="text-muted d-block mt-1">
+                  {moment(date).calendar(null, {
+                    sameDay: '[Hoy]',
+                    nextDay: '[Mañana]',
+                    nextWeek: 'dddd',
+                    lastDay: '[Ayer]',
+                    lastWeek: '[El] dddd [pasado]',
+                    sameElse: 'DD/MM/YYYY'
+                  })}
+                </small>
+              )}
             </Col>
             <Col sm={4} className="text-center">
               <ButtonGroup>
@@ -361,82 +592,12 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
         </Card.Header>
         <Card.Body className="px-3 py-4">
           <Row className="mb-3">
-            <Col className="d-flex flex-wrap justify-content-end gap-2">
-              <ButtonGroup>
-                <Button
-                  variant={filters.tasks ? 'primary' : 'outline-primary'}
-                  onClick={() => handleFilterChange('tasks')}
-                >
-                  Tareas
-                </Button>
-                <Button
-                  variant={filters.events ? 'success' : 'outline-success'}
-                  onClick={() => handleFilterChange('events')}
-                >
-                  Eventos
-                </Button>
-                <Button
-                  variant={filters.holidays ? 'danger' : 'outline-danger'}
-                  onClick={() => handleFilterChange('holidays')}
-                >
-                  Feriados
-                </Button>
-              </ButtonGroup>
-
-              <ButtonGroup>
-                <Button
-                  variant={filters.guardias ? 'secondary' : 'outline-secondary'}
-                  style={{
-                    backgroundColor: filters.guardias ? '#9c27b0' : 'transparent',
-                    borderColor: '#9c27b0',
-                    color: filters.guardias ? 'white' : '#9c27b0'
-                  }}
-                  onClick={() => handleFilterChange('guardias')}
-                >
-                  Guardias
-                </Button>
-                <Button
-                  variant={filters.birthdays ? 'warning' : 'outline-warning'}
-                  onClick={() => handleFilterChange('birthdays')}
-                >
-                  Cumpleaños
-                </Button>
-                <Button
-                  variant="outline-success"
-                  style={{
-                    backgroundColor: filters.daysoff ? '#4caf50' : 'transparent',
-                    borderColor: '#4caf50',
-                    color: filters.daysoff ? 'white' : '#4caf50'
-                  }}
-                  onClick={() => handleFilterChange('daysoff')}
-                >
-                  Días a Favor
-                </Button>
-                <Button
-                  variant="outline-info"
-                  style={{
-                    backgroundColor: filters.gconect ? '#00bcd4' : 'transparent',
-                    borderColor: '#00bcd4',
-                    color: filters.gconect ? 'white' : '#00bcd4'
-                  }}
-                  size="sm"
-                  onClick={() => handleFilterChange('gconect')}
-                >
-                  G. Conectividad
-                </Button>
-                <Button
-                  variant="outline-secondary"
-                  style={{
-                    backgroundColor: filters.vacation ? '#9e9e9e' : 'transparent',
-                    borderColor: '#9e9e9e',
-                    color: filters.vacation ? 'white' : '#9e9e9e'
-                  }}
-                  size="sm"
-                  onClick={() => handleFilterChange('vacation')}
-                >
-                  Vacaciones
-                </Button>
-              </ButtonGroup>
+            <Col className="d-flex flex-wrap justify-content-center gap-1">
+              <div className="d-flex flex-wrap justify-content-center align-items-center p-3">
+                {Object.keys(filterConfig).map(filterKey => 
+                  renderFilterButton(filterKey as keyof typeof filterConfig)
+                )}
+              </div>
             </Col>
           </Row>
           <Row>
@@ -481,6 +642,8 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
           </Row>
         </Card.Body>
       </Card>
+
+
     </Container>
   );
 };

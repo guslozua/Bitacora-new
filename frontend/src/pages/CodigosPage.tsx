@@ -1,4 +1,4 @@
-// src/pages/CodigosPage.tsx - CON GESTIÓN DE TARIFAS INTEGRADA - CORREGIDO
+// src/pages/CodigosPage.tsx - VERSIÓN COMPLETA CON CÓDIGOS APLICABLES Y FECHAS CORREGIDAS
 import React, { useState, useEffect } from 'react';
 import { Container, Card, Row, Col, Button, Spinner, Alert, Nav, Tab, Badge, Form, Table, Modal, InputGroup } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
@@ -8,10 +8,15 @@ import CodigosList from '../components/Codigos/CodigosList';
 import CodigoModal from '../components/Codigos/CodigoModal';
 import CodigoFilters from '../components/Codigos/CodigoFilters';
 import CodigoService, { Codigo } from '../services/CodigoService';
-import TarifaService, { Tarifa, TarifaCreacion, ResultadoSimulacion, ParametrosSimulacion } from '../services/TarifaService';
-
-// ✅ USAR DIRECTAMENTE LA INTERFAZ DEL SERVICIO - YA NO NECESITAMOS DUPLICAR
-// Removemos la interfaz Tarifa local y usamos la del servicio
+import TarifaService, { 
+  Tarifa, 
+  TarifaCreacion, 
+  ResultadoSimulacion, 
+  ParametrosSimulacion, 
+  CodigoAplicable,
+  getColorTipoCodigo,
+  prepararParametrosSimulacionSegura  // ✨ IMPORTAR LA FUNCIÓN DE FECHAS SEGURAS
+} from '../services/TarifaService';
 
 interface ResultadoCalculo {
   tarifa_utilizada: Tarifa;
@@ -51,7 +56,7 @@ const CodigosPage: React.FC = () => {
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
-  // ✅ Estados para tarifas - usando Tarifa del servicio
+  // Estados para tarifas
   const [activeTab, setActiveTab] = useState<string>('codigos');
   const [tarifas, setTarifas] = useState<Tarifa[]>([]);
   const [tarifaActual, setTarifaActual] = useState<Tarifa | null>(null);
@@ -69,7 +74,10 @@ const CodigosPage: React.FC = () => {
   const [resultadoSimulacion, setResultadoSimulacion] = useState<ResultadoCalculo | null>(null);
   const [loadingSimulacion, setLoadingSimulacion] = useState(false);
 
-  // Cargar códigos al montar el componente o cuando cambian los filtros
+  // ✨ NUEVO ESTADO PARA CÓDIGOS APLICABLES
+  const [codigosAplicables, setCodigosAplicables] = useState<CodigoAplicable[]>([]);
+
+  // Cargar datos iniciales
   useEffect(() => {
     if (activeTab === 'codigos') {
       loadCodigos();
@@ -78,7 +86,7 @@ const CodigosPage: React.FC = () => {
     }
   }, [filters, activeTab]);
 
-  // Función para cargar códigos con filtros
+  // Función para cargar códigos
   const loadCodigos = async () => {
     try {
       setLoading(true);
@@ -101,22 +109,20 @@ const CodigosPage: React.FC = () => {
     }
   };
 
-  // ✅ Función para cargar tarifas - VERSIÓN CORREGIDA (CON DATOS REALES):
+  // Función para cargar tarifas
   const cargarTarifas = async () => {
     setLoadingTarifas(true);
     try {
       console.log('🔄 Cargando tarifas desde el backend...');
 
-      // ✅ USAR TarifaService REAL
       const tarifasData = await TarifaService.fetchTarifas({
-        incluir_inactivas: true // Mostrar todas las tarifas
+        incluir_inactivas: true
       });
 
       console.log('✅ Tarifas cargadas:', tarifasData.length);
-
       setTarifas(tarifasData);
 
-      // Buscar tarifa vigente (activa)
+      // Buscar tarifa vigente
       const tarifaVigente = tarifasData.find(t => t.estado === 'activo') || null;
       setTarifaActual(tarifaVigente);
 
@@ -134,7 +140,7 @@ const CodigosPage: React.FC = () => {
     }
   };
 
-  // ✅ Simular cálculo de tarifa - VERSIÓN CORREGIDA (CON SIMULACIÓN REAL):
+  // ✅ Simular cálculo CON CÓDIGOS APLICABLES Y FECHAS CORREGIDAS
   const simularCalculo = async () => {
     if (!tarifaActual || !tarifaActual.id) {
       setError('No hay tarifa seleccionada para simular');
@@ -143,24 +149,25 @@ const CodigosPage: React.FC = () => {
 
     setLoadingSimulacion(true);
     try {
-      console.log('🧮 Iniciando simulación real...');
+      console.log('🧮 Iniciando simulación con códigos y fechas corregidas...');
 
-      // ✅ USAR TarifaService REAL
-      const parametros: ParametrosSimulacion = {
-        fecha: simulacion.fecha,
-        hora_inicio: simulacion.hora_inicio,
-        hora_fin: simulacion.hora_fin,
-        tipo_guardia: simulacion.tipo_guardia,
-        id_tarifa: tarifaActual.id
-      };
+      // ✨ USAR LA FUNCIÓN SEGURA PARA PREPARAR PARÁMETROS CON FECHAS CORREGIDAS
+      const parametros = prepararParametrosSimulacionSegura(
+        simulacion.fecha,
+        simulacion.hora_inicio,
+        simulacion.hora_fin,
+        simulacion.tipo_guardia,
+        tarifaActual.id
+      );
 
-      console.log('📝 Parámetros de simulación:', parametros);
+      console.log('📝 Parámetros de simulación con fechas corregidas:', parametros);
 
+      // ✨ USAR LA FUNCIÓN QUE INCLUYE CÓDIGOS APLICABLES
       const resultadoReal = await TarifaService.simularCalculo(parametros);
 
-      console.log('✅ Simulación completada:', resultadoReal);
+      console.log('✅ Simulación completada con códigos:', resultadoReal);
 
-      // Adaptar resultado del backend al formato esperado por la UI
+      // Adaptar resultado del backend
       const resultadoAdaptado: ResultadoCalculo = {
         tarifa_utilizada: {
           id: resultadoReal.tarifa_utilizada.id,
@@ -176,7 +183,7 @@ const CodigosPage: React.FC = () => {
         desglose: resultadoReal.calculos,
         detalle: resultadoReal.detalle.map(item => ({
           tipo: item.concepto,
-          codigo: undefined, // El backend no devuelve código en este formato
+          codigo: undefined,
           descripcion: item.descripcion,
           horas: undefined,
           tarifa_hora: undefined,
@@ -187,6 +194,9 @@ const CodigosPage: React.FC = () => {
       };
 
       setResultadoSimulacion(resultadoAdaptado);
+      
+      // ✨ GUARDAR LOS CÓDIGOS APLICABLES
+      setCodigosAplicables(resultadoReal.codigos_aplicables || []);
 
     } catch (err: any) {
       console.error('❌ Error en simulación:', err);
@@ -196,7 +206,7 @@ const CodigosPage: React.FC = () => {
     }
   };
 
-  // Funciones existentes para códigos
+  // Funciones para códigos
   const handleNewCodigo = () => {
     setSelectedCodigo(null);
     setShowModal(true);
@@ -238,7 +248,7 @@ const CodigosPage: React.FC = () => {
     }
   };
 
-  // Nuevas funciones para tarifas
+  // Funciones para tarifas
   const abrirModalTarifa = (tarifa?: Tarifa) => {
     setSelectedTarifa(tarifa || null);
     setShowTarifaModal(true);
@@ -327,7 +337,7 @@ const CodigosPage: React.FC = () => {
             <Row>
               <Col md={12}>
                 <Tab.Content>
-                  {/* Tab: Códigos de Facturación (existente) */}
+                  {/* Tab: Códigos de Facturación */}
                   <Tab.Pane eventKey="codigos">
                     <Card className="shadow-sm border-0 mb-4">
                       <Card.Body>
@@ -463,7 +473,7 @@ const CodigosPage: React.FC = () => {
                     </Card>
                   </Tab.Pane>
 
-                  {/* Tab: Simulador de Cálculos */}
+                  {/* Tab: Simulador CON CÓDIGOS APLICABLES Y FECHAS CORREGIDAS */}
                   <Tab.Pane eventKey="simulador">
                     <Row>
                       <Col md={6}>
@@ -570,60 +580,119 @@ const CodigosPage: React.FC = () => {
 
                       <Col md={6}>
                         {resultadoSimulacion ? (
-                          <Card className="shadow-sm border-0">
-                            <Card.Header className="bg-success text-white">
-                              <h5 className="mb-0">
-                                <i className="bi bi-check-circle me-2"></i>
-                                Resultado de la Simulación
-                              </h5>
-                            </Card.Header>
-                            <Card.Body>
-                              <div className="mb-4">
-                                <h6 className="text-muted">Tarifa Utilizada:</h6>
-                                <p className="fw-bold">{resultadoSimulacion.tarifa_utilizada.nombre}</p>
-                              </div>
+                          <>
+                            {/* Card: Resultado de la Simulación */}
+                            <Card className="shadow-sm border-0 mb-3">
+                              <Card.Header className="bg-success text-white">
+                                <h5 className="mb-0">
+                                  <i className="bi bi-check-circle me-2"></i>
+                                  Resultado de la Simulación
+                                </h5>
+                              </Card.Header>
+                              <Card.Body>
+                                <div className="mb-4">
+                                  <h6 className="text-muted">Tarifa Utilizada:</h6>
+                                  <p className="fw-bold">{resultadoSimulacion.tarifa_utilizada.nombre}</p>
+                                </div>
 
-                              <div className="mb-4">
-                                <h6 className="text-muted">Desglose de Importes:</h6>
-                                <Table className="table-sm">
-                                  <tbody>
-                                    <tr>
-                                      <td>Guardia Pasiva:</td>
-                                      <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.guardia_pasiva)}</td>
-                                    </tr>
-                                    <tr>
-                                      <td>Guardia Activa:</td>
-                                      <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.guardia_activa)}</td>
-                                    </tr>
-                                    <tr>
-                                      <td>Adicional Nocturno:</td>
-                                      <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.adicional_nocturno)}</td>
-                                    </tr>
-                                    <tr className="table-primary fw-bold">
-                                      <td>TOTAL:</td>
-                                      <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.total)}</td>
-                                    </tr>
-                                  </tbody>
-                                </Table>
-                              </div>
+                                <div className="mb-4">
+                                  <h6 className="text-muted">Desglose de Importes:</h6>
+                                  <Table className="table-sm">
+                                    <tbody>
+                                      <tr>
+                                        <td>Guardia Pasiva:</td>
+                                        <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.guardia_pasiva)}</td>
+                                      </tr>
+                                      <tr>
+                                        <td>Guardia Activa:</td>
+                                        <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.guardia_activa)}</td>
+                                      </tr>
+                                      <tr>
+                                        <td>Adicional Nocturno:</td>
+                                        <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.adicional_nocturno)}</td>
+                                      </tr>
+                                      <tr className="table-primary fw-bold">
+                                        <td>TOTAL:</td>
+                                        <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.total)}</td>
+                                      </tr>
+                                    </tbody>
+                                  </Table>
+                                </div>
 
-                              <div>
-                                <h6 className="text-muted">Detalle de Cálculo:</h6>
-                                {resultadoSimulacion.detalle.map((item, index) => (
-                                  <div key={index} className="border rounded p-2 mb-2 bg-light">
-                                    <div className="d-flex justify-content-between align-items-center">
-                                      <div>
-                                        <strong>{item.tipo}</strong>
-                                        {item.codigo && <Badge bg="secondary" className="ms-2">{item.codigo}</Badge>}
+                                <div>
+                                  <h6 className="text-muted">Detalle de Cálculo:</h6>
+                                  {resultadoSimulacion.detalle.map((item, index) => (
+                                    <div key={index} className="border rounded p-2 mb-2 bg-light">
+                                      <div className="d-flex justify-content-between align-items-center">
+                                        <div>
+                                          <strong>{item.tipo}</strong>
+                                          {item.codigo && <Badge bg="secondary" className="ms-2">{item.codigo}</Badge>}
+                                        </div>
+                                        <span className="fw-bold text-primary">{formatearMoneda(item.importe)}</span>
                                       </div>
-                                      <span className="fw-bold text-primary">{formatearMoneda(item.importe)}</span>
+                                      <small className="text-muted">{item.observaciones}</small>
                                     </div>
-                                    <small className="text-muted">{item.observaciones}</small>
-                                  </div>
-                                ))}
-                              </div>
-                            </Card.Body>
-                          </Card>
+                                  ))}
+                                </div>
+                              </Card.Body>
+                            </Card>
+
+                            {/* ✨ NUEVA CARD: CÓDIGOS APLICABLES */}
+                            {codigosAplicables.length > 0 && (
+                              <Card className="shadow-sm border-0">
+                                <Card.Header className="bg-primary text-white">
+                                  <h6 className="mb-0">
+                                    <i className="bi bi-tags me-2"></i>
+                                    Códigos Aplicables ({codigosAplicables.length})
+                                  </h6>
+                                </Card.Header>
+                                <Card.Body style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                  {codigosAplicables.map((codigo, index) => (
+                                    <div key={`${codigo.id}-${index}`} className="border rounded p-2 mb-2 bg-light">
+                                      <div className="d-flex justify-content-between align-items-start mb-1">
+                                        <div>
+                                          <Badge bg={getColorTipoCodigo(codigo.tipo)} className="me-2">
+                                            {codigo.tipo.toUpperCase()}
+                                          </Badge>
+                                          <strong>{codigo.codigo}</strong>
+                                        </div>
+                                        <Badge bg="info" className="ms-2">
+                                          Factor: x{codigo.factor_multiplicador}
+                                        </Badge>
+                                      </div>
+                                      
+                                      <div className="mt-1">
+                                        <small className="text-dark fw-bold">{codigo.descripcion}</small>
+                                      </div>
+                                      
+                                      <div className="mt-1">
+                                        <small className="text-muted">
+                                          <strong>Horario:</strong> {
+                                            codigo.horario.inicio && codigo.horario.fin 
+                                              ? `${codigo.horario.inicio} - ${codigo.horario.fin}${codigo.horario.cruza_medianoche ? ' (cruza medianoche)' : ''}`
+                                              : 'Todo el día'
+                                          }
+                                        </small>
+                                      </div>
+                                      
+                                      <div className="mt-1">
+                                        <small className="text-muted">
+                                          <strong>Días:</strong> {codigo.dias_aplicables}
+                                        </small>
+                                      </div>
+                                      
+                                      <div className="mt-1">
+                                        <small className="text-success">
+                                          <i className="bi bi-check-circle me-1"></i>
+                                          {codigo.aplicabilidad.motivo}
+                                        </small>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </Card.Body>
+                              </Card>
+                            )}
+                          </>
                         ) : (
                           <Card className="shadow-sm border-0">
                             <Card.Body className="text-center text-muted">
@@ -650,7 +719,7 @@ const CodigosPage: React.FC = () => {
           codigo={selectedCodigo}
         />
 
-        {/* ✅ Modal para crear/editar tarifa - CONECTADO AL BACKEND */}
+        {/* Modal para crear/editar tarifa */}
         <TarifaModal
           show={showTarifaModal}
           onHide={cerrarModalTarifa}
@@ -692,7 +761,7 @@ const CodigosPage: React.FC = () => {
   );
 };
 
-// ✅ Componente Modal para Tarifa - CONECTADO AL BACKEND
+// ✅ Componente Modal para Tarifa
 interface TarifaModalProps {
   show: boolean;
   onHide: () => void;
@@ -719,10 +788,10 @@ const TarifaModal: React.FC<TarifaModalProps> = ({ show, onHide, tarifa, onSave 
   useEffect(() => {
     if (show) {
       if (tarifa) {
-        // ✅ Editar tarifa existente - convertir a TarifaCreacion
+        // Editar tarifa existente
         setFormData(TarifaService.tarifaACreacion(tarifa));
       } else {
-        // ✅ Nueva tarifa - usar valores por defecto
+        // Nueva tarifa
         setFormData(TarifaService.getTarifaDefecto());
       }
       setErrors([]);
