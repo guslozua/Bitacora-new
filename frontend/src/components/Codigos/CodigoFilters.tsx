@@ -8,6 +8,7 @@ interface CodigoFiltersProps {
     estado: string;
     search: string;
     incluirInactivos: boolean;
+    modalidad_convenio?: string;
   };
   onFilterChange: (newFilters: any) => void;
 }
@@ -22,7 +23,7 @@ const CodigoFilters: React.FC<CodigoFiltersProps> = ({ filters, onFilterChange }
       incluirInactivos: false
     });
   };
-  
+
   return (
     <div className="bg-light p-3 rounded mb-3">
       <Row className="g-3">
@@ -43,7 +44,7 @@ const CodigoFilters: React.FC<CodigoFiltersProps> = ({ filters, onFilterChange }
             </Form.Select>
           </Form.Group>
         </Col>
-        
+
         <Col md={3}>
           <Form.Group controlId="filterEstado">
             <Form.Label>Estado</Form.Label>
@@ -58,7 +59,7 @@ const CodigoFilters: React.FC<CodigoFiltersProps> = ({ filters, onFilterChange }
             </Form.Select>
           </Form.Group>
         </Col>
-        
+
         <Col md={4}>
           <Form.Group controlId="filterSearch">
             <Form.Label>Buscar</Form.Label>
@@ -70,7 +71,7 @@ const CodigoFilters: React.FC<CodigoFiltersProps> = ({ filters, onFilterChange }
                 onChange={(e) => onFilterChange({ search: e.target.value })}
               />
               {filters.search && (
-                <Button 
+                <Button
                   variant="outline-secondary"
                   onClick={() => onFilterChange({ search: '' })}
                 >
@@ -80,26 +81,39 @@ const CodigoFilters: React.FC<CodigoFiltersProps> = ({ filters, onFilterChange }
             </InputGroup>
           </Form.Group>
         </Col>
-        
+
         <Col md={2} className="d-flex align-items-end">
           <Form.Group controlId="filterIncluirInactivos" className="mb-0">
             <Form.Check
               type="switch"
               label="Mostrar todos"
               checked={filters.incluirInactivos}
-              onChange={(e) => onFilterChange({ 
+              onChange={(e) => onFilterChange({
                 incluirInactivos: e.target.checked,
                 estado: e.target.checked ? '' : 'activo'
               })}
             />
           </Form.Group>
         </Col>
+        <Col md={3}>
+          <Form.Group controlId="filterModalidad">
+            <Form.Label>Modalidad de Convenio</Form.Label>
+            <Form.Select
+              value={filters.modalidad_convenio || ''}
+              onChange={(e) => onFilterChange({ modalidad_convenio: e.target.value })}
+            >
+              <option value="">Todas las modalidades</option>
+              <option value="FC">Fuera de Convenio (FC)</option>
+              <option value="DC">Dentro de Convenio (DC)</option>
+            </Form.Select>
+          </Form.Group>
+        </Col>
       </Row>
-      
+
       <Row className="mt-2">
         <Col className="d-flex justify-content-end">
-          <Button 
-            variant="outline-secondary" 
+          <Button
+            variant="outline-secondary"
             size="sm"
             onClick={clearFilters}
           >

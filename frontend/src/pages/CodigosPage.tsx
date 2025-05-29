@@ -8,11 +8,11 @@ import CodigosList from '../components/Codigos/CodigosList';
 import CodigoModal from '../components/Codigos/CodigoModal';
 import CodigoFilters from '../components/Codigos/CodigoFilters';
 import CodigoService, { Codigo } from '../services/CodigoService';
-import TarifaService, { 
-  Tarifa, 
-  TarifaCreacion, 
-  ResultadoSimulacion, 
-  ParametrosSimulacion, 
+import TarifaService, {
+  Tarifa,
+  TarifaCreacion,
+  ResultadoSimulacion,
+  ParametrosSimulacion,
   CodigoAplicable,
   getColorTipoCodigo,
   prepararParametrosSimulacionSegura  // ✨ IMPORTAR LA FUNCIÓN DE FECHAS SEGURAS
@@ -52,7 +52,8 @@ const CodigosPage: React.FC = () => {
     tipo: '',
     estado: 'activo',
     search: '',
-    incluirInactivos: false
+    incluirInactivos: false,
+    modalidad_convenio: '' // ✨ AGREGAR ESTA LÍNEA
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
@@ -69,7 +70,8 @@ const CodigosPage: React.FC = () => {
     fecha: new Date().toISOString().split('T')[0],
     hora_inicio: '20:00',
     hora_fin: '08:00',
-    tipo_guardia: 'activa' as 'pasiva' | 'activa'
+    tipo_guardia: 'activa' as 'pasiva' | 'activa',
+    modalidad_convenio: 'FC' as 'FC' | 'DC' // ✨ AGREGAR ESTA LÍNEA
   });
   const [resultadoSimulacion, setResultadoSimulacion] = useState<ResultadoCalculo | null>(null);
   const [loadingSimulacion, setLoadingSimulacion] = useState(false);
@@ -96,8 +98,11 @@ const CodigosPage: React.FC = () => {
         tipo: filters.tipo || undefined,
         estado: filters.estado || undefined,
         search: filters.search || undefined,
-        incluir_inactivos: filters.incluirInactivos ? 'true' : undefined
+        incluir_inactivos: filters.incluirInactivos ? 'true' : undefined,
+        modalidad_convenio: filters.modalidad_convenio || undefined // ✨ AGREGAR ESTA LÍNEA
       };
+
+      console.log('🔍 Filtros enviados al backend:', params); // ✨ Log para debugging
 
       const codigosData = await CodigoService.fetchCodigos(params);
       setCodigos(codigosData);
@@ -149,23 +154,26 @@ const CodigosPage: React.FC = () => {
 
     setLoadingSimulacion(true);
     try {
-      console.log('🧮 Iniciando simulación con códigos y fechas corregidas...');
+      console.log('🧮 Iniciando simulación con códigos, fechas y MODALIDAD:', {
+        modalidad_convenio: simulacion.modalidad_convenio // ✨ LOG DE MODALIDAD
+      });
 
-      // ✨ USAR LA FUNCIÓN SEGURA PARA PREPARAR PARÁMETROS CON FECHAS CORREGIDAS
+      // ✨ USAR LA FUNCIÓN SEGURA PARA PREPARAR PARÁMETROS CON MODALIDAD
       const parametros = prepararParametrosSimulacionSegura(
         simulacion.fecha,
         simulacion.hora_inicio,
         simulacion.hora_fin,
         simulacion.tipo_guardia,
-        tarifaActual.id
+        tarifaActual.id,
+        simulacion.modalidad_convenio // ✨ PASAR LA MODALIDAD COMO PARÁMETRO
       );
 
-      console.log('📝 Parámetros de simulación con fechas corregidas:', parametros);
+      console.log('📝 Parámetros de simulación con modalidad:', parametros);
 
-      // ✨ USAR LA FUNCIÓN QUE INCLUYE CÓDIGOS APLICABLES
+      // ✨ USAR LA FUNCIÓN QUE INCLUYE CÓDIGOS APLICABLES Y MODALIDAD
       const resultadoReal = await TarifaService.simularCalculo(parametros);
 
-      console.log('✅ Simulación completada con códigos:', resultadoReal);
+      console.log('✅ Simulación completada con códigos y modalidad:', resultadoReal);
 
       // Adaptar resultado del backend
       const resultadoAdaptado: ResultadoCalculo = {
@@ -194,8 +202,8 @@ const CodigosPage: React.FC = () => {
       };
 
       setResultadoSimulacion(resultadoAdaptado);
-      
-      // ✨ GUARDAR LOS CÓDIGOS APLICABLES
+
+      // ✨ GUARDAR LOS CÓDIGOS APLICABLES (YA FILTRADOS POR MODALIDAD)
       setCodigosAplicables(resultadoReal.codigos_aplicables || []);
 
     } catch (err: any) {
@@ -552,6 +560,21 @@ const CodigosPage: React.FC = () => {
                                     </Form.Text>
                                   </Form.Group>
 
+                                  {/* ✨ NUEVO: SELECTOR DE MODALIDAD DE CONVENIO */}
+                                  <Form.Group className="mb-3">
+                                    <Form.Label>Modalidad de Convenio</Form.Label>
+                                    <Form.Select
+                                      value={simulacion.modalidad_convenio}
+                                      onChange={(e) => setSimulacion({ ...simulacion, modalidad_convenio: e.target.value as 'FC' | 'DC' })}
+                                    >
+                                      <option value="FC">Fuera de Convenio (FC)</option>
+                                      <option value="DC">Dentro de Convenio (DC)</option>
+                                    </Form.Select>
+                                    <Form.Text className="text-muted">
+                                      Seleccione la modalidad contractual para ver códigos y factores correspondientes.
+                                    </Form.Text>
+                                  </Form.Group>
+
                                   <div className="d-grid">
                                     <Button
                                       variant="primary"
@@ -660,27 +683,27 @@ const CodigosPage: React.FC = () => {
                                           Factor: x{codigo.factor_multiplicador}
                                         </Badge>
                                       </div>
-                                      
+
                                       <div className="mt-1">
                                         <small className="text-dark fw-bold">{codigo.descripcion}</small>
                                       </div>
-                                      
+
                                       <div className="mt-1">
                                         <small className="text-muted">
                                           <strong>Horario:</strong> {
-                                            codigo.horario.inicio && codigo.horario.fin 
+                                            codigo.horario.inicio && codigo.horario.fin
                                               ? `${codigo.horario.inicio} - ${codigo.horario.fin}${codigo.horario.cruza_medianoche ? ' (cruza medianoche)' : ''}`
                                               : 'Todo el día'
                                           }
                                         </small>
                                       </div>
-                                      
+
                                       <div className="mt-1">
                                         <small className="text-muted">
                                           <strong>Días:</strong> {codigo.dias_aplicables}
                                         </small>
                                       </div>
-                                      
+
                                       <div className="mt-1">
                                         <small className="text-success">
                                           <i className="bi bi-check-circle me-1"></i>
@@ -727,29 +750,29 @@ const CodigosPage: React.FC = () => {
           onSave={async (tarifaData) => {
             try {
               let tarifaGuardada: Tarifa;
-              
+
               if (selectedTarifa && selectedTarifa.id) {
                 // Actualizar tarifa existente
                 tarifaGuardada = await TarifaService.updateTarifa({
                   ...selectedTarifa,
                   ...tarifaData
                 });
-                
+
                 // Actualizar en el estado local
                 setTarifas(prev => prev.map(t => t.id === tarifaGuardada.id ? tarifaGuardada : t));
               } else {
                 // Crear nueva tarifa
                 tarifaGuardada = await TarifaService.createTarifa(tarifaData);
-                
+
                 // Agregar al estado local
                 setTarifas(prev => [...prev, tarifaGuardada]);
               }
-              
+
               cerrarModalTarifa();
-              
+
               // Recargar tarifas para asegurar consistencia
               await cargarTarifas();
-              
+
             } catch (error: any) {
               console.error('Error al guardar tarifa:', error);
               setError(`Error al guardar tarifa: ${error.message || error}`);
@@ -806,7 +829,7 @@ const TarifaModal: React.FC<TarifaModalProps> = ({ show, onHide, tarifa, onSave 
     try {
       // Validar usando el servicio
       const validacion = TarifaService.validarTarifa(formData);
-      
+
       if (!validacion.valida) {
         setErrors(validacion.errores);
         return;
@@ -814,7 +837,7 @@ const TarifaModal: React.FC<TarifaModalProps> = ({ show, onHide, tarifa, onSave 
 
       // Guardar tarifa
       await onSave(formData);
-      
+
     } catch (error: any) {
       console.error('Error al guardar tarifa:', error);
       setErrors([error.message || 'Error al guardar la tarifa']);

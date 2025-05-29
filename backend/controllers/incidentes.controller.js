@@ -10,12 +10,12 @@ const db = require('../config/db');
 const parsearFechaSafe = (fecha) => {
   try {
     if (!fecha) return null;
-    
+
     // Si ya es un objeto Date válido, devolverlo
     if (fecha instanceof Date && !isNaN(fecha.getTime())) {
       return fecha;
     }
-    
+
     // Si es string, parsearlo
     if (typeof fecha === 'string') {
       const fechaParseada = new Date(fecha);
@@ -24,7 +24,7 @@ const parsearFechaSafe = (fecha) => {
       }
       return fechaParseada;
     }
-    
+
     throw new Error(`Tipo de fecha no reconocido: ${typeof fecha}`);
   } catch (error) {
     console.error('Error al parsear fecha:', error.message);
@@ -37,7 +37,7 @@ const formatearFechaParaMySQL = (fecha) => {
   try {
     const fechaObj = parsearFechaSafe(fecha);
     if (!fechaObj) return null;
-    
+
     // Formatear como YYYY-MM-DD HH:MM:SS para MySQL
     const year = fechaObj.getFullYear();
     const month = String(fechaObj.getMonth() + 1).padStart(2, '0');
@@ -45,7 +45,7 @@ const formatearFechaParaMySQL = (fecha) => {
     const hours = String(fechaObj.getHours()).padStart(2, '0');
     const minutes = String(fechaObj.getMinutes()).padStart(2, '0');
     const seconds = String(fechaObj.getSeconds()).padStart(2, '0');
-    
+
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   } catch (error) {
     console.error('Error al formatear fecha para MySQL:', error);
@@ -83,12 +83,12 @@ const registrarCambioEstado = async (idIncidente, estadoAnterior, estadoNuevo, i
       (id_incidente, estado_anterior, estado_nuevo, id_usuario, fecha_cambio, observaciones) 
       VALUES (?, ?, ?, ?, NOW(), ?)
     `;
-    
+
     const [result] = await db.execute(query, [
-      idIncidente, 
-      estadoAnteriorLimpio, 
-      estadoNuevoLimpio, 
-      idUsuarioLimpio, 
+      idIncidente,
+      estadoAnteriorLimpio,
+      estadoNuevoLimpio,
+      idUsuarioLimpio,
       observacionesLimpias
     ]);
 
@@ -133,34 +133,34 @@ const obtenerSupervisores = async () => {
 // Obtener todos los incidentes con filtros opcionales
 exports.getIncidentes = async (req, res) => {
   try {
-    const { 
-      id_guardia, estado, desde, hasta, 
-      usuario, limit, offset, ordenar 
+    const {
+      id_guardia, estado, desde, hasta,
+      usuario, limit, offset, ordenar
     } = req.query;
-    
+
     const options = { where: {} };
-    
+
     // Aplicar filtros si se proporcionan
     if (id_guardia) {
       options.where.id_guardia = parseInt(id_guardia);
     }
-    
+
     if (estado) {
       options.where.estado = estado;
     }
-    
+
     if (desde) {
       options.where.inicio = { ...options.where.inicio, [Op.gte]: new Date(desde) };
     }
-    
+
     if (hasta) {
       options.where.fin = { ...options.where.fin, [Op.lte]: new Date(hasta) };
     }
-    
+
     if (usuario) {
       options.where.usuario_guardia = usuario;
     }
-    
+
     // Paginación
     if (limit) {
       options.limit = parseInt(limit);
@@ -168,9 +168,9 @@ exports.getIncidentes = async (req, res) => {
         options.offset = parseInt(offset);
       }
     }
-    
+
     const incidentes = await Incidente.findAll(options);
-    
+
     res.status(200).json({
       success: true,
       count: incidentes.length,
@@ -190,16 +190,16 @@ exports.getIncidentes = async (req, res) => {
 exports.getIncidenteById = async (req, res) => {
   try {
     console.log('🔍 OBTENER INCIDENTE - ID solicitado:', req.params.id);
-    
+
     const incidente = await Incidente.findByPk(req.params.id);
-    
+
     if (!incidente) {
       return res.status(404).json({
         success: false,
         message: 'Incidente no encontrado'
       });
     }
-    
+
     console.log('🔍 INCIDENTE ENCONTRADO - Datos originales de DB:', {
       id: incidente.id,
       inicio: incidente.inicio,
@@ -207,7 +207,7 @@ exports.getIncidenteById = async (req, res) => {
       inicio_type: typeof incidente.inicio,
       fin_type: typeof incidente.fin
     });
-    
+
     // Obtener historial de estados
     const queryHistorial = `
       SELECT 
@@ -218,14 +218,14 @@ exports.getIncidenteById = async (req, res) => {
       WHERE ieh.id_incidente = ?
       ORDER BY ieh.fecha_cambio DESC
     `;
-    
+
     const [historial] = await db.execute(queryHistorial, [req.params.id]);
-    
+
     // Convertir el incidente a objeto plano y agregar historial
-    const incidenteData = typeof incidente.toJSON === 'function' 
-      ? incidente.toJSON() 
+    const incidenteData = typeof incidente.toJSON === 'function'
+      ? incidente.toJSON()
       : { ...incidente };
-    
+
     console.log('🔍 DATOS ENVIADOS AL FRONTEND:', {
       id: incidenteData.id,
       inicio: incidenteData.inicio,
@@ -233,7 +233,7 @@ exports.getIncidenteById = async (req, res) => {
       inicio_type: typeof incidenteData.inicio,
       fin_type: typeof incidenteData.fin
     });
-    
+
     res.status(200).json({
       success: true,
       data: {
@@ -255,19 +255,19 @@ exports.getIncidenteById = async (req, res) => {
 exports.createIncidente = async (req, res) => {
   try {
     console.log('🚀 CREAR INCIDENTE - Body recibido:', req.body);
-    
-    const { 
-      id_guardia, inicio, fin, descripcion, 
-      observaciones, codigos 
+
+    const {
+      id_guardia, inicio, fin, descripcion,
+      observaciones, codigos
     } = req.body;
-    
+
     console.log('🚀 FECHAS RECIBIDAS:', {
       inicio: inicio,
       fin: fin,
       inicio_type: typeof inicio,
       fin_type: typeof fin
     });
-    
+
     // Verificar que la guardia existe
     const guardia = await Guardia.findByPk(id_guardia);
     if (!guardia) {
@@ -276,16 +276,16 @@ exports.createIncidente = async (req, res) => {
         message: 'La guardia especificada no existe'
       });
     }
-    
+
     // ✨ PARSEAR FECHAS DE MANERA SEGURA
     const inicioParseado = parsearFechaSafe(inicio);
     const finParseado = parsearFechaSafe(fin);
-    
+
     console.log('🚀 FECHAS PARSEADAS:', {
       inicioParseado: inicioParseado,
       finParseado: finParseado
     });
-    
+
     // Verificar que las fechas son válidas
     if (finParseado <= inicioParseado) {
       return res.status(400).json({
@@ -293,14 +293,14 @@ exports.createIncidente = async (req, res) => {
         message: 'La fecha de fin debe ser posterior a la fecha de inicio'
       });
     }
-    
+
     // Verificar si la fecha corresponde a la guardia
     const guardiaDate = new Date(guardia.fecha);
-    
+
     // Verificar que el incidente ocurre en el mismo día que la guardia
     if (
-      inicioParseado.getDate() !== guardiaDate.getDate() || 
-      inicioParseado.getMonth() !== guardiaDate.getMonth() || 
+      inicioParseado.getDate() !== guardiaDate.getDate() ||
+      inicioParseado.getMonth() !== guardiaDate.getMonth() ||
       inicioParseado.getFullYear() !== guardiaDate.getFullYear()
     ) {
       return res.status(400).json({
@@ -308,40 +308,44 @@ exports.createIncidente = async (req, res) => {
         message: 'El incidente debe ocurrir en la misma fecha que la guardia'
       });
     }
-    
+
     // ✨ PREPARAR FECHAS PARA MYSQL
     const inicioMySQL = formatearFechaParaMySQL(inicioParseado);
     const finMySQL = formatearFechaParaMySQL(finParseado);
-    
+
     console.log('🚀 FECHAS PARA MySQL:', {
       inicioMySQL: inicioMySQL,
       finMySQL: finMySQL
     });
-    
+
     // ✨ PREPARAR CÓDIGOS ANTES DE CREAR EL INCIDENTE
     let codigosParaInsertar = [];
-    
+
     if (codigos && Array.isArray(codigos) && codigos.length > 0) {
       console.log('🔄 USANDO CÓDIGOS PROPORCIONADOS:', codigos);
       codigosParaInsertar = codigos;
     } else {
       console.log('🔍 BUSCANDO CÓDIGOS APLICABLES...');
-      
-      // Buscar códigos aplicables automáticamente
+
       try {
         const horaInicio = inicioParseado.toTimeString().substring(0, 8);
         const horaFin = finParseado.toTimeString().substring(0, 8);
-        
+
+        // ✨ OBTENER MODALIDAD DE CONVENIO DEL BODY (viene del frontend)
+        const modalidadConvenio = req.body.modalidad_convenio || 'FC';
+        console.log('🏢 MODALIDAD DE CONVENIO:', modalidadConvenio);
+
         const codigosAplicables = await Codigo.findApplicable(
           guardiaDate,
           horaInicio,
-          horaFin
+          horaFin,
+          modalidadConvenio  // ✨ PASAR MODALIDAD DE CONVENIO
         );
-        
+
         const duracionMinutos = Math.floor((finParseado - inicioParseado) / (1000 * 60));
-        
-        console.log('🔍 CÓDIGOS APLICABLES ENCONTRADOS:', codigosAplicables.length);
-        
+
+        console.log(`🔍 CÓDIGOS APLICABLES ENCONTRADOS: ${codigosAplicables.length} para modalidad ${modalidadConvenio}`);
+
         codigosParaInsertar = codigosAplicables.map(codigo => ({
           id_codigo: codigo.id,
           minutos: duracionMinutos,
@@ -352,7 +356,7 @@ exports.createIncidente = async (req, res) => {
         // Continuar sin códigos aplicables
       }
     }
-    
+
     // ✨ PREPARAR DATOS DEL INCIDENTE - CORREGIDO PARA UNDEFINED
     const incidenteData = {
       id_guardia,
@@ -364,12 +368,12 @@ exports.createIncidente = async (req, res) => {
       estado: 'registrado',
       codigos: codigosParaInsertar
     };
-    
+
     console.log('🚀 DATOS DEL INCIDENTE A CREAR:', {
       ...incidenteData,
       codigos: `${codigosParaInsertar.length} códigos`
     });
-    
+
     // ✨ CREAR EL INCIDENTE USANDO EL MODELO PERSONALIZADO
     let nuevoIncidente;
     try {
@@ -379,29 +383,29 @@ exports.createIncidente = async (req, res) => {
         tipo: typeof nuevoIncidente,
         propiedades: nuevoIncidente ? Object.keys(nuevoIncidente) : 'undefined'
       });
-      
+
       if (!nuevoIncidente || !nuevoIncidente.id) {
         throw new Error('El modelo no devolvió un incidente válido');
       }
-      
+
     } catch (errorCreacion) {
       console.error('❌ ERROR EN INCIDENTE.CREATE:', errorCreacion);
       console.error('❌ STACK TRACE:', errorCreacion.stack);
-      
+
       return res.status(500).json({
         success: false,
         message: 'Error al crear el incidente en la base de datos',
         error: errorCreacion.message
       });
     }
-    
+
     // ✨ REGISTRAR EL ESTADO INICIAL EN EL HISTORIAL
     try {
       await registrarCambioEstado(
-        nuevoIncidente.id, 
-        null, 
-        'registrado', 
-        req.user?.id, 
+        nuevoIncidente.id,
+        null,
+        'registrado',
+        req.user?.id,
         'Incidente creado'
       );
       console.log('✅ HISTORIAL DE ESTADO REGISTRADO');
@@ -409,7 +413,7 @@ exports.createIncidente = async (req, res) => {
       console.error('❌ Error al registrar historial:', errorHistorial);
       // No fallar la creación por esto
     }
-    
+
     // ✨ NOTIFICAR A SUPERVISORES (ASYNC, NO BLOQUEAR RESPUESTA)
     setImmediate(async () => {
       try {
@@ -433,7 +437,7 @@ exports.createIncidente = async (req, res) => {
         // No afecta la creación del incidente
       }
     });
-    
+
     // ✨ PREPARAR RESPUESTA FINAL SEGURA
     const incidenteRespuesta = {
       id: nuevoIncidente.id,
@@ -450,22 +454,22 @@ exports.createIncidente = async (req, res) => {
       created_at: nuevoIncidente.created_at,
       updated_at: nuevoIncidente.updated_at
     };
-    
+
     console.log('✅ RESPUESTA FINAL PREPARADA:', {
       id: incidenteRespuesta.id,
       codigos_count: incidenteRespuesta.codigos_aplicados.length
     });
-    
+
     res.status(201).json({
       success: true,
       message: 'Incidente creado correctamente',
       data: incidenteRespuesta
     });
-    
+
   } catch (error) {
     console.error('❌ ERROR GENERAL AL CREAR INCIDENTE:', error);
     console.error('❌ STACK TRACE COMPLETO:', error.stack);
-    
+
     // ✨ RESPUESTA DE ERROR MÁS DETALLADA
     res.status(500).json({
       success: false,
@@ -484,19 +488,19 @@ exports.updateIncidente = async (req, res) => {
   try {
     console.log('🔄 ACTUALIZAR INCIDENTE - ID:', req.params.id);
     console.log('🔄 BODY COMPLETO RECIBIDO:', req.body);
-    
-    const { 
-      id_guardia, inicio, fin, descripcion, 
-      observaciones, estado, codigos 
+
+    const {
+      id_guardia, inicio, fin, descripcion,
+      observaciones, estado, codigos
     } = req.body;
-    
+
     console.log('🔄 FECHAS RECIBIDAS PARA ACTUALIZAR:', {
       inicio: inicio,
       fin: fin,
       inicio_type: typeof inicio,
       fin_type: typeof fin
     });
-    
+
     // Verificar que el incidente existe
     const incidente = await Incidente.findByPk(req.params.id);
     if (!incidente) {
@@ -505,7 +509,7 @@ exports.updateIncidente = async (req, res) => {
         message: 'Incidente no encontrado'
       });
     }
-    
+
     console.log('🔄 INCIDENTE ACTUAL EN DB:', {
       id: incidente.id,
       inicio_actual: incidente.inicio,
@@ -513,7 +517,7 @@ exports.updateIncidente = async (req, res) => {
       inicio_type: typeof incidente.inicio,
       fin_type: typeof incidente.fin
     });
-    
+
     // Si se va a cambiar la guardia, verificar que exista
     if (id_guardia && id_guardia !== incidente.id_guardia) {
       const guardia = await Guardia.findByPk(id_guardia);
@@ -524,44 +528,44 @@ exports.updateIncidente = async (req, res) => {
         });
       }
     }
-    
+
     // Preparar datos para actualización
     const datosActualizacion = {};
-    
+
     if (id_guardia !== undefined) datosActualizacion.id_guardia = id_guardia;
     if (descripcion !== undefined) datosActualizacion.descripcion = descripcion;
     if (observaciones !== undefined) datosActualizacion.observaciones = observaciones;
-    
+
     // ✨ MANEJAR FECHAS DE MANERA SEGURA
     if (inicio !== undefined) {
       const inicioParseado = parsearFechaSafe(inicio);
       const inicioMySQL = formatearFechaParaMySQL(inicioParseado);
       datosActualizacion.inicio = inicioMySQL;
-      
+
       console.log('🔄 INICIO PROCESADO:', {
         original: inicio,
         parseado: inicioParseado,
         mysql: inicioMySQL
       });
     }
-    
+
     if (fin !== undefined) {
       const finParseado = parsearFechaSafe(fin);
       const finMySQL = formatearFechaParaMySQL(finParseado);
       datosActualizacion.fin = finMySQL;
-      
+
       console.log('🔄 FIN PROCESADO:', {
         original: fin,
         parseado: finParseado,
         mysql: finMySQL
       });
     }
-    
+
     // Verificar que las fechas son válidas si se están actualizando ambas
     if (datosActualizacion.inicio && datosActualizacion.fin) {
       const inicioCheck = new Date(datosActualizacion.inicio);
       const finCheck = new Date(datosActualizacion.fin);
-      
+
       if (finCheck <= inicioCheck) {
         return res.status(400).json({
           success: false,
@@ -569,11 +573,11 @@ exports.updateIncidente = async (req, res) => {
         });
       }
     }
-    
+
     // Si se proporciona un nuevo estado, registrar el cambio
     if (estado !== undefined && estado !== incidente.estado) {
       datosActualizacion.estado = estado;
-      
+
       // Registrar cambio de estado en el historial
       await registrarCambioEstado(
         incidente.id,
@@ -582,7 +586,7 @@ exports.updateIncidente = async (req, res) => {
         req.user?.id,
         observaciones || 'Estado actualizado'
       );
-      
+
       // Enviar notificaciones según el nuevo estado
       const supervisores = await obtenerSupervisores();
       for (const supervisor of supervisores) {
@@ -599,23 +603,23 @@ exports.updateIncidente = async (req, res) => {
         });
       }
     }
-    
+
     // Si se proporcionaron códigos, incluirlos
     if (codigos !== undefined) {
       datosActualizacion.codigos = codigos;
     }
-    
+
     console.log('🔄 DATOS FINALES PARA ACTUALIZAR:', datosActualizacion);
-    
+
     // Actualizar el incidente
     const incidenteActualizado = await incidente.update(datosActualizacion);
-    
+
     console.log('✅ INCIDENTE ACTUALIZADO:', {
       id: incidenteActualizado.id,
       inicio_actualizado: incidenteActualizado.inicio,
       fin_actualizado: incidenteActualizado.fin
     });
-    
+
     res.status(200).json({
       success: true,
       message: 'Incidente actualizado correctamente',
@@ -635,14 +639,14 @@ exports.updateIncidente = async (req, res) => {
 exports.deleteIncidente = async (req, res) => {
   try {
     const incidente = await Incidente.findByPk(req.params.id);
-    
+
     if (!incidente) {
       return res.status(404).json({
         success: false,
         message: 'Incidente no encontrado'
       });
     }
-    
+
     // Verificar si el incidente ya está liquidado
     if (incidente.estado === 'liquidado') {
       return res.status(400).json({
@@ -650,9 +654,9 @@ exports.deleteIncidente = async (req, res) => {
         message: 'No se puede eliminar un incidente que ya ha sido liquidado'
       });
     }
-    
+
     await incidente.destroy();
-    
+
     res.status(200).json({
       success: true,
       message: 'Incidente eliminado correctamente'
@@ -675,16 +679,16 @@ exports.cambiarEstadoIncidente = async (req, res) => {
     console.log('🔄 CAMBIAR ESTADO - Params:', req.params);
 
     const { estado, observaciones } = req.body;
-    
+
     if (!['registrado', 'revisado', 'aprobado', 'rechazado', 'liquidado'].includes(estado)) {
       return res.status(400).json({
         success: false,
         message: 'Estado no válido'
       });
     }
-    
+
     const incidente = await Incidente.findByPk(req.params.id);
-    
+
     if (!incidente) {
       return res.status(404).json({
         success: false,
@@ -696,10 +700,10 @@ exports.cambiarEstadoIncidente = async (req, res) => {
       id: incidente.id,
       estadoActual: incidente.estado
     });
-    
+
     // Verificar transiciones de estado permitidas
     const estadoActual = incidente.estado;
-    
+
     // Reglas de transición
     const transicionesPermitidas = {
       'registrado': ['revisado', 'aprobado', 'rechazado'],
@@ -708,18 +712,18 @@ exports.cambiarEstadoIncidente = async (req, res) => {
       'rechazado': ['registrado'],
       'liquidado': [] // No se puede cambiar de "liquidado"
     };
-    
+
     if (!transicionesPermitidas[estadoActual].includes(estado)) {
       return res.status(400).json({
         success: false,
         message: `No se puede cambiar de estado "${estadoActual}" a "${estado}"`
       });
     }
-    
+
     // Actualizar estado del incidente
     await incidente.update({ estado });
     console.log('✅ ESTADO DEL INCIDENTE ACTUALIZADO');
-    
+
     // ✨ REGISTRAR CAMBIO EN EL HISTORIAL CON PARÁMETROS LIMPIOS
     try {
       await registrarCambioEstado(
@@ -734,7 +738,7 @@ exports.cambiarEstadoIncidente = async (req, res) => {
       console.error('❌ ERROR AL REGISTRAR HISTORIAL:', errorHistorial);
       // No fallar toda la operación por esto, pero loggear el error
     }
-    
+
     // ✨ NOTIFICACIONES (ASYNC, NO BLOQUEAR RESPUESTA)
     setImmediate(async () => {
       try {
@@ -759,13 +763,13 @@ exports.cambiarEstadoIncidente = async (req, res) => {
         // No afecta la operación principal
       }
     });
-    
+
     res.status(200).json({
       success: true,
       message: 'Estado del incidente actualizado correctamente',
-      data: { 
-        id: incidente.id, 
-        estado, 
+      data: {
+        id: incidente.id,
+        estado,
         estado_anterior: estadoActual,
         observaciones: observaciones || null
       }
@@ -784,7 +788,7 @@ exports.cambiarEstadoIncidente = async (req, res) => {
 exports.getIncidentesByGuardia = async (req, res) => {
   try {
     const id_guardia = req.params.id_guardia;
-    
+
     // Verificar que la guardia existe
     const guardia = await Guardia.findByPk(id_guardia);
     if (!guardia) {
@@ -793,11 +797,11 @@ exports.getIncidentesByGuardia = async (req, res) => {
         message: 'La guardia especificada no existe'
       });
     }
-    
+
     const incidentes = await Incidente.findAll({
       where: { id_guardia }
     });
-    
+
     res.status(200).json({
       success: true,
       count: incidentes.length,
@@ -828,9 +832,9 @@ exports.getHistorialEstados = async (req, res) => {
       WHERE ieh.id_incidente = ?
       ORDER BY ieh.fecha_cambio DESC
     `;
-    
+
     const [historial] = await db.execute(query, [req.params.id]);
-    
+
     res.status(200).json({
       success: true,
       data: historial
@@ -857,9 +861,9 @@ exports.getEstadisticasEstados = async (req, res) => {
       GROUP BY estado
       ORDER BY cantidad DESC
     `;
-    
+
     const [estadisticas] = await db.execute(query);
-    
+
     res.status(200).json({
       success: true,
       data: estadisticas
@@ -878,18 +882,18 @@ exports.getEstadisticasEstados = async (req, res) => {
 exports.getResumenIncidentesGuardias = async (req, res) => {
   try {
     console.log('📊 RESUMEN INCIDENTES - Body recibido:', req.body);
-    
+
     const { guardia_ids } = req.body;
-    
+
     if (!guardia_ids || !Array.isArray(guardia_ids) || guardia_ids.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Se requiere un array de IDs de guardias'
       });
     }
-    
+
     console.log('📊 IDs de guardias a consultar:', guardia_ids.length);
-    
+
     // Consulta optimizada para obtener resumen de incidentes por guardia
     const query = `
       SELECT 
@@ -900,25 +904,25 @@ exports.getResumenIncidentesGuardias = async (req, res) => {
       WHERE i.id_guardia IN (${guardia_ids.map(() => '?').join(',')})
       GROUP BY i.id_guardia
     `;
-    
+
     const [results] = await pool.execute(query, guardia_ids);
-    
+
     console.log('📊 Resultados obtenidos:', results.length);
-    
+
     // Procesar los resultados para convertir estados a array
     const resumenProcesado = results.map(row => ({
       guardia_id: row.guardia_id,
       cantidad: row.cantidad,
       estados: row.estados ? row.estados.split(',') : []
     }));
-    
+
     console.log('📊 Resumen procesado:', resumenProcesado.length, 'guardias con incidentes');
-    
+
     res.status(200).json({
       success: true,
       data: resumenProcesado
     });
-    
+
   } catch (error) {
     console.error('❌ Error al obtener resumen de incidentes por guardias:', error);
     res.status(500).json({

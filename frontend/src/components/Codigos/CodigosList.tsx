@@ -13,23 +13,23 @@ interface CodigosListProps {
   onDelete: (codigo: Codigo) => void;
 }
 
-const CodigosList: React.FC<CodigosListProps> = ({ 
-  codigos, 
-  onEdit, 
-  onDeactivate, 
-  onDelete 
+const CodigosList: React.FC<CodigosListProps> = ({
+  codigos,
+  onEdit,
+  onDeactivate,
+  onDelete
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  
+
   // Calcular índices para paginación
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentCodigos = codigos.slice(indexOfFirstItem, indexOfLastItem);
-  
+
   // Cambiar página
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-  
+
   // Formatear fecha
   const formatDate = (date: Date | string | undefined) => {
     if (!date) return 'No definida';
@@ -39,27 +39,27 @@ const CodigosList: React.FC<CodigosListProps> = ({
   // ✨ FUNCIÓN PARA DETECTAR SI CRUZA MEDIANOCHE
   const cruzaMedianoche = (horaInicio: string, horaFin: string): boolean => {
     if (!horaInicio || !horaFin) return false;
-    
+
     const [inicioH, inicioM] = horaInicio.split(':').map(Number);
     const [finH, finM] = horaFin.split(':').map(Number);
-    
+
     const inicioMinutos = inicioH * 60 + inicioM;
     const finMinutos = finH * 60 + finM;
-    
+
     return finMinutos < inicioMinutos;
   };
 
   // ✨ FUNCIÓN PARA OBTENER DESCRIPCIÓN DEL HORARIO
   const getDescripcionHorario = (horaInicio: string, horaFin: string): string => {
     if (!horaInicio || !horaFin) return 'Todo el día';
-    
+
     if (cruzaMedianoche(horaInicio, horaFin)) {
       return `${horaInicio} - ${horaFin} (cruza medianoche)`;
     } else {
       return `${horaInicio} - ${horaFin}`;
     }
   };
-  
+
   // Obtener etiqueta de tipo
   const getTipoLabel = (tipo: string) => {
     switch (tipo) {
@@ -79,7 +79,7 @@ const CodigosList: React.FC<CodigosListProps> = ({
         return tipo;
     }
   };
-  
+
   // Obtener color de badge según tipo
   const getTipoBadgeColor = (tipo: string) => {
     switch (tipo) {
@@ -99,7 +99,7 @@ const CodigosList: React.FC<CodigosListProps> = ({
         return 'secondary';
     }
   };
-  
+
   // Confirmar desactivación
   const confirmDeactivate = (codigo: Codigo) => {
     Swal.fire({
@@ -117,7 +117,7 @@ const CodigosList: React.FC<CodigosListProps> = ({
       }
     });
   };
-  
+
   // Confirmar eliminación
   const confirmDelete = (codigo: Codigo) => {
     Swal.fire({
@@ -135,7 +135,7 @@ const CodigosList: React.FC<CodigosListProps> = ({
       }
     });
   };
-  
+
   return (
     <>
       {codigos.length === 0 ? (
@@ -145,12 +145,14 @@ const CodigosList: React.FC<CodigosListProps> = ({
         </div>
       ) : (
         <>
+
           <Table hover responsive className="mt-3">
             <thead>
               <tr>
                 <th>Código</th>
                 <th>Descripción</th>
                 <th>Tipo</th>
+                <th>Modalidad</th> {/* ✨ NUEVA COLUMNA */}
                 <th>Horario/Multiplicador</th>
                 <th>Vigencia</th>
                 <th>Estado</th>
@@ -161,7 +163,7 @@ const CodigosList: React.FC<CodigosListProps> = ({
               {currentCodigos.map((codigo) => {
                 const tieneHorario = codigo.hora_inicio && codigo.hora_fin;
                 const cruzaNoche = tieneHorario && cruzaMedianoche(codigo.hora_inicio!, codigo.hora_fin!);
-                
+
                 return (
                   <tr key={codigo.id}>
                     <td>
@@ -172,8 +174,8 @@ const CodigosList: React.FC<CodigosListProps> = ({
                       {codigo.notas && (
                         <div className="text-muted small mt-1">
                           <i className="bi bi-info-circle me-1"></i>
-                          {codigo.notas.length > 100 
-                            ? `${codigo.notas.substring(0, 100)}...` 
+                          {codigo.notas.length > 100
+                            ? `${codigo.notas.substring(0, 100)}...`
                             : codigo.notas
                           }
                         </div>
@@ -184,6 +186,27 @@ const CodigosList: React.FC<CodigosListProps> = ({
                         {getTipoLabel(codigo.tipo)}
                       </Badge>
                     </td>
+                    {/* ✨ NUEVA COLUMNA DE MODALIDAD */}
+                    <td className="text-center">
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={
+                          <Tooltip>
+                            <div>{codigo.modalidad_convenio === 'FC' ? 'Fuera de Convenio' : 'Dentro de Convenio'}</div>
+                          </Tooltip>
+                        }
+                      >
+                        <div>
+                          <Badge
+                            bg={codigo.modalidad_convenio === 'FC' ? 'info' : 'dark'}
+                            className="px-2 py-1 fw-bold"
+                            style={{ fontSize: '0.75rem', letterSpacing: '0.5px', cursor: 'pointer' }}
+                          >
+                            {codigo.modalidad_convenio}
+                          </Badge>
+                        </div>
+                      </OverlayTrigger>
+                    </td>
                     <td className="text-center">
                       <OverlayTrigger
                         placement="top"
@@ -192,6 +215,7 @@ const CodigosList: React.FC<CodigosListProps> = ({
                             <div><strong>Días:</strong> {codigo.dias_aplicables}</div>
                             <div><strong>Horario:</strong> {getDescripcionHorario(codigo.hora_inicio!, codigo.hora_fin!)}</div>
                             <div><strong>Factor:</strong> x{codigo.factor_multiplicador}</div>
+                            <div><strong>Modalidad:</strong> {codigo.modalidad_convenio === 'FC' ? 'Fuera de Convenio' : 'Dentro de Convenio'}</div> {/* ✨ AGREGAR AL TOOLTIP */}
                             {codigo.notas && codigo.notas.length > 100 && (
                               <div className="mt-2">
                                 <strong>Notas:</strong>
@@ -210,8 +234,8 @@ const CodigosList: React.FC<CodigosListProps> = ({
                                   {codigo.hora_inicio} - {codigo.hora_fin}
                                 </span>
                                 {cruzaNoche && (
-                                  <i className="bi bi-moon-stars text-warning" 
-                                     title="Cruza medianoche"></i>
+                                  <i className="bi bi-moon-stars text-warning"
+                                    title="Cruza medianoche"></i>
                                 )}
                               </div>
                               <small className="text-muted">
@@ -227,7 +251,7 @@ const CodigosList: React.FC<CodigosListProps> = ({
                               </small>
                             </div>
                           )}
-                          
+
                           {codigo.notas && (
                             <i className="bi bi-info-circle ms-1 text-muted small"></i>
                           )}
@@ -256,7 +280,7 @@ const CodigosList: React.FC<CodigosListProps> = ({
                         >
                           <i className="bi bi-pencil"></i>
                         </Button>
-                        
+
                         {codigo.estado === 'activo' ? (
                           <Button
                             variant="outline-secondary"
@@ -281,14 +305,14 @@ const CodigosList: React.FC<CodigosListProps> = ({
               })}
             </tbody>
           </Table>
-          
+
           {/* Paginación */}
           {codigos.length > itemsPerPage && (
             <div className="d-flex justify-content-center mt-4">
               <Pagination>
                 <Pagination.First onClick={() => paginate(1)} disabled={currentPage === 1} />
                 <Pagination.Prev onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1} />
-                
+
                 {Array.from({ length: Math.ceil(codigos.length / itemsPerPage) }, (_, i) => {
                   // Mostrar 5 páginas alrededor de la actual
                   if (
@@ -313,7 +337,7 @@ const CodigosList: React.FC<CodigosListProps> = ({
                   }
                   return null;
                 })}
-                
+
                 <Pagination.Next
                   onClick={() => paginate(currentPage + 1)}
                   disabled={currentPage === Math.ceil(codigos.length / itemsPerPage)}

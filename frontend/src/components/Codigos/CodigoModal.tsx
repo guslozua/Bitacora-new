@@ -30,8 +30,8 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
     fecha_vigencia_hasta: null,
     estado: 'activo'
   });
-  
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [usarHorario, setUsarHorario] = useState(false);
@@ -41,51 +41,51 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
   // ✨ FUNCIÓN PARA DETECTAR SI UN HORARIO CRUZA MEDIANOCHE
   const detectaCruzaMedianoche = (horaInicio: string, horaFin: string): boolean => {
     if (!horaInicio || !horaFin) return false;
-    
+
     // Convertir a minutos desde 00:00
     const [inicioHoras, inicioMinutos] = horaInicio.split(':').map(Number);
     const [finHoras, finMinutos] = horaFin.split(':').map(Number);
-    
+
     const inicioEnMinutos = inicioHoras * 60 + inicioMinutos;
     const finEnMinutos = finHoras * 60 + finMinutos;
-    
+
     return finEnMinutos < inicioEnMinutos;
   };
 
   // ✨ FUNCIÓN PARA OBTENER DESCRIPCIÓN DEL HORARIO
   const getDescripcionHorario = (): string => {
     if (!formData.hora_inicio || !formData.hora_fin) return '';
-    
+
     if (cruzaMedianoche) {
       return `${formData.hora_inicio} (día actual) hasta ${formData.hora_fin} (día siguiente)`;
     } else {
       return `${formData.hora_inicio} hasta ${formData.hora_fin} (mismo día)`;
     }
   };
-  
+
   // Cargar datos para edición
   useEffect(() => {
     if (show && codigo) {
-      const fechaVigenciaDesde = codigo.fecha_vigencia_desde instanceof Date 
-        ? codigo.fecha_vigencia_desde 
+      const fechaVigenciaDesde = codigo.fecha_vigencia_desde instanceof Date
+        ? codigo.fecha_vigencia_desde
         : new Date(codigo.fecha_vigencia_desde);
-      
-      const fechaVigenciaHasta = codigo.fecha_vigencia_hasta 
-        ? (codigo.fecha_vigencia_hasta instanceof Date 
-          ? codigo.fecha_vigencia_hasta 
-          : new Date(codigo.fecha_vigencia_hasta)) 
+
+      const fechaVigenciaHasta = codigo.fecha_vigencia_hasta
+        ? (codigo.fecha_vigencia_hasta instanceof Date
+          ? codigo.fecha_vigencia_hasta
+          : new Date(codigo.fecha_vigencia_hasta))
         : null;
-      
+
       setFormData({
         ...codigo,
         notas: codigo.notas || '',
         fecha_vigencia_desde: fechaVigenciaDesde,
         fecha_vigencia_hasta: fechaVigenciaHasta
       });
-      
+
       setUsarHorario(!!codigo.hora_inicio && !!codigo.hora_fin);
       setUsarVigenciaHasta(!!codigo.fecha_vigencia_hasta);
-      
+
       // ✨ DETECTAR SI EL CÓDIGO EXISTENTE CRUZA MEDIANOCHE
       if (codigo.hora_inicio && codigo.hora_fin) {
         const cruza = detectaCruzaMedianoche(codigo.hora_inicio, codigo.hora_fin);
@@ -110,7 +110,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
       setUsarVigenciaHasta(false);
       setCruzaMedianoche(false); // ✨ RESETEAR CHECKBOX
     }
-    
+
     // Limpiar errores
     setErrors({});
     setError(null);
@@ -125,11 +125,11 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
       }
     }
   }, [formData.hora_inicio, formData.hora_fin]);
-  
+
   // Manejar cambios en inputs
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
+
     // Para factor_multiplicador, asegurar que es un número
     if (name === 'factor_multiplicador') {
       const numValue = parseFloat(value);
@@ -139,27 +139,27 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
     } else {
       setFormData({ ...formData, [name]: value });
     }
-    
+
     // Limpiar error específico
     if (errors[name]) {
       setErrors({ ...errors, [name]: '' });
     }
   };
-  
+
   // Manejar cambios en DatePicker
   const handleDateChange = (date: Date | null, field: string) => {
     setFormData({ ...formData, [field]: date });
-    
+
     // Limpiar error específico
     if (errors[field]) {
       setErrors({ ...errors, [field]: '' });
     }
   };
-  
+
   // Manejar cambios en días aplicables
   const handleDiasChange = (dia: string) => {
     const diasActuales = formData.dias_aplicables ? formData.dias_aplicables.split(',') : [];
-    
+
     if (diasActuales.includes(dia)) {
       // Quitar día
       const nuevosDias = diasActuales.filter(d => d !== dia);
@@ -173,12 +173,12 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
       setFormData({ ...formData, dias_aplicables: nuevosDias.join(',') });
     }
   };
-  
+
   // Manejar cambio en "usar horario"
   const handleUsarHorarioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
     setUsarHorario(checked);
-    
+
     if (!checked) {
       setFormData({ ...formData, hora_inicio: null, hora_fin: null });
       setCruzaMedianoche(false); // ✨ RESETEAR CHECKBOX
@@ -192,22 +192,22 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
   const handleCruzaMedianocheChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
     setCruzaMedianoche(checked);
-    
+
     // Sugerir horarios típicos cuando se activa
     if (checked && (!formData.hora_inicio || !formData.hora_fin)) {
-      setFormData({ 
-        ...formData, 
-        hora_inicio: '21:00', 
-        hora_fin: '06:00' 
+      setFormData({
+        ...formData,
+        hora_inicio: '21:00',
+        hora_fin: '06:00'
       });
     }
   };
-  
+
   // Manejar cambio en "usar vigencia hasta"
   const handleUsarVigenciaHastaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
     setUsarVigenciaHasta(checked);
-    
+
     if (!checked) {
       setFormData({ ...formData, fecha_vigencia_hasta: null });
     } else {
@@ -217,167 +217,178 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
       setFormData({ ...formData, fecha_vigencia_hasta: fechaFin });
     }
   };
-  
+
   // ✨ VALIDAR FORMULARIO CON LÓGICA DE MEDIANOCHE
   const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
-    
+    const newErrors: { [key: string]: string } = {};
+
     if (!formData.codigo.trim()) {
       newErrors.codigo = 'El código es obligatorio';
     }
-    
+
     if (!formData.descripcion.trim()) {
       newErrors.descripcion = 'La descripción es obligatoria';
     }
-    
+
     if (!formData.dias_aplicables || formData.dias_aplicables.split(',').length === 0) {
       newErrors.dias_aplicables = 'Debe seleccionar al menos un día';
     }
-    
+
     if (usarHorario) {
       if (!formData.hora_inicio) {
         newErrors.hora_inicio = 'La hora de inicio es obligatoria';
       }
-      
+
       if (!formData.hora_fin) {
         newErrors.hora_fin = 'La hora de fin es obligatoria';
       }
-      
+
       // ✨ VALIDACIÓN MEJORADA PARA HORARIOS QUE CRUZAN MEDIANOCHE
       if (formData.hora_inicio && formData.hora_fin) {
         const horasIguales = formData.hora_inicio === formData.hora_fin;
-        
+
         if (horasIguales) {
           newErrors.hora_fin = 'La hora de fin no puede ser igual a la hora de inicio';
         } else if (!cruzaMedianoche && formData.hora_inicio >= formData.hora_fin) {
           newErrors.hora_fin = 'La hora de fin debe ser posterior a la hora de inicio, o marque "Cruza medianoche"';
         }
-        
+
         // Validar que si se marca "cruza medianoche", las horas realmente lo hagan
         if (cruzaMedianoche && formData.hora_inicio <= formData.hora_fin) {
           newErrors.hora_inicio = 'Si cruza medianoche, la hora de inicio debe ser mayor que la de fin';
         }
       }
     }
-    
+
     if (!formData.fecha_vigencia_desde) {
       newErrors.fecha_vigencia_desde = 'La fecha de vigencia desde es obligatoria';
     }
-    
+
     if (usarVigenciaHasta && !formData.fecha_vigencia_hasta) {
       newErrors.fecha_vigencia_hasta = 'La fecha de vigencia hasta es obligatoria';
     }
-    
+
     if (
-      usarVigenciaHasta && 
-      formData.fecha_vigencia_desde && 
-      formData.fecha_vigencia_hasta && 
+      usarVigenciaHasta &&
+      formData.fecha_vigencia_desde &&
+      formData.fecha_vigencia_hasta &&
       formData.fecha_vigencia_desde >= formData.fecha_vigencia_hasta
     ) {
       newErrors.fecha_vigencia_hasta = 'La fecha de vigencia hasta debe ser posterior a la fecha desde';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   // Guardar código
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
+  e.preventDefault();
+
+  if (!validateForm()) {
+    return;
+  }
+
+  try {
+    setLoading(true);
+    setError(null);
+
+    // ✨ PREPARAR DATOS LIMPIOS PARA ENVIAR (sin campos inexistentes)
+    const dataToSend = {
+      codigo: formData.codigo,
+      descripcion: formData.descripcion,
+      notas: formData.notas || null,
+      tipo: formData.tipo,
+      dias_aplicables: formData.dias_aplicables,
+      hora_inicio: usarHorario ? formData.hora_inicio : null,
+      hora_fin: usarHorario ? formData.hora_fin : null,
+      factor_multiplicador: formData.factor_multiplicador,
+      fecha_vigencia_desde: formData.fecha_vigencia_desde,
+      fecha_vigencia_hasta: usarVigenciaHasta ? formData.fecha_vigencia_hasta : null,
+      estado: formData.estado,
+      modalidad_convenio: formData.modalidad_convenio || 'FC' // ✨ INCLUIR MODALIDAD
+    };
+
+    console.log('📤 Datos enviados al backend:', dataToSend); // ✨ Log para debugging
+
+    let response;
+    const isEditing = codigo?.id;
+
+    if (isEditing) {
+      response = await api.put(`/codigos/${codigo.id}`, dataToSend);
+    } else {
+      response = await api.post('/codigos', dataToSend);
     }
-    
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Preparar datos para enviar
-      const dataToSend = {
-        ...formData,
-        notas: formData.notas || null
-        // Nota: No necesitamos enviar el flag cruzaMedianoche al backend
-        // porque se puede inferir comparando hora_inicio con hora_fin
-      };
-      
-      let response;
-      const isEditing = codigo?.id;
-      
-      if (isEditing) {
-        response = await api.put(`/codigos/${codigo.id}`, dataToSend);
-      } else {
-        response = await api.post('/codigos', dataToSend);
+
+    // Mostrar confirmación de éxito
+    await Swal.fire({
+      title: isEditing ? '¡Código actualizado!' : '¡Código creado!',
+      html: `
+        <div>
+          <p><strong>Código:</strong> ${formData.codigo}</p>
+          <p><strong>Descripción:</strong> ${formData.descripcion}</p>
+          <p><strong>Modalidad:</strong> ${formData.modalidad_convenio || 'FC'}</p>
+          ${formData.hora_inicio && formData.hora_fin ?
+          `<p><strong>Horario:</strong> ${getDescripcionHorario()}</p>` :
+          ''
+        }
+        </div>
+      `,
+      icon: 'success',
+      confirmButtonColor: '#28a745',
+      confirmButtonText: 'Perfecto',
+      timer: 4000,
+      timerProgressBar: true,
+      showClass: {
+        popup: 'animate__animated animate__fadeInDown'
+      },
+      hideClass: {
+        popup: 'animate__animated animate__fadeOutUp'
       }
-      
-      // Mostrar confirmación de éxito
-      await Swal.fire({
-        title: isEditing ? '¡Código actualizado!' : '¡Código creado!',
-        html: `
-          <div>
-            <p><strong>Código:</strong> ${formData.codigo}</p>
-            <p><strong>Descripción:</strong> ${formData.descripcion}</p>
-            ${formData.hora_inicio && formData.hora_fin ? 
-              `<p><strong>Horario:</strong> ${getDescripcionHorario()}</p>` : 
-              ''
-            }
-          </div>
-        `,
-        icon: 'success',
-        confirmButtonColor: '#28a745',
-        confirmButtonText: 'Perfecto',
-        timer: 4000,
-        timerProgressBar: true,
+    });
+
+    onHide(true);
+
+  } catch (error: any) {
+    console.error('Error al guardar código:', error);
+
+    if (error.response?.status === 409) {
+      Swal.fire({
+        title: 'Código duplicado',
+        text: error.response?.data?.message || `El código "${formData.codigo}" ya existe en el sistema.`,
+        icon: 'warning',
+        confirmButtonColor: '#ffc107',
+        confirmButtonText: 'Entendido',
+        allowOutsideClick: false,
         showClass: {
-          popup: 'animate__animated animate__fadeInDown'
-        },
-        hideClass: {
-          popup: 'animate__animated animate__fadeOutUp'
+          popup: 'animate__animated animate__shakeX'
+        }
+      }).then(() => {
+        const codigoInput = document.getElementById('formCodigo');
+        if (codigoInput) {
+          (codigoInput as HTMLInputElement).select();
+          codigoInput.focus();
         }
       });
-      
-      onHide(true);
-      
-    } catch (error: any) {
-      console.error('Error al guardar código:', error);
-      
-      if (error.response?.status === 409) {
-        Swal.fire({
-          title: 'Código duplicado',
-          text: error.response?.data?.message || `El código "${formData.codigo}" ya existe en el sistema.`,
-          icon: 'warning',
-          confirmButtonColor: '#ffc107',
-          confirmButtonText: 'Entendido',
-          allowOutsideClick: false,
-          showClass: {
-            popup: 'animate__animated animate__shakeX'
-          }
-        }).then(() => {
-          const codigoInput = document.getElementById('formCodigo');
-          if (codigoInput) {
-            (codigoInput as HTMLInputElement).select();
-            codigoInput.focus();
-          }
-        });
-      } else {
-        Swal.fire({
-          title: 'Error al guardar',
-          text: error.response?.data?.message || 'Ocurrió un error inesperado.',
-          icon: 'error',
-          confirmButtonColor: '#dc3545',
-          confirmButtonText: 'Entendido',
-          showClass: {
-            popup: 'animate__animated animate__shakeX'
-          }
-        });
-        
-        setError(error.response?.data?.message || 'Error al guardar el código');
-      }
-    } finally {
-      setLoading(false);
+    } else {
+      Swal.fire({
+        title: 'Error al guardar',
+        text: error.response?.data?.message || 'Ocurrió un error inesperado.',
+        icon: 'error',
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Entendido',
+        showClass: {
+          popup: 'animate__animated animate__shakeX'
+        }
+      });
+
+      setError(error.response?.data?.message || 'Error al guardar el código');
     }
-  };
-  
+  } finally {
+    setLoading(false);
+  }
+};
+
   return (
     <Modal
       show={show}
@@ -391,7 +402,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
           {codigo?.id ? 'Editar Código' : 'Nuevo Código de Facturación'}
         </Modal.Title>
       </Modal.Header>
-      
+
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
           {error && (
@@ -399,7 +410,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
               {error}
             </Alert>
           )}
-          
+
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group controlId="formCodigo">
@@ -420,7 +431,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
                 </Form.Text>
               </Form.Group>
             </Col>
-            
+
             <Col md={6}>
               <Form.Group controlId="formTipo">
                 <Form.Label>Tipo *</Form.Label>
@@ -443,7 +454,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
               </Form.Group>
             </Col>
           </Row>
-          
+
           <Form.Group className="mb-3" controlId="formDescripcion">
             <Form.Label>Descripción *</Form.Label>
             <Form.Control
@@ -473,23 +484,23 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
               Campo opcional para agregar detalles sobre cuándo y cómo se aplica este código.
             </Form.Text>
           </Form.Group>
-          
+
           <Row className="mb-3">
             <Col>
               <Form.Label>Días Aplicables *</Form.Label>
               <div className="d-flex flex-wrap gap-2">
                 {['L', 'M', 'X', 'J', 'V', 'S', 'D', 'F'].map(dia => {
                   const isActive = formData.dias_aplicables?.includes(dia);
-                  const label = 
+                  const label =
                     dia === 'L' ? 'Lunes' :
-                    dia === 'M' ? 'Martes' :
-                    dia === 'X' ? 'Miércoles' :
-                    dia === 'J' ? 'Jueves' :
-                    dia === 'V' ? 'Viernes' :
-                    dia === 'S' ? 'Sábado' :
-                    dia === 'D' ? 'Domingo' :
-                    'Feriados';
-                  
+                      dia === 'M' ? 'Martes' :
+                        dia === 'X' ? 'Miércoles' :
+                          dia === 'J' ? 'Jueves' :
+                            dia === 'V' ? 'Viernes' :
+                              dia === 'S' ? 'Sábado' :
+                                dia === 'D' ? 'Domingo' :
+                                  'Feriados';
+
                   return (
                     <Button
                       key={dia}
@@ -510,7 +521,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
               )}
             </Col>
           </Row>
-          
+
           <Row className="mb-3">
             <Col>
               <Form.Group controlId="formUsarHorario">
@@ -523,7 +534,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
               </Form.Group>
             </Col>
           </Row>
-          
+
           {usarHorario && (
             <>
               {/* ✨ NUEVO CHECKBOX PARA MEDIANOCHE */}
@@ -561,7 +572,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
                     </Form.Control.Feedback>
                   </Form.Group>
                 </Col>
-                
+
                 <Col md={6}>
                   <Form.Group controlId="formHoraFin">
                     <Form.Label>
@@ -596,7 +607,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
               )}
             </>
           )}
-          
+
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group controlId="formFactorMultiplicador">
@@ -616,7 +627,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
               </Form.Group>
             </Col>
           </Row>
-          
+
           <Row className="mb-3">
             <Col md={6}>
               <Form.Group controlId="formFechaVigenciaDesde">
@@ -635,7 +646,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
                 )}
               </Form.Group>
             </Col>
-            
+
             <Col md={6}>
               <Form.Group controlId="formUsarVigenciaHasta">
                 <Form.Check
@@ -645,7 +656,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
                   onChange={handleUsarVigenciaHastaChange}
                   className="mb-2"
                 />
-                
+
                 {usarVigenciaHasta && (
                   <>
                     <DatePicker
@@ -666,7 +677,7 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
               </Form.Group>
             </Col>
           </Row>
-          
+
           <Form.Group className="mb-3" controlId="formEstado">
             <Form.Label>Estado</Form.Label>
             <Form.Select
@@ -678,8 +689,22 @@ const CodigoModal: React.FC<CodigoModalProps> = ({ show, onHide, codigo }) => {
               <option value="inactivo">Inactivo</option>
             </Form.Select>
           </Form.Group>
+          <Form.Group className="mb-3" controlId="formModalidadConvenio">
+            <Form.Label>Modalidad de Convenio</Form.Label>
+            <Form.Select
+              name="modalidad_convenio"
+              value={formData.modalidad_convenio || 'FC'}
+              onChange={handleInputChange}
+            >
+              <option value="FC">Fuera de Convenio (FC)</option>
+              <option value="DC">Dentro de Convenio (DC)</option>
+            </Form.Select>
+            <Form.Text className="text-muted">
+              Determina qué empleados pueden usar este código según su modalidad contractual.
+            </Form.Text>
+          </Form.Group>
         </Modal.Body>
-        
+
         <Modal.Footer>
           <Button variant="secondary" onClick={() => onHide(false)} disabled={loading}>
             Cancelar

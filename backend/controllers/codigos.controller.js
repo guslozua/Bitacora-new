@@ -1,10 +1,17 @@
-// controllers/codigos.controller.js - VERSIÓN CON DEBUG
+// controllers/codigos.controller.js - VERSIÓN CON MODALIDAD DE CONVENIO
 const Codigo = require('../models/codigo.model');
 
-// Obtener todos los códigos con filtros opcionales
+// ✨ ACTUALIZADO: Obtener todos los códigos con filtros opcionales (incluye modalidad)
 exports.getCodigos = async (req, res) => {
   try {
-    const { tipo, estado, fecha_vigencia, search, incluir_inactivos } = req.query;
+    const { 
+      tipo, 
+      estado, 
+      fecha_vigencia, 
+      search, 
+      incluir_inactivos, 
+      modalidad_convenio // ✨ NUEVO FILTRO
+    } = req.query;
     
     const options = { where: {} };
     
@@ -20,6 +27,11 @@ exports.getCodigos = async (req, res) => {
       options.where.estado = 'activo';
     }
     
+    // ✨ NUEVO: Filtrar por modalidad de convenio
+    if (modalidad_convenio) {
+      options.where.modalidad_convenio = modalidad_convenio;
+    }
+    
     if (fecha_vigencia) {
       options.where.fecha_vigencia = fecha_vigencia;
     }
@@ -29,6 +41,13 @@ exports.getCodigos = async (req, res) => {
     }
     
     const codigos = await Codigo.findAll(options);
+    
+    console.log(`✅ Se encontraron ${codigos.length} códigos con filtros:`, {
+      tipo,
+      estado,
+      modalidad_convenio,
+      incluir_inactivos
+    });
     
     res.status(200).json({
       success: true,
@@ -71,7 +90,7 @@ exports.getCodigoById = async (req, res) => {
   }
 };
 
-// Crear un nuevo código
+// ✨ ACTUALIZADO: Crear un nuevo código (incluye modalidad)
 exports.createCodigo = async (req, res) => {
   try {
     console.log('🚀 CREAR CÓDIGO - Body completo recibido:', req.body);
@@ -79,13 +98,14 @@ exports.createCodigo = async (req, res) => {
     const { 
       codigo, descripcion, notas, tipo, dias_aplicables, 
       hora_inicio, hora_fin, factor_multiplicador,
-      fecha_vigencia_desde, fecha_vigencia_hasta, estado 
+      fecha_vigencia_desde, fecha_vigencia_hasta, estado,
+      modalidad_convenio = 'FC' // ✨ NUEVO CAMPO CON DEFAULT
     } = req.body;
     
     console.log('🚀 CREAR CÓDIGO - Campos extraídos:', {
       codigo,
       descripcion,
-      notas: notas, // Ver exactamente qué llega
+      notas: notas,
       tipo,
       dias_aplicables,
       hora_inicio,
@@ -93,7 +113,8 @@ exports.createCodigo = async (req, res) => {
       factor_multiplicador,
       fecha_vigencia_desde,
       fecha_vigencia_hasta,
-      estado
+      estado,
+      modalidad_convenio // ✨ NUEVO
     });
     
     // Validaciones
@@ -104,17 +125,18 @@ exports.createCodigo = async (req, res) => {
       });
     }
     
-    // Verificar si ya existe un código con el mismo código
+    // ✨ ACTUALIZADO: Verificar si ya existe un código con el mismo código Y modalidad
     const codigosExistentes = await Codigo.findAll({
       where: {
-        codigo
+        codigo,
+        modalidad_convenio
       }
     });
     
     if (codigosExistentes.length > 0) {
       return res.status(409).json({
         success: false,
-        message: `El código "${codigo}" ya existe en el sistema.`
+        message: `El código "${codigo}" ya existe para la modalidad ${modalidad_convenio}.`
       });
     }
     
@@ -122,7 +144,7 @@ exports.createCodigo = async (req, res) => {
     const nuevoCodigo = await Codigo.create({
       codigo,
       descripcion,
-      notas, // ✨ Incluir el campo notas
+      notas,
       tipo,
       dias_aplicables,
       hora_inicio,
@@ -130,10 +152,15 @@ exports.createCodigo = async (req, res) => {
       factor_multiplicador,
       fecha_vigencia_desde,
       fecha_vigencia_hasta,
-      estado
+      estado,
+      modalidad_convenio // ✨ INCLUIR MODALIDAD
     });
     
-    console.log('✅ CÓDIGO CREADO EXITOSAMENTE:', nuevoCodigo);
+    console.log('✅ CÓDIGO CREADO EXITOSAMENTE:', {
+      id: nuevoCodigo.id,
+      codigo: nuevoCodigo.codigo,
+      modalidad_convenio: nuevoCodigo.modalidad_convenio
+    });
     
     res.status(201).json({
       success: true,
@@ -150,7 +177,7 @@ exports.createCodigo = async (req, res) => {
   }
 };
 
-// Actualizar un código existente
+// ✨ ACTUALIZADO: Actualizar un código existente (incluye modalidad)
 exports.updateCodigo = async (req, res) => {
   try {
     console.log('🔄 ACTUALIZAR CÓDIGO - Body completo recibido:', req.body);
@@ -159,13 +186,14 @@ exports.updateCodigo = async (req, res) => {
     const { 
       codigo, descripcion, notas, tipo, dias_aplicables, 
       hora_inicio, hora_fin, factor_multiplicador,
-      fecha_vigencia_desde, fecha_vigencia_hasta, estado 
+      fecha_vigencia_desde, fecha_vigencia_hasta, estado,
+      modalidad_convenio // ✨ NUEVO CAMPO
     } = req.body;
     
     console.log('🔄 ACTUALIZAR CÓDIGO - Campos extraídos:', {
       codigo,
       descripcion,
-      notas: notas, // Ver exactamente qué llega
+      notas: notas,
       tipo,
       dias_aplicables,
       hora_inicio,
@@ -173,7 +201,8 @@ exports.updateCodigo = async (req, res) => {
       factor_multiplicador,
       fecha_vigencia_desde,
       fecha_vigencia_hasta,
-      estado
+      estado,
+      modalidad_convenio // ✨ NUEVO
     });
     
     // Verificar que el código existe
@@ -185,18 +214,24 @@ exports.updateCodigo = async (req, res) => {
       });
     }
     
-    // Si se va a cambiar el código, verificar que no haya conflictos
-    if (codigo && codigo !== codigoObj.codigo) {
+    // ✨ ACTUALIZADO: Si se va a cambiar el código o modalidad, verificar que no haya conflictos
+    if ((codigo && codigo !== codigoObj.codigo) || 
+        (modalidad_convenio && modalidad_convenio !== codigoObj.modalidad_convenio)) {
+      
+      const nuevoCodigo = codigo || codigoObj.codigo;
+      const nuevaModalidad = modalidad_convenio || codigoObj.modalidad_convenio;
+      
       const codConflicto = await Codigo.findAll({
         where: {
-          codigo
+          codigo: nuevoCodigo,
+          modalidad_convenio: nuevaModalidad
         }
       });
       
       if (codConflicto.some(c => c.id !== parseInt(req.params.id))) {
         return res.status(409).json({
           success: false,
-          message: `El código "${codigo}" ya existe en el sistema.`
+          message: `El código "${nuevoCodigo}" ya existe para la modalidad ${nuevaModalidad}.`
         });
       }
     }
@@ -205,7 +240,7 @@ exports.updateCodigo = async (req, res) => {
     const codigoActualizado = await codigoObj.update({
       codigo,
       descripcion,
-      notas, // ✨ Incluir el campo notas
+      notas,
       tipo,
       dias_aplicables,
       hora_inicio,
@@ -213,10 +248,15 @@ exports.updateCodigo = async (req, res) => {
       factor_multiplicador,
       fecha_vigencia_desde,
       fecha_vigencia_hasta,
-      estado
+      estado,
+      modalidad_convenio // ✨ INCLUIR MODALIDAD
     });
     
-    console.log('✅ CÓDIGO ACTUALIZADO EXITOSAMENTE:', codigoActualizado);
+    console.log('✅ CÓDIGO ACTUALIZADO EXITOSAMENTE:', {
+      id: codigoActualizado.id,
+      codigo: codigoActualizado.codigo,
+      modalidad_convenio: codigoActualizado.modalidad_convenio
+    });
     
     res.status(200).json({
       success: true,
@@ -299,10 +339,22 @@ exports.deleteCodigo = async (req, res) => {
   }
 };
 
-// Obtener códigos aplicables a un rango de fecha y hora
+// ✨ ACTUALIZADO: Obtener códigos aplicables a un rango de fecha y hora (incluye modalidad)
 exports.getCodigosAplicables = async (req, res) => {
   try {
-    const { fecha, hora_inicio, hora_fin } = req.query;
+    const { 
+      fecha, 
+      hora_inicio, 
+      hora_fin, 
+      modalidad_convenio = 'FC' // ✨ NUEVO PARÁMETRO CON DEFAULT
+    } = req.query;
+    
+    console.log('🔍 CÓDIGOS APLICABLES - Parámetros recibidos:', {
+      fecha,
+      hora_inicio,
+      hora_fin,
+      modalidad_convenio
+    });
     
     if (!fecha || !hora_inicio || !hora_fin) {
       return res.status(400).json({
@@ -311,16 +363,21 @@ exports.getCodigosAplicables = async (req, res) => {
       });
     }
     
+    // ✨ USAR FUNCIÓN ACTUALIZADA CON MODALIDAD
     const codigosAplicables = await Codigo.findApplicable(
       fecha,
       hora_inicio,
-      hora_fin
+      hora_fin,
+      modalidad_convenio // ✨ PASAR MODALIDAD
     );
+    
+    console.log(`✅ CÓDIGOS APLICABLES ENCONTRADOS: ${codigosAplicables.length} para modalidad ${modalidad_convenio}`);
     
     res.status(200).json({
       success: true,
       count: codigosAplicables.length,
-      data: codigosAplicables
+      data: codigosAplicables,
+      modalidad_convenio: modalidad_convenio // ✨ INCLUIR EN RESPUESTA
     });
   } catch (error) {
     console.error('Error al obtener códigos aplicables:', error);

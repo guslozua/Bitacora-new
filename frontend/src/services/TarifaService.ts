@@ -99,6 +99,7 @@ export interface ParametrosSimulacion {
     hora_fin: string;
     tipo_guardia: 'pasiva' | 'activa' | 'ambas';
     id_tarifa?: number;
+    modalidad_convenio?: 'FC' | 'DC';
 }
 
 // Clase para manejar errores de la API
@@ -118,53 +119,56 @@ class ApiError extends Error {
  * ✨ FUNCIÓN AUXILIAR PARA MANEJAR FECHAS LOCALES CORRECTAMENTE
  */
 export const formatearFechaLocal = (fecha: string): string => {
-  try {
-    // Si ya está en formato YYYY-MM-DD, devolverla tal como está
-    if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-      return fecha;
+    try {
+        // Si ya está en formato YYYY-MM-DD, devolverla tal como está
+        if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+            return fecha;
+        }
+
+        // Si es un objeto Date, formatearla como YYYY-MM-DD local
+        const fechaObj = new Date(fecha);
+        const year = fechaObj.getFullYear();
+        const month = String(fechaObj.getMonth() + 1).padStart(2, '0');
+        const day = String(fechaObj.getDate()).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+    } catch (error) {
+        console.error('❌ Error formateando fecha:', error);
+        return fecha; // Fallback
     }
-    
-    // Si es un objeto Date, formatearla como YYYY-MM-DD local
-    const fechaObj = new Date(fecha);
-    const year = fechaObj.getFullYear();
-    const month = String(fechaObj.getMonth() + 1).padStart(2, '0');
-    const day = String(fechaObj.getDate()).padStart(2, '0');
-    
-    return `${year}-${month}-${day}`;
-  } catch (error) {
-    console.error('❌ Error formateando fecha:', error);
-    return fecha; // Fallback
-  }
 };
 
 /**
  * ✨ FUNCIÓN AUXILIAR PARA VALIDAR Y FORMATEAR PARÁMETROS DE SIMULACIÓN
  */
 export const prepararParametrosSimulacionSegura = (
-  fecha: string,
-  horaInicio: string,
-  horaFin: string,
-  tipoGuardia: 'pasiva' | 'activa' | 'ambas',
-  idTarifa?: number
+    fecha: string,
+    horaInicio: string,
+    horaFin: string,
+    tipoGuardia: 'pasiva' | 'activa' | 'ambas',
+    idTarifa?: number,
+    modalidadConvenio: 'FC' | 'DC' = 'FC' // ✨ NUEVO PARÁMETRO
 ): ParametrosSimulacion => {
-  // Asegurar que la fecha esté en formato correcto
-  const fechaFormateada = formatearFechaLocal(fecha);
-  
-  console.log('📅 FRONTEND: Preparando parámetros con fecha local:', {
-    fechaOriginal: fecha,
-    fechaFormateada: fechaFormateada,
-    horaInicio,
-    horaFin,
-    tipoGuardia
-  });
-  
-  return {
-    fecha: fechaFormateada,
-    hora_inicio: horaInicio,
-    hora_fin: horaFin,
-    tipo_guardia: tipoGuardia,
-    ...(idTarifa && { id_tarifa: idTarifa })
-  };
+    // Asegurar que la fecha esté en formato correcto
+    const fechaFormateada = formatearFechaLocal(fecha);
+
+    console.log('📅 FRONTEND: Preparando parámetros con fecha local y modalidad:', {
+        fechaOriginal: fecha,
+        fechaFormateada: fechaFormateada,
+        horaInicio,
+        horaFin,
+        tipoGuardia,
+        modalidadConvenio // ✨ NUEVO LOG
+    });
+
+    return {
+        fecha: fechaFormateada,
+        hora_inicio: horaInicio,
+        hora_fin: horaFin,
+        tipo_guardia: tipoGuardia,
+        modalidad_convenio: modalidadConvenio, // ✨ INCLUIR MODALIDAD EN RETURN
+        ...(idTarifa && { id_tarifa: idTarifa })
+    };
 };
 
 /**
@@ -246,7 +250,7 @@ const TarifaService = {
         try {
             // ✨ USAR FECHA FORMATEADA CORRECTAMENTE
             const fechaFormateada = formatearFechaLocal(fecha);
-            
+
             const response = await axios.get(`${API_URL}/tarifas/vigente`, {
                 params: { fecha: fechaFormateada }
             });
@@ -364,39 +368,33 @@ const TarifaService = {
     /**
      * ✨ SIMULADOR DE CÁLCULOS - FUNCIÓN PRINCIPAL CON CÓDIGOS APLICABLES Y FECHAS CORREGIDAS
      */
+
+
     simularCalculo: async (parametros: ParametrosSimulacion): Promise<ResultadoSimulacion> => {
         try {
-            console.log('🧮 FRONTEND: Enviando datos para simulación con códigos y fechas corregidas:', parametros);
-            
-            // ✨ USAR PARÁMETROS SEGUROS CON FECHAS FORMATEADAS
-            const parametrosSeguras = prepararParametrosSimulacionSegura(
-                parametros.fecha,
-                parametros.hora_inicio,
-                parametros.hora_fin,
-                parametros.tipo_guardia,
-                parametros.id_tarifa
-            );
-            
-            const response = await axios.post(`${API_URL}/tarifas/simular`, parametrosSeguras);
-            
+            console.log('🧮 FRONTEND: Enviando datos para simulación con modalidad:', parametros);
+
+            // ✨ ENVIAR DIRECTAMENTE LOS PARÁMETROS (YA INCLUYEN modalidad_convenio)
+            const response = await axios.post(`${API_URL}/tarifas/simular`, parametros);
+
             console.log('✅ FRONTEND: Resultado recibido con códigos:', response.data);
-            
+
             if (!response.data.success) {
                 throw new Error(response.data.message || 'Error en la simulación');
             }
-            
+
             // El resultado ya viene con códigos_aplicables del backend
             const resultado = response.data.data;
-            
+
             return {
                 ...resultado,
                 // Los códigos ya vienen incluidos en el response del backend
                 codigos_aplicables: resultado.codigos_aplicables || []
             };
-            
+
         } catch (error) {
             console.error('❌ FRONTEND ERROR en simulación con códigos:', error);
-            
+
             if (axios.isAxiosError(error)) {
                 if (error.response?.status === 404) {
                     throw new Error('Tarifa no encontrada');
@@ -406,7 +404,7 @@ const TarifaService = {
                     throw new Error('Error interno del servidor');
                 }
             }
-            
+
             throw new Error('Error al simular el cálculo con códigos');
         }
     },
@@ -429,7 +427,7 @@ const TarifaService = {
         try {
             // ✨ USAR FECHA FORMATEADA CORRECTAMENTE
             const fechaFormateada = formatearFechaLocal(fecha);
-            
+
             const response = await axios.get(`${API_URL}/tarifas/analizar-codigos`, {
                 params: {
                     fecha: fechaFormateada,
@@ -732,10 +730,10 @@ const TarifaService = {
  * Función para formatear códigos aplicables
  */
 export const formatearCodigoAplicable = (codigo: CodigoAplicable): string => {
-    const horario = codigo.horario.inicio && codigo.horario.fin 
+    const horario = codigo.horario.inicio && codigo.horario.fin
         ? `${codigo.horario.inicio}-${codigo.horario.fin}${codigo.horario.cruza_medianoche ? ' (cruza medianoche)' : ''}`
         : 'Todo el día';
-        
+
     return `${codigo.codigo}: ${codigo.descripcion} (${horario}) - Factor: x${codigo.factor_multiplicador}`;
 };
 
@@ -750,7 +748,7 @@ export const getColorTipoCodigo = (tipo: string): string => {
         'especial': 'info',
         'default': 'secondary'
     };
-    
+
     return colores[tipo.toLowerCase()] || colores.default;
 };
 

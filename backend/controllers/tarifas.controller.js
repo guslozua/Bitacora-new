@@ -11,7 +11,7 @@ const procesarFechaLocal = (fechaString) => {
       const [year, month, day] = fechaString.split('-');
       return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     }
-    
+
     // Si viene con hora, procesarla normalmente
     return new Date(fechaString);
   } catch (error) {
@@ -26,11 +26,11 @@ const crearFechaConHora = (fecha, hora) => {
     // Usar fecha local para evitar conversiones de zona horaria
     const fechaBase = procesarFechaLocal(fecha);
     const [hours, minutes] = hora.split(':');
-    
+
     fechaBase.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-    
+
     console.log(`🕐 Fecha con hora creada: ${fecha} ${hora} -> ${fechaBase.toString()}`);
-    
+
     return fechaBase;
   } catch (error) {
     console.error('❌ Error creando fecha con hora:', error);
@@ -45,32 +45,32 @@ const calcularMinutosNocturnos = (inicio, fin) => {
     let minutosNocturnos = 0;
     const current = new Date(inicio);
     const finFecha = new Date(fin);
-    
+
     // Protección contra fechas inválidas
     if (isNaN(current.getTime()) || isNaN(finFecha.getTime())) {
       console.log('⚠️ Fechas inválidas para cálculo nocturno');
       return 0;
     }
-    
+
     while (current < finFecha) {
       const hora = current.getHours();
-      
+
       // Horario nocturno: 21:00 a 23:59 OR 00:00 a 05:59
       const esHorarioNocturno = hora >= 21 || hora <= 5;
-      
+
       if (esHorarioNocturno) {
         const siguiente = new Date(current);
         siguiente.setHours(siguiente.getHours() + 1, 0, 0, 0);
-        
+
         const finSegmento = siguiente < finFecha ? siguiente : finFecha;
         const minutosSegmento = Math.floor((finSegmento.getTime() - current.getTime()) / (1000 * 60));
-        
+
         minutosNocturnos += minutosSegmento;
       }
-      
+
       current.setHours(current.getHours() + 1, 0, 0, 0);
     }
-    
+
     return minutosNocturnos;
   } catch (error) {
     console.error('❌ Error calculando minutos nocturnos:', error);
@@ -83,7 +83,7 @@ const determinarTipoDia = (fecha) => {
   try {
     // Usar la nueva función para procesar fechas
     const fechaObj = procesarFechaLocal(fecha);
-    
+
     // Protección contra fechas inválidas
     if (isNaN(fechaObj.getTime())) {
       console.log('⚠️ Fecha inválida para determinar tipo de día');
@@ -94,11 +94,11 @@ const determinarTipoDia = (fecha) => {
         dia_semana_nombre: 'Desconocido'
       };
     }
-    
+
     const diaSemana = fechaObj.getDay(); // 0=domingo, 6=sábado
-    
+
     console.log(`📅 Fecha procesada: ${fecha} -> ${fechaObj.toLocaleDateString()} -> Día: ${diaSemana}`);
-    
+
     return {
       es_fin_semana: diaSemana === 0 || diaSemana === 6,
       es_domingo: diaSemana === 0,
@@ -120,11 +120,11 @@ const determinarTipoDia = (fecha) => {
 exports.getTarifas = async (req, res) => {
   try {
     console.log('🔍 TARIFAS CONTROLLER: Obteniendo tarifas con query:', req.query);
-    
+
     const { estado, nombre, incluir_inactivas } = req.query;
-    
+
     const options = { where: {} };
-    
+
     // Aplicar filtros si se proporcionan
     if (estado) {
       options.where.estado = estado;
@@ -132,15 +132,15 @@ exports.getTarifas = async (req, res) => {
       // Por defecto, mostrar solo activas
       options.where.estado = 'activo';
     }
-    
+
     if (nombre) {
       options.where.nombre = nombre;
     }
-    
+
     const tarifas = await Tarifa.findAll(options);
-    
+
     console.log(`✅ Se encontraron ${tarifas.length} tarifas`);
-    
+
     res.status(200).json({
       success: true,
       count: tarifas.length,
@@ -160,18 +160,18 @@ exports.getTarifas = async (req, res) => {
 exports.getTarifaById = async (req, res) => {
   try {
     console.log('🔍 TARIFAS CONTROLLER: Obteniendo tarifa por ID:', req.params.id);
-    
+
     const tarifa = await Tarifa.findByPk(req.params.id);
-    
+
     if (!tarifa) {
       return res.status(404).json({
         success: false,
         message: 'Tarifa no encontrada'
       });
     }
-    
+
     console.log('✅ Tarifa encontrada:', tarifa.nombre);
-    
+
     res.status(200).json({
       success: true,
       data: tarifa
@@ -190,16 +190,16 @@ exports.getTarifaById = async (req, res) => {
 exports.getTarifaVigente = async (req, res) => {
   try {
     const { fecha } = req.query;
-    
+
     console.log('📅 TARIFAS CONTROLLER: Obteniendo tarifa vigente para fecha:', fecha);
-    
+
     if (!fecha) {
       return res.status(400).json({
         success: false,
         message: 'Se requiere el parámetro fecha (formato YYYY-MM-DD)'
       });
     }
-    
+
     // Validar formato de fecha
     const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!fechaRegex.test(fecha)) {
@@ -208,18 +208,18 @@ exports.getTarifaVigente = async (req, res) => {
         message: 'Formato de fecha inválido. Use YYYY-MM-DD'
       });
     }
-    
+
     const tarifa = await Tarifa.findVigenteEnFecha(fecha);
-    
+
     if (!tarifa) {
       return res.status(404).json({
         success: false,
         message: `No se encontró tarifa vigente para la fecha ${fecha}`
       });
     }
-    
+
     console.log('✅ Tarifa vigente encontrada:', tarifa.nombre);
-    
+
     res.status(200).json({
       success: true,
       data: tarifa
@@ -238,29 +238,29 @@ exports.getTarifaVigente = async (req, res) => {
 exports.createTarifa = async (req, res) => {
   try {
     console.log('🚀 TARIFAS CONTROLLER: Creando nueva tarifa:', req.body);
-    
-    const { 
-      nombre, 
-      valor_guardia_pasiva, 
-      valor_hora_activa, 
-      valor_adicional_nocturno_habil, 
+
+    const {
+      nombre,
+      valor_guardia_pasiva,
+      valor_hora_activa,
+      valor_adicional_nocturno_habil,
       valor_adicional_nocturno_no_habil,
-      vigencia_desde, 
-      vigencia_hasta, 
+      vigencia_desde,
+      vigencia_hasta,
       estado,
       observaciones
     } = req.body;
-    
+
     // Validaciones
-    if (!nombre || !valor_guardia_pasiva || !valor_hora_activa || 
-        !valor_adicional_nocturno_habil || !valor_adicional_nocturno_no_habil || 
-        !vigencia_desde) {
+    if (!nombre || !valor_guardia_pasiva || !valor_hora_activa ||
+      !valor_adicional_nocturno_habil || !valor_adicional_nocturno_no_habil ||
+      !vigencia_desde) {
       return res.status(400).json({
         success: false,
         message: 'Faltan campos obligatorios: nombre, valores de tarifa y fecha de vigencia'
       });
     }
-    
+
     // Validar que los valores sean números positivos
     const valores = {
       valor_guardia_pasiva,
@@ -268,7 +268,7 @@ exports.createTarifa = async (req, res) => {
       valor_adicional_nocturno_habil,
       valor_adicional_nocturno_no_habil
     };
-    
+
     for (const [campo, valor] of Object.entries(valores)) {
       const numero = parseFloat(valor);
       if (isNaN(numero) || numero < 0) {
@@ -278,7 +278,7 @@ exports.createTarifa = async (req, res) => {
         });
       }
     }
-    
+
     // Crear la tarifa
     const nuevaTarifa = await Tarifa.create({
       nombre,
@@ -291,9 +291,9 @@ exports.createTarifa = async (req, res) => {
       estado: estado || 'activo',
       observaciones
     });
-    
+
     console.log('✅ Tarifa creada exitosamente:', nuevaTarifa.nombre);
-    
+
     res.status(201).json({
       success: true,
       message: 'Tarifa creada correctamente',
@@ -314,9 +314,9 @@ exports.updateTarifa = async (req, res) => {
   try {
     console.log('🔄 TARIFAS CONTROLLER: Actualizando tarifa ID:', req.params.id);
     console.log('🔄 Datos recibidos:', req.body);
-    
+
     const tarifaId = req.params.id;
-    
+
     // Verificar que la tarifa existe
     const tarifaExistente = await Tarifa.findByPk(tarifaId);
     if (!tarifaExistente) {
@@ -325,15 +325,15 @@ exports.updateTarifa = async (req, res) => {
         message: 'Tarifa no encontrada'
       });
     }
-    
+
     // Validar valores numéricos si se proporcionan
     const camposNumericos = [
       'valor_guardia_pasiva',
-      'valor_hora_activa', 
+      'valor_hora_activa',
       'valor_adicional_nocturno_habil',
       'valor_adicional_nocturno_no_habil'
     ];
-    
+
     for (const campo of camposNumericos) {
       if (req.body[campo] !== undefined) {
         const numero = parseFloat(req.body[campo]);
@@ -345,12 +345,12 @@ exports.updateTarifa = async (req, res) => {
         }
       }
     }
-    
+
     // Actualizar la tarifa
     const tarifaActualizada = await tarifaExistente.update(req.body);
-    
+
     console.log('✅ Tarifa actualizada exitosamente:', tarifaActualizada.nombre);
-    
+
     res.status(200).json({
       success: true,
       message: 'Tarifa actualizada correctamente',
@@ -370,20 +370,20 @@ exports.updateTarifa = async (req, res) => {
 exports.deactivateTarifa = async (req, res) => {
   try {
     console.log('🗑️ TARIFAS CONTROLLER: Desactivando tarifa ID:', req.params.id);
-    
+
     const tarifa = await Tarifa.findByPk(req.params.id);
-    
+
     if (!tarifa) {
       return res.status(404).json({
         success: false,
         message: 'Tarifa no encontrada'
       });
     }
-    
+
     await tarifa.deactivate();
-    
+
     console.log('✅ Tarifa desactivada:', tarifa.nombre);
-    
+
     res.status(200).json({
       success: true,
       message: 'Tarifa desactivada correctamente'
@@ -402,21 +402,21 @@ exports.deactivateTarifa = async (req, res) => {
 exports.deleteTarifa = async (req, res) => {
   try {
     console.log('🗑️ TARIFAS CONTROLLER: Eliminando tarifa ID:', req.params.id);
-    
+
     const tarifa = await Tarifa.findByPk(req.params.id);
-    
+
     if (!tarifa) {
       return res.status(404).json({
         success: false,
         message: 'Tarifa no encontrada'
       });
     }
-    
+
     try {
       await tarifa.destroy();
-      
+
       console.log('✅ Tarifa eliminada:', tarifa.nombre);
-      
+
       res.status(200).json({
         success: true,
         message: 'Tarifa eliminada correctamente'
@@ -444,7 +444,7 @@ exports.deleteTarifa = async (req, res) => {
 exports.simularCalculo = async (req, res) => {
   try {
     console.log('🧮 TARIFAS CONTROLLER: Simulando cálculo con parámetros:', req.body);
-    
+
     const {
       fecha,
       hora_inicio,
@@ -452,7 +452,7 @@ exports.simularCalculo = async (req, res) => {
       tipo_guardia,
       id_tarifa
     } = req.body;
-    
+
     // ✅ VALIDACIONES (mantener las existentes)
     if (!fecha || !hora_inicio || !hora_fin || !tipo_guardia) {
       return res.status(400).json({
@@ -465,7 +465,7 @@ exports.simularCalculo = async (req, res) => {
     const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
     const horaRegex = /^\d{2}:\d{2}$/;
     const tiposValidos = ['pasiva', 'activa', 'ambas'];
-    
+
     if (!fechaRegex.test(fecha) || !horaRegex.test(hora_inicio) || !horaRegex.test(hora_fin)) {
       return res.status(400).json({
         success: false,
@@ -479,7 +479,7 @@ exports.simularCalculo = async (req, res) => {
         message: 'Tipo de guardia debe ser: pasiva, activa o ambas'
       });
     }
-    
+
     // ✅ OBTENER TARIFA (mantener lógica existente)
     let tarifa;
     try {
@@ -500,9 +500,9 @@ exports.simularCalculo = async (req, res) => {
           });
         }
       }
-      
+
       console.log('✅ Tarifa obtenida:', tarifa.nombre);
-      
+
     } catch (modelError) {
       console.error('❌ Error accediendo al modelo Tarifa:', modelError);
       return res.status(500).json({
@@ -511,7 +511,7 @@ exports.simularCalculo = async (req, res) => {
         error: modelError.message
       });
     }
-    
+
     // ✅ ANÁLISIS TEMPORAL (VERSIÓN CORREGIDA)
     let tipoDia;
     try {
@@ -524,28 +524,28 @@ exports.simularCalculo = async (req, res) => {
         message: 'Error al analizar la fecha proporcionada'
       });
     }
-    
+
     const esDiaNoLaboral = tipoDia.es_fin_semana;
-    
+
     // ✅ CREAR OBJETOS DATE (VERSIÓN CORREGIDA)
     let inicio, fin;
     try {
       // Usar las nuevas funciones para evitar problemas de zona horaria
       inicio = crearFechaConHora(fecha, hora_inicio);
       fin = crearFechaConHora(fecha, hora_fin);
-      
+
       if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) {
         throw new Error('Fechas u horas inválidas');
       }
-      
+
       // Si la hora de fin es menor o igual a la de inicio, asumir que cruza medianoche
       if (fin <= inicio) {
         fin.setDate(fin.getDate() + 1);
         console.log('🌙 Horario cruza medianoche - ajustado correctamente');
       }
-      
+
       console.log(`📅 Fechas procesadas - Inicio: ${inicio.toString()}, Fin: ${fin.toString()}`);
-      
+
     } catch (fechaError) {
       console.error('❌ Error creando fechas:', fechaError);
       return res.status(400).json({
@@ -553,7 +553,7 @@ exports.simularCalculo = async (req, res) => {
         message: 'Error al procesar las fechas y horas proporcionadas'
       });
     }
-    
+
     // ✅ CÁLCULOS DE DURACIÓN (mantener lógica existente)
     let duracionMinutos, duracionHoras, minutosNocturnos, horasNocturnas;
     try {
@@ -561,11 +561,11 @@ exports.simularCalculo = async (req, res) => {
       duracionHoras = Math.ceil(duracionMinutos / 60);
       minutosNocturnos = calcularMinutosNocturnos(inicio, fin);
       horasNocturnas = Math.ceil(minutosNocturnos / 60);
-      
+
       if (duracionMinutos < 0 || duracionHoras < 0) {
         throw new Error('Duración calculada inválida');
       }
-      
+
     } catch (calcError) {
       console.error('❌ Error en cálculos de duración:', calcError);
       return res.status(400).json({
@@ -578,13 +578,16 @@ exports.simularCalculo = async (req, res) => {
     let codigosAplicables = [];
     try {
       console.log('🔍 Buscando códigos aplicables...');
-      codigosAplicables = await Codigo.findApplicable(fecha, hora_inicio, hora_fin);
+      const modalidad_convenio = req.body.modalidad_convenio || 'FC';
+      console.log(`📋 Modalidad de convenio recibida: ${modalidad_convenio}`);
+      codigosAplicables = await Codigo.findApplicable(fecha, hora_inicio, hora_fin, modalidad_convenio);
+      console.log(`✅ Se encontraron ${codigosAplicables.length} códigos aplicables para modalidad ${modalidad_convenio}`);
       console.log(`✅ Se encontraron ${codigosAplicables.length} códigos aplicables`);
     } catch (codigoError) {
       console.error('❌ Error al obtener códigos aplicables:', codigoError);
       // No fallar por esto, continuar sin códigos
     }
-    
+
     // ✅ INICIALIZAR RESULTADO CON ESTRUCTURA COMPLETA + CÓDIGOS
     const resultado = {
       tarifa_utilizada: {
@@ -628,7 +631,7 @@ exports.simularCalculo = async (req, res) => {
         horario: {
           inicio: codigo.hora_inicio,
           fin: codigo.hora_fin,
-          cruza_medianoche: codigo.hora_inicio && codigo.hora_fin ? 
+          cruza_medianoche: codigo.hora_inicio && codigo.hora_fin ?
             Codigo.cruzaMedianoche(codigo.hora_inicio, codigo.hora_fin) : false
         },
         aplicabilidad: {
@@ -638,7 +641,7 @@ exports.simularCalculo = async (req, res) => {
         }
       }))
     };
-    
+
     // ✅ CÁLCULOS SEGÚN TIPO DE GUARDIA (mantener lógica existente pero mejorada)
     try {
       if (tipo_guardia === 'pasiva' || tipo_guardia === 'ambas') {
@@ -646,14 +649,14 @@ exports.simularCalculo = async (req, res) => {
         resultado.calculos.guardia_pasiva = resultadoGuardiaP.importe;
         resultado.detalle.push(resultadoGuardiaP.detalle);
       }
-      
+
       if (tipo_guardia === 'activa' || tipo_guardia === 'ambas') {
         const resultadoGuardiaA = exports.calcularGuardiasActivas(
           tarifa, duracionHoras, esDiaNoLaboral
         );
         resultado.calculos.guardia_activa = resultadoGuardiaA.importe;
         resultado.detalle.push(resultadoGuardiaA.detalle);
-        
+
         // Adicional Nocturno si aplica
         if (horasNocturnas > 0) {
           const resultadoNocturno = exports.calcularAdicionalNocturno(
@@ -663,17 +666,17 @@ exports.simularCalculo = async (req, res) => {
           resultado.detalle.push(resultadoNocturno.detalle);
         }
       }
-      
+
       // Calcular total
       resultado.calculos.total = parseFloat((
-        resultado.calculos.guardia_pasiva + 
-        resultado.calculos.guardia_activa + 
+        resultado.calculos.guardia_pasiva +
+        resultado.calculos.guardia_activa +
         resultado.calculos.adicional_nocturno
       ).toFixed(2));
-      
+
       console.log('✅ Simulación completada. Total:', resultado.calculos.total);
       console.log(`✅ Códigos aplicables incluidos: ${resultado.codigos_aplicables.length}`);
-      
+
     } catch (calcError) {
       console.error('❌ Error en cálculos de tarifa:', calcError);
       return res.status(500).json({
@@ -681,12 +684,12 @@ exports.simularCalculo = async (req, res) => {
         message: 'Error al realizar los cálculos de tarifa'
       });
     }
-    
+
     res.status(200).json({
       success: true,
       data: resultado
     });
-    
+
   } catch (error) {
     console.error('❌ Error general en simulación de cálculo:', error);
     res.status(500).json({
@@ -703,22 +706,22 @@ exports.simularCalculo = async (req, res) => {
 // Obtener motivo de aplicabilidad de un código
 exports.obtenerMotivoAplicabilidad = (codigo, tipoDia) => {
   const motivos = [];
-  
+
   if (codigo.dias_aplicables.includes('F') && tipoDia.es_fin_semana) {
     motivos.push('Es fin de semana');
   }
-  
+
   if (codigo.dias_aplicables.includes(tipoDia.dia_semana_nombre.charAt(0))) {
     motivos.push(`Aplica para ${tipoDia.dia_semana_nombre}`);
   }
-  
+
   if (codigo.hora_inicio && codigo.hora_fin) {
     const cruzaMedianoche = Codigo.cruzaMedianoche(codigo.hora_inicio, codigo.hora_fin);
     motivos.push(`Horario: ${codigo.hora_inicio}-${codigo.hora_fin}${cruzaMedianoche ? ' (cruza medianoche)' : ''}`);
   } else {
     motivos.push('Sin restricción horaria');
   }
-  
+
   return motivos.join(', ');
 };
 
@@ -726,7 +729,7 @@ exports.obtenerMotivoAplicabilidad = (codigo, tipoDia) => {
 exports.calcularGuardiasPasivas = (tarifa, tipoDia, horaInicio) => {
   let valorGuardiaP = parseFloat(tarifa.valor_guardia_pasiva);
   let descripcionGuardiaP = 'Guardia pasiva estándar';
-  
+
   if (tipoDia.es_sabado) {
     const horaInicioNum = parseInt(horaInicio.split(':')[0]);
     if (horaInicioNum >= 7 && horaInicioNum < 13) {
@@ -740,7 +743,7 @@ exports.calcularGuardiasPasivas = (tarifa, tipoDia, horaInicio) => {
     valorGuardiaP = valorGuardiaP * 2.125;
     descripcionGuardiaP = 'Guardia pasiva domingo (17h)';
   }
-  
+
   return {
     importe: parseFloat(valorGuardiaP.toFixed(2)),
     detalle: {
@@ -755,13 +758,13 @@ exports.calcularGuardiasPasivas = (tarifa, tipoDia, horaInicio) => {
 // Calcular guardias activas con detalles
 exports.calcularGuardiasActivas = (tarifa, duracionHoras, esDiaNoLaboral) => {
   let tarifaHoraActiva = parseFloat(tarifa.valor_hora_activa);
-  
+
   if (esDiaNoLaboral) {
     tarifaHoraActiva *= 1.5;
   }
-  
+
   const importeGuardiaA = tarifaHoraActiva * duracionHoras;
-  
+
   return {
     importe: parseFloat(importeGuardiaA.toFixed(2)),
     detalle: {
@@ -775,12 +778,12 @@ exports.calcularGuardiasActivas = (tarifa, duracionHoras, esDiaNoLaboral) => {
 
 // Calcular adicional nocturno con detalles
 exports.calcularAdicionalNocturno = (tarifa, horasNocturnas, esDiaNoLaboral) => {
-  const valorNocturno = esDiaNoLaboral ? 
-    parseFloat(tarifa.valor_adicional_nocturno_no_habil) : 
+  const valorNocturno = esDiaNoLaboral ?
+    parseFloat(tarifa.valor_adicional_nocturno_no_habil) :
     parseFloat(tarifa.valor_adicional_nocturno_habil);
-  
+
   const importeNocturno = valorNocturno * horasNocturnas;
-  
+
   return {
     importe: parseFloat(importeNocturno.toFixed(2)),
     detalle: {
@@ -796,22 +799,22 @@ exports.calcularAdicionalNocturno = (tarifa, horasNocturnas, esDiaNoLaboral) => 
 exports.analizarCodigosAplicables = async (req, res) => {
   try {
     console.log('🔍 TARIFAS CONTROLLER: Analizando códigos aplicables:', req.query);
-    
+
     const { fecha, hora_inicio, hora_fin } = req.query;
-    
+
     if (!fecha || !hora_inicio || !hora_fin) {
       return res.status(400).json({
         success: false,
         message: 'Se requieren los parámetros: fecha, hora_inicio, hora_fin'
       });
     }
-    
+
     // Usar el modelo de Código para encontrar aplicables
     const codigosAplicables = await Codigo.findApplicable(fecha, hora_inicio, hora_fin);
-    
+
     // Obtener tarifa vigente
     const tarifa = await Tarifa.findVigenteEnFecha(fecha);
-    
+
     const analisis = {
       fecha,
       hora_inicio,
@@ -831,9 +834,9 @@ exports.analizarCodigosAplicables = async (req, res) => {
       })),
       total_codigos: codigosAplicables.length
     };
-    
+
     console.log(`✅ Análisis completado. ${codigosAplicables.length} códigos aplicables`);
-    
+
     res.status(200).json({
       success: true,
       data: analisis
@@ -852,18 +855,18 @@ exports.analizarCodigosAplicables = async (req, res) => {
 exports.obtenerEjemplos = async (req, res) => {
   try {
     console.log('📚 TARIFAS CONTROLLER: Generando ejemplos de cálculo');
-    
+
     // Obtener tarifa vigente actual
     const fechaHoy = new Date().toISOString().split('T')[0];
     const tarifa = await Tarifa.findVigenteEnFecha(fechaHoy);
-    
+
     if (!tarifa) {
       return res.status(404).json({
         success: false,
         message: 'No hay tarifa vigente para generar ejemplos'
       });
     }
-    
+
     const ejemplos = [
       {
         nombre: 'Guardia Pasiva Lunes-Viernes',
@@ -907,15 +910,15 @@ exports.obtenerEjemplos = async (req, res) => {
           guardia_pasiva: tarifa.valor_guardia_pasiva * 2.125, // Factor domingo
           guardia_activa: tarifa.valor_hora_activa * 17 * 1.5, // 17h × factor no laboral
           adicional_nocturno: tarifa.valor_adicional_nocturno_no_habil * 8, // Aprox 8h nocturnas
-          total: (tarifa.valor_guardia_pasiva * 2.125) + 
-                 (tarifa.valor_hora_activa * 17 * 1.5) + 
-                 (tarifa.valor_adicional_nocturno_no_habil * 8)
+          total: (tarifa.valor_guardia_pasiva * 2.125) +
+            (tarifa.valor_hora_activa * 17 * 1.5) +
+            (tarifa.valor_adicional_nocturno_no_habil * 8)
         }
       }
     ];
-    
+
     console.log('✅ Ejemplos generados exitosamente');
-    
+
     res.status(200).json({
       success: true,
       data: {
@@ -941,11 +944,11 @@ exports.obtenerEjemplos = async (req, res) => {
 exports.getEstadisticasTarifas = async (req, res) => {
   try {
     console.log('📊 TARIFAS CONTROLLER: Obteniendo estadísticas');
-    
+
     const estadisticas = await Tarifa.getEstadisticas();
-    
+
     console.log('✅ Estadísticas obtenidas');
-    
+
     res.status(200).json({
       success: true,
       data: estadisticas
