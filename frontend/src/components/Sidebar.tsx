@@ -184,14 +184,15 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     { id: 'itracker', icon: 'bi-circle', label: 'iTracker', route: '/itrackerdash' },
     { id: 'tabulaciones', icon: 'bi-table', label: 'Tabulaciones', route: '/tabulacionesdash' },
     { id: 'incidencias', icon: 'bi-shield-exclamation', label: 'Inc. en Guardia', route: '/incidencias' },
+    { id: 'contactos', icon: 'bi-telephone-fill', label: 'Agenda de Contactos', route: '/contactos' }, // ✅ AGREGADO
     { id: 'stats', icon: 'bi-graph-up', label: 'Estadísticas', route: '/stats' },
     { id: 'admin', icon: 'bi-gear-fill', label: 'Configuración', route: '/admin' },
     { id: 'reports', icon: 'bi-file-earmark-text', label: 'Informes', route: '/reports' },
     { id: 'calendar', icon: 'bi-calendar-date', label: 'Calendario', route: '/calendar' },
     { id: 'messages', icon: 'bi-chat-dots-fill', label: 'Mensajes', route: '/messages' },
     { id: 'notifications', icon: 'bi-bell-fill', label: 'Notificaciones', route: '/notificaciones' },
-    { id: 'links', icon: 'bi-link-45deg', label: 'Links', route: '/links' },  // Nuevo ítem Links
-    { id: 'glosario', icon: 'bi-book', label: 'Glosario', route: '/glosario' },  // Nuevo ítem Glosario
+    { id: 'links', icon: 'bi-link-45deg', label: 'Links', route: '/links' },
+    { id: 'glosario', icon: 'bi-book', label: 'Glosario', route: '/glosario' },
     { id: 'informes', icon: 'bi-bar-chart-fill', label: 'Informes y Estadísticas', route: '/informes' },
   ];
 

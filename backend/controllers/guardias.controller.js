@@ -1,9 +1,19 @@
-// controllers/guardias.controller.js
+// controllers/guardias.controller.js - VERSIÓN COMPLETA ACTUALIZADA
 const Guardia = require('../models/guardia.model');
 const ExcelJS = require('exceljs');
 const fs = require('fs');
 const path = require('path');
 const { Op } = require('../models/db.operators');
+
+// Función auxiliar para formatear fechas de manera legible
+const formatearFecha = (fecha) => {
+  return new Date(fecha).toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
 
 // Obtener todas las guardias
 exports.getGuardias = async (req, res) => {
@@ -76,21 +86,24 @@ exports.createGuardia = async (req, res) => {
   try {
     const { fecha, usuario, notas } = req.body;
     
-    // Verificar si ya existe una guardia en esa fecha
+    // CAMBIO: Verificar si ya existe una guardia con la misma fecha Y usuario
     const existingGuardia = await Guardia.findOne({
-      where: { fecha: new Date(fecha) }
+      where: { 
+        fecha: new Date(fecha),
+        usuario: usuario.trim() // Comparar también por usuario
+      }
     });
     
     if (existingGuardia) {
       return res.status(400).json({
         success: false,
-        message: 'Ya existe una guardia asignada para esta fecha'
+        message: `Ya existe una guardia asignada para ${usuario.trim()} en la fecha ${fecha}`
       });
     }
     
     const nuevaGuardia = await Guardia.create({
       fecha,
-      usuario,
+      usuario: usuario.trim(),
       notas: notas || ''
     });
     
@@ -122,11 +135,14 @@ exports.updateGuardia = async (req, res) => {
       });
     }
     
-    // Si la fecha cambia, verificar que no haya conflicto
-    if (fecha && new Date(fecha).toISOString() !== new Date(guardia.fecha).toISOString()) {
+    // Si la fecha o usuario cambian, verificar que no haya conflicto
+    if ((fecha && new Date(fecha).toISOString() !== new Date(guardia.fecha).toISOString()) ||
+        (usuario && usuario.trim() !== guardia.usuario.trim())) {
+      
       const existingGuardia = await Guardia.findOne({
         where: { 
-          fecha: new Date(fecha),
+          fecha: new Date(fecha || guardia.fecha),
+          usuario: (usuario || guardia.usuario).trim(),
           id: { [Op.ne]: req.params.id }
         }
       });
@@ -134,7 +150,7 @@ exports.updateGuardia = async (req, res) => {
       if (existingGuardia) {
         return res.status(400).json({
           success: false,
-          message: 'Ya existe una guardia asignada para esta fecha'
+          message: `Ya existe una guardia asignada para ${(usuario || guardia.usuario).trim()} en la fecha ${fecha || guardia.fecha}`
         });
       }
     }
@@ -142,7 +158,7 @@ exports.updateGuardia = async (req, res) => {
     // Actualizar campos directamente en la instancia
     const updatedGuardia = await guardia.update({
       fecha: fecha || guardia.fecha,
-      usuario: usuario || guardia.usuario,
+      usuario: (usuario || guardia.usuario).trim(),
       notas: notas !== undefined ? notas : guardia.notas
     });
     
@@ -189,7 +205,7 @@ exports.deleteGuardia = async (req, res) => {
   }
 };
 
-// Importar guardias desde archivo Excel usando ExcelJS
+// Importar guardias desde archivo Excel - VERSIÓN MEJORADA CON MENSAJES CLAROS
 exports.importGuardias = async (req, res) => {
   try {
     if (!req.file) {
@@ -202,45 +218,33 @@ exports.importGuardias = async (req, res) => {
     const filePath = req.file.path;
     const guardiasImportadas = [];
     let errores = [];
+    let guardiasOmitidas = 0;
     
     console.log(`Procesando archivo: ${req.file.originalname}`);
     
     try {
-      // Leer el archivo Excel usando ExcelJS
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.readFile(filePath);
       
-      console.log(`Archivo cargado. Número de hojas: ${workbook.worksheets.length}`);
-      
-      // Nombres de meses para filtrar
       const nombresMeses = [
         'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
       ];
       
-      // Filtrar para procesar solo hojas que son nombres de meses
       const mesesHojas = workbook.worksheets.filter(sheet => 
         nombresMeses.includes(sheet.name)
       );
       
-      console.log(`Hojas de meses encontradas: ${mesesHojas.map(sheet => sheet.name).join(', ')}`);
-      
-      // Mapeo de nombres de mes a números
       const mesesNumeros = {
         'Enero': 1, 'Febrero': 2, 'Marzo': 3, 'Abril': 4,
         'Mayo': 5, 'Junio': 6, 'Julio': 7, 'Agosto': 8,
         'Septiembre': 9, 'Octubre': 10, 'Noviembre': 11, 'Diciembre': 12
       };
       
-      // Procesar cada hoja mensual
       for (const worksheet of mesesHojas) {
         const mes = worksheet.name;
-        const mesNumero = mesesNumeros[mes];
-        const anio = 2025; // Año fijo del cronograma
+        console.log(`\nProcesando mes: ${mes}`);
         
-        console.log(`\nProcesando mes: ${mes} (${mesNumero}/${anio})`);
-        
-        // Extraer todas las filas
         const rows = [];
         worksheet.eachRow((row, rowNumber) => {
           const rowData = [];
@@ -250,77 +254,51 @@ exports.importGuardias = async (req, res) => {
           rows[rowNumber - 1] = rowData;
         });
         
-        console.log(`  Filas extraídas: ${rows.length}`);
-        
-        // Buscar filas que contienen fechas y nombres
         for (let i = 0; i < rows.length - 1; i++) {
           const currentRow = rows[i];
           const nextRow = rows[i + 1];
           
           if (!currentRow || !nextRow) continue;
           
-          // Verificar si la fila actual contiene fechas (objetos Date de ExcelJS)
           const containsExcelDates = currentRow.some(cell => 
             cell instanceof Date || 
             (cell && typeof cell === 'object' && cell.t === 'd') ||
-            // Para números seriales de Excel
             (typeof cell === 'number' && cell > 40000 && cell < 50000)
           );
           
           if (containsExcelDates) {
-            console.log(`  Fila ${i+1}: Contiene fechas Excel`);
-            
-            // Verificar si la siguiente fila contiene strings (nombres)
             const nextRowHasNames = nextRow.some(cell => 
               typeof cell === 'string' || 
               (cell && typeof cell === 'object' && cell.text && cell.text.length > 1)
             );
             
             if (nextRowHasNames) {
-              console.log(`  Fila ${i+2}: Contiene nombres`);
-              
-              // Procesar cada columna
               for (let j = 0; j < Math.min(currentRow.length, nextRow.length); j++) {
                 const cellFecha = currentRow[j];
                 const cellNombre = nextRow[j];
                 
-                // ExcelJS puede devolver fechas como objeto Date directamente
                 let fechaJS = null;
                 
-                // Manejar diferentes tipos de celdas de fecha en ExcelJS
+                // Procesamiento de fechas (mantener lógica actual)
                 if (cellFecha instanceof Date) {
                   fechaJS = new Date(cellFecha);
-                  // Corregir el problema de desplazamiento de fechas
                   fechaJS.setDate(fechaJS.getDate() + 1);
                 } else if (cellFecha && typeof cellFecha === 'object' && cellFecha.result) {
-                  // Para celdas con resultado de fórmula
                   fechaJS = new Date(cellFecha.result);
-                  // Corregir el problema de desplazamiento de fechas
                   fechaJS.setDate(fechaJS.getDate() + 1);
                 } else if (typeof cellFecha === 'number' && cellFecha > 40000 && cellFecha < 50000) {
-                  // Cuando ExcelJS devuelve la fecha como número serial
-                  // En este caso, debemos asegurarnos de que la fecha convertida sea correcta
-                  
-                  // Forma directa y corregida de convertir número serial a fecha
-                  // Excel comienza desde 1/1/1900, y el día 60 (29/2/1900) no existe realmente
-                  // Ajustamos estos detalles para obtener la fecha correcta
-                  
-                  // Calculamos días desde 1/1/1900
                   const date = new Date(1900, 0, 1);
                   date.setDate(date.getDate() + Math.floor(cellFecha) - 1);
                   
-                  // Corrección para fechas posteriores al 28/2/1900 debido al error del año bisiesto en Excel
                   if (cellFecha > 60) {
                     date.setDate(date.getDate() - 1);
                   }
                   
-                  // Y sumamos un día para corregir el desplazamiento observado
                   date.setDate(date.getDate() + 1);
-                  
                   fechaJS = date;
                 }
                 
-                // Extraer el nombre, manejando diferentes tipos de celdas en ExcelJS
+                // Procesamiento de nombres (mantener lógica actual)
                 let nombre = null;
                 if (typeof cellNombre === 'string') {
                   nombre = cellNombre;
@@ -334,35 +312,64 @@ exports.importGuardias = async (req, res) => {
                   }
                 }
                 
-                // Verificar si tenemos una fecha y un nombre válido
-                if (fechaJS && fechaJS instanceof Date && !isNaN(fechaJS.getTime()) && 
-                    nombre && nombre.trim() !== '') {
+                // Validaciones mejoradas
+                if (fechaJS && fechaJS instanceof Date && !isNaN(fechaJS.getTime())) {
                   
-                  console.log(`    Guardia encontrada: ${fechaJS.toISOString().split('T')[0]} - ${nombre.trim()}`);
+                  // VALIDACIÓN 1: Verificar que el nombre no esté vacío
+                  if (!nombre || nombre.trim() === '') {
+                    errores.push(`Fila ${i + 2}, Columna ${j + 1}: Se encontró una fecha (${formatearFecha(fechaJS)}) pero no hay nombre de usuario asignado`);
+                    continue;
+                  }
+                  
+                  const usuarioLimpio = nombre.trim();
+                  const fechaFormateada = fechaJS.toISOString().split('T')[0];
+                  
+                  // VALIDACIÓN 2: Verificar que el nombre tenga al menos 2 caracteres
+                  if (usuarioLimpio.length < 2) {
+                    errores.push(`Fila ${i + 2}: El nombre "${usuarioLimpio}" es demasiado corto para la fecha ${formatearFecha(fechaJS)}`);
+                    continue;
+                  }
                   
                   try {
-                    // Verificar si ya existe una guardia para esta fecha
+                    // VALIDACIÓN 3: Verificar duplicados
                     const existeGuardia = await Guardia.findOne({
-                      where: { fecha: fechaJS }
+                      where: { 
+                        fecha: fechaJS,
+                        usuario: usuarioLimpio
+                      }
                     });
                     
                     if (existeGuardia) {
-                      console.log(`    Ya existe una guardia para el ${fechaJS.toISOString().split('T')[0]}`);
-                      errores.push(`Ya existe una guardia asignada para el ${fechaJS.toISOString().split('T')[0]}`);
+                      guardiasOmitidas++;
+                      errores.push(`✓ Guardia omitida: ${usuarioLimpio} ya tiene asignada la guardia del ${formatearFecha(fechaJS)}`);
                     } else {
                       // Crear nueva guardia
                       const nuevaGuardia = await Guardia.create({
                         fecha: fechaJS,
-                        usuario: nombre.trim(),
+                        usuario: usuarioLimpio,
                         notas: `Importado desde Excel - ${mes} 2025`
                       });
                       
                       guardiasImportadas.push(nuevaGuardia);
-                      console.log(`    Guardia creada: ${nombre.trim()} - ${fechaJS.toISOString()}`);
+                      console.log(`✅ Guardia creada: ${usuarioLimpio} - ${fechaFormateada}`);
                     }
                   } catch (error) {
-                    console.error(`    Error al crear guardia: ${error.message}`);
-                    errores.push(`Error al crear guardia para ${fechaJS.toISOString().split('T')[0]}: ${error.message}`);
+                    // MANEJO DE ERRORES MEJORADO
+                    let mensajeError = '';
+                    
+                    if (error.code === 'ER_DUP_ENTRY') {
+                      mensajeError = `Guardia duplicada: ${usuarioLimpio} ya está asignado para el ${formatearFecha(fechaJS)}`;
+                      guardiasOmitidas++;
+                    } else if (error.message.includes('usuario is not defined')) {
+                      mensajeError = `Error en fila ${i + 2}: El nombre de usuario no es válido para la fecha ${formatearFecha(fechaJS)}`;
+                    } else if (error.message.includes('fecha')) {
+                      mensajeError = `Error en fila ${i + 2}: La fecha ${formatearFecha(fechaJS)} no es válida`;
+                    } else {
+                      mensajeError = `Error al procesar guardia de ${usuarioLimpio || 'usuario desconocido'} para el ${formatearFecha(fechaJS)}: ${error.message}`;
+                    }
+                    
+                    errores.push(mensajeError);
+                    console.error(`❌ ${mensajeError}`);
                   }
                 }
               }
@@ -374,41 +381,74 @@ exports.importGuardias = async (req, res) => {
       // Eliminar archivo temporal
       fs.unlinkSync(filePath);
       
-      res.status(200).json({
-        success: true,
-        message: `Se importaron ${guardiasImportadas.length} guardias correctamente`,
+      // RESPUESTA MEJORADA
+      let mensaje = '';
+      let estadoExito = true;
+      
+      if (guardiasImportadas.length > 0 && guardiasOmitidas === 0 && errores.length === 0) {
+        mensaje = `¡Perfecto! Se importaron ${guardiasImportadas.length} guardias correctamente sin ningún problema.`;
+      } else if (guardiasImportadas.length > 0 && (guardiasOmitidas > 0 || errores.length > 0)) {
+        mensaje = `Importación completada: ${guardiasImportadas.length} guardias nuevas creadas`;
+        if (guardiasOmitidas > 0) {
+          mensaje += `, ${guardiasOmitidas} guardias omitidas por estar duplicadas`;
+        }
+        if (errores.length > guardiasOmitidas) {
+          mensaje += `, ${errores.length - guardiasOmitidas} errores encontrados`;
+        }
+      } else if (guardiasImportadas.length === 0 && guardiasOmitidas > 0) {
+        mensaje = `Todas las guardias del archivo ya existen en el sistema (${guardiasOmitidas} guardias omitidas)`;
+        estadoExito = true; // No es un error, simplemente no había nada nuevo que importar
+      } else {
+        mensaje = `No se pudieron importar guardias. Se encontraron ${errores.length} errores`;
+        estadoExito = false;
+      }
+      
+      res.status(estadoExito ? 200 : 400).json({
+        success: estadoExito,
+        message: mensaje,
         errors: errores.length > 0 ? errores : null,
         totalImportadas: guardiasImportadas.length,
-        totalErrores: errores.length
+        totalErrores: errores.length - guardiasOmitidas, // Errores reales, sin contar omisiones
+        totalOmitidas: guardiasOmitidas,
+        resumen: {
+          guardiasNuevas: guardiasImportadas.length,
+          guardiasDuplicadas: guardiasOmitidas,
+          erroresReales: errores.length - guardiasOmitidas,
+          archivoOriginal: req.file.originalname
+        }
       });
+      
     } catch (excelError) {
       console.error('Error al procesar el archivo Excel:', excelError);
-      errores.push(`Error al procesar el archivo Excel: ${excelError.message}`);
       
-      // Eliminar archivo temporal si existe
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
       
       res.status(400).json({
         success: false,
-        message: 'Error al procesar el archivo Excel',
+        message: 'Error al procesar el archivo Excel. Verifique que el archivo tenga el formato correcto.',
         error: excelError.message,
-        errors: errores
+        errors: [`Error de archivo: ${excelError.message}`],
+        totalImportadas: 0,
+        totalErrores: 1,
+        totalOmitidas: 0
       });
     }
   } catch (error) {
     console.error('Error general al importar guardias:', error);
     
-    // Eliminar archivo temporal si existe
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
     
     res.status(500).json({
       success: false,
-      message: 'Error al importar guardias',
-      error: error.message
+      message: 'Error interno del servidor al procesar la importación',
+      error: error.message,
+      totalImportadas: 0,
+      totalErrores: 1,
+      totalOmitidas: 0
     });
   }
 };

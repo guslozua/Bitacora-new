@@ -23,6 +23,7 @@ import Glosario from './pages/Glosario';
 import Enlaces from './pages/Enlaces';
 import InformesPage from './pages/InformesPage';
 import CodigosPage from './pages/CodigosPage'; // los codigos de guardias
+import ContactosPage from './pages/ContactosPage';
 import Error404 from './pages/Error404';
 
 // Importaciones para el calendario
@@ -138,6 +139,7 @@ const App: React.FC = () => {
           <Route path="/links" element={<ProtectedRoute element={<Enlaces />} />} />
           <Route path="/informes" element={<InformesPage />} />
           <Route path="/admin/codigos" element={<ProtectedRoute element={<CodigosPage />} />} />
+          <Route path="/contactos" element={<ProtectedRoute element={<ContactosPage />} />} />
           
           {/* 🔔 NUEVA RUTA PARA NOTIFICACIONES */}
           <Route 

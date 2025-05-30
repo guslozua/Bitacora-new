@@ -1,4 +1,4 @@
-// src/pages/CodigosPage.tsx - VERSIÓN COMPLETA CON CÓDIGOS APLICABLES Y FECHAS CORREGIDAS
+// src/pages/CodigosPage.tsx - VERSIÓN CON FOOTER CORREGIDO
 import React, { useState, useEffect } from 'react';
 import { Container, Card, Row, Col, Button, Spinner, Alert, Nav, Tab, Badge, Form, Table, Modal, InputGroup } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +15,7 @@ import TarifaService, {
   ParametrosSimulacion,
   CodigoAplicable,
   getColorTipoCodigo,
-  prepararParametrosSimulacionSegura  // ✨ IMPORTAR LA FUNCIÓN DE FECHAS SEGURAS
+  prepararParametrosSimulacionSegura
 } from '../services/TarifaService';
 
 interface ResultadoCalculo {
@@ -53,7 +53,7 @@ const CodigosPage: React.FC = () => {
     estado: 'activo',
     search: '',
     incluirInactivos: false,
-    modalidad_convenio: '' // ✨ AGREGAR ESTA LÍNEA
+    modalidad_convenio: ''
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
@@ -71,12 +71,10 @@ const CodigosPage: React.FC = () => {
     hora_inicio: '20:00',
     hora_fin: '08:00',
     tipo_guardia: 'activa' as 'pasiva' | 'activa',
-    modalidad_convenio: 'FC' as 'FC' | 'DC' // ✨ AGREGAR ESTA LÍNEA
+    modalidad_convenio: 'FC' as 'FC' | 'DC'
   });
   const [resultadoSimulacion, setResultadoSimulacion] = useState<ResultadoCalculo | null>(null);
   const [loadingSimulacion, setLoadingSimulacion] = useState(false);
-
-  // ✨ NUEVO ESTADO PARA CÓDIGOS APLICABLES
   const [codigosAplicables, setCodigosAplicables] = useState<CodigoAplicable[]>([]);
 
   // Cargar datos iniciales
@@ -99,10 +97,10 @@ const CodigosPage: React.FC = () => {
         estado: filters.estado || undefined,
         search: filters.search || undefined,
         incluir_inactivos: filters.incluirInactivos ? 'true' : undefined,
-        modalidad_convenio: filters.modalidad_convenio || undefined // ✨ AGREGAR ESTA LÍNEA
+        modalidad_convenio: filters.modalidad_convenio || undefined
       };
 
-      console.log('🔍 Filtros enviados al backend:', params); // ✨ Log para debugging
+      console.log('🔍 Filtros enviados al backend:', params);
 
       const codigosData = await CodigoService.fetchCodigos(params);
       setCodigos(codigosData);
@@ -145,7 +143,7 @@ const CodigosPage: React.FC = () => {
     }
   };
 
-  // ✅ Simular cálculo CON CÓDIGOS APLICABLES Y FECHAS CORREGIDAS
+  // Simular cálculo
   const simularCalculo = async () => {
     if (!tarifaActual || !tarifaActual.id) {
       setError('No hay tarifa seleccionada para simular');
@@ -155,22 +153,20 @@ const CodigosPage: React.FC = () => {
     setLoadingSimulacion(true);
     try {
       console.log('🧮 Iniciando simulación con códigos, fechas y MODALIDAD:', {
-        modalidad_convenio: simulacion.modalidad_convenio // ✨ LOG DE MODALIDAD
+        modalidad_convenio: simulacion.modalidad_convenio
       });
 
-      // ✨ USAR LA FUNCIÓN SEGURA PARA PREPARAR PARÁMETROS CON MODALIDAD
       const parametros = prepararParametrosSimulacionSegura(
         simulacion.fecha,
         simulacion.hora_inicio,
         simulacion.hora_fin,
         simulacion.tipo_guardia,
         tarifaActual.id,
-        simulacion.modalidad_convenio // ✨ PASAR LA MODALIDAD COMO PARÁMETRO
+        simulacion.modalidad_convenio
       );
 
       console.log('📝 Parámetros de simulación con modalidad:', parametros);
 
-      // ✨ USAR LA FUNCIÓN QUE INCLUYE CÓDIGOS APLICABLES Y MODALIDAD
       const resultadoReal = await TarifaService.simularCalculo(parametros);
 
       console.log('✅ Simulación completada con códigos y modalidad:', resultadoReal);
@@ -202,8 +198,6 @@ const CodigosPage: React.FC = () => {
       };
 
       setResultadoSimulacion(resultadoAdaptado);
-
-      // ✨ GUARDAR LOS CÓDIGOS APLICABLES (YA FILTRADOS POR MODALIDAD)
       setCodigosAplicables(resultadoReal.codigos_aplicables || []);
 
     } catch (err: any) {
@@ -282,7 +276,10 @@ const CodigosPage: React.FC = () => {
   const contentStyle = {
     marginLeft: sidebarCollapsed ? '80px' : '250px',
     transition: 'all 0.3s',
-    width: sidebarCollapsed ? 'calc(100% - 80px)' : 'calc(100% - 250px)'
+    width: sidebarCollapsed ? 'calc(100% - 80px)' : 'calc(100% - 250px)',
+    minHeight: '100vh', // ✨ AGREGAR ALTURA MÍNIMA
+    display: 'flex',    // ✨ USAR FLEXBOX
+    flexDirection: 'column' as const // ✨ DIRECCIÓN COLUMNA
   };
 
   return (
@@ -293,446 +290,449 @@ const CodigosPage: React.FC = () => {
         onLogout={() => navigate('/login')}
       />
 
-      <div style={contentStyle} className="flex-grow-1">
-        <Container fluid className="py-4">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h2 className="mb-0 fw-bold">Administración de Facturación</h2>
-              <p className="text-muted mb-0">Gestione códigos de facturación y tarifas del sistema</p>
+      <div style={contentStyle}>
+        {/* ✨ CONTENIDO PRINCIPAL CON FLEX-GROW */}
+        <div className="flex-grow-1">
+          <Container fluid className="py-4">
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h2 className="mb-0 fw-bold">Administración de Facturación</h2>
+                <p className="text-muted mb-0">Gestione códigos de facturación y tarifas del sistema</p>
+              </div>
+              <div className="d-flex gap-2">
+                {activeTab === 'tarifas' && tarifaActual && (
+                  <Badge bg="success" className="fs-6 px-3 py-2">
+                    <i className="bi bi-check-circle me-1"></i>
+                    Tarifa Vigente: {tarifaActual.nombre}
+                  </Badge>
+                )}
+              </div>
             </div>
-            <div className="d-flex gap-2">
-              {activeTab === 'tarifas' && tarifaActual && (
-                <Badge bg="success" className="fs-6 px-3 py-2">
-                  <i className="bi bi-check-circle me-1"></i>
-                  Tarifa Vigente: {tarifaActual.nombre}
-                </Badge>
-              )}
-            </div>
-          </div>
 
-          {error && (
-            <Alert variant="danger" className="mb-4" dismissible onClose={() => setError(null)}>
-              {error}
-            </Alert>
-          )}
+            {error && (
+              <Alert variant="danger" className="mb-4" dismissible onClose={() => setError(null)}>
+                {error}
+              </Alert>
+            )}
 
-          <Tab.Container activeKey={activeTab} onSelect={(k) => k && setActiveTab(k)}>
-            <Row>
-              <Col md={12}>
-                <Nav variant="tabs" className="mb-4">
-                  <Nav.Item>
-                    <Nav.Link eventKey="codigos">
-                      <i className="bi bi-code-square me-2"></i>
-                      Códigos de Facturación
-                    </Nav.Link>
-                  </Nav.Item>
-                  <Nav.Item>
-                    <Nav.Link eventKey="tarifas">
-                      <i className="bi bi-cash-coin me-2"></i>
-                      Tarifas y Valores
-                    </Nav.Link>
-                  </Nav.Item>
-                  <Nav.Item>
-                    <Nav.Link eventKey="simulador">
-                      <i className="bi bi-calculator me-2"></i>
-                      Simulador de Cálculos
-                    </Nav.Link>
-                  </Nav.Item>
-                </Nav>
-              </Col>
-            </Row>
+            <Tab.Container activeKey={activeTab} onSelect={(k) => k && setActiveTab(k)}>
+              <Row>
+                <Col md={12}>
+                  <Nav variant="tabs" className="mb-4">
+                    <Nav.Item>
+                      <Nav.Link eventKey="codigos">
+                        <i className="bi bi-code-square me-2"></i>
+                        Códigos de Facturación
+                      </Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                      <Nav.Link eventKey="tarifas">
+                        <i className="bi bi-cash-coin me-2"></i>
+                        Tarifas y Valores
+                      </Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                      <Nav.Link eventKey="simulador">
+                        <i className="bi bi-calculator me-2"></i>
+                        Simulador de Cálculos
+                      </Nav.Link>
+                    </Nav.Item>
+                  </Nav>
+                </Col>
+              </Row>
 
-            <Row>
-              <Col md={12}>
-                <Tab.Content>
-                  {/* Tab: Códigos de Facturación */}
-                  <Tab.Pane eventKey="codigos">
-                    <Card className="shadow-sm border-0 mb-4">
-                      <Card.Body>
-                        <Row className="align-items-center mb-4">
-                          <Col>
-                            <h5 className="mb-0">Códigos de Facturación</h5>
-                            <p className="text-muted mb-0">Gestione los códigos utilizados para facturar las guardias e incidentes</p>
-                          </Col>
-                          <Col xs="auto">
-                            <Button variant="primary" onClick={handleNewCodigo}>
-                              <i className="bi bi-plus-circle me-2"></i>
-                              Nuevo Código
-                            </Button>
-                          </Col>
-                        </Row>
+              <Row>
+                <Col md={12}>
+                  <Tab.Content>
+                    {/* Tab: Códigos de Facturación */}
+                    <Tab.Pane eventKey="codigos">
+                      <Card className="shadow-sm border-0 mb-4">
+                        <Card.Body>
+                          <Row className="align-items-center mb-4">
+                            <Col>
+                              <h5 className="mb-0">Códigos de Facturación</h5>
+                              <p className="text-muted mb-0">Gestione los códigos utilizados para facturar las guardias e incidentes</p>
+                            </Col>
+                            <Col xs="auto">
+                              <Button variant="primary" onClick={handleNewCodigo}>
+                                <i className="bi bi-plus-circle me-2"></i>
+                                Nuevo Código
+                              </Button>
+                            </Col>
+                          </Row>
 
-                        <CodigoFilters
-                          filters={filters}
-                          onFilterChange={handleFilterChange}
-                        />
-
-                        {loading ? (
-                          <div className="text-center py-5">
-                            <Spinner animation="border" variant="primary" />
-                            <p className="mt-3 text-muted">Cargando códigos...</p>
-                          </div>
-                        ) : (
-                          <CodigosList
-                            codigos={codigos}
-                            onEdit={handleEditCodigo}
-                            onDeactivate={handleDeactivateCodigo}
-                            onDelete={handleDeleteCodigo}
+                          <CodigoFilters
+                            filters={filters}
+                            onFilterChange={handleFilterChange}
                           />
-                        )}
-                      </Card.Body>
-                    </Card>
-                  </Tab.Pane>
 
-                  {/* Tab: Tarifas y Valores */}
-                  <Tab.Pane eventKey="tarifas">
-                    <Card className="shadow-sm border-0">
-                      <Card.Header className="bg-primary text-white">
-                        <div className="d-flex justify-content-between align-items-center">
-                          <h5 className="mb-0">
-                            <i className="bi bi-cash-coin me-2"></i>
-                            Tarifas Configuradas
-                          </h5>
-                          <Button
-                            variant="outline-light"
-                            size="sm"
-                            onClick={() => abrirModalTarifa()}
-                          >
-                            <i className="bi bi-plus-circle me-1"></i>
-                            Nueva Tarifa
-                          </Button>
-                        </div>
-                      </Card.Header>
-                      <Card.Body>
-                        {loadingTarifas ? (
-                          <div className="text-center py-5">
-                            <Spinner animation="border" variant="primary" />
-                            <p className="mt-3 text-muted">Cargando tarifas...</p>
-                          </div>
-                        ) : (
-                          <Table responsive hover>
-                            <thead>
-                              <tr className="table-light">
-                                <th>Nombre</th>
-                                <th>Guardia Pasiva</th>
-                                <th>Hora Activa</th>
-                                <th>Nocturno Hábil</th>
-                                <th>Nocturno No Hábil</th>
-                                <th>Vigencia</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {tarifas.map(tarifa => (
-                                <tr key={tarifa.id} className={tarifa.estado === 'activo' ? 'table-success' : ''}>
-                                  <td>
-                                    <strong>{tarifa.nombre}</strong>
-                                    {tarifa.estado === 'activo' && (
-                                      <Badge bg="success" className="ms-2">Vigente</Badge>
-                                    )}
-                                  </td>
-                                  <td>{formatearMoneda(tarifa.valor_guardia_pasiva)}</td>
-                                  <td>{formatearMoneda(tarifa.valor_hora_activa)}</td>
-                                  <td>{formatearMoneda(tarifa.valor_adicional_nocturno_habil)}</td>
-                                  <td>{formatearMoneda(tarifa.valor_adicional_nocturno_no_habil)}</td>
-                                  <td>
-                                    <small>
-                                      Desde: {new Date(tarifa.vigencia_desde).toLocaleDateString()}
-                                      {tarifa.vigencia_hasta && (
-                                        <><br />Hasta: {new Date(tarifa.vigencia_hasta).toLocaleDateString()}</>
-                                      )}
-                                    </small>
-                                  </td>
-                                  <td>
-                                    <Badge bg={tarifa.estado === 'activo' ? 'success' : 'secondary'}>
-                                      {tarifa.estado}
-                                    </Badge>
-                                  </td>
-                                  <td>
-                                    <div className="d-flex gap-1">
-                                      <Button
-                                        variant="outline-primary"
-                                        size="sm"
-                                        onClick={() => abrirModalTarifa(tarifa)}
-                                        title="Editar tarifa"
-                                      >
-                                        <i className="bi bi-pencil"></i>
-                                      </Button>
-                                      <Button
-                                        variant="outline-success"
-                                        size="sm"
-                                        onClick={() => {
-                                          setTarifaActual(tarifa);
-                                          setActiveTab('simulador');
-                                        }}
-                                        title="Usar para simulación"
-                                      >
-                                        <i className="bi bi-calculator"></i>
-                                      </Button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </Table>
-                        )}
-                      </Card.Body>
-                    </Card>
-                  </Tab.Pane>
+                          {loading ? (
+                            <div className="text-center py-5">
+                              <Spinner animation="border" variant="primary" />
+                              <p className="mt-3 text-muted">Cargando códigos...</p>
+                            </div>
+                          ) : (
+                            <CodigosList
+                              codigos={codigos}
+                              onEdit={handleEditCodigo}
+                              onDeactivate={handleDeactivateCodigo}
+                              onDelete={handleDeleteCodigo}
+                            />
+                          )}
+                        </Card.Body>
+                      </Card>
+                    </Tab.Pane>
 
-                  {/* Tab: Simulador CON CÓDIGOS APLICABLES Y FECHAS CORREGIDAS */}
-                  <Tab.Pane eventKey="simulador">
-                    <Row>
-                      <Col md={6}>
-                        <Card className="shadow-sm border-0 mb-4">
-                          <Card.Header className="bg-info text-white">
+                    {/* Tab: Tarifas y Valores */}
+                    <Tab.Pane eventKey="tarifas">
+                      <Card className="shadow-sm border-0 mb-4"> {/* ✨ AGREGAR MARGIN-BOTTOM */}
+                        <Card.Header className="bg-primary text-white">
+                          <div className="d-flex justify-content-between align-items-center">
                             <h5 className="mb-0">
-                              <i className="bi bi-calculator me-2"></i>
-                              Simulador de Cálculos
+                              <i className="bi bi-cash-coin me-2"></i>
+                              Tarifas Configuradas
                             </h5>
-                          </Card.Header>
-                          <Card.Body>
-                            {!tarifaActual ? (
-                              <Alert variant="warning">
-                                <i className="bi bi-exclamation-triangle me-2"></i>
-                                Debe seleccionar una tarifa vigente antes de simular cálculos.
-                                <Button
-                                  variant="outline-warning"
-                                  size="sm"
-                                  className="ms-2"
-                                  onClick={() => setActiveTab('tarifas')}
-                                >
-                                  Ir a Tarifas
-                                </Button>
-                              </Alert>
-                            ) : (
-                              <>
-                                <div className="mb-3 p-2 bg-light rounded">
-                                  <small className="text-muted">Tarifa seleccionada:</small>
-                                  <div className="fw-bold">{tarifaActual.nombre}</div>
-                                </div>
-
-                                <Form>
-                                  <Form.Group className="mb-3">
-                                    <Form.Label>Fecha del Incidente</Form.Label>
-                                    <Form.Control
-                                      type="date"
-                                      value={simulacion.fecha}
-                                      onChange={(e) => setSimulacion({ ...simulacion, fecha: e.target.value })}
-                                    />
-                                  </Form.Group>
-
-                                  <Row className="mb-3">
-                                    <Col md={6}>
-                                      <Form.Group>
-                                        <Form.Label>Hora de Inicio</Form.Label>
-                                        <Form.Control
-                                          type="time"
-                                          value={simulacion.hora_inicio}
-                                          onChange={(e) => setSimulacion({ ...simulacion, hora_inicio: e.target.value })}
-                                        />
-                                      </Form.Group>
-                                    </Col>
-                                    <Col md={6}>
-                                      <Form.Group>
-                                        <Form.Label>Hora de Fin</Form.Label>
-                                        <Form.Control
-                                          type="time"
-                                          value={simulacion.hora_fin}
-                                          onChange={(e) => setSimulacion({ ...simulacion, hora_fin: e.target.value })}
-                                        />
-                                      </Form.Group>
-                                    </Col>
-                                  </Row>
-
-                                  <Form.Group className="mb-3">
-                                    <Form.Label>Tipo de Guardia</Form.Label>
-                                    <Form.Select
-                                      value={simulacion.tipo_guardia}
-                                      onChange={(e) => setSimulacion({ ...simulacion, tipo_guardia: e.target.value as 'pasiva' | 'activa' })}
-                                    >
-                                      <option value="pasiva">Guardia Pasiva</option>
-                                      <option value="activa">Guardia Activa</option>
-                                    </Form.Select>
-                                    <Form.Text className="text-muted">
-                                      Las guardias pasivas se cobran por día completo, las activas por hora trabajada.
-                                    </Form.Text>
-                                  </Form.Group>
-
-                                  {/* ✨ NUEVO: SELECTOR DE MODALIDAD DE CONVENIO */}
-                                  <Form.Group className="mb-3">
-                                    <Form.Label>Modalidad de Convenio</Form.Label>
-                                    <Form.Select
-                                      value={simulacion.modalidad_convenio}
-                                      onChange={(e) => setSimulacion({ ...simulacion, modalidad_convenio: e.target.value as 'FC' | 'DC' })}
-                                    >
-                                      <option value="FC">Fuera de Convenio (FC)</option>
-                                      <option value="DC">Dentro de Convenio (DC)</option>
-                                    </Form.Select>
-                                    <Form.Text className="text-muted">
-                                      Seleccione la modalidad contractual para ver códigos y factores correspondientes.
-                                    </Form.Text>
-                                  </Form.Group>
-
-                                  <div className="d-grid">
-                                    <Button
-                                      variant="primary"
-                                      onClick={simularCalculo}
-                                      disabled={loadingSimulacion}
-                                    >
-                                      {loadingSimulacion ? (
-                                        <>
-                                          <Spinner animation="border" size="sm" className="me-2" />
-                                          Calculando...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <i className="bi bi-play-circle me-2"></i>
-                                          Simular Cálculo
-                                        </>
+                            <Button
+                              variant="outline-light"
+                              size="sm"
+                              onClick={() => abrirModalTarifa()}
+                            >
+                              <i className="bi bi-plus-circle me-1"></i>
+                              Nueva Tarifa
+                            </Button>
+                          </div>
+                        </Card.Header>
+                        <Card.Body>
+                          {loadingTarifas ? (
+                            <div className="text-center py-5">
+                              <Spinner animation="border" variant="primary" />
+                              <p className="mt-3 text-muted">Cargando tarifas...</p>
+                            </div>
+                          ) : (
+                            <Table responsive hover>
+                              <thead>
+                                <tr className="table-light">
+                                  <th>Nombre</th>
+                                  <th>Guardia Pasiva</th>
+                                  <th>Hora Activa</th>
+                                  <th>Nocturno Hábil</th>
+                                  <th>Nocturno No Hábil</th>
+                                  <th>Vigencia</th>
+                                  <th>Estado</th>
+                                  <th>Acciones</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {tarifas.map(tarifa => (
+                                  <tr key={tarifa.id} className={tarifa.estado === 'activo' ? 'table-success' : ''}>
+                                    <td>
+                                      <strong>{tarifa.nombre}</strong>
+                                      {tarifa.estado === 'activo' && (
+                                        <Badge bg="success" className="ms-2">Vigente</Badge>
                                       )}
-                                    </Button>
+                                    </td>
+                                    <td>{formatearMoneda(tarifa.valor_guardia_pasiva)}</td>
+                                    <td>{formatearMoneda(tarifa.valor_hora_activa)}</td>
+                                    <td>{formatearMoneda(tarifa.valor_adicional_nocturno_habil)}</td>
+                                    <td>{formatearMoneda(tarifa.valor_adicional_nocturno_no_habil)}</td>
+                                    <td>
+                                      <small>
+                                        Desde: {new Date(tarifa.vigencia_desde).toLocaleDateString()}
+                                        {tarifa.vigencia_hasta && (
+                                          <><br />Hasta: {new Date(tarifa.vigencia_hasta).toLocaleDateString()}</>
+                                        )}
+                                      </small>
+                                    </td>
+                                    <td>
+                                      <Badge bg={tarifa.estado === 'activo' ? 'success' : 'secondary'}>
+                                        {tarifa.estado}
+                                      </Badge>
+                                    </td>
+                                    <td>
+                                      <div className="d-flex gap-1">
+                                        <Button
+                                          variant="outline-primary"
+                                          size="sm"
+                                          onClick={() => abrirModalTarifa(tarifa)}
+                                          title="Editar tarifa"
+                                        >
+                                          <i className="bi bi-pencil"></i>
+                                        </Button>
+                                        <Button
+                                          variant="outline-success"
+                                          size="sm"
+                                          onClick={() => {
+                                            setTarifaActual(tarifa);
+                                            setActiveTab('simulador');
+                                          }}
+                                          title="Usar para simulación"
+                                        >
+                                          <i className="bi bi-calculator"></i>
+                                        </Button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </Table>
+                          )}
+                        </Card.Body>
+                      </Card>
+                    </Tab.Pane>
+
+                    {/* Tab: Simulador */}
+                    <Tab.Pane eventKey="simulador">
+                      <Row>
+                        <Col md={6}>
+                          <Card className="shadow-sm border-0 mb-4">
+                            <Card.Header className="bg-info text-white">
+                              <h5 className="mb-0">
+                                <i className="bi bi-calculator me-2"></i>
+                                Simulador de Cálculos
+                              </h5>
+                            </Card.Header>
+                            <Card.Body>
+                              {!tarifaActual ? (
+                                <Alert variant="warning">
+                                  <i className="bi bi-exclamation-triangle me-2"></i>
+                                  Debe seleccionar una tarifa vigente antes de simular cálculos.
+                                  <Button
+                                    variant="outline-warning"
+                                    size="sm"
+                                    className="ms-2"
+                                    onClick={() => setActiveTab('tarifas')}
+                                  >
+                                    Ir a Tarifas
+                                  </Button>
+                                </Alert>
+                              ) : (
+                                <>
+                                  <div className="mb-3 p-2 bg-light rounded">
+                                    <small className="text-muted">Tarifa seleccionada:</small>
+                                    <div className="fw-bold">{tarifaActual.nombre}</div>
                                   </div>
-                                </Form>
-                              </>
-                            )}
-                          </Card.Body>
-                        </Card>
-                      </Col>
 
-                      <Col md={6}>
-                        {resultadoSimulacion ? (
-                          <>
-                            {/* Card: Resultado de la Simulación */}
-                            <Card className="shadow-sm border-0 mb-3">
-                              <Card.Header className="bg-success text-white">
-                                <h5 className="mb-0">
-                                  <i className="bi bi-check-circle me-2"></i>
-                                  Resultado de la Simulación
-                                </h5>
-                              </Card.Header>
-                              <Card.Body>
-                                <div className="mb-4">
-                                  <h6 className="text-muted">Tarifa Utilizada:</h6>
-                                  <p className="fw-bold">{resultadoSimulacion.tarifa_utilizada.nombre}</p>
-                                </div>
+                                  <Form>
+                                    <Form.Group className="mb-3">
+                                      <Form.Label>Fecha del Incidente</Form.Label>
+                                      <Form.Control
+                                        type="date"
+                                        value={simulacion.fecha}
+                                        onChange={(e) => setSimulacion({ ...simulacion, fecha: e.target.value })}
+                                      />
+                                    </Form.Group>
 
-                                <div className="mb-4">
-                                  <h6 className="text-muted">Desglose de Importes:</h6>
-                                  <Table className="table-sm">
-                                    <tbody>
-                                      <tr>
-                                        <td>Guardia Pasiva:</td>
-                                        <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.guardia_pasiva)}</td>
-                                      </tr>
-                                      <tr>
-                                        <td>Guardia Activa:</td>
-                                        <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.guardia_activa)}</td>
-                                      </tr>
-                                      <tr>
-                                        <td>Adicional Nocturno:</td>
-                                        <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.adicional_nocturno)}</td>
-                                      </tr>
-                                      <tr className="table-primary fw-bold">
-                                        <td>TOTAL:</td>
-                                        <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.total)}</td>
-                                      </tr>
-                                    </tbody>
-                                  </Table>
-                                </div>
+                                    <Row className="mb-3">
+                                      <Col md={6}>
+                                        <Form.Group>
+                                          <Form.Label>Hora de Inicio</Form.Label>
+                                          <Form.Control
+                                            type="time"
+                                            value={simulacion.hora_inicio}
+                                            onChange={(e) => setSimulacion({ ...simulacion, hora_inicio: e.target.value })}
+                                          />
+                                        </Form.Group>
+                                      </Col>
+                                      <Col md={6}>
+                                        <Form.Group>
+                                          <Form.Label>Hora de Fin</Form.Label>
+                                          <Form.Control
+                                            type="time"
+                                            value={simulacion.hora_fin}
+                                            onChange={(e) => setSimulacion({ ...simulacion, hora_fin: e.target.value })}
+                                          />
+                                        </Form.Group>
+                                      </Col>
+                                    </Row>
 
-                                <div>
-                                  <h6 className="text-muted">Detalle de Cálculo:</h6>
-                                  {resultadoSimulacion.detalle.map((item, index) => (
-                                    <div key={index} className="border rounded p-2 mb-2 bg-light">
-                                      <div className="d-flex justify-content-between align-items-center">
-                                        <div>
-                                          <strong>{item.tipo}</strong>
-                                          {item.codigo && <Badge bg="secondary" className="ms-2">{item.codigo}</Badge>}
-                                        </div>
-                                        <span className="fw-bold text-primary">{formatearMoneda(item.importe)}</span>
-                                      </div>
-                                      <small className="text-muted">{item.observaciones}</small>
+                                    <Form.Group className="mb-3">
+                                      <Form.Label>Tipo de Guardia</Form.Label>
+                                      <Form.Select
+                                        value={simulacion.tipo_guardia}
+                                        onChange={(e) => setSimulacion({ ...simulacion, tipo_guardia: e.target.value as 'pasiva' | 'activa' })}
+                                      >
+                                        <option value="pasiva">Guardia Pasiva</option>
+                                        <option value="activa">Guardia Activa</option>
+                                      </Form.Select>
+                                      <Form.Text className="text-muted">
+                                        Las guardias pasivas se cobran por día completo, las activas por hora trabajada.
+                                      </Form.Text>
+                                    </Form.Group>
+
+                                    <Form.Group className="mb-3">
+                                      <Form.Label>Modalidad de Convenio</Form.Label>
+                                      <Form.Select
+                                        value={simulacion.modalidad_convenio}
+                                        onChange={(e) => setSimulacion({ ...simulacion, modalidad_convenio: e.target.value as 'FC' | 'DC' })}
+                                      >
+                                        <option value="FC">Fuera de Convenio (FC)</option>
+                                        <option value="DC">Dentro de Convenio (DC)</option>
+                                      </Form.Select>
+                                      <Form.Text className="text-muted">
+                                        Seleccione la modalidad contractual para ver códigos y factores correspondientes.
+                                      </Form.Text>
+                                    </Form.Group>
+
+                                    <div className="d-grid">
+                                      <Button
+                                        variant="primary"
+                                        onClick={simularCalculo}
+                                        disabled={loadingSimulacion}
+                                      >
+                                        {loadingSimulacion ? (
+                                          <>
+                                            <Spinner animation="border" size="sm" className="me-2" />
+                                            Calculando...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <i className="bi bi-play-circle me-2"></i>
+                                            Simular Cálculo
+                                          </>
+                                        )}
+                                      </Button>
                                     </div>
-                                  ))}
-                                </div>
-                              </Card.Body>
-                            </Card>
-
-                            {/* ✨ NUEVA CARD: CÓDIGOS APLICABLES */}
-                            {codigosAplicables.length > 0 && (
-                              <Card className="shadow-sm border-0">
-                                <Card.Header className="bg-primary text-white">
-                                  <h6 className="mb-0">
-                                    <i className="bi bi-tags me-2"></i>
-                                    Códigos Aplicables ({codigosAplicables.length})
-                                  </h6>
-                                </Card.Header>
-                                <Card.Body style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                                  {codigosAplicables.map((codigo, index) => (
-                                    <div key={`${codigo.id}-${index}`} className="border rounded p-2 mb-2 bg-light">
-                                      <div className="d-flex justify-content-between align-items-start mb-1">
-                                        <div>
-                                          <Badge bg={getColorTipoCodigo(codigo.tipo)} className="me-2">
-                                            {codigo.tipo.toUpperCase()}
-                                          </Badge>
-                                          <strong>{codigo.codigo}</strong>
-                                        </div>
-                                        <Badge bg="info" className="ms-2">
-                                          Factor: x{codigo.factor_multiplicador}
-                                        </Badge>
-                                      </div>
-
-                                      <div className="mt-1">
-                                        <small className="text-dark fw-bold">{codigo.descripcion}</small>
-                                      </div>
-
-                                      <div className="mt-1">
-                                        <small className="text-muted">
-                                          <strong>Horario:</strong> {
-                                            codigo.horario.inicio && codigo.horario.fin
-                                              ? `${codigo.horario.inicio} - ${codigo.horario.fin}${codigo.horario.cruza_medianoche ? ' (cruza medianoche)' : ''}`
-                                              : 'Todo el día'
-                                          }
-                                        </small>
-                                      </div>
-
-                                      <div className="mt-1">
-                                        <small className="text-muted">
-                                          <strong>Días:</strong> {codigo.dias_aplicables}
-                                        </small>
-                                      </div>
-
-                                      <div className="mt-1">
-                                        <small className="text-success">
-                                          <i className="bi bi-check-circle me-1"></i>
-                                          {codigo.aplicabilidad.motivo}
-                                        </small>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </Card.Body>
-                              </Card>
-                            )}
-                          </>
-                        ) : (
-                          <Card className="shadow-sm border-0">
-                            <Card.Body className="text-center text-muted">
-                              <i className="bi bi-calculator display-1"></i>
-                              <p className="mt-3">Configure los parámetros y haga clic en "Simular Cálculo" para ver los resultados.</p>
+                                  </Form>
+                                </>
+                              )}
                             </Card.Body>
                           </Card>
-                        )}
-                      </Col>
-                    </Row>
-                  </Tab.Pane>
-                </Tab.Content>
-              </Col>
-            </Row>
-          </Tab.Container>
-        </Container>
+                        </Col>
 
+                        <Col md={6}>
+                          {resultadoSimulacion ? (
+                            <>
+                              {/* Card: Resultado de la Simulación */}
+                              <Card className="shadow-sm border-0 mb-3">
+                                <Card.Header className="bg-success text-white">
+                                  <h5 className="mb-0">
+                                    <i className="bi bi-check-circle me-2"></i>
+                                    Resultado de la Simulación
+                                  </h5>
+                                </Card.Header>
+                                <Card.Body>
+                                  <div className="mb-4">
+                                    <h6 className="text-muted">Tarifa Utilizada:</h6>
+                                    <p className="fw-bold">{resultadoSimulacion.tarifa_utilizada.nombre}</p>
+                                  </div>
+
+                                  <div className="mb-4">
+                                    <h6 className="text-muted">Desglose de Importes:</h6>
+                                    <Table className="table-sm">
+                                      <tbody>
+                                        <tr>
+                                          <td>Guardia Pasiva:</td>
+                                          <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.guardia_pasiva)}</td>
+                                        </tr>
+                                        <tr>
+                                          <td>Guardia Activa:</td>
+                                          <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.guardia_activa)}</td>
+                                        </tr>
+                                        <tr>
+                                          <td>Adicional Nocturno:</td>
+                                          <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.adicional_nocturno)}</td>
+                                        </tr>
+                                        <tr className="table-primary fw-bold">
+                                          <td>TOTAL:</td>
+                                          <td className="text-end">{formatearMoneda(resultadoSimulacion.desglose.total)}</td>
+                                        </tr>
+                                      </tbody>
+                                    </Table>
+                                  </div>
+
+                                  <div>
+                                    <h6 className="text-muted">Detalle de Cálculo:</h6>
+                                    {resultadoSimulacion.detalle.map((item, index) => (
+                                      <div key={index} className="border rounded p-2 mb-2 bg-light">
+                                        <div className="d-flex justify-content-between align-items-center">
+                                          <div>
+                                            <strong>{item.tipo}</strong>
+                                            {item.codigo && <Badge bg="secondary" className="ms-2">{item.codigo}</Badge>}
+                                          </div>
+                                          <span className="fw-bold text-primary">{formatearMoneda(item.importe)}</span>
+                                        </div>
+                                        <small className="text-muted">{item.observaciones}</small>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </Card.Body>
+                              </Card>
+
+                              {/* Códigos Aplicables */}
+                              {codigosAplicables.length > 0 && (
+                                <Card className="shadow-sm border-0 mb-4"> {/* ✨ AGREGAR MARGIN-BOTTOM */}
+                                  <Card.Header className="bg-primary text-white">
+                                    <h6 className="mb-0">
+                                      <i className="bi bi-tags me-2"></i>
+                                      Códigos Aplicables ({codigosAplicables.length})
+                                    </h6>
+                                  </Card.Header>
+                                  <Card.Body style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                    {codigosAplicables.map((codigo, index) => (
+                                      <div key={`${codigo.id}-${index}`} className="border rounded p-2 mb-2 bg-light">
+                                        <div className="d-flex justify-content-between align-items-start mb-1">
+                                          <div>
+                                            <Badge bg={getColorTipoCodigo(codigo.tipo)} className="me-2">
+                                              {codigo.tipo.toUpperCase()}
+                                            </Badge>
+                                            <strong>{codigo.codigo}</strong>
+                                          </div>
+                                          <Badge bg="info" className="ms-2">
+                                            Factor: x{codigo.factor_multiplicador}
+                                          </Badge>
+                                        </div>
+
+                                        <div className="mt-1">
+                                          <small className="text-dark fw-bold">{codigo.descripcion}</small>
+                                        </div>
+
+                                        <div className="mt-1">
+                                          <small className="text-muted">
+                                            <strong>Horario:</strong> {
+                                              codigo.horario.inicio && codigo.horario.fin
+                                                ? `${codigo.horario.inicio} - ${codigo.horario.fin}${codigo.horario.cruza_medianoche ? ' (cruza medianoche)' : ''}`
+                                                : 'Todo el día'
+                                            }
+                                          </small>
+                                        </div>
+
+                                        <div className="mt-1">
+                                          <small className="text-muted">
+                                            <strong>Días:</strong> {codigo.dias_aplicables}
+                                          </small>
+                                        </div>
+
+                                        <div className="mt-1">
+                                          <small className="text-success">
+                                            <i className="bi bi-check-circle me-1"></i>
+                                            {codigo.aplicabilidad.motivo}
+                                          </small>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </Card.Body>
+                                </Card>
+                              )}
+                            </>
+                          ) : (
+                            <Card className="shadow-sm border-0 mb-4"> {/* ✨ AGREGAR MARGIN-BOTTOM */}
+                              <Card.Body className="text-center text-muted">
+                                <i className="bi bi-calculator display-1"></i>
+                                <p className="mt-3">Configure los parámetros y haga clic en "Simular Cálculo" para ver los resultados.</p>
+                              </Card.Body>
+                            </Card>
+                          )}
+                        </Col>
+                      </Row>
+                    </Tab.Pane>
+                  </Tab.Content>
+                </Col>
+              </Row>
+            </Tab.Container>
+          </Container>
+        </div>
+
+        {/* ✨ FOOTER FIJO AL FINAL */}
         <Footer />
 
         {/* Modal para crear/editar código */}

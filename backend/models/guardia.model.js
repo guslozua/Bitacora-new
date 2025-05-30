@@ -1,4 +1,4 @@
-// models/guardia.model.js
+// models/guardia.model.js - VERSIÓN ACTUALIZADA
 const pool = require('../config/db');
 const { Op } = require('./db.operators'); 
 
@@ -12,9 +12,24 @@ const initTable = async () => {
         usuario VARCHAR(255) NOT NULL,
         notas TEXT,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_fecha_usuario (fecha, usuario)
       )
     `);
+    
+    // Verificar si el índice único existe, si no, crearlo
+    const [indexes] = await pool.query(`
+      SHOW INDEX FROM guardias WHERE Key_name = 'unique_fecha_usuario'
+    `);
+    
+    if (indexes.length === 0) {
+      console.log('🔧 Creando índice único para prevenir duplicados...');
+      await pool.query(`
+        ALTER TABLE guardias ADD UNIQUE KEY unique_fecha_usuario (fecha, usuario)
+      `);
+      console.log('✅ Índice único creado correctamente');
+    }
+    
     console.log('✅ Tabla guardias inicializada correctamente');
   } catch (error) {
     console.error('❌ Error al inicializar tabla guardias:', error);
@@ -105,6 +120,12 @@ const Guardia = {
           params.push(options.where.fecha);
         }
         
+        // NUEVO: Filtrar por usuario
+        if (options.where.usuario) {
+          conditions.push('usuario = ?');
+          params.push(options.where.usuario);
+        }
+        
         // Filtrar por ID distinto
         if (options.where.id && options.where.id[Op.ne]) {
           conditions.push('id != ?');
@@ -150,6 +171,10 @@ const Guardia = {
       // Añadir métodos al objeto creado
       return Guardia.attachMethods(guardia);
     } catch (error) {
+      // Manejar error de duplicado de manera más específica
+      if (error.code === 'ER_DUP_ENTRY') {
+        throw new Error(`Ya existe una guardia asignada para ${usuario} en la fecha ${fecha}`);
+      }
       console.error('Error al crear guardia:', error);
       throw error;
     }
@@ -198,6 +223,10 @@ const Guardia = {
       const guardia = await Guardia.findByPk(id);
       return guardia;
     } catch (error) {
+      // Manejar error de duplicado de manera más específica
+      if (error.code === 'ER_DUP_ENTRY') {
+        throw new Error(`Ya existe una guardia asignada para este usuario en la fecha especificada`);
+      }
       console.error('Error al actualizar guardia:', error);
       throw error;
     }

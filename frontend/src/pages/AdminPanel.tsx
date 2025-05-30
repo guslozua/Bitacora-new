@@ -111,6 +111,7 @@ const AdminPanel: React.FC = () => {
     { id: 'itracker', label: 'iTracker', icon: 'bi-circle', color: '#3498db' },
     { id: 'tabulaciones', label: 'Tabulaciones', icon: 'bi-table', color: '#2ecc71' },
     { id: 'incidencias', label: 'Inc. en Guardia', icon: 'bi-shield-exclamation', color: '#f1c40f' },
+    { id: 'contactos', label: 'Agenda de Contactos', icon: 'bi-telephone-fill', color: '#c30b4e' },
     { id: 'stats', label: 'Estadísticas', icon: 'bi-graph-up', color: '#e74c3c' },
     { id: 'admin', label: 'Configuración', icon: 'bi-gear-fill', color: '#9b59b6' },
     { id: 'reports', label: 'Informes', icon: 'bi-file-earmark-text', color: '#1abc9c' },

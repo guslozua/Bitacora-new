@@ -1,4 +1,4 @@
-// src/services/GuardiaService.ts
+// src/services/GuardiaService.ts - Versión actualizada
 import axios from 'axios';
 import { Event } from '../models/Event';
 
@@ -24,6 +24,14 @@ export interface Guardia {
   notas?: string;
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+// Interfaz para el resultado de importación
+export interface ImportResult {
+  totalImportadas: number;
+  totalErrores: number;
+  totalOmitidas?: number; // Nuevo campo para guardias omitidas por duplicados
+  errors?: string[];
 }
 
 // Convertir formato de Guardia a Event para el calendario
@@ -121,11 +129,7 @@ export const deleteGuardia = async (id: number): Promise<boolean> => {
 };
 
 // Importar guardias desde archivo Excel
-export const importGuardiasFromExcel = async (file: File): Promise<{
-  totalImportadas: number;
-  totalErrores: number;
-  errors?: string[];
-}> => {
+export const importGuardiasFromExcel = async (file: File): Promise<ImportResult> => {
   try {
     const formData = new FormData();
     formData.append('file', file);
@@ -139,6 +143,7 @@ export const importGuardiasFromExcel = async (file: File): Promise<{
     return {
       totalImportadas: response.data.totalImportadas || 0,
       totalErrores: response.data.totalErrores || 0,
+      totalOmitidas: response.data.totalOmitidas || 0, // Nuevo campo
       errors: response.data.errors
     };
   } catch (error) {
