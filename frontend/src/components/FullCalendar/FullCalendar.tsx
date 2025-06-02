@@ -333,7 +333,7 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
     }
   };
 
-  // Personalizar el aspecto de los eventos
+  // Personalizar el aspecto de los eventos - VERSIÓN CORREGIDA
   const eventStyleGetter = (event: Event) => {
     let backgroundColor = event.color || '#3174ad';
 
@@ -366,8 +366,22 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
       }
     }
 
-    // Si es una tarea completada, añadir opacidad
-    const opacity = event.type === 'task' && event.completed ? 0.6 : 0.9;
+    // Calcular opacidad base
+    let opacity = event.type === 'task' && event.completed ? 0.6 : 0.9;
+
+    // NUEVO: Verificar si el evento está en un día que pertenece a otro mes
+    // Solo aplicar esta lógica en la vista de mes
+    if (view === Views.MONTH) {
+      const eventDate = moment(event.start);
+      const currentViewMonth = moment(date).month();
+      const currentViewYear = moment(date).year();
+      
+      // Si el evento no pertenece al mes actual que se está visualizando
+      if (eventDate.month() !== currentViewMonth || eventDate.year() !== currentViewYear) {
+        // Aplicar opacidad reducida para difuminar (similar a los días)
+        opacity = 0.3;
+      }
+    }
 
     // Establecer estilo base
     const style: React.CSSProperties = {
@@ -635,6 +649,7 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
                     event: 'Evento',
                     allDay: 'Todo el día',
                     noEventsInRange: 'No hay eventos en este rango'
+                    
                   }}
                 />
               </div>
@@ -642,8 +657,6 @@ const FullCalendar: React.FC<FullCalendarProps> = ({
           </Row>
         </Card.Body>
       </Card>
-
-
     </Container>
   );
 };

@@ -597,7 +597,7 @@ const InformeGuardiasComponent: React.FC = () => {
               <Col md={6}>
                 <Card className="border-0 shadow-sm h-100">
                   <Card.Body>
-                    <h5 className="fw-bold mb-3">Guardias por Usuario</h5>
+                    <h5 className="fw-bold mb-3">Total Guardias x Usuario</h5>
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart
                         data={datosUsuarios}

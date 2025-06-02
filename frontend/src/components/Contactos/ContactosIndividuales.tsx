@@ -1,5 +1,5 @@
 // =============================================
-// COMPONENTE: ContactosIndividuales.tsx - CON SWEETALERT2
+// COMPONENTE: ContactosIndividuales.tsx - CON SWEETALERT2 Y CORRECCIONES
 // =============================================
 
 import React, { useState, useMemo } from 'react';
@@ -45,9 +45,36 @@ const ContactosIndividuales: React.FC<ContactosIndividualesProps> = ({
     notas: ''
   });
 
-  // Filtrar contactos
+  // ✅ FUNCIÓN PARA LIMPIAR DATOS DEL BACKEND (como en AgendaEquipos)
+  const limpiarIntegrante = (integrante: any) => {
+    return {
+      ...integrante,
+      nombre: (integrante.nombre || '').toString().trim(),
+      apellido: (integrante.apellido || '').toString().trim(),
+      es_coordinador: Boolean(integrante.es_coordinador === true || integrante.es_coordinador === 1),
+      rol: integrante.rol ? integrante.rol.toString().trim() : null,
+      telefono_personal: integrante.telefono_personal ? integrante.telefono_personal.toString().trim() : null,
+      whatsapp: integrante.whatsapp ? integrante.whatsapp.toString().trim() : null,
+      email: integrante.email ? integrante.email.toString().trim() : null,
+      equipos_nombres: integrante.equipos_nombres ? integrante.equipos_nombres.toString().trim() : null
+    };
+  };
+
+  // ✅ FUNCIÓN PARA OBTENER COLOR DEL EQUIPO
+  const getEquipoColor = (nombreEquipo: string): string => {
+    const equipo = equipos.find(e => e.nombre.trim().toLowerCase() === nombreEquipo.trim().toLowerCase());
+    return equipo?.color || '#6c757d'; // Color gris por defecto si no se encuentra
+  };
+
+  // ✅ FUNCIÓN PARA TRUNCAR EMAIL LARGO
+  const truncateEmail = (email: string, maxLength: number = 22): string => {
+    if (!email || email.length <= maxLength) return email;
+    return `${email.substring(0, maxLength)}...`;
+  };
+
+  // Filtrar contactos con datos limpios
   const contactosFiltrados = useMemo(() => {
-    return integrantes.filter(contacto => {
+    return integrantes.map(limpiarIntegrante).filter(contacto => {
       const matchesSearch = !searchTerm || 
         `${contacto.nombre} ${contacto.apellido}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
         contacto.rol?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -82,17 +109,18 @@ const ContactosIndividuales: React.FC<ContactosIndividualesProps> = ({
   // ✅ CREAR/EDITAR CONTACTO CON SWEETALERT
   const handleOpenContactoModal = (contacto?: Integrante) => {
     if (contacto) {
+      const contactoLimpio = limpiarIntegrante(contacto);
       setSelectedContacto(contacto);
       setContactoForm({
-        nombre: contacto.nombre,
-        apellido: contacto.apellido,
-        rol: contacto.rol || '',
-        telefono_personal: contacto.telefono_personal || '',
-        email: contacto.email || '',
-        whatsapp: contacto.whatsapp || '',
-        disponibilidad: contacto.disponibilidad,
-        es_coordinador: contacto.es_coordinador,
-        notas: contacto.notas || ''
+        nombre: contactoLimpio.nombre,
+        apellido: contactoLimpio.apellido,
+        rol: contactoLimpio.rol || '',
+        telefono_personal: contactoLimpio.telefono_personal || '',
+        email: contactoLimpio.email || '',
+        whatsapp: contactoLimpio.whatsapp || '',
+        disponibilidad: contactoLimpio.disponibilidad,
+        es_coordinador: contactoLimpio.es_coordinador,
+        notas: contactoLimpio.notas || ''
       });
     } else {
       setSelectedContacto(null);
@@ -162,9 +190,11 @@ const ContactosIndividuales: React.FC<ContactosIndividualesProps> = ({
 
   // ✅ ELIMINAR CONTACTO CON SWEETALERT
   const handleDeleteContacto = (contacto: Integrante) => {
+    const contactoLimpio = limpiarIntegrante(contacto);
+    
     Swal.fire({
       title: '¿Estás seguro?',
-      html: `¿Deseas eliminar el contacto <strong>"${contacto.nombre} ${contacto.apellido}"</strong>?<br><br>
+      html: `¿Deseas eliminar el contacto <strong>"${contactoLimpio.nombre} ${contactoLimpio.apellido}"</strong>?<br><br>
              <small class="text-muted">Esta acción eliminará permanentemente el contacto y lo removerá de todos los equipos asignados.</small>`,
       icon: 'warning',
       showCancelButton: true,
@@ -306,16 +336,32 @@ const ContactosIndividuales: React.FC<ContactosIndividualesProps> = ({
                           height: '10px'
                         }}
                       ></span>
-                      <div>
-                        <strong>{contacto.nombre} {contacto.apellido}</strong>
-                        {contacto.es_coordinador && (
-                          <Badge bg="warning" text="dark" className="ms-2" style={{ fontSize: '0.7rem' }}>
-                            Coordinador
-                          </Badge>
-                        )}
-                        {contacto.notas && (
-                          <div className="text-muted small">{contacto.notas}</div>
-                        )}
+                      <div className="flex-grow-1 min-width-0">
+                        {/* ✅ CORRECCIÓN: Solo mostrar nombre limpio sin el 0 */}
+                        <div className="d-flex align-items-center flex-wrap">
+                          <strong className="me-2">{contacto.nombre} {contacto.apellido}</strong>
+                          {/* ✅ CORRECCIÓN: Verificación explícita del coordinador */}
+                          {contacto.es_coordinador === true && (
+                            <Badge bg="warning" text="dark" style={{ fontSize: '0.7rem' }}>
+                              Coordinador
+                            </Badge>
+                          )}
+                        </div>
+                        {/* ✅ INFORMACIÓN ADICIONAL EN LÍNEAS SEPARADAS */}
+                        <div className="contact-info-details">
+                          {contacto.rol && (
+                            <div className="text-muted small">
+                              <i className="bi bi-briefcase me-1"></i>
+                              {contacto.rol}
+                            </div>
+                          )}
+                          {contacto.notas && (
+                            <div className="text-muted small text-truncate" title={contacto.notas}>
+                              <i className="bi bi-info-circle me-1"></i>
+                              {contacto.notas.length > 50 ? `${contacto.notas.substring(0, 50)}...` : contacto.notas}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -334,8 +380,13 @@ const ContactosIndividuales: React.FC<ContactosIndividualesProps> = ({
                         </small>
                       )}
                       {contacto.email && (
-                        <small>
-                          📧 {contacto.email}
+                        <small className="email-container">
+                          📧 <span 
+                            title={contacto.email}
+                            className="email-text"
+                          >
+                            {truncateEmail(contacto.email)}
+                          </span>
                         </small>
                       )}
                       {contacto.whatsapp && (
@@ -356,20 +407,39 @@ const ContactosIndividuales: React.FC<ContactosIndividualesProps> = ({
                     </Badge>
                   </td>
                   <td>
+                    {/* ✅ BADGES DE EQUIPOS CON COLORES HEREDADOS Y DEBUG */}
                     {contacto.equipos_nombres ? (
                       <div>
-                        {contacto.equipos_nombres.split(', ').map((equipo, index) => (
-                          <Badge key={index} bg="info" className="me-1 mb-1" style={{ fontSize: '0.7rem' }}>
-                            {equipo}
-                          </Badge>
-                        ))}
+                        {contacto.equipos_nombres.split(', ').map((equipo: string, index: number) => {
+                          const equipoColor = getEquipoColor(equipo.trim());
+                          return (
+                            <span 
+                              key={index} 
+                              className="me-1 mb-1 equipo-badge-custom" 
+                              style={{ 
+                                fontSize: '0.7rem',
+                                backgroundColor: equipoColor,
+                                color: 'white',
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '0.375rem',
+                                display: 'inline-block',
+                                fontWeight: '500',
+                                textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                                border: 'none'
+                              }}
+                              title={`Equipo: ${equipo.trim()}`}
+                            >
+                              {equipo.trim()}
+                            </span>
+                          );
+                        })}
                       </div>
                     ) : (
                       <span className="text-muted small">Sin equipo</span>
                     )}
                   </td>
                   <td>
-                    <div className="d-flex gap-1">
+                    <div className="d-flex gap-1 flex-wrap">
                       {/* Botones de contacto */}
                       {contacto.telefono_personal && (
                         <Button
@@ -497,7 +567,7 @@ const ContactosIndividuales: React.FC<ContactosIndividualesProps> = ({
                     type="tel"
                     value={contactoForm.telefono_personal}
                     onChange={(e) => setContactoForm({ ...contactoForm, telefono_personal: e.target.value })}
-                    placeholder="+54 381 123-4567"
+                    placeholder="+54 XXX 123-4567"
                   />
                 </Form.Group>
               </Col>
@@ -508,7 +578,7 @@ const ContactosIndividuales: React.FC<ContactosIndividualesProps> = ({
                     type="tel"
                     value={contactoForm.whatsapp}
                     onChange={(e) => setContactoForm({ ...contactoForm, whatsapp: e.target.value })}
-                    placeholder="+54 381 123-4567"
+                    placeholder="+54 XXX 123-4567"
                   />
                 </Form.Group>
               </Col>
@@ -572,6 +642,66 @@ const ContactosIndividuales: React.FC<ContactosIndividualesProps> = ({
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* ✅ ESTILOS PARA MEJORAR LA PRESENTACIÓN */}
+      <style>{`
+        /* Estilos para emails largos y información de contacto */
+        .email-container {
+          max-width: 250px;
+        }
+        
+        .email-text {
+          font-family: monospace;
+          font-size: 0.85em;
+          word-break: break-all;
+        }
+        
+        /* Información adicional del contacto */
+        .contact-info-details {
+          margin-top: 0.25rem;
+          line-height: 1.3;
+        }
+        
+        .contact-info-details .small {
+          margin-bottom: 0.1rem;
+          display: block;
+        }
+        
+        /* Badges de equipos personalizados (sin Bootstrap) */
+        .equipo-badge-custom {
+          transition: all 0.2s ease;
+          font-weight: 500;
+          letter-spacing: 0.3px;
+          cursor: default;
+        }
+        
+        .equipo-badge-custom:hover {
+          transform: scale(1.05);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+          filter: brightness(1.1);
+        }
+        
+        /* Responsive para botones de acción */
+        @media (max-width: 768px) {
+          .d-flex.gap-1.flex-wrap {
+            gap: 0.25rem !important;
+          }
+          
+          .d-flex.gap-1.flex-wrap .btn {
+            margin-bottom: 0.25rem;
+          }
+        }
+        
+        /* Mejorar la legibilidad de la tabla */
+        .table td {
+          vertical-align: middle;
+        }
+        
+        /* Espaciado para badges */
+        .badge + .badge {
+          margin-left: 0.25rem;
+        }
+      `}</style>
     </>
   );
 };

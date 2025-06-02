@@ -1,5 +1,5 @@
 // =============================================
-// CONTROLADOR COMPLETO: contactosController.js
+// CONTROLADOR COMPLETO: contactosController.js - CON SIMULADOR MEJORADO
 // =============================================
 
 const ContactosModel = require('../models/ContactosModel');
@@ -216,7 +216,6 @@ class ContactosController {
     }
   }
 
-  // ✅ NUEVO: Eliminar integrante
   static async deleteIntegrante(req, res) {
     try {
       const { id } = req.params;
@@ -293,7 +292,6 @@ class ContactosController {
     }
   }
 
-  // ✅ NUEVO: Actualizar sistema
   static async updateSistema(req, res) {
     try {
       const { id } = req.params;
@@ -322,7 +320,6 @@ class ContactosController {
     }
   }
 
-  // ✅ NUEVO: Eliminar sistema
   static async deleteSistema(req, res) {
     try {
       const { id } = req.params;
@@ -350,7 +347,7 @@ class ContactosController {
   }
   
   // ===============================
-  // SIMULADOR DE RESPUESTA
+  // ✅ SIMULADOR DE RESPUESTA MEJORADO - PROCEDIMIENTO OPERATIVO
   // ===============================
   
   static async simularRespuesta(req, res) {
@@ -364,74 +361,151 @@ class ContactosController {
         });
       }
       
+      console.log(`🎯 Iniciando simulación para sistema ID: ${sistemaId}`);
+      
+      // Obtener flujo dinámico basado en datos reales
       const flujo = await ContactosModel.getFlujoPorSistema(sistemaId);
       
       if (!flujo) {
         return res.status(404).json({
           success: false,
-          message: 'No se encontró flujo de escalamiento para este sistema'
+          message: 'Sistema no encontrado o sin equipos asignados',
+          details: {
+            sistema_id: sistemaId,
+            causa: 'El sistema no existe o no tiene equipos técnicos asignados',
+            solucion: 'Asigne al menos un equipo técnico a este sistema en la pestaña "Sistemas Monitoreados"'
+          }
         });
       }
       
-      // Estructurar respuesta del simulador
+      // ========================================
+      // CONSTRUIR SIMULACIÓN DEL PROCEDIMIENTO OPERATIVO
+      // ========================================
       const simulacion = {
+        // 📞 PASO 1: Detección del Incidente
         paso1: {
           titulo: 'Detección del Incidente',
           descripcion: `Usuario reporta problema con ${flujo.sistema_nombre}`,
+          icono: '🔍',
           sistema: {
             nombre: flujo.sistema_nombre,
-            criticidad: flujo.criticidad
+            criticidad: flujo.criticidad,
+            categoria: flujo.categoria
           }
         },
+        
+        // 🎧 PASO 2: ATPC Recibe y Evalúa
         paso2: {
           titulo: 'ATPC Recibe el Incidente',
-          descripcion: 'Primer nivel de atención evalúa y categoriza'
+          descripcion: 'Primer nivel de atención evalúa y categoriza el problema',
+          icono: '📞',
+          detalles: [
+            'Registra el incidente en el sistema',
+            'Evalúa la criticidad y urgencia',
+            'Identifica el sistema/herramienta afectada',
+            'Decide si puede resolver directamente o debe derivar'
+          ]
         },
+        
+        // 🚀 PASO 3: Derivación al Equipo Técnico Responsable
         paso3: {
-          titulo: 'Escalación al Equipo Técnico',
+          titulo: 'Derivación al Equipo Técnico',
           descripcion: `Se deriva a: ${flujo.equipo_primario_nombre}`,
+          icono: '🚀',
           equipo: {
             nombre: flujo.equipo_primario_nombre,
+            descripcion: flujo.equipo_primario_descripcion,
             telefono: flujo.equipo_primario_telefono,
             color: flujo.equipo_primario_color,
-            integrantes: flujo.integrantes_primarios
-          }
+            integrantes: flujo.integrantes_primarios,
+            es_principal: true
+          },
+          acciones: [
+            'ATPC contacta al equipo responsable',
+            'Transfiere toda la información del incidente',
+            'El equipo técnico toma ownership del caso',
+            'Inicia diagnóstico y resolución'
+          ]
         },
+        
+        // ✅ PASO 4: Resolución y Feedback
         paso4: {
           titulo: 'Resolución y Feedback',
-          descripcion: 'El equipo resuelve y notifica a ATPC para cerrar el caso'
+          descripcion: 'El equipo resuelve y notifica a ATPC para feedback con el usuario y cierre del caso',
+          icono: '✅',
+          acciones: [
+            'Equipo técnico implementa la solución',
+            'Verifica que el problema esté resuelto',
+            'Notifica a ATPC con detalles de la resolución',
+            'ATPC informa al usuario y cierra el incidente'
+          ]
         }
       };
       
-      // Si hay escalamiento adicional, agregar paso 5
-      if (flujo.equipo_escalamiento_id) {
-        simulacion.paso5 = {
-          titulo: 'Escalamiento Adicional (si es necesario)',
-          descripcion: `Si no se resuelve en ${flujo.tiempo_escalamiento_minutos} minutos, escalar a: ${flujo.equipo_escalamiento_nombre}`,
-          condicion: flujo.condicion_escalamiento,
-          equipo_escalamiento: {
-            nombre: flujo.equipo_escalamiento_nombre,
-            telefono: flujo.equipo_escalamiento_telefono,
-            color: flujo.equipo_escalamiento_color,
-            integrantes: flujo.integrantes_escalamiento || []
-          }
+      // ========================================
+      // 👥 PASO ADICIONAL: Colaboración (si hay múltiples equipos)
+      // ========================================
+      if (flujo.tiene_colaboradores && flujo.equipos_colaboradores.length > 0) {
+        simulacion.paso3b = {
+          titulo: 'Colaboración entre Equipos',
+          descripcion: 'Puede involucrar otros equipos especializados para la solución',
+          icono: '👥',
+          tipo: 'colaboracion_paralela',
+          equipos_colaboradores: flujo.equipos_colaboradores.map(equipo => ({
+            nombre: equipo.nombre,
+            descripcion: equipo.descripcion,
+            telefono: equipo.telefono_guardia,
+            color: equipo.color,
+            nivel_responsabilidad: equipo.nivel_responsabilidad
+          })),
+          integrantes_colaboradores: flujo.integrantes_colaboradores,
+          explicacion: [
+            'El equipo principal puede solicitar apoyo especializado',
+            'Colaboración en paralelo según la complejidad del problema',
+            'Cada equipo aporta su expertise específica',
+            'Coordinación centralizada por el equipo principal'
+          ]
         };
       }
       
-      res.json({
+      // ========================================
+      // RESPUESTA COMPLETA
+      // ========================================
+      const respuesta = {
         success: true,
         data: {
           sistema_id: sistemaId,
-          flujo_escalamiento: flujo,
-          simulacion: simulacion
+          tipo_flujo: 'procedimiento_operativo',
+          flujo_escalamiento: flujo, // Datos técnicos completos
+          simulacion: simulacion,    // Simulación visual para el frontend
+          estadisticas: {
+            equipos_involucrados: flujo.total_equipos_asignados,
+            integrantes_disponibles: flujo.total_integrantes_disponibles,
+            tiene_equipo_principal: true,
+            tiene_colaboradores: flujo.tiene_colaboradores,
+            criticidad_sistema: flujo.criticidad
+          },
+          metadata: {
+            generado_automaticamente: true,
+            basado_en_datos_reales: true,
+            fecha_generacion: new Date().toISOString(),
+            version_flujo: '2.0_dinamico'
+          }
         }
-      });
+      };
+      
+      console.log(`✅ Simulación generada exitosamente para ${flujo.sistema_nombre}`);
+      console.log(`📊 Equipos: ${flujo.total_equipos_asignados}, Integrantes: ${flujo.total_integrantes_disponibles}`);
+      
+      res.json(respuesta);
+      
     } catch (error) {
-      console.error('Error en simularRespuesta:', error);
+      console.error('❌ Error al simular respuesta:', error);
       res.status(500).json({
         success: false,
         message: 'Error al simular respuesta',
-        error: error.message
+        error: error.message,
+        tipo_error: 'error_interno_simulacion'
       });
     }
   }
@@ -527,7 +601,6 @@ class ContactosController {
   // ASIGNACIONES
   // ===============================
 
-  // ✅ NUEVO: Asignar integrantes a equipo
   static async asignarIntegrantes(req, res) {
     try {
       const { id: equipoId } = req.params;
@@ -557,7 +630,6 @@ class ContactosController {
     }
   }
 
-  // ✅ NUEVO: Asignar sistemas a equipo
   static async asignarSistemas(req, res) {
     try {
       const { id: equipoId } = req.params;
@@ -587,7 +659,6 @@ class ContactosController {
     }
   }
 
-  // ✅ NUEVO: Asignar equipos a sistema
   static async asignarEquipos(req, res) {
     try {
       const { id: sistemaId } = req.params;

@@ -22,7 +22,9 @@ export const ROLES_DISPONIBLES = [
   'Product Owner',
   'Coordinador',
   'Gerente',
-  'Analista',
+  'Analista Sr',
+  'Analista Jr',
+  'Consultor',
   'IT',
   'Otro'
 ];
@@ -33,6 +35,7 @@ export const CATEGORIAS_SISTEMAS = [
   'API',
   'Red/Infraestructura',
   'Escritorios remotos',
+  'Herramienta',
   'Monitoreo',
   'Seguridad',
   'Backup/Storage',
@@ -245,7 +248,7 @@ const ContactosPage: React.FC = () => {
               </Alert>
             )}
 
-            {/* ✅ TABS MEJORADOS - 4 PESTAÑAS */}
+            {/* ✅ TABS - 4 PESTAÑAS */}
             <Tab.Container activeKey={activeTab} onSelect={(k) => k && setActiveTab(k)}>
               <Row>
                 <Col md={12}>
@@ -273,7 +276,7 @@ const ContactosPage: React.FC = () => {
                     </Nav.Item>
                     <Nav.Item>
                       <Nav.Link eventKey="simulador">
-                        <i className="bi bi-gear-wide-connected me-2"></i>
+                        <i className="bi bi-laptop me-2"></i>
                         Simulador de Respuesta
                       </Nav.Link>
                     </Nav.Item>

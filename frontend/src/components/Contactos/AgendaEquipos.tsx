@@ -1,5 +1,5 @@
 // =============================================
-// COMPONENTE MEJORADO: AgendaEquipos.tsx - VERSIÓN CORREGIDA
+// COMPONENTE MEJORADO: AgendaEquipos.tsx - VERSIÓN CORREGIDA CON GLASS EFFECT
 // =============================================
 
 import React, { useState, useMemo } from 'react';
@@ -398,7 +398,7 @@ const AgendaEquipos: React.FC<AgendaEquiposProps> = ({
         </Card.Body>
       </Card>
 
-      {/* Grid de Equipos - ✅ COMPACTAS CON EXPANSIÓN CORREGIDA Y ALTURA UNIFORME */}
+      {/* Grid de Equipos - ✅ CON EFECTO GLASS */}
       <Row>
         {equiposFiltrados.map(equipo => {
           const integrantesOrdenados = equipo.integrantes ? ordenarIntegrantes(equipo.integrantes) : [];
@@ -406,11 +406,11 @@ const AgendaEquipos: React.FC<AgendaEquiposProps> = ({
 
           return (
             <Col lg={4} md={6} key={equipo.id} className="mb-4 d-flex">
-              <Card className="shadow-sm hover-effect w-100 d-flex flex-column" style={{ borderLeft: `4px solid ${equipo.color}` }}>
+              <Card className="glass-card-equipo hover-effect w-100 d-flex flex-column" style={{ borderLeft: `4px solid ${equipo.color}` }}>
                 {/* ✅ HEADER CON ALTURA FIJA */}
                 <Card.Header 
                   style={{ 
-                    backgroundColor: equipo.color, 
+                    background: `linear-gradient(135deg, ${equipo.color}, ${equipo.color}dd)`,
                     color: 'white',
                     minHeight: '140px',
                     display: 'flex',
@@ -944,12 +944,36 @@ const AgendaEquipos: React.FC<AgendaEquiposProps> = ({
       </Modal>
 
       <style>{`
+        /* Variables CSS para consistencia */
+        :root {
+          --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          --shadow-light: 0 2px 20px rgba(0,0,0,0.1);
+          --shadow-medium: 0 8px 30px rgba(0,0,0,0.12);
+          --border-radius: 16px;
+          --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Tarjetas de equipos con efecto glass */
+        .glass-card-equipo {
+          background: rgba(255, 255, 255, 0.95) !important;
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.2) !important;
+          border-radius: var(--border-radius) !important;
+          box-shadow: var(--shadow-medium) !important;
+          transition: var(--transition);
+        }
+
+        .glass-card-equipo:hover {
+          background: rgba(255, 255, 255, 0.98) !important;
+          box-shadow: 0 12px 40px rgba(0,0,0,0.15) !important;
+        }
+
         .hover-effect {
           transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
         .hover-effect:hover {
           transform: translateY(-5px);
-          box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+          box-shadow: 0 15px 35px rgba(0,0,0,0.15) !important;
         }
         
         /* Dropdown manual styles */

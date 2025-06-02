@@ -1,5 +1,5 @@
 // =============================================
-// MODELO COMPLETO: ContactosModel.js
+// MODELO COMPLETO: ContactosModel.js - PARTE 1 DE 3
 // =============================================
 
 const db = require('../config/db');
@@ -302,7 +302,6 @@ class ContactosModel {
     }
   }
 
-  // ✅ NUEVO: Eliminar integrante
   static async deleteIntegrante(id) {
     const connection = await db.getConnection();
     try {
@@ -330,7 +329,6 @@ class ContactosModel {
       connection.release();
     }
   }
-
   // ===============================
   // SISTEMAS MONITOREADOS
   // ===============================
@@ -385,7 +383,6 @@ class ContactosModel {
     }
   }
 
-  // ✅ NUEVO: Actualizar sistema
   static async updateSistema(id, sistemaData) {
     try {
       const [result] = await db.query(
@@ -412,7 +409,6 @@ class ContactosModel {
     }
   }
 
-  // ✅ NUEVO: Eliminar sistema
   static async deleteSistema(id) {
     const connection = await db.getConnection();
     try {
@@ -424,7 +420,7 @@ class ContactosModel {
         [id]
       );
       
-      // Eliminar flujos de escalamiento
+      // Eliminar flujos de escalamiento (si existen)
       await connection.query(
         'DELETE FROM flujos_escalamiento WHERE sistema_id = ?',
         [id]
@@ -448,69 +444,149 @@ class ContactosModel {
   }
 
   // ===============================
-  // SIMULADOR DE RESPUESTA
+  // ✅ SIMULADOR DE RESPUESTA - FLUJO DINÁMICO MEJORADO
   // ===============================
   
   static async getFlujoPorSistema(sistemaId) {
     try {
-      const [flujos] = await db.query(`
-        SELECT 
-          fe.*,
-          s.nombre as sistema_nombre,
-          s.criticidad,
-          ep.nombre as equipo_primario_nombre,
-          ep.telefono_guardia as equipo_primario_telefono,
-          ep.color as equipo_primario_color,
-          ee.nombre as equipo_escalamiento_nombre,
-          ee.telefono_guardia as equipo_escalamiento_telefono,
-          ee.color as equipo_escalamiento_color
-        FROM flujos_escalamiento fe
-        INNER JOIN sistemas_monitoreados s ON fe.sistema_id = s.id
-        INNER JOIN equipos_tecnicos ep ON fe.equipo_primario_id = ep.id
-        LEFT JOIN equipos_tecnicos ee ON fe.equipo_escalamiento_id = ee.id
-        WHERE fe.sistema_id = ? AND fe.activo = true
-        ORDER BY fe.tiempo_escalamiento_minutos ASC
+      console.log(`🔍 Generando flujo dinámico para sistema ID: ${sistemaId}`);
+      
+      // ========================================
+      // 1. OBTENER INFORMACIÓN DEL SISTEMA
+      // ========================================
+      const [sistemas] = await db.query(`
+        SELECT id, nombre, descripcion, criticidad, categoria, estado
+        FROM sistemas_monitoreados 
+        WHERE id = ?
       `, [sistemaId]);
       
-      if (flujos.length === 0) return null;
+      if (sistemas.length === 0) {
+        console.log(`❌ Sistema ${sistemaId} no encontrado`);
+        return null;
+      }
       
-      const flujo = flujos[0];
+      const sistema = sistemas[0];
+      console.log(`✅ Sistema encontrado: ${sistema.nombre} (${sistema.criticidad})`);
       
-      // Obtener integrantes disponibles del equipo primario
-      const [integrantesPrimarios] = await db.query(`
+      // ========================================
+      // 2. OBTENER EQUIPOS ASIGNADOS AL SISTEMA
+      // ========================================
+      const [equiposAsignados] = await db.query(`
+        SELECT 
+          et.id,
+          et.nombre,
+          et.descripcion,
+          et.telefono_guardia,
+          et.email_grupo,
+          et.color,
+          es.nivel_responsabilidad,
+          es.es_responsable_principal
+        FROM equipos_tecnicos et
+        INNER JOIN equipos_sistemas es ON et.id = es.equipo_id
+        WHERE es.sistema_id = ? AND et.estado = 'activo'
+        ORDER BY es.es_responsable_principal DESC, et.nombre ASC
+      `, [sistemaId]);
+      
+      if (equiposAsignados.length === 0) {
+        console.log(`❌ No hay equipos asignados al sistema ${sistema.nombre}`);
+        return null;
+      }
+      
+      console.log(`✅ Equipos asignados encontrados: ${equiposAsignados.length}`);
+      
+      // ========================================
+      // 3. DEFINIR EQUIPO PRINCIPAL Y COLABORADORES
+      // ========================================
+      const equipoPrincipal = equiposAsignados[0]; // Primer equipo asignado
+      const equiposColaboradores = equiposAsignados.slice(1); // Resto de equipos
+      
+      console.log(`🎯 Equipo principal: ${equipoPrincipal.nombre}`);
+      console.log(`👥 Equipos colaboradores: ${equiposColaboradores.length}`);
+      
+      // ========================================
+      // 4. OBTENER INTEGRANTES DEL EQUIPO PRINCIPAL
+      // ========================================
+      const [integrantesPrincipales] = await db.query(`
         SELECT 
           i.id, i.nombre, i.apellido, i.telefono_personal, i.whatsapp, 
-          i.disponibilidad, ei.es_responsable_principal
+          i.disponibilidad, i.es_coordinador, i.rol
         FROM integrantes i
         INNER JOIN equipos_integrantes ei ON i.id = ei.integrante_id
         WHERE ei.equipo_id = ? AND i.disponibilidad IN ('disponible', 'ocupado')
-        ORDER BY ei.es_responsable_principal DESC, i.nombre ASC
-      `, [flujo.equipo_primario_id]);
+        ORDER BY i.es_coordinador DESC, i.nombre ASC
+      `, [equipoPrincipal.id]);
       
-      flujo.integrantes_primarios = integrantesPrimarios;
-      
-      // Si hay equipo de escalamiento, obtener sus integrantes
-      if (flujo.equipo_escalamiento_id) {
-        const [integrantesEscalamiento] = await db.query(`
+      // ========================================
+      // 5. OBTENER INTEGRANTES DE EQUIPOS COLABORADORES
+      // ========================================
+      let integrantesColaboradores = [];
+      if (equiposColaboradores.length > 0) {
+        const equipoColaboradorIds = equiposColaboradores.map(e => e.id);
+        const placeholders = equipoColaboradorIds.map(() => '?').join(',');
+        
+        const [integrantesColab] = await db.query(`
           SELECT 
             i.id, i.nombre, i.apellido, i.telefono_personal, i.whatsapp, 
-            i.disponibilidad, ei.es_responsable_principal
+            i.disponibilidad, i.es_coordinador, i.rol,
+            et.id as equipo_id, et.nombre as equipo_nombre, et.color as equipo_color
           FROM integrantes i
           INNER JOIN equipos_integrantes ei ON i.id = ei.integrante_id
-          WHERE ei.equipo_id = ? AND i.disponibilidad IN ('disponible', 'ocupado')
-          ORDER BY ei.es_responsable_principal DESC, i.nombre ASC
-        `, [flujo.equipo_escalamiento_id]);
+          INNER JOIN equipos_tecnicos et ON ei.equipo_id = et.id
+          WHERE ei.equipo_id IN (${placeholders}) AND i.disponibilidad IN ('disponible', 'ocupado')
+          ORDER BY et.nombre ASC, i.es_coordinador DESC, i.nombre ASC
+        `, equipoColaboradorIds);
         
-        flujo.integrantes_escalamiento = integrantesEscalamiento;
+        integrantesColaboradores = integrantesColab;
       }
       
+      // ========================================
+      // 6. CONSTRUIR FLUJO DINÁMICO
+      // ========================================
+      const flujo = {
+        // Información del sistema
+        sistema_id: sistemaId,
+        sistema_nombre: sistema.nombre,
+        criticidad: sistema.criticidad,
+        categoria: sistema.categoria,
+        estado: sistema.estado,
+        
+        // Información del equipo principal
+        equipo_primario_id: equipoPrincipal.id,
+        equipo_primario_nombre: equipoPrincipal.nombre,
+        equipo_primario_telefono: equipoPrincipal.telefono_guardia,
+        equipo_primario_color: equipoPrincipal.color,
+        equipo_primario_descripcion: equipoPrincipal.descripcion,
+        
+        // Integrantes del equipo principal
+        integrantes_primarios: integrantesPrincipales,
+        
+        // Información de equipos colaboradores (si existen)
+        tiene_colaboradores: equiposColaboradores.length > 0,
+        equipos_colaboradores: equiposColaboradores,
+        integrantes_colaboradores: integrantesColaboradores,
+        
+        // Configuración del flujo (sin tiempos de escalamiento)
+        tiempo_escalamiento_minutos: null, // No aplica en este flujo
+        condicion_escalamiento: equiposColaboradores.length > 0 ? 
+          'Puede involucrar otros equipos para la solución si es necesario' : 
+          'Resolución directa por el equipo responsable',
+        
+        // Información adicional
+        total_equipos_asignados: equiposAsignados.length,
+        total_integrantes_disponibles: integrantesPrincipales.length + integrantesColaboradores.length,
+        activo: true
+      };
+      
+      console.log(`✅ Flujo dinámico generado exitosamente para ${sistema.nombre}`);
+      console.log(`📊 Resumen: ${flujo.total_equipos_asignados} equipos, ${flujo.total_integrantes_disponibles} integrantes`);
+      
       return flujo;
+      
     } catch (error) {
-      console.error('Error al obtener flujo de escalamiento:', error);
+      console.error('❌ Error al generar flujo dinámico:', error);
       throw error;
     }
   }
-
   // ===============================
   // BÚSQUEDAS Y FILTROS
   // ===============================
@@ -651,10 +727,9 @@ class ContactosModel {
   }
 
   // ===============================
-  // ASIGNACIONES (NUEVOS MÉTODOS)
+  // ASIGNACIONES
   // ===============================
 
-  // ✅ NUEVO: Asignar integrantes a equipo
   static async asignarIntegrantes(equipoId, integranteIds) {
     const connection = await db.getConnection();
     try {
@@ -687,7 +762,6 @@ class ContactosModel {
     }
   }
 
-  // ✅ NUEVO: Asignar sistemas a equipo
   static async asignarSistemas(equipoId, sistemaIds) {
     const connection = await db.getConnection();
     try {
@@ -720,7 +794,6 @@ class ContactosModel {
     }
   }
 
-  // ✅ NUEVO: Asignar equipos a sistema
   static async asignarEquiposASistema(sistemaId, equipoIds) {
     const connection = await db.getConnection();
     try {
