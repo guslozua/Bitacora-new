@@ -28,6 +28,9 @@ const informesRoutes = require('./routes/informes.routes');
 const tarifasRoutes = require('./routes/tarifas.routes');
 const contactosRoutes = require('./routes/contactosRoutes');
 
+// 🔔 AGREGAR IMPORT DE HITOS
+const hitosRoutes = require('./routes/hitos');
+
 // 🔔 AGREGAR IMPORT DE NOTIFICACIONES
 const notificacionesRoutes = require('./routes/notificaciones.routes');
 
@@ -82,7 +85,10 @@ app.use('/api/informes', informesRoutes);
 app.use('/api/tarifas', tarifasRoutes);
 app.use('/api/contactos', contactosRoutes);
 
-// 🔔 RUTA DE NOTIFICACIONES - 
+// 🔔 RUTA DE HITOS
+app.use('/api/hitos', hitosRoutes);
+
+// 🔔 RUTA DE NOTIFICACIONES
 app.use('/api/notificaciones', notificacionesRoutes);
 
 // Depuración: Listar rutas registradas en Express
@@ -123,6 +129,9 @@ app.listen(PORT, () => {
   // Programar limpiezas periódicas
   scheduleCleanup();
   console.log('Sistema de limpieza automática de archivos configurado 🧹');
+  
+  // 🔔 MENSAJE DE CONFIRMACIÓN PARA HITOS
+  console.log('✅ Rutas de hitos registradas correctamente');
   
   // 🔔 MENSAJE DE CONFIRMACIÓN PARA NOTIFICACIONES
   console.log('✅ Rutas de notificaciones registradas correctamente');

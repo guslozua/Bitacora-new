@@ -11,6 +11,7 @@ import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
 import Tasks from './pages/Tasks';
+import HitosPage from './pages/HitosPage'; // 🔔 NUEVO IMPORT PARA HITOS
 import ItrackerUpload from './pages/ItrackerUpload';
 import ItrackerDash from './pages/ItrackerDash';
 import TabulacionesUpload from './pages/TabulacionesUpload';
@@ -127,6 +128,10 @@ const App: React.FC = () => {
           <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
           <Route path="/projects" element={<ProtectedRoute element={<Projects />} />} />
           <Route path="/tasks" element={<ProtectedRoute element={<Tasks />} />} />
+          
+          {/* 🔔 NUEVA RUTA PARA HITOS */}
+          <Route path="/hitos" element={<ProtectedRoute element={<HitosPage />} />} />
+          
           <Route path="/itracker" element={<ProtectedRoute element={<ItrackerUpload />} />} />
           <Route path="/itrackerdash" element={<ProtectedRoute element={<ItrackerDash />} />} />
           <Route path="/tabulaciones" element={<ProtectedRoute element={<TabulacionesUpload />} />} />
