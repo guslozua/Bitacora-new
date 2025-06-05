@@ -4,15 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
 import HitosList from '../components/Hitos/HitosList';
-import HitosTimeline from '../components/Hitos/HitosTimeline'; // Timeline original
-import HitosTimelineVertical from '../components/Hitos/HitosTimelineVertical'; // Nuevo timeline vertical
 import HitosRoadmap from '../components/Hitos/HitosRoadmap'; // Roadmap horizontal
 import { useSidebarVisibility } from '../services/SidebarVisibilityContext';
 
 const HitosPage: React.FC = () => {
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  const [activeTab, setActiveTab] = useState<'lista' | 'timeline' | 'timeline-vertical' | 'roadmap'>('lista');
+  const [activeTab, setActiveTab] = useState<'lista' | 'roadmap'>('lista');
   const { visibility } = useSidebarVisibility();
 
   const toggleSidebar = () => {
@@ -100,7 +98,7 @@ const HitosPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Pestañas (solo agregando la nueva) */}
+          {/* Pestañas - Solo Lista y Roadmap */}
           <div style={tabStyles.tabContainer}>
             <button
               className="tab-button"
@@ -108,20 +106,6 @@ const HitosPage: React.FC = () => {
               onClick={() => setActiveTab('lista')}
             >
               📋 Lista de Hitos
-            </button>
-            <button
-              className="tab-button"
-              style={tabStyles.tab(activeTab === 'timeline')}
-              onClick={() => setActiveTab('timeline')}
-            >
-              📅 Línea de Tiempo
-            </button>
-            <button
-              className="tab-button"
-              style={tabStyles.tab(activeTab === 'timeline-vertical')}
-              onClick={() => setActiveTab('timeline-vertical')}
-            >
-              ⏰ Timeline Vertical
             </button>
             <button
               className="tab-button"
@@ -136,10 +120,6 @@ const HitosPage: React.FC = () => {
           <div style={tabStyles.tabContent} className="tab-content-container">
             {activeTab === 'lista' ? (
               <HitosList />
-            ) : activeTab === 'timeline' ? (
-              <HitosTimeline />
-            ) : activeTab === 'timeline-vertical' ? (
-              <HitosTimelineVertical />
             ) : (
               <HitosRoadmap />
             )}

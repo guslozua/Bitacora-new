@@ -1,249 +1,90 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import hitoService from '../../services/hitoService';
+import type { HitoCompleto, HitoFilters, ApiResponse } from '../../types/hitos.types';
 
 // Tipos para el roadmap
 type CategoriaHito = 'principal' | 'secundario' | 'features';
 
-interface RoadmapHito {
-  id: number;
-  nombre: string;
-  fecha_inicio: Date;
-  fecha_fin?: Date;
-  descripcion?: string;
-  impacto?: string;
-  usuarios?: any[];
-  proyecto_origen_nombre?: string;
-  categoria: CategoriaHito;
+interface RoadmapHito extends HitoCompleto {
   x: number;
   y: number;
   width: number;
   height: number;
   connections?: number[];
+  mesNumero: number;
+  isAbove: boolean;
+  level: number;
+  categoria: CategoriaHito;
+  // Propiedades auxiliares para manejar fechas como Date en cálculos
+  _fechaInicioDate: Date;
+  _fechaFinDate?: Date;
 }
 
 interface RoadmapProps {
   className?: string;
+  filters?: HitoFilters;
 }
 
-const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '' }) => {
-  const [hitos, setHitos] = useState<RoadmapHito[]>([]);
+interface Tooltip {
+  visible: boolean;
+  x: number;
+  y: number;
+  hito: RoadmapHito | null;
+}
+
+interface TimeMarker {
+  position: number;
+  label: string;
+  fullDate: Date;
+  isAlternate: boolean;
+}
+
+const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) => {
+  const [hitosData, setHitosData] = useState<Record<number, RoadmapHito[]>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [animationPhase, setAnimationPhase] = useState(0);
-  const [hoveredHito, setHoveredHito] = useState<number | null>(null);
+  const [tooltip, setTooltip] = useState<Tooltip>({ visible: false, x: 0, y: 0, hito: null });
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Simulación de datos
-  useEffect(() => {
-    setTimeout(() => {
-      const mockHitos = [
-        {
-          id: 1,
-          nombre: 'Sistema de Autenticación',
-          fecha_inicio: new Date(selectedYear, 1, 15),
-          fecha_fin: new Date(selectedYear, 2, 15),
-          descripcion: 'Sistema completo de auth con 2FA',
-          categoria: 'principal' as const,
-          proyecto_origen_nombre: 'Seguridad Core',
-          connections: [2, 3]
-        },
-        {
-          id: 2,
-          nombre: 'API Gateway v2.0',
-          fecha_inicio: new Date(selectedYear, 2, 20),
-          fecha_fin: new Date(selectedYear, 4, 1),
-          descripcion: 'Gateway principal con balanceador',
-          categoria: 'principal' as const,
-          proyecto_origen_nombre: 'Infrastructure',
-          connections: [4, 5]
-        },
-        {
-          id: 3,
-          nombre: 'Dashboard Analytics',
-          fecha_inicio: new Date(selectedYear, 3, 1),
-          fecha_fin: new Date(selectedYear, 3, 30),
-          descripcion: 'Panel de control en tiempo real',
-          categoria: 'secundario' as const,
-          connections: [6]
-        },
-        {
-          id: 4,
-          nombre: 'Base de Datos Distribuida',
-          fecha_inicio: new Date(selectedYear, 4, 15),
-          fecha_fin: new Date(selectedYear, 6, 1),
-          descripcion: 'Migración a arquitectura distribuida',
-          categoria: 'principal' as const,
-          proyecto_origen_nombre: 'Database Modernization',
-          connections: [7]
-        },
-        {
-          id: 5,
-          nombre: 'Sistema de Notificaciones',
-          fecha_inicio: new Date(selectedYear, 5, 1),
-          fecha_fin: new Date(selectedYear, 5, 20),
-          descripcion: 'Push notifications y alertas',
-          categoria: 'features' as const,
-          connections: [8]
-        },
-        {
-          id: 6,
-          nombre: 'Mobile App v3.0',
-          fecha_inicio: new Date(selectedYear, 6, 1),
-          fecha_fin: new Date(selectedYear, 8, 15),
-          descripcion: 'App móvil completamente rediseñada',
-          categoria: 'principal' as const,
-          proyecto_origen_nombre: 'Mobile Experience',
-          connections: [9]
-        }
-      ];
-
-      const hitosConPosiciones = calculateRoadmapPositions(mockHitos);
-      setHitos(hitosConPosiciones);
-      setLoading(false);
-      setAnimationPhase(0);
-    }, 1000);
-  }, [selectedYear]);
-
-  // Animación progresiva
-  useEffect(() => {
-    if (hitos.length > 0 && animationPhase < hitos.length) {
-      const timer = setTimeout(() => {
-        setAnimationPhase(prev => prev + 1);
-      }, 200);
-      return () => clearTimeout(timer);
+  // Función auxiliar para convertir fechas de forma segura
+  const formatDate = (fecha: Date | string | undefined, options: Intl.DateTimeFormatOptions): string => {
+    if (!fecha) return '-';
+    try {
+      const dateObj = typeof fecha === 'string' ? new Date(fecha) : fecha;
+      return dateObj.toLocaleDateString('es-ES', options);
+    } catch (error) {
+      return '-';
     }
-  }, [hitos, animationPhase]);
-
-  // Calcular posiciones estilo roadmap
-  const calculateRoadmapPositions = (hitosData: any[]): RoadmapHito[] => {
-    const roadmapWidth = 1200;
-    const yearStart = new Date(selectedYear, 0, 1).getTime();
-    const yearEnd = new Date(selectedYear, 11, 31).getTime();
-    const yearDuration = yearEnd - yearStart;
-
-    const timelineY = 300;
-    const lanes: Record<CategoriaHito, { baseY: number; minHeight: number; isAbove: boolean; direction: number }> = {
-      principal: { baseY: 180, minHeight: 90, isAbove: true, direction: -1 }, // Crecer hacia arriba
-      secundario: { baseY: 370, minHeight: 80, isAbove: false, direction: 1 }, // Crecer hacia abajo
-      features: { baseY: 460, minHeight: 70, isAbove: false, direction: 1 } // Crecer hacia abajo
-    };
-
-    // Calcular posiciones básicas con altura dinámica
-    const hitosConPosicionesBasicas = hitosData.map((hito) => {
-      const fechaInicio = new Date(hito.fecha_inicio);
-      const fechaFin = hito.fecha_fin ? new Date(hito.fecha_fin) : fechaInicio;
-      
-      const inicioRelativo = fechaInicio.getTime() - yearStart;
-      const finRelativo = fechaFin.getTime() - yearStart;
-      
-      const x = 80 + (inicioRelativo / yearDuration) * (roadmapWidth - 160);
-      const width = Math.max(((finRelativo - inicioRelativo) / yearDuration) * (roadmapWidth - 160), 200);
-      
-      const categoria = hito.categoria as CategoriaHito;
-      const lane = lanes[categoria];
-      
-      // Calcular altura basada en contenido
-      let contentHeight = 40; // Base para título
-      if (hito.proyecto_origen_nombre) contentHeight += 25; // Proyecto
-      contentHeight += 20; // Fechas
-      const height = Math.max(contentHeight + 20, lane.minHeight); // Padding
-      
-      return {
-        ...hito,
-        categoria,
-        x: Math.max(40, Math.min(x, roadmapWidth - width - 40)),
-        y: lane.baseY,
-        width: Math.min(width, 400), // Ancho máximo aumentado
-        height,
-        baseY: lane.baseY,
-        isAbove: lane.isAbove,
-        direction: lane.direction,
-        level: 0 // Nivel inicial
-      };
-    });
-
-    // Resolver solapamientos con mejor distribución
-    Object.keys(lanes).forEach(categoria => {
-      const hitosCategoria = hitosConPosicionesBasicas
-        .filter(h => h.categoria === categoria)
-        .sort((a, b) => a.x - b.x);
-
-      // Asignar niveles para evitar solapamientos
-      hitosCategoria.forEach((hitoActual, index) => {
-        let nivel = 0;
-        let posicionValida = false;
-        
-        while (!posicionValida) {
-          // Calcular Y temporal para este nivel
-          const yTemporal = hitoActual.baseY + (hitoActual.direction * nivel * 120);
-          
-          // Verificar conflictos con otros hitos en este nivel
-          const conflictos = hitosCategoria.filter(otroHito => {
-            if (otroHito === hitoActual || otroHito.level !== nivel) return false;
-            
-            // Verificar solapamiento horizontal
-            const solapaX = !(otroHito.x + otroHito.width + 30 < hitoActual.x || 
-                             otroHito.x > hitoActual.x + hitoActual.width + 30);
-            
-            // Verificar solapamiento vertical
-            const solapaY = Math.abs(otroHito.y - yTemporal) < (otroHito.height + hitoActual.height) / 2 + 20;
-            
-            return solapaX && solapaY;
-          });
-          
-          if (conflictos.length === 0) {
-            hitoActual.level = nivel;
-            hitoActual.y = yTemporal;
-            posicionValida = true;
-          } else {
-            nivel++;
-          }
-          
-          // Evitar bucle infinito
-          if (nivel > 10) {
-            hitoActual.level = nivel;
-            hitoActual.y = yTemporal;
-            posicionValida = true;
-          }
-        }
-      });
-    });
-
-    return hitosConPosicionesBasicas;
   };
 
-  // Obtener color por categoría
-  const getCategoryColor = (categoria: CategoriaHito): string => {
-    const colors: Record<CategoriaHito, string> = {
-      principal: '#e3f2fd',
-      secundario: '#f3e5f5',
-      features: '#e8f5e8'
-    };
-    return colors[categoria];
-  };
-
-  // Obtener color del borde por categoría
-  const getCategoryBorderColor = (categoria: CategoriaHito): string => {
-    const colors: Record<CategoriaHito, string> = {
-      principal: '#2196f3',
-      secundario: '#9c27b0',
-      features: '#4caf50'
-    };
-    return colors[categoria];
-  };
-
-  // Generar marcadores de tiempo
-  const timeMarkers = useMemo(() => {
-    const markers = [];
-    for (let month = 0; month < 12; month += 3) {
-      const date = new Date(selectedYear, month, 1);
-      const position = 100 + (month / 12) * 1000;
-      markers.push({
-        position,
-        label: date.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }),
-        fullDate: date
-      });
+  // Función auxiliar para asegurar que tenemos un objeto Date
+  const ensureDate = (fecha: Date | string | undefined): Date | null => {
+    if (!fecha) return null;
+    try {
+      return typeof fecha === 'string' ? new Date(fecha) : fecha;
+    } catch (error) {
+      return null;
     }
-    return markers;
-  }, [selectedYear]);
+  };
+
+  // Función para determinar la categoría de un hito
+  const determineCategory = (hito: HitoCompleto): CategoriaHito => {
+    const nombre = (hito.nombre || '').toLowerCase();
+    const proyectoOrigen = (hito.proyecto_origen_nombre || '').toLowerCase();
+    
+    const principalKeywords = ['api', 'base de datos', 'sistema', 'auth', 'ticky', 'infrastructure', 'security'];
+    const featuresKeywords = ['dashboard', 'notification', 'mobile', 'ui', 'ux', 'frontend'];
+    
+    if (principalKeywords.some(keyword => nombre.includes(keyword) || proyectoOrigen.includes(keyword))) {
+      return 'principal';
+    } else if (featuresKeywords.some(keyword => nombre.includes(keyword) || proyectoOrigen.includes(keyword))) {
+      return 'features';
+    } else {
+      return 'secundario';
+    }
+  };
 
   // Años disponibles
   const availableYears = useMemo(() => {
@@ -251,378 +92,990 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '' }) => {
     return Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
   }, []);
 
+  // Cargar todos los hitos y organizarlos por año
+  const fetchAllHitos = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('🔍 Cargando todos los hitos para roadmap...');
+      
+      const response: ApiResponse<HitoCompleto[]> = await hitoService.getHitos(filters);
+      
+      if (response && response.data && Array.isArray(response.data)) {
+        // Obtener detalles completos para cada hito
+        const hitosConDetalles = await Promise.all(
+          response.data.map(async (hito: HitoCompleto) => {
+            try {
+              const detalles = await hitoService.getHitoById(hito.id);
+              return detalles.data || hito;
+            } catch (error) {
+              console.warn(`⚠️ No se pudieron cargar detalles para hito ${hito.id}:`, error);
+              return hito;
+            }
+          })
+        );
+
+        // Organizar hitos por año
+        const hitosOrganizados: Record<number, RoadmapHito[]> = {};
+        
+        availableYears.forEach(year => {
+          const hitosDelAño = hitosConDetalles
+            .filter(hito => {
+              if (!hito.fecha_inicio) return false;
+              const fechaInicio = ensureDate(hito.fecha_inicio);
+              return fechaInicio && fechaInicio.getFullYear() === year;
+            })
+            .map(hito => {
+              const fechaInicio = ensureDate(hito.fecha_inicio);
+              const fechaFin = ensureDate(hito.fecha_fin);
+              return {
+                ...hito,
+                fecha_inicio: fechaInicio!.toISOString(),
+                fecha_fin: fechaFin ? fechaFin.toISOString() : undefined,
+                categoria: determineCategory(hito),
+                _fechaInicioDate: fechaInicio!,
+                _fechaFinDate: fechaFin || undefined
+              };
+            })
+            .sort((a, b) => a._fechaInicioDate.getTime() - b._fechaInicioDate.getTime());
+
+          if (hitosDelAño.length > 0) {
+            hitosOrganizados[year] = calculateRoadmapPositions(hitosDelAño, year);
+          } else {
+            hitosOrganizados[year] = [];
+          }
+        });
+
+        setHitosData(hitosOrganizados);
+        console.log('✅ Todos los hitos organizados por año:', hitosOrganizados);
+        
+      } else {
+        console.warn('⚠️ Respuesta sin datos válidos:', response);
+        setHitosData({});
+      }
+    } catch (error: any) {
+      console.error('❌ Error al cargar hitos para roadmap:', error);
+      setError('Error al cargar los hitos del roadmap');
+      setHitosData({});
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    fetchAllHitos();
+  }, []);
+
+  // Animación escalonada para el año activo
+  useEffect(() => {
+    const hitosActuales = hitosData[selectedYear] || [];
+    if (hitosActuales.length > 0 && animationPhase < hitosActuales.length) {
+      const timer = setTimeout(() => {
+        setAnimationPhase(prev => prev + 1);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [hitosData, selectedYear, animationPhase]);
+
+  // Cambiar año con transición más suave
+  const changeYear = (newYear: number) => {
+    if (newYear === selectedYear || isTransitioning) return;
+    
+    setIsTransitioning(true);
+    setAnimationPhase(0);
+    
+    // Transición más suave - fade out
+    setTimeout(() => {
+      setSelectedYear(newYear);
+      // Transición más suave - fade in
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 250);
+    }, 250);
+  };
+
+  // Navegar a año anterior/siguiente
+  const navigateYear = (direction: 'prev' | 'next') => {
+    const currentIndex = availableYears.indexOf(selectedYear);
+    let newIndex;
+    
+    if (direction === 'prev') {
+      newIndex = currentIndex > 0 ? currentIndex - 1 : availableYears.length - 1;
+    } else {
+      newIndex = currentIndex < availableYears.length - 1 ? currentIndex + 1 : 0;
+    }
+    
+    changeYear(availableYears[newIndex]);
+  };
+
+  const calculateRoadmapPositions = (hitosData: any[], year: number): RoadmapHito[] => {
+    if (hitosData.length === 0) return [];
+
+    // 🔧 RESPONSIVE: Ajustar dimensiones según el ancho de pantalla
+    const screenWidth = window.innerWidth;
+    const roadmapWidth = Math.min(1000, screenWidth - 120); // Mínimo margen de 60px a cada lado
+    const availableWidth = roadmapWidth - 200; // 100px a cada lado
+    const timelineY = 250;
+    const cardHeight = 60;
+    const cardWidth = Math.min(180, Math.max(120, screenWidth * 0.15)); // Responsive card width
+    const levelDistances = [20, 30, 95];
+    const maxLevels = 2;
+    
+    // 🔧 CORRECCIÓN DEFINITIVA: Usar método más simple y preciso
+    const hitosConPosicionesBasicas = hitosData.map((hito, index) => {
+      const fechaInicio = hito._fechaInicioDate;
+      const mesNumero = fechaInicio.getMonth(); // 0-11
+      const diaDelMes = fechaInicio.getDate(); // 1-31
+      
+      // 🎯 MÉTODO CORREGIDO: Cálculo más preciso con días reales del mes
+      const diasDelMes = new Date(fechaInicio.getFullYear(), mesNumero + 1, 0).getDate(); // Días reales del mes
+      const mesDecimal = mesNumero + (diaDelMes / diasDelMes); // Usar días reales en lugar de 30
+      const proporcionDelAño = (mesDecimal + 1) / 12; // Sumar 1 para convertir a mes real (1-12)
+      
+      // Asegurar que esté entre 0 y 1
+      const proporcionFinal = Math.max(0, Math.min(1, proporcionDelAño));
+      
+      // 📍 Debugging: Log para verificar cálculos
+      console.log(`🔍 Hito: ${hito.nombre}`);
+      console.log(`📅 Fecha: ${fechaInicio.toLocaleDateString('es-ES')}`);
+      console.log(`📊 Mes base-0: ${mesNumero} (${fechaInicio.toLocaleDateString('es-ES', { month: 'short' })}), Día: ${diaDelMes}/${diasDelMes}`);
+      console.log(`🔢 Mes decimal: ${mesDecimal.toFixed(3)}`);
+      console.log(`⚡ Proporción: ${(proporcionFinal * 100).toFixed(1)}%`);
+      console.log(`🎯 Para mes ${mesNumero+1}: debería estar al ${(((mesNumero+1)/12)*100).toFixed(1)}% aprox`);
+      
+      // Mapear a posición horizontal: 100px inicio + ancho disponible
+      const x = 100 + proporcionFinal * availableWidth;
+      
+      const isAbove = index % 2 === 0;
+
+      return {
+        ...hito,
+        x: Math.max(50, Math.min(x - cardWidth/2, roadmapWidth - cardWidth - 50)),
+        y: 0,
+        width: cardWidth,
+        height: cardHeight,
+        mesNumero,
+        isAbove,
+        level: 0
+      };
+    });
+
+    const hitosArriba = hitosConPosicionesBasicas.filter(h => h.isAbove);
+    const hitosAbajo = hitosConPosicionesBasicas.filter(h => !h.isAbove);
+
+    const resolverSolapamientos = (hitos: any[], esArriba: boolean) => {
+      hitos.sort((a, b) => a.x - b.x);
+
+      hitos.forEach((hitoActual) => {
+        let nivel = 0;
+        let posicionValida = false;
+        
+        while (!posicionValida && nivel <= maxLevels) {
+          hitoActual.level = nivel;
+          const distancia = levelDistances[nivel] + cardHeight;
+          
+          if (esArriba) {
+            hitoActual.y = timelineY - distancia;
+          } else {
+            hitoActual.y = timelineY + levelDistances[nivel];
+          }
+          
+          const conflictos = hitos.filter(otroHito => {
+            if (otroHito === hitoActual || otroHito.level !== nivel) return false;
+            const margenX = 15;
+            const solapaX = !(otroHito.x + otroHito.width + margenX < hitoActual.x || 
+                             otroHito.x > hitoActual.x + hitoActual.width + margenX);
+            return solapaX;
+          });
+          
+          if (conflictos.length === 0) {
+            posicionValida = true;
+          } else {
+            nivel++;
+          }
+        }
+        
+        if (!posicionValida) {
+          hitoActual.level = maxLevels;
+          const distancia = levelDistances[maxLevels] + cardHeight;
+          if (esArriba) {
+            hitoActual.y = timelineY - distancia;
+          } else {
+            hitoActual.y = timelineY + levelDistances[maxLevels];
+          }
+        }
+      });
+    };
+
+    resolverSolapamientos(hitosArriba, true);
+    resolverSolapamientos(hitosAbajo, false);
+
+    return hitosConPosicionesBasicas;
+  };
+
+  const getCategoryColor = (categoria: CategoriaHito): { bg: string; border: string; text: string } => {
+    const colors = {
+      principal: { bg: '#fff5f5', border: '#f54957', text: '#f54957' },
+      secundario: { bg: '#f0fdff', border: '#1ebad0', text: '#1ebad0' },
+      features: { bg: '#f8fff0', border: '#7cba01', text: '#7cba01' }
+    };
+    return colors[categoria];
+  };
+
+  // 🔧 CORRECCIÓN: Marcadores de tiempo más precisos
+  const timeMarkers = useMemo((): TimeMarker[] => {
+    const markers: TimeMarker[] = [];
+    
+    // 🔧 RESPONSIVE: Calcular ancho disponible
+    const screenWidth = window.innerWidth;
+    const availableWidth = Math.min(800, screenWidth - 320); // Ajustar según pantalla
+    
+    // Meses clave con posicionamiento correcto para el año seleccionado
+    const keyMonths = [
+      { month: 0, label: 'ENE' },   // Enero (0/12 = 0%)
+      { month: 2, label: 'MAR' },   // Marzo (2/12 = 16.67%)
+      { month: 5, label: 'JUN' },   // Junio (5/12 = 41.67%)
+      { month: 8, label: 'SEP' },   // Septiembre (8/12 = 66.67%)
+      { month: 11, label: 'DIC' }   // Diciembre (11/12 = 91.67%)
+    ];
+    
+    keyMonths.forEach(({ month, label }, index) => {
+      // 🎯 MISMO CÁLCULO QUE LOS HITOS: mes / 12
+      const proporcion = month / 12; // 🔧 CORREGIDO: dividir por 12
+      const position = 100 + proporcion * availableWidth;
+      
+      // 📍 Debugging para marcadores
+      console.log(`📌 Marcador ${label}: Mes ${month}/12 -> ${(proporcion * 100).toFixed(1)}% -> ${position.toFixed(1)}px`);
+      
+      const fechaMarcador = new Date(selectedYear, month, 1);
+      
+      markers.push({
+        position,
+        label,
+        fullDate: fechaMarcador,
+        isAlternate: index % 2 === 1
+      });
+    });
+    
+    return markers;
+  }, [selectedYear]);
+
+  const handleHitoHover = (event: React.MouseEvent, hito: RoadmapHito) => {
+    setTooltip({
+      visible: true,
+      x: event.clientX,
+      y: event.clientY,
+      hito
+    });
+  };
+
+  const handleHitoLeave = () => {
+    setTooltip({ visible: false, x: 0, y: 0, hito: null });
+  };
+
+  // Renderizar contenido del roadmap
+  const renderRoadmapContent = () => {
+    const hitos = hitosData[selectedYear] || [];
+    
+    return (
+      <div style={{
+        position: 'relative',
+        minHeight: '450px',
+        maxHeight: '450px',
+        padding: '30px 0',
+        overflow: 'hidden',
+        opacity: isTransitioning ? 0 : 1,
+        transform: isTransitioning ? 'translateY(20px) scale(0.98)' : 'translateY(0) scale(1)',
+        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}>
+        {hitos.length === 0 ? (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '400px',
+            color: '#64748b'
+          }}>
+            <div style={{ fontSize: '4rem', marginBottom: '20px' }}>📅</div>
+            <h3 style={{ margin: '0 0 8px 0' }}>No hay hitos para {selectedYear}</h3>
+            <p style={{ margin: '0', textAlign: 'center' }}>
+              Use la navegación para cambiar de año
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Línea de tiempo principal con marcadores mejorados */}
+            <div style={{
+              position: 'absolute',
+              top: '250px',
+              left: '100px',
+              right: '100px',
+              height: '8px',
+              background: 'linear-gradient(90deg,rgb(10, 13, 189) 0%, #8b5cf6 50%, #06b6d4 100%)',
+              borderRadius: '2px',
+              zIndex: 5,
+              boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)'
+            }}>
+              {/* 🔧 Marcadores de meses corregidos */}
+              {timeMarkers.map((marker, index) => (
+                <div key={index} style={{
+                  position: 'absolute',
+                  left: `${(marker.position - 100) / 800 * 100}%`,
+                  top: '-45px',
+                  transform: 'translateX(-50%) rotate(-90deg)',
+                  fontSize: '18px',
+                  fontWeight: '700',
+                  color: '#c6c8c9',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  minWidth: '45px',
+                  textAlign: 'center',
+                  textTransform: 'uppercase'
+                }}>
+                  {marker.label}
+                </div>
+              ))}
+            </div>
+
+            {/* SVG para líneas conectoras */}
+            <svg style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              pointerEvents: 'none',
+              zIndex: 10
+            }}>
+              {hitos.slice(0, animationPhase).map(hito => {
+                const timelineY = 252;
+                const cardCenterX = hito.x + hito.width / 2;
+                const cardY = hito.isAbove ? hito.y + hito.height : hito.y;
+                
+                return (
+                  <g key={`line-${hito.id}`}>
+                    <line
+                      x1={cardCenterX}
+                      y1={timelineY}
+                      x2={cardCenterX}
+                      y2={cardY}
+                      stroke={getCategoryColor(hito.categoria).border}
+                      strokeWidth="3"
+                      strokeDasharray="6,3"
+                      opacity="0.8"
+                    />
+                  </g>
+                );
+              })}
+            </svg>
+
+            {/* Puntos de conexión con animación de pulso */}
+            {hitos.slice(0, animationPhase).map((hito, index) => {
+              const timelineY = 252;
+              const cardCenterX = hito.x + hito.width / 2;
+              const colors = getCategoryColor(hito.categoria);
+              
+              return (
+                <div
+                  key={`pulse-point-${hito.id}`}
+                  style={{
+                    position: 'absolute',
+                    left: `${cardCenterX - 10}px`,
+                    top: `${timelineY - 10}px`,
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    background: '#fff',
+                    border: `5px solid ${colors.border}`,
+                    zIndex: 15,
+                    transition: 'all 0.3s ease',
+                    boxShadow: `0 0 0 0 ${colors.border}`,
+                    animation: `pulse-roadmap-${index % 10} 8s ease-in-out infinite`
+                  }}
+                />
+              );
+            })}
+
+            {/* Tarjetas de hitos */}
+            {hitos.map((hito, index) => {
+              const colors = getCategoryColor(hito.categoria);
+              const shouldShow = index < animationPhase;
+              
+              return (
+                <div
+                  key={hito.id}
+                  style={{
+                    position: 'absolute',
+                    left: `${hito.x}px`,
+                    top: `${hito.y}px`,
+                    width: `${hito.width}px`,
+                    height: `${hito.height}px`,
+                    backgroundColor: colors.bg,
+                    border: `2px solid ${colors.border}`,
+                    borderRadius: '12px',
+                    padding: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transform: shouldShow 
+                      ? 'translateY(0) scale(1)' 
+                      : `translateY(${hito.isAbove ? '-20px' : '20px'}) scale(0.8)`,
+                    opacity: shouldShow ? 1 : 0,
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    zIndex: 20,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={(e) => handleHitoHover(e, hito)}
+                  onMouseLeave={handleHitoLeave}
+                  onMouseMove={(e) => {
+                    if (tooltip.visible) {
+                      setTooltip(prev => ({
+                        ...prev,
+                        x: e.clientX,
+                        y: e.clientY
+                      }));
+                    }
+                  }}
+                >
+                  <h4 style={{
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    color: colors.text,
+                    margin: '0',
+                    lineHeight: '1',
+                    textAlign: 'center',
+                    overflow: 'hidden',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical'
+                  }}>
+                    {hito.nombre}
+                  </h4>
+                  
+                  <div style={{
+                    fontSize: '10px',
+                    color: '#64748b',
+                    fontWeight: '500',
+                    textAlign: 'center',
+                    marginTop: '4px'
+                  }}>
+                    {formatDate(hito._fechaInicioDate, { day: 'numeric', month: 'short' })}
+                    {hito._fechaFinDate && (
+                      ` - ${formatDate(hito._fechaFinDate, { day: 'numeric', month: 'short' })}`
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Leyenda compacta */}
+            <div style={{
+              position: 'absolute',
+              top: '5px',
+              right: '5px',
+              background: 'rgba(255, 255, 255, 0.95)',
+              padding: '16px',
+              borderRadius: '10px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              fontSize: '12px',
+              border: '1px solid #e2e8f0',
+              zIndex: 30
+            }}>
+              <h4 style={{ 
+                margin: '0 0 12px 0', 
+                fontSize: '13px', 
+                fontWeight: '700', 
+                color: '#374151' 
+              }}>
+                Categorías
+              </h4>
+              {(['principal', 'secundario', 'features'] as CategoriaHito[]).map(categoria => {
+                const colors = getCategoryColor(categoria);
+                const labels = {
+                  principal: 'Principales',
+                  secundario: 'Secundarios', 
+                  features: 'Features'
+                };
+                const count = hitos.filter(h => h.categoria === categoria).length;
+                
+                return (
+                  <div key={categoria} style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    marginBottom: '8px' 
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <div style={{
+                        width: '12px',
+                        height: '12px',
+                        backgroundColor: colors.bg,
+                        border: `2px solid ${colors.border}`,
+                        borderRadius: '3px',
+                        marginRight: '8px'
+                      }}></div>
+                      <span style={{ 
+                        fontWeight: '600', 
+                        color: '#374151',
+                        fontSize: '11px'
+                      }}>
+                        {labels[categoria]}
+                      </span>
+                    </div>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: colors.border,
+                      marginLeft: '8px'
+                    }}>
+                      {count}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Estadísticas */}
+            <div style={{
+              position: 'absolute',
+              bottom: '5px',
+              left: '5px',
+              background: 'rgba(255, 255, 255, 0.95)',
+              padding: '16px',
+              borderRadius: '10px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              fontSize: '12px',
+              border: '1px solid #e2e8f0',
+              zIndex: 30
+            }}>
+              <div style={{ 
+                fontWeight: '700', 
+                marginBottom: '8px', 
+                color: '#374151', 
+                fontSize: '13px' 
+              }}>
+                📊 Resumen {selectedYear}
+              </div>
+              <div style={{ color: '#64748b', lineHeight: '1.4' }}>
+                <div>Total: <strong>{hitos.length}</strong> hitos</div>
+                <div>Principales: <strong>{hitos.filter(h => h.categoria === 'principal').length}</strong></div>
+                {hitos.length > 0 && (
+                  <div style={{ fontSize: '10px', marginTop: '4px' }}>
+                    Desde {formatDate(hitos[0]?._fechaInicioDate, { month: 'short' })} 
+                    a {formatDate(hitos[hitos.length - 1]?._fechaInicioDate, { month: 'short' })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div style={{
-        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-        borderRadius: '20px',
-        padding: '30px',
-        minHeight: '700px',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+        borderRadius: '16px',
+        padding: '40px',
+        minHeight: '500px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        border: '1px solid #e2e8f0'
       }} className={className}>
         <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🚀</div>
-        <h3 style={{ color: '#666' }}>Cargando Roadmap...</h3>
-        <p style={{ color: '#888' }}>Preparando la línea de tiempo de hitos</p>
+        <h3 style={{ color: '#64748b', margin: '0 0 8px 0' }}>Cargando Roadmap...</h3>
+        <p style={{ color: '#94a3b8', margin: '0' }}>Obteniendo hitos desde la base de datos</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{
+        background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+        borderRadius: '16px',
+        padding: '40px',
+        minHeight: '500px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        border: '1px solid #fecaca'
+      }} className={className}>
+        <div style={{ fontSize: '3rem', marginBottom: '20px' }}>⚠️</div>
+        <h3 style={{ color: '#dc2626', margin: '0 0 8px 0' }}>Error al cargar el Roadmap</h3>
+        <p style={{ color: '#991b1b', margin: '0 0 20px 0', textAlign: 'center' }}>{error}</p>
+        <button 
+          onClick={fetchAllHitos}
+          style={{
+            background: '#dc2626',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '10px 20px',
+            cursor: 'pointer'
+          }}
+        >
+          Reintentar
+        </button>
       </div>
     );
   }
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-      borderRadius: '20px',
+      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+      borderRadius: '16px',
       padding: '30px',
-      minHeight: '700px',
+      minHeight: '500px',
       position: 'relative',
       overflow: 'visible',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      border: '1px solid #e0e7ff'
+      border: '1px solid #e2e8f0'
     }} className={className}>
+      
       {/* Header */}
       <div style={{
-        background: 'rgba(255, 255, 255, 0.95)',
-        borderRadius: '15px',
+        background: 'rgba(255, 255, 255, 0.9)',
+        borderRadius: '12px',
         padding: '20px',
-        marginBottom: '30px',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+        marginBottom: '40px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        border: '1px solid rgba(255, 255, 255, 0.2)'
       }}>
         <div>
-          <h2 style={{ margin: '0 0 5px 0', color: '#2c3e50', fontWeight: '800' }}>
-            🗺️ Roadmap de Hitos {selectedYear}
+          <h2 style={{ 
+            margin: '0 0 4px 0', 
+            color: '#1e293b', 
+            fontWeight: '700',
+            fontSize: '24px'
+          }}>
+            Roadmap {selectedYear}
           </h2>
-          <p style={{ margin: '0', color: '#7f8c8d', fontSize: '14px' }}>
-            Visualización estratégica de logros y objetivos
+          <p style={{ 
+            margin: '0', 
+            color: '#64748b', 
+            fontSize: '14px',
+            fontWeight: '500'
+          }}>
+            Cronología de logros y objetivos alcanzados: {(hitosData[selectedYear] || []).length > 0 ? `${(hitosData[selectedYear] || []).length} hitos estratégicos del año` : 'Sin hitos para mostrar'}
           </p>
         </div>
-        <div>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            onClick={fetchAllHitos}
             style={{
-              padding: '10px 15px',
-              borderRadius: '10px',
-              border: '2px solid #ddd',
-              background: 'white',
-              fontSize: '14px',
-              fontWeight: '600'
-            }}
-          >
-            {availableYears.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Roadmap Container */}
-      <div style={{
-        position: 'relative',
-        minHeight: '600px',
-        padding: '30px 0',
-        overflow: 'visible'
-      }}>
-        {/* SVG para líneas conectoras */}
-        <svg
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none',
-            zIndex: 1
-          }}
-        >          
-          {/* Líneas desde timeline hacia cada hito */}
-          {hitos.map(hito => {
-            const hitoCenterX = hito.x + hito.width / 2;
-            const hitoCenterY = hito.y + hito.height / 2;
-            const timelineY = 303;
-            const timelineX = hitoCenterX;
-            
-            return (
-              <g key={`connector-${hito.id}`}>
-                <line
-                  x1={`${(timelineX / 1200) * 100}%`}
-                  y1={timelineY}
-                  x2={`${(hitoCenterX / 1200) * 100}%`}
-                  y2={hitoCenterY}
-                  stroke={getCategoryBorderColor(hito.categoria)}
-                  strokeWidth="3"
-                  opacity="0.6"
-                  strokeDasharray="5,5"
-                  style={{
-                    transition: 'all 0.3s ease',
-                    strokeWidth: hoveredHito === hito.id ? 4 : 3,
-                    opacity: hoveredHito === hito.id ? 0.9 : 0.6
-                  }}
-                />
-                
-                <circle
-                  cx={`${(timelineX / 1200) * 100}%`}
-                  cy={timelineY}
-                  r="5"
-                  fill={getCategoryBorderColor(hito.categoria)}
-                  stroke="white"
-                  strokeWidth="2"
-                  style={{
-                    transition: 'all 0.3s ease',
-                    transform: hoveredHito === hito.id ? 'scale(1.3)' : 'scale(1)'
-                  }}
-                />
-              </g>
-            );
-          })}
-        </svg>
-
-        {/* Línea de tiempo central */}
-        <div style={{
-          position: 'relative',
-          height: '6px',
-          background: 'linear-gradient(90deg, #4a90e2 0%, #50c878 50%, #ff6b6b 100%)',
-          borderRadius: '3px',
-          top: '300px',
-          marginBottom: '20px',
-          zIndex: 5,
-          boxShadow: '0 3px 12px rgba(0, 0, 0, 0.3)',
-          border: '1px solid rgba(0,0,0,0.1)'
-        }}>
-          {timeMarkers.map((marker, index) => (
-            <div
-              key={index}
-              style={{
-                position: 'absolute',
-                left: `${(marker.position / 1200) * 100}%`,
-                top: '-30px',
-                transform: 'translateX(-50%)',
-                fontSize: '12px',
-                fontWeight: '700',
-                color: '#333',
-                backgroundColor: 'white',
-                padding: '6px 12px',
-                borderRadius: '15px',
-                border: '2px solid #4a90e2',
-                zIndex: 10,
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-              }}
-            >
-              {marker.label}
-            </div>
-          ))}
-        </div>
-
-        {/* Etiquetas de categorías */}
-        <div style={{
-          position: 'absolute',
-          left: '20px',
-          top: '80px',
-          fontSize: '12px',
-          fontWeight: '700',
-          color: 'white',
-          background: getCategoryBorderColor('principal'),
-          padding: '6px 12px',
-          borderRadius: '15px',
-          zIndex: 15,
-          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-          border: '2px solid white'
-        }}>
-          🎯 PRINCIPALES
-        </div>
-
-        <div style={{
-          position: 'absolute',
-          right: '20px',
-          top: '380px',
-          fontSize: '12px',
-          fontWeight: '700',
-          color: 'white',
-          background: getCategoryBorderColor('secundario'),
-          padding: '6px 12px',
-          borderRadius: '15px',
-          zIndex: 15,
-          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-          border: '2px solid white'
-        }}>
-          📊 SECUNDARIOS
-        </div>
-
-        <div style={{
-          position: 'absolute',
-          left: '20px',
-          top: '480px',
-          fontSize: '12px',
-          fontWeight: '700',
-          color: 'white',
-          background: getCategoryBorderColor('features'),
-          padding: '6px 12px',
-          borderRadius: '15px',
-          zIndex: 15,
-          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-          border: '2px solid white'
-        }}>
-          ⚡ FEATURES
-        </div>
-
-        {/* Hitos */}
-        {hitos.map((hito, index) => (
-          <div
-            key={hito.id}
-            style={{
-              position: 'absolute',
-              left: `${(hito.x / 1200) * 100}%`,
-              top: `${hito.y}px`,
-              width: `${Math.min((hito.width / 1200) * 100, 30)}%`,
-              minWidth: '220px',
-              maxWidth: '350px',
-              height: 'auto',
-              minHeight: `${hito.height}px`,
-              backgroundColor: getCategoryColor(hito.categoria),
-              border: `3px solid ${getCategoryBorderColor(hito.categoria)}`,
-              borderRadius: '15px',
-              padding: '16px',
-              cursor: 'pointer',
-              transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              transform: index < animationPhase 
-                ? (hoveredHito === hito.id ? 'translateY(-8px) scale(1.05)' : 'translateY(0) scale(1)')
-                : 'translateY(30px) scale(0.8)',
-              opacity: index < animationPhase ? 1 : 0,
-              boxShadow: hoveredHito === hito.id 
-                ? '0 12px 35px rgba(0, 0, 0, 0.25)' 
-                : '0 6px 20px rgba(0, 0, 0, 0.15)',
-              zIndex: hoveredHito === hito.id ? 100 : 20,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-start',
-              gap: '8px'
-            }}
-            onMouseEnter={() => setHoveredHito(hito.id)}
-            onMouseLeave={() => setHoveredHito(null)}
-            title={hito.descripcion}
-          >
-            {/* Título del hito */}
-            <h4 style={{
-              fontSize: '15px',
-              fontWeight: '700',
-              color: '#2c3e50',
-              margin: '0',
-              lineHeight: '1.3',
-              wordBreak: 'break-word',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden'
-            }}>
-              {hito.nombre}
-            </h4>
-            
-            {/* Proyecto origen */}
-            {hito.proyecto_origen_nombre && (
-              <div style={{
-                fontSize: '12px',
-                color: '#7f8c8d',
-                fontWeight: '600',
-                background: 'rgba(255, 255, 255, 0.7)',
-                padding: '4px 8px',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}>
-                <span>📂</span>
-                <span style={{ 
-                  overflow: 'hidden', 
-                  textOverflow: 'ellipsis', 
-                  whiteSpace: 'nowrap' 
-                }}>
-                  {hito.proyecto_origen_nombre}
-                </span>
-              </div>
-            )}
-            
-            {/* Fechas */}
-            <div style={{
+              backgroundColor: '#059669',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 12px',
               fontSize: '12px',
-              color: '#34495e',
-              fontWeight: '700',
-              background: 'rgba(255, 255, 255, 0.8)',
-              padding: '6px 10px',
-              borderRadius: '10px',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '4px',
-              marginTop: 'auto'
-            }}>
-              <span>📅</span>
-              <span>
-                {hito.fecha_inicio.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                {hito.fecha_fin && ` - ${hito.fecha_fin.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}`}
-              </span>
-            </div>
-          </div>
-        ))}
+              gap: '4px'
+            }}
+          >
+            🔄 Actualizar
+          </button>
+        </div>
+      </div>
 
-        {/* Leyenda */}
+      {/* Roadmap Container con transiciones personalizadas */}
+      <div style={{
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: '12px'
+      }}>
+        {/* Indicadores de años - fondo transparente */}
         <div style={{
           position: 'absolute',
-          top: '30px',
-          right: '30px',
-          background: 'rgba(255, 255, 255, 0.95)',
-          padding: '20px',
-          borderRadius: '15px',
-          boxShadow: '0 6px 25px rgba(0, 0, 0, 0.15)',
-          fontSize: '12px',
-          border: '1px solid rgba(0,0,0,0.1)',
-          zIndex: 25
+          top: '-5px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '10px',
+          zIndex: 100,
+          background: 'transparent',
+          padding: '8px 16px',
+          borderRadius: '20px'
         }}>
-          <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', fontWeight: '700', color: '#2c3e50' }}>
-            📋 Categorías
-          </h4>
-          {(['principal', 'secundario', 'features'] as CategoriaHito[]).map(categoria => (
-            <div key={categoria} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-              <div style={{
-                width: '18px',
-                height: '18px',
-                backgroundColor: getCategoryColor(categoria),
-                border: `3px solid ${getCategoryBorderColor(categoria)}`,
-                borderRadius: '6px',
-                marginRight: '10px'
-              }}></div>
-              <span style={{ fontWeight: '600', textTransform: 'capitalize' }}>
-                {categoria === 'principal' ? 'Principales' :
-                 categoria === 'secundario' ? 'Secundarios' : 'Features'}
-              </span>
-            </div>
+          {availableYears.map((year) => (
+            <button
+              key={year}
+              onClick={() => changeYear(year)}
+              disabled={isTransitioning}
+              style={{
+                minWidth: '60px',
+                height: '36px',
+                padding: '8px 14px',
+                margin: '0',
+                borderRadius: '18px',
+                fontSize: '13px',
+                fontWeight: '700',
+                background: selectedYear === year ? '#3b82f6' : 'rgba(255, 255, 255, 0.9)',
+                color: selectedYear === year ? 'white' : '#6b7280',
+                cursor: isTransitioning ? 'not-allowed' : 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: selectedYear === year ? '0 2px 8px rgba(59, 130, 246, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.1)',
+                opacity: isTransitioning ? 0.6 : 1,
+                whiteSpace: 'nowrap',
+                backdropFilter: 'blur(10px)',
+                border: selectedYear === year ? 'none' : '1px solid rgba(255, 255, 255, 0.8)'
+              }}
+              onMouseEnter={(e) => {
+                if (selectedYear !== year && !isTransitioning) {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 1)';
+                  e.currentTarget.style.color = '#374151';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedYear !== year && !isTransitioning) {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.9)';
+                  e.currentTarget.style.color = '#6b7280';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.1)';
+                }
+              }}
+            >
+              {year}
+            </button>
           ))}
         </div>
 
-        {/* Estadísticas */}
+        {/* Controles de navegación sin fondo */}
+        <button 
+          onClick={() => navigateYear('prev')}
+          disabled={isTransitioning}
+          style={{
+            position: 'absolute',
+            left: '15px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '60px',
+            height: '60px',
+            background: 'transparent',
+            border: 'none',
+            borderRadius: '50%',
+            transition: 'all 0.3s ease',
+            cursor: isTransitioning ? 'not-allowed' : 'pointer',
+            opacity: isTransitioning ? 0.3 : 0.7,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onMouseEnter={(e) => {
+            if (!isTransitioning) {
+              e.currentTarget.style.opacity = '1';
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.9)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isTransitioning) {
+              e.currentTarget.style.opacity = '0.7';
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.boxShadow = 'none';
+            }
+          }}
+        >
+          <span style={{
+            color: '#374151',
+            fontSize: '28px',
+            fontWeight: 'bold',
+            lineHeight: '1'
+          }}>‹</span>
+        </button>
+        
+        <button 
+          onClick={() => navigateYear('next')}
+          disabled={isTransitioning}
+          style={{
+            position: 'absolute',
+            right: '15px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '60px',
+            height: '60px',
+            background: 'transparent',
+            border: 'none',
+            borderRadius: '50%',
+            transition: 'all 0.3s ease',
+            cursor: isTransitioning ? 'not-allowed' : 'pointer',
+            opacity: isTransitioning ? 0.3 : 0.7,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onMouseEnter={(e) => {
+            if (!isTransitioning) {
+              e.currentTarget.style.opacity = '1';
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.9)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isTransitioning) {
+              e.currentTarget.style.opacity = '0.7';
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.boxShadow = 'none';
+            }
+          }}
+        >
+          <span style={{
+            color: '#374151',
+            fontSize: '28px',
+            fontWeight: 'bold',
+            lineHeight: '1'
+          }}>›</span>
+        </button>
+
+        {/* Contenido del roadmap */}
         <div style={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '20px',
-          background: 'rgba(255, 255, 255, 0.95)',
-          padding: '20px',
-          borderRadius: '15px',
-          boxShadow: '0 6px 25px rgba(0, 0, 0, 0.15)',
-          fontSize: '13px',
-          zIndex: 25,
-          border: '1px solid rgba(0,0,0,0.1)'
+          background: 'rgba(255, 255, 255, 0.05)',
+          borderRadius: '12px',
+          minHeight: '500px',
+          position: 'relative'
         }}>
-          <div style={{ fontWeight: '700', marginBottom: '12px', color: '#2c3e50', fontSize: '14px' }}>
-            📈 Estadísticas {selectedYear}
-          </div>
-          <div style={{ marginBottom: '4px' }}>📌 Total: <strong>{hitos.length}</strong> hitos</div>
-          <div style={{ marginBottom: '4px' }}>🎯 Principales: <strong>{hitos.filter(h => h.categoria === 'principal').length}</strong></div>
-          <div style={{ marginBottom: '4px' }}>📊 Secundarios: <strong>{hitos.filter(h => h.categoria === 'secundario').length}</strong></div>
-          <div>⚡ Features: <strong>{hitos.filter(h => h.categoria === 'features').length}</strong></div>
+          {renderRoadmapContent()}
         </div>
       </div>
+
+      {/* Tooltip */}
+      {tooltip.visible && tooltip.hito && (
+        <div style={{
+          position: 'fixed',
+          left: `${tooltip.x + 10}px`,
+          top: `${tooltip.y - 10}px`,
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          color: 'white',
+          padding: '12px',
+          borderRadius: '8px',
+          fontSize: '12px',
+          maxWidth: '280px',
+          zIndex: 1000,
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+          pointerEvents: 'none',
+          transform: 'translateY(-100%)'
+        }}>
+          <div style={{ 
+            fontWeight: '700', 
+            marginBottom: '6px',
+            color: getCategoryColor(tooltip.hito.categoria).border
+          }}>
+            {tooltip.hito.nombre}
+          </div>
+          
+          {tooltip.hito.proyecto_origen_nombre && (
+            <div style={{ marginBottom: '4px', opacity: '0.9' }}>
+              📂 {tooltip.hito.proyecto_origen_nombre}
+            </div>
+          )}
+          
+          {tooltip.hito.descripcion && (
+            <div style={{ marginBottom: '6px', lineHeight: '1.3' }}>
+              {tooltip.hito.descripcion}
+            </div>
+          )}
+          
+          {tooltip.hito.impacto && (
+            <div style={{ 
+              fontSize: '11px', 
+              fontStyle: 'italic',
+              opacity: '0.8',
+              borderTop: '1px solid rgba(255,255,255,0.2)',
+              paddingTop: '6px',
+              marginTop: '6px'
+            }}>
+              💡 {tooltip.hito.impacto}
+            </div>
+          )}
+          
+          <div style={{
+            borderTop: '1px solid rgba(255,255,255,0.2)',
+            paddingTop: '6px',
+            marginTop: '6px',
+            fontSize: '10px',
+            opacity: '0.7'
+          }}>
+            ID: {tooltip.hito.id}
+            {tooltip.hito.usuarios && tooltip.hito.usuarios.length > 0 && 
+              ` | ${tooltip.hito.usuarios.length} usuario(s)`
+            }
+            {tooltip.hito.tareas && tooltip.hito.tareas.length > 0 && 
+              ` | ${tooltip.hito.tareas.length} tarea(s)`
+            }
+          </div>
+        </div>
+      )}
+
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes pulse-roadmap-0 { 
+          0%, 85% { box-shadow: 0 0 0 0 #f54957; } 
+          10% { box-shadow: 0 0 0 10px #f5495700; } 
+          100% { box-shadow: 0 0 0 0 #f54957; }
+        }
+        @keyframes pulse-roadmap-1 { 
+          0%, 80% { box-shadow: 0 0 0 0 #1ebad0; } 
+          15% { box-shadow: 0 0 0 10px #1ebad000; } 
+          100% { box-shadow: 0 0 0 0 #1ebad0; }
+        }
+        @keyframes pulse-roadmap-2 { 
+          0%, 75% { box-shadow: 0 0 0 0 #7cba01; } 
+          20% { box-shadow: 0 0 0 10px #7cba0100; } 
+          100% { box-shadow: 0 0 0 0 #7cba01; }
+        }
+        @keyframes pulse-roadmap-3 { 
+          0%, 70% { box-shadow: 0 0 0 0 #f54957; } 
+          25% { box-shadow: 0 0 0 10px #f5495700; } 
+          100% { box-shadow: 0 0 0 0 #f54957; }
+        }
+        @keyframes pulse-roadmap-4 { 
+          0%, 65% { box-shadow: 0 0 0 0 #1ebad0; } 
+          30% { box-shadow: 0 0 0 10px #1ebad000; } 
+          100% { box-shadow: 0 0 0 0 #1ebad0; }
+        }
+        @keyframes pulse-roadmap-5 { 
+          0%, 60% { box-shadow: 0 0 0 0 #7cba01; } 
+          35% { box-shadow: 0 0 0 10px #7cba0100; } 
+          100% { box-shadow: 0 0 0 0 #7cba01; }
+        }
+        @keyframes pulse-roadmap-6 { 
+          0%, 55% { box-shadow: 0 0 0 0 #f54957; } 
+          40% { box-shadow: 0 0 0 10px #f5495700; } 
+          100% { box-shadow: 0 0 0 0 #f54957; }
+        }
+        @keyframes pulse-roadmap-7 { 
+          0%, 50% { box-shadow: 0 0 0 0 #1ebad0; } 
+          45% { box-shadow: 0 0 0 10px #1ebad000; } 
+          100% { box-shadow: 0 0 0 0 #1ebad0; }
+        }
+        @keyframes pulse-roadmap-8 { 
+          0%, 45% { box-shadow: 0 0 0 0 #7cba01; } 
+          50% { box-shadow: 0 0 0 10px #7cba0100; } 
+          100% { box-shadow: 0 0 0 0 #7cba01; }
+        }
+        @keyframes pulse-roadmap-9 { 
+          0%, 40% { box-shadow: 0 0 0 0 #f54957; } 
+          55% { box-shadow: 0 0 0 10px #f5495700; } 
+          100% { box-shadow: 0 0 0 0 #f54957; }
+        }
+      `}</style>
     </div>
   );
 };
