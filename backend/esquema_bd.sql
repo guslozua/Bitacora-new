@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 29-05-2025 a las 15:57:51
+-- Tiempo de generación: 05-06-2025 a las 21:04:54
 -- Versión del servidor: 10.4.25-MariaDB
 -- Versión de PHP: 8.2.0
 
@@ -169,6 +169,56 @@ CREATE TABLE `enlaces_urls` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `equipos_integrantes`
+--
+
+CREATE TABLE `equipos_integrantes` (
+  `id` int(11) NOT NULL,
+  `equipo_id` int(11) NOT NULL,
+  `integrante_id` int(11) NOT NULL,
+  `fecha_asignacion` datetime DEFAULT current_timestamp(),
+  `es_responsable_principal` tinyint(1) DEFAULT 0 COMMENT 'Indica si es el responsable principal del equipo',
+  `notas_asignacion` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Relación entre equipos e integrantes';
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `equipos_sistemas`
+--
+
+CREATE TABLE `equipos_sistemas` (
+  `id` int(11) NOT NULL,
+  `equipo_id` int(11) NOT NULL,
+  `sistema_id` int(11) NOT NULL,
+  `es_responsable_principal` tinyint(1) DEFAULT 0 COMMENT 'Indica si es el equipo principal responsable',
+  `nivel_responsabilidad` enum('primario','secundario','soporte') DEFAULT 'primario',
+  `fecha_asignacion` datetime DEFAULT current_timestamp(),
+  `notas` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Relación entre equipos y sistemas que administran';
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `equipos_tecnicos`
+--
+
+CREATE TABLE `equipos_tecnicos` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL COMMENT 'Nombre del equipo (ej: GDA, DBAdmin)',
+  `descripcion` text DEFAULT NULL COMMENT 'Descripción del equipo y responsabilidades',
+  `telefono_guardia` varchar(20) DEFAULT NULL COMMENT 'Teléfono principal de guardia',
+  `email_grupo` varchar(100) DEFAULT NULL COMMENT 'Email del grupo/equipo',
+  `color` varchar(7) DEFAULT '#007bff' COMMENT 'Color para identificación visual',
+  `estado` enum('activo','inactivo') DEFAULT 'activo',
+  `orden_visualizacion` int(11) DEFAULT 1 COMMENT 'Orden para mostrar en la interfaz',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Equipos técnicos de soporte';
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `eventos`
 --
 
@@ -205,6 +255,24 @@ CREATE TRIGGER `tr_validate_event_dates` BEFORE INSERT ON `eventos` FOR EACH ROW
 END
 $$
 DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `flujos_escalamiento`
+--
+
+CREATE TABLE `flujos_escalamiento` (
+  `id` int(11) NOT NULL,
+  `sistema_id` int(11) NOT NULL,
+  `equipo_primario_id` int(11) NOT NULL COMMENT 'Equipo que atiende inicialmente',
+  `equipo_escalamiento_id` int(11) DEFAULT NULL COMMENT 'Equipo al que se escala si es necesario',
+  `condicion_escalamiento` text DEFAULT NULL COMMENT 'Condiciones para escalar (ej: si no responde en 30min)',
+  `tiempo_escalamiento_minutos` int(11) DEFAULT 30 COMMENT 'Tiempo antes de escalar',
+  `activo` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DEPRECATED - Se usa flujo dinámico en getFlujoPorSistema()';
 
 -- --------------------------------------------------------
 
@@ -246,6 +314,75 @@ CREATE TABLE `guardias` (
   `notas` text DEFAULT NULL,
   `createdAt` timestamp NOT NULL DEFAULT current_timestamp(),
   `updatedAt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `historial_incidentes_contactos`
+--
+
+CREATE TABLE `historial_incidentes_contactos` (
+  `id` int(11) NOT NULL,
+  `sistema_id` int(11) NOT NULL,
+  `equipo_contactado_id` int(11) NOT NULL,
+  `integrante_contactado_id` int(11) DEFAULT NULL,
+  `fecha_incidente` datetime NOT NULL,
+  `medio_contacto` enum('telefono','whatsapp','email','presencial') NOT NULL,
+  `tiempo_respuesta_minutos` int(11) DEFAULT NULL,
+  `resuelto` tinyint(1) DEFAULT 0,
+  `observaciones` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL COMMENT 'Usuario que registró el contacto',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Historial de contactos realizados durante incidentes';
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `hitos`
+--
+
+CREATE TABLE `hitos` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(255) NOT NULL,
+  `fecha_inicio` date DEFAULT NULL,
+  `fecha_fin` date DEFAULT NULL,
+  `descripcion` text DEFAULT NULL,
+  `impacto` text DEFAULT NULL,
+  `id_proyecto_origen` int(11) DEFAULT NULL,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_actualizacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `hito_tareas`
+--
+
+CREATE TABLE `hito_tareas` (
+  `id` int(11) NOT NULL,
+  `id_hito` int(11) NOT NULL,
+  `nombre_tarea` varchar(255) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `estado` varchar(50) DEFAULT 'completada',
+  `fecha_inicio` date DEFAULT NULL,
+  `fecha_fin` date DEFAULT NULL,
+  `id_tarea_origen` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `hito_usuarios`
+--
+
+CREATE TABLE `hito_usuarios` (
+  `id` int(11) NOT NULL,
+  `id_hito` int(11) NOT NULL,
+  `id_usuario` int(11) NOT NULL,
+  `rol` varchar(50) DEFAULT 'colaborador',
+  `fecha_asignacion` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -300,6 +437,27 @@ CREATE TABLE `incidentes_guardia` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Incidentes ocurridos durante guardias';
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `integrantes`
+--
+
+CREATE TABLE `integrantes` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(50) NOT NULL,
+  `apellido` varchar(50) NOT NULL,
+  `rol` varchar(100) DEFAULT NULL COMMENT 'Rol dentro del equipo (Coordinador, Developer, etc.)',
+  `telefono_personal` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `whatsapp` varchar(20) DEFAULT NULL COMMENT 'Número de WhatsApp (puede ser diferente al teléfono)',
+  `disponibilidad` enum('disponible','ocupado','inactivo') DEFAULT 'disponible',
+  `es_coordinador` tinyint(1) DEFAULT 0 COMMENT 'Indica si es coordinador del equipo',
+  `notas` text DEFAULT NULL COMMENT 'Notas adicionales sobre el contacto',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Integrantes de los equipos técnicos';
 
 -- --------------------------------------------------------
 
@@ -492,6 +650,26 @@ CREATE TABLE `rol_permiso` (
   `id_rol` int(11) NOT NULL,
   `id_permiso` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `sistemas_monitoreados`
+--
+
+CREATE TABLE `sistemas_monitoreados` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL COMMENT 'Nombre del sistema/aplicación',
+  `descripcion` text DEFAULT NULL COMMENT 'Descripción del sistema',
+  `criticidad` enum('alta','media','baja') DEFAULT 'media' COMMENT 'Nivel de criticidad del sistema',
+  `categoria` varchar(50) DEFAULT NULL COMMENT 'Categoría del sistema (BD, Web, API, etc.)',
+  `estado` enum('operativo','mantenimiento','inactivo') DEFAULT 'operativo',
+  `url_monitoreo` varchar(255) DEFAULT NULL COMMENT 'URL para monitorear el sistema',
+  `documentacion_url` varchar(255) DEFAULT NULL COMMENT 'URL de documentación',
+  `orden_visualizacion` int(11) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Sistemas bajo supervisión técnica';
 
 -- --------------------------------------------------------
 
@@ -761,6 +939,37 @@ ALTER TABLE `enlaces_urls`
   ADD KEY `idx_enlace_id` (`enlace_id`);
 
 --
+-- Indices de la tabla `equipos_integrantes`
+--
+ALTER TABLE `equipos_integrantes`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_equipo_integrante` (`equipo_id`,`integrante_id`),
+  ADD KEY `idx_equipo_id` (`equipo_id`),
+  ADD KEY `idx_integrante_id` (`integrante_id`),
+  ADD KEY `idx_responsable` (`es_responsable_principal`),
+  ADD KEY `idx_integrantes_equipo_disponibilidad` (`equipo_id`,`integrante_id`) COMMENT 'Búsqueda rápida de integrantes por equipo';
+
+--
+-- Indices de la tabla `equipos_sistemas`
+--
+ALTER TABLE `equipos_sistemas`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_equipo_sistema` (`equipo_id`,`sistema_id`),
+  ADD KEY `idx_equipo_id` (`equipo_id`),
+  ADD KEY `idx_sistema_id` (`sistema_id`),
+  ADD KEY `idx_responsable` (`es_responsable_principal`),
+  ADD KEY `idx_sistemas_equipo_responsabilidad` (`sistema_id`,`es_responsable_principal`) COMMENT 'Búsqueda rápida de equipos responsables por sistema';
+
+--
+-- Indices de la tabla `equipos_tecnicos`
+--
+ALTER TABLE `equipos_tecnicos`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_nombre_equipo` (`nombre`),
+  ADD KEY `idx_estado` (`estado`),
+  ADD KEY `idx_orden` (`orden_visualizacion`);
+
+--
 -- Indices de la tabla `eventos`
 --
 ALTER TABLE `eventos`
@@ -771,6 +980,16 @@ ALTER TABLE `eventos`
   ADD KEY `idx_eventos_completed` (`completed`),
   ADD KEY `idx_eventos_upcoming` (`start`);
 ALTER TABLE `eventos` ADD FULLTEXT KEY `idx_search` (`title`,`description`,`location`);
+
+--
+-- Indices de la tabla `flujos_escalamiento`
+--
+ALTER TABLE `flujos_escalamiento`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_sistema_id` (`sistema_id`),
+  ADD KEY `idx_equipo_primario` (`equipo_primario_id`),
+  ADD KEY `idx_equipo_escalamiento` (`equipo_escalamiento_id`),
+  ADD KEY `idx_escalamiento_activo` (`sistema_id`,`activo`) COMMENT 'Búsqueda rápida de flujos de escalamiento activos';
 
 --
 -- Indices de la tabla `glosario`
@@ -792,7 +1011,43 @@ ALTER TABLE `glosario_categorias`
 --
 ALTER TABLE `guardias`
   ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_fecha_usuario` (`fecha`,`usuario`),
   ADD KEY `idx_fecha` (`fecha`);
+
+--
+-- Indices de la tabla `historial_incidentes_contactos`
+--
+ALTER TABLE `historial_incidentes_contactos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_sistema_fecha` (`sistema_id`,`fecha_incidente`),
+  ADD KEY `idx_equipo_contactado` (`equipo_contactado_id`),
+  ADD KEY `idx_integrante_contactado` (`integrante_contactado_id`),
+  ADD KEY `idx_created_by` (`created_by`);
+
+--
+-- Indices de la tabla `hitos`
+--
+ALTER TABLE `hitos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_hitos_proyecto` (`id_proyecto_origen`),
+  ADD KEY `idx_hitos_fechas` (`fecha_inicio`,`fecha_fin`);
+
+--
+-- Indices de la tabla `hito_tareas`
+--
+ALTER TABLE `hito_tareas`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `id_tarea_origen` (`id_tarea_origen`),
+  ADD KEY `idx_hito_tareas_hito` (`id_hito`);
+
+--
+-- Indices de la tabla `hito_usuarios`
+--
+ALTER TABLE `hito_usuarios`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_hito_usuario` (`id_hito`,`id_usuario`),
+  ADD KEY `idx_hito_usuarios_hito` (`id_hito`),
+  ADD KEY `idx_hito_usuarios_usuario` (`id_usuario`);
 
 --
 -- Indices de la tabla `incidentes_codigos`
@@ -819,6 +1074,15 @@ ALTER TABLE `incidentes_guardia`
   ADD KEY `idx_id_guardia` (`id_guardia`),
   ADD KEY `idx_inicio_fin` (`inicio`,`fin`),
   ADD KEY `idx_estado` (`estado`);
+
+--
+-- Indices de la tabla `integrantes`
+--
+ALTER TABLE `integrantes`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_nombre_apellido` (`nombre`,`apellido`),
+  ADD KEY `idx_disponibilidad` (`disponibilidad`),
+  ADD KEY `idx_coordinador` (`es_coordinador`);
 
 --
 -- Indices de la tabla `itracker_data`
@@ -901,6 +1165,16 @@ ALTER TABLE `rol_permiso`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `id_rol` (`id_rol`,`id_permiso`),
   ADD KEY `id_permiso` (`id_permiso`);
+
+--
+-- Indices de la tabla `sistemas_monitoreados`
+--
+ALTER TABLE `sistemas_monitoreados`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_nombre_sistema` (`nombre`),
+  ADD KEY `idx_criticidad` (`criticidad`),
+  ADD KEY `idx_estado` (`estado`),
+  ADD KEY `idx_categoria` (`categoria`);
 
 --
 -- Indices de la tabla `subtareas`
@@ -1013,9 +1287,33 @@ ALTER TABLE `enlaces_urls`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `equipos_integrantes`
+--
+ALTER TABLE `equipos_integrantes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `equipos_sistemas`
+--
+ALTER TABLE `equipos_sistemas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `equipos_tecnicos`
+--
+ALTER TABLE `equipos_tecnicos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `eventos`
 --
 ALTER TABLE `eventos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `flujos_escalamiento`
+--
+ALTER TABLE `flujos_escalamiento`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -1037,6 +1335,30 @@ ALTER TABLE `guardias`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `historial_incidentes_contactos`
+--
+ALTER TABLE `historial_incidentes_contactos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `hitos`
+--
+ALTER TABLE `hitos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `hito_tareas`
+--
+ALTER TABLE `hito_tareas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `hito_usuarios`
+--
+ALTER TABLE `hito_usuarios`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `incidentes_codigos`
 --
 ALTER TABLE `incidentes_codigos`
@@ -1052,6 +1374,12 @@ ALTER TABLE `incidentes_estado_historico`
 -- AUTO_INCREMENT de la tabla `incidentes_guardia`
 --
 ALTER TABLE `incidentes_guardia`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `integrantes`
+--
+ALTER TABLE `integrantes`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -1121,6 +1449,12 @@ ALTER TABLE `rol_permiso`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `sistemas_monitoreados`
+--
+ALTER TABLE `sistemas_monitoreados`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `subtareas`
 --
 ALTER TABLE `subtareas`
@@ -1186,16 +1520,67 @@ ALTER TABLE `enlaces_urls`
   ADD CONSTRAINT `fk_enlaces_urls_enlace` FOREIGN KEY (`enlace_id`) REFERENCES `enlaces` (`id`) ON DELETE CASCADE;
 
 --
+-- Filtros para la tabla `equipos_integrantes`
+--
+ALTER TABLE `equipos_integrantes`
+  ADD CONSTRAINT `fk_equipos_integrantes_equipo` FOREIGN KEY (`equipo_id`) REFERENCES `equipos_tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_equipos_integrantes_integrante` FOREIGN KEY (`integrante_id`) REFERENCES `integrantes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `equipos_sistemas`
+--
+ALTER TABLE `equipos_sistemas`
+  ADD CONSTRAINT `fk_equipos_sistemas_equipo` FOREIGN KEY (`equipo_id`) REFERENCES `equipos_tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_equipos_sistemas_sistema` FOREIGN KEY (`sistema_id`) REFERENCES `sistemas_monitoreados` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
 -- Filtros para la tabla `eventos`
 --
 ALTER TABLE `eventos`
   ADD CONSTRAINT `fk_eventos_createdBy` FOREIGN KEY (`createdBy`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
+-- Filtros para la tabla `flujos_escalamiento`
+--
+ALTER TABLE `flujos_escalamiento`
+  ADD CONSTRAINT `fk_flujos_equipo_escalamiento` FOREIGN KEY (`equipo_escalamiento_id`) REFERENCES `equipos_tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_flujos_equipo_primario` FOREIGN KEY (`equipo_primario_id`) REFERENCES `equipos_tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_flujos_sistema` FOREIGN KEY (`sistema_id`) REFERENCES `sistemas_monitoreados` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
 -- Filtros para la tabla `glosario`
 --
 ALTER TABLE `glosario`
   ADD CONSTRAINT `fk_glosario_categoria` FOREIGN KEY (`categoria_id`) REFERENCES `glosario_categorias` (`id`) ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `historial_incidentes_contactos`
+--
+ALTER TABLE `historial_incidentes_contactos`
+  ADD CONSTRAINT `fk_historial_created_by` FOREIGN KEY (`created_by`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_historial_equipo` FOREIGN KEY (`equipo_contactado_id`) REFERENCES `equipos_tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_historial_integrante` FOREIGN KEY (`integrante_contactado_id`) REFERENCES `integrantes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_historial_sistema` FOREIGN KEY (`sistema_id`) REFERENCES `sistemas_monitoreados` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `hitos`
+--
+ALTER TABLE `hitos`
+  ADD CONSTRAINT `hitos_ibfk_1` FOREIGN KEY (`id_proyecto_origen`) REFERENCES `proyectos` (`id`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `hito_tareas`
+--
+ALTER TABLE `hito_tareas`
+  ADD CONSTRAINT `hito_tareas_ibfk_1` FOREIGN KEY (`id_hito`) REFERENCES `hitos` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `hito_tareas_ibfk_2` FOREIGN KEY (`id_tarea_origen`) REFERENCES `tareas` (`id`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `hito_usuarios`
+--
+ALTER TABLE `hito_usuarios`
+  ADD CONSTRAINT `hito_usuarios_ibfk_1` FOREIGN KEY (`id_hito`) REFERENCES `hitos` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `hito_usuarios_ibfk_2` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `incidentes_codigos`

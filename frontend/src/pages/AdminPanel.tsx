@@ -59,6 +59,7 @@ const AdminPanel: React.FC = () => {
   const [uploading, setUploading] = useState<boolean>(false);
   const [uploadMessage, setUploadMessage] = useState<string>('');
   const [uploadError, setUploadError] = useState<string>('');
+  
   const toggleSidebarItem = (id: string): void => {
     const newState: SidebarVisibility = {
       ...localVisibility,
@@ -101,6 +102,7 @@ const AdminPanel: React.FC = () => {
     );
     setIsDirty(true);
   };
+  
   const sidebarItemsMeta: SidebarItemMeta[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'bi-clipboard-data-fill', color: '#3498db' },
     { id: 'proyectos', label: 'Proyectos', icon: 'bi-diagram-3-fill', color: '#2ecc71' },
@@ -110,17 +112,17 @@ const AdminPanel: React.FC = () => {
     { id: 'hitos', label: 'Hitos', icon: 'bi-flag-fill', color: '#1abc9c' },
     { id: 'itracker', label: 'iTracker', icon: 'bi-circle', color: '#3498db' },
     { id: 'tabulaciones', label: 'Tabulaciones', icon: 'bi-table', color: '#2ecc71' },
-    { id: 'incidencias', label: 'Inc. en Guardia', icon: 'bi-shield-exclamation', color: '#f1c40f' },
+    //{ id: 'incidencias', label: 'Inc. en Guardia', icon: 'bi-shield-exclamation', color: '#f1c40f' },
     { id: 'contactos', label: 'Agenda de Contactos', icon: 'bi-telephone-fill', color: '#c30b4e' },
     { id: 'stats', label: 'Estadísticas', icon: 'bi-graph-up', color: '#e74c3c' },
-    { id: 'admin', label: 'Configuración', icon: 'bi-gear-fill', color: '#9b59b6' },
     { id: 'reports', label: 'Informes', icon: 'bi-file-earmark-text', color: '#1abc9c' },
     { id: 'calendar', label: 'Calendario', icon: 'bi-calendar-date', color: '#3498db' },
     { id: 'messages', label: 'Mensajes', icon: 'bi-chat-dots-fill', color: '#2ecc71' },
     { id: 'notifications', label: 'Notificaciones', icon: 'bi-bell-fill', color: '#f1c40f' },
     { id: 'links', label: 'Links', icon: 'bi-link-45deg', color: '#e67e22' },  // Nuevo ítem Links
     { id: 'glosario', label: 'Glosario', icon: 'bi-book', color: '#8e44ad' },  // Nuevo ítem Glosario
-    { id: 'informes', label: 'informes y estadisticas', icon: 'bi-bar-chart-fill', color: '#8e44ad' },  // Nuevo ítem
+    //{ id: 'informes', label: 'informes y estadisticas', icon: 'bi-bar-chart-fill', color: '#8e44ad' },  // Nuevo ítem
+    { id: 'admin', label: 'Configuración', icon: 'bi-gear-fill', color: '#9b59b6' },
   ];
 
   // Estadísticas simuladas para el panel de administración
@@ -130,6 +132,7 @@ const AdminPanel: React.FC = () => {
     { title: 'Tareas Abiertas', value: 63, icon: 'bi-list-task', color: '#f1c40f' },
     { title: 'Archivos Cargados', value: 257, icon: 'bi-cloud-upload-fill', color: '#e74c3c' },
   ];
+  
   // Función para manejar subida de archivos iTracker
   const handleItrackerUpload = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -231,6 +234,7 @@ const AdminPanel: React.FC = () => {
       setUploading(false);
     }
   };
+  
   // Limpiar estados al cerrar los modales
   const resetItrackerModal = () => {
     setShowItrackerModal(false);
@@ -252,6 +256,7 @@ const AdminPanel: React.FC = () => {
     // Por ejemplo, actualizar contadores o estadísticas
     console.log('Carga de archivo ABM exitosa');
   };
+  
   return (
     <Container fluid className="py-4 px-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -291,6 +296,7 @@ const AdminPanel: React.FC = () => {
           )}
         </div>
       </div>
+      
       {/* Estadísticas rápidas */}
       <Row className="g-4 mb-4">
         {adminStats.map((stat, index) => (
@@ -317,6 +323,7 @@ const AdminPanel: React.FC = () => {
           </Col>
         ))}
       </Row>
+      
       {/* Configuración del Sidebar con Vista Previa */}
       <Card className="mb-4 border-0 shadow-sm">
         <Card.Header className="bg-white py-3">
@@ -376,6 +383,7 @@ const AdminPanel: React.FC = () => {
                 </Card.Body>
               </Card>
             </Col>
+            
             {/* Opciones de configuración - Con ajuste de tamaño */}
             <Col md={9}>
               <div className="pb-2 d-flex align-items-center">
@@ -423,6 +431,7 @@ const AdminPanel: React.FC = () => {
           </Row>
         </Card.Body>
       </Card>
+      
       {/* Configuración del Dashboard */}
       <Card className="mb-4 border-0 shadow-sm">
         <Card.Header className="bg-white py-3">
@@ -465,6 +474,7 @@ const AdminPanel: React.FC = () => {
           </Row>
         </Card.Body>
       </Card>
+      
       {/* Accesos rápidos a herramientas */}
       <Card className="mb-4 border-0 shadow-sm">
         <Card.Header className="bg-white py-3">
@@ -559,27 +569,94 @@ const AdminPanel: React.FC = () => {
                 </Card.Body>
               </Card>
             </Col>
+            
+            {/* 🚀 NUEVO BOTÓN: GESTIÓN INTEGRAL DE GUARDIAS */}
             <Col md={4} className="mb-3">
               <Card className="h-100 border-0 shadow-sm">
                 <Card.Body className="p-0">
                   <Button
                     variant="light"
-                    className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                    onClick={() => navigate('/admin/codigos')}
+                    className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0 position-relative"
+                    onClick={() => navigate('/admin/gestion-guardias')}
+                    style={{ 
+                      borderLeft: '4px solid #0d6efd',
+                      backgroundColor: '#f8f9fa'
+                    }}
                   >
-                    <div className="bg-purple bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                    <div 
+                      className="rounded-circle d-flex align-items-center justify-content-center mb-3"
                       style={{
+                        backgroundColor: '#0d6efd20',
                         width: '3.5rem',
                         height: '3.5rem',
                         padding: 0
                       }}>
-                      <i className="bi bi-upc-scan fs-3 text-purple"></i>
+                      <i className="bi bi-shield-check fs-3" style={{ color: '#0d6efd' }}></i>
                     </div>
-                    <span className="fw-medium">Códigos Guardias</span>
+                    <span className="fw-medium" style={{ color: '#0d6efd' }}>Gestión Integral de Guardias</span>
+                    <Badge 
+                      className="mt-2"
+                      style={{ 
+                        backgroundColor: '#0d6efd',
+                        color: 'white',
+                        fontSize: '0.7rem'
+                      }}
+                    >
+                      <i className="bi bi-star-fill me-1"></i>
+                      Nuevo Sistema Unificado
+                    </Badge>
+                    <div className="position-absolute top-0 end-0 m-2">
+                      <Badge 
+                        className="rounded-pill"
+                        style={{ 
+                          backgroundColor: '#198754',
+                          color: 'white'
+                        }}
+                      >
+                        <i className="bi bi-check-circle-fill"></i>
+                      </Badge>
+                    </div>
                   </Button>
                 </Card.Body>
               </Card>
             </Col>
+            
+            {/* 🔄 BOTÓN ORIGINAL: CÓDIGOS GUARDIAS (MANTENIDO COMO RESPALDO) */}
+            <Col md={4} className="mb-3">
+              <Card className="h-100 border-0 shadow-sm">
+                <Card.Body className="p-0">
+                  <Button
+                    variant="light"
+                    className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0 position-relative"
+                    onClick={() => navigate('/admin/codigos')}
+                  >
+                    <div 
+                      className="rounded-circle d-flex align-items-center justify-content-center mb-3"
+                      style={{
+                        backgroundColor: '#8e44ad20',
+                        width: '3.5rem',
+                        height: '3.5rem',
+                        padding: 0
+                      }}>
+                      <i className="bi bi-upc-scan fs-3" style={{ color: '#8e44ad' }}></i>
+                    </div>
+                    <span className="fw-medium">Códigos Guardias</span>
+                    <Badge 
+                      className="mt-2"
+                      style={{ 
+                        backgroundColor: '#ffc107',
+                        color: '#000',
+                        fontSize: '0.7rem'
+                      }}
+                    >
+                      <i className="bi bi-exclamation-triangle me-1"></i>
+                      Versión Anterior
+                    </Badge>
+                  </Button>
+                </Card.Body>
+              </Card>
+            </Col>
+            
             <Col md={4} className="mb-3">
               <Card className="h-100 border-0 shadow-sm">
                 <Card.Body className="p-0">
@@ -627,6 +704,7 @@ const AdminPanel: React.FC = () => {
           </Row>
         </Card.Body>
       </Card>
+      
       {/* Modal para subir archivos iTracker */}
       <Modal
         show={showItrackerModal}
@@ -695,6 +773,7 @@ const AdminPanel: React.FC = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+      
       {/* Modal para subir archivos Tabulaciones */}
       <Modal
         show={showTabulacionesModal}
@@ -763,12 +842,14 @@ const AdminPanel: React.FC = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+      
       {/* Modal para subir archivos PIC y Social */}
       <AbmUploadModal
         show={showAbmUploadModal}
         onHide={() => setShowAbmUploadModal(false)}
         onSuccess={handleAbmUploadSuccess}
       />
+      
       <LightFooter />
     </Container>
   );

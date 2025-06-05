@@ -22,8 +22,6 @@ import AdminPanel from './pages/AdminPanel';
 import PlacasDash from './pages/PlacasDash';
 import Glosario from './pages/Glosario';
 import Enlaces from './pages/Enlaces';
-import InformesPage from './pages/InformesPage';
-import CodigosPage from './pages/CodigosPage'; // los codigos de guardias
 import ContactosPage from './pages/ContactosPage';
 import Error404 from './pages/Error404';
 
@@ -31,7 +29,14 @@ import Error404 from './pages/Error404';
 import CalendarPage from './pages/CalendarPage';
 import AdminCalendarPage from './pages/AdminCalendarPage';
 import EventPage from './pages/EventPage';
-import AdminGuardiasPage from './pages/AdminGuardiasPage'; // Añadido para guardias
+
+// 🚀 NUEVA PÁGINA UNIFICADA DE GESTIÓN DE GUARDIAS
+import GestionGuardiasPage from './pages/GestionGuardiasPage';
+
+// 🔄 PÁGINAS INDIVIDUALES (MANTENER TEMPORALMENTE COMO RESPALDO)
+// import InformesPage from './pages/InformesPage';
+// import CodigosPage from './pages/CodigosPage'; 
+// import AdminGuardiasPage from './pages/AdminGuardiasPage';
 
 // Nuevos imports para el panel de administración de usuarios
 import AdminUsersDashboard from './pages/AdminUsersDashboard';
@@ -142,8 +147,6 @@ const App: React.FC = () => {
           <Route path="/placasdash" element={<ProtectedRoute element={<PlacasDash />} />} />
           <Route path="/glosario" element={<ProtectedRoute element={<Glosario />} />} />
           <Route path="/links" element={<ProtectedRoute element={<Enlaces />} />} />
-          <Route path="/informes" element={<InformesPage />} />
-          <Route path="/admin/codigos" element={<ProtectedRoute element={<CodigosPage />} />} />
           <Route path="/contactos" element={<ProtectedRoute element={<ContactosPage />} />} />
           
           {/* 🔔 NUEVA RUTA PARA NOTIFICACIONES */}
@@ -161,8 +164,33 @@ const App: React.FC = () => {
           <Route path="/calendar/admin" element={<ProtectedRoute element={<AdminCalendarPage />} />} />
           <Route path="/calendar/event/:id" element={<ProtectedRoute element={<EventPage />} />} />
           
-          {/* Ruta para Guardias */}
-          <Route path="/admin/guardias" element={<ProtectedRoute element={<AdminGuardiasPage />} />} />
+          {/* 🚀 NUEVA RUTA UNIFICADA PARA GESTIÓN DE GUARDIAS */}
+          <Route 
+            path="/admin/gestion-guardias" 
+            element={<ProtectedRoute element={<GestionGuardiasPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+          />
+          
+          {/* 🔄 RUTAS DE COMPATIBILIDAD (REDIRECCIONES) */}
+          {/* Redirigir las rutas antiguas a la nueva página unificada */}
+          <Route 
+            path="/admin/guardias" 
+            element={<Navigate to="/admin/gestion-guardias?tab=cronograma" replace />} 
+          />
+          <Route 
+            path="/admin/codigos" 
+            element={<Navigate to="/admin/gestion-guardias?tab=facturacion" replace />} 
+          />
+          <Route 
+            path="/informes" 
+            element={<Navigate to="/admin/gestion-guardias?tab=informes" replace />} 
+          />
+          
+          {/* 🔄 RUTAS INDIVIDUALES COMENTADAS (RESPALDO TEMPORAL)
+          // Mantener comentadas por si necesitas volver a las páginas individuales
+          // <Route path="/informes" element={<InformesPage />} />
+          // <Route path="/admin/codigos" element={<ProtectedRoute element={<CodigosPage />} />} />
+          // <Route path="/admin/guardias" element={<ProtectedRoute element={<AdminGuardiasPage />} />} />
+          */}
           
           {/* Rutas de administración de usuarios */}
           <Route 

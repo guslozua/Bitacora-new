@@ -52,7 +52,7 @@ const Projects = () => {
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [showOffcanvas, setShowOffcanvas] = useState(false);
-  const [activeView, setActiveView] = useState<'gantt' | 'kanban' | 'lista'>('gantt');
+  const [activeView, setActiveView] = useState<'gantt' | 'kanban' | 'lista'>('kanban');
   const [projectData, setProjectData] = useState<ProjectData>({
     name: '',
     description: '',
@@ -76,28 +76,28 @@ const Projects = () => {
   const puedeConvertirseAHito = (proyecto: Proyecto): boolean => {
     // Verificar que el proyecto esté completado
     const estaCompletado = proyecto.estado === 'completado' || proyecto.estado === 'finalizado';
-    
+
     // Si no hay información de tareas, consideramos que puede convertirse si está completado
     if (!proyecto.total_tareas || proyecto.total_tareas === 0) {
       return estaCompletado;
     }
-    
+
     // Si hay tareas, verificar que todas estén completadas
     const todasTareasCompletas = proyecto.tareas_completadas === proyecto.total_tareas;
-    
+
     return estaCompletado && todasTareasCompletas;
   };
 
   // 🔄 CALLBACK PARA MANEJAR LA CONVERSIÓN EXITOSA
   const handleConversionComplete = () => {
-    setMessage({ 
-      type: 'success', 
-      text: '¡Proyecto convertido a hito exitosamente!' 
+    setMessage({
+      type: 'success',
+      text: '¡Proyecto convertido a hito exitosamente!'
     });
-    
+
     // Recargar datos después de la conversión
     fetchData();
-    
+
     // Auto-ocultar mensaje después de 5 segundos
     setTimeout(() => {
       setMessage(null);
@@ -106,11 +106,11 @@ const Projects = () => {
 
   // 🔄 CALLBACK PARA MANEJAR ERRORES EN LA CONVERSIÓN
   const handleConversionError = (error: string) => {
-    setMessage({ 
-      type: 'danger', 
-      text: `Error al convertir proyecto a hito: ${error}` 
+    setMessage({
+      type: 'danger',
+      text: `Error al convertir proyecto a hito: ${error}`
     });
-    
+
     // Auto-ocultar mensaje después de 10 segundos para errores
     setTimeout(() => {
       setMessage(null);
@@ -138,7 +138,7 @@ const Projects = () => {
         // Calcular tareas del proyecto
         const tareasDelProyecto = tareas.filter((tarea: any) => tarea.id_proyecto === proyecto.id);
         const totalTareas = tareasDelProyecto.length;
-        const tareasCompletadas = tareasDelProyecto.filter((tarea: any) => 
+        const tareasCompletadas = tareasDelProyecto.filter((tarea: any) =>
           tarea.estado === 'completada' || tarea.estado === 'completado'
         ).length;
 
@@ -210,7 +210,7 @@ const Projects = () => {
       // 🎯 CALCULAR PROYECTOS CONVERTIBLES A HITOS
       const convertibles = proyectosEnriquecidos.filter((proyecto: any) => {
         const puedeConvertir = puedeConvertirseAHito(proyecto);
-        
+
         // Debug para entender por qué algunos proyectos no son convertibles
         console.log(`Proyecto "${proyecto.nombre}":`, {
           estado: proyecto.estado,
@@ -219,16 +219,16 @@ const Projects = () => {
           progreso: proyecto.progreso,
           puede_convertir: puedeConvertir
         });
-        
+
         return puedeConvertir;
       }).length;
       setProyectosConvertibles(convertibles);
 
     } catch (error) {
       console.error('Error cargando datos del proyecto:', error);
-      setMessage({ 
-        type: 'danger', 
-        text: 'Error al cargar los datos del proyecto' 
+      setMessage({
+        type: 'danger',
+        text: 'Error al cargar los datos del proyecto'
       });
     }
   };
@@ -288,25 +288,25 @@ const Projects = () => {
       const response = await axios.post('http://localhost:5000/api/projects', newProject, config);
 
       if (response.data.success) {
-        setMessage({ 
-          type: 'success', 
-          text: '✅ Proyecto creado con éxito' 
+        setMessage({
+          type: 'success',
+          text: '✅ Proyecto creado con éxito'
         });
         setShowOffcanvas(false);
         setProjectData({ name: '', description: '', startDate: '', endDate: '' });
         await fetchData(); // Recargar datos en lugar de window.location.reload()
       } else {
-        setMessage({ 
-          type: 'danger', 
-          text: '❌ Error al crear el proyecto' 
+        setMessage({
+          type: 'danger',
+          text: '❌ Error al crear el proyecto'
         });
         console.log(response.data);
       }
     } catch (error: any) {
       console.error('❌ Error al crear proyecto:', error.response?.data || error.message);
-      setMessage({ 
-        type: 'danger', 
-        text: 'Error al crear el proyecto. Inténtalo de nuevo.' 
+      setMessage({
+        type: 'danger',
+        text: 'Error al crear el proyecto. Inténtalo de nuevo.'
       });
     }
   };
@@ -340,9 +340,9 @@ const Projects = () => {
     // Aquí puedes implementar la navegación a la vista detallada del proyecto
     console.log('Ver detalles del proyecto:', proyecto);
     // Ejemplo: navigate(`/proyecto/${proyecto.id}`);
-    setMessage({ 
-      type: 'info', 
-      text: `Ver detalles del proyecto: ${proyecto.nombre}` 
+    setMessage({
+      type: 'info',
+      text: `Ver detalles del proyecto: ${proyecto.nombre}`
     });
   };
 
@@ -350,9 +350,9 @@ const Projects = () => {
     // Aquí puedes implementar la navegación al formulario de edición
     console.log('Editar proyecto:', proyecto);
     // Ejemplo: navigate(`/proyecto/${proyecto.id}/editar`);
-    setMessage({ 
-      type: 'info', 
-      text: `Editar proyecto: ${proyecto.nombre}` 
+    setMessage({
+      type: 'info',
+      text: `Editar proyecto: ${proyecto.nombre}`
     });
   };
 
@@ -367,24 +367,24 @@ const Projects = () => {
         };
 
         const response = await axios.delete(`http://localhost:5000/api/projects/${proyecto.id}`, config);
-        
+
         if (response.data.success) {
-          setMessage({ 
-            type: 'success', 
-            text: `Proyecto "${proyecto.nombre}" eliminado correctamente` 
+          setMessage({
+            type: 'success',
+            text: `Proyecto "${proyecto.nombre}" eliminado correctamente`
           });
           await fetchData(); // Recargar datos
         } else {
-          setMessage({ 
-            type: 'danger', 
-            text: 'Error al eliminar el proyecto' 
+          setMessage({
+            type: 'danger',
+            text: 'Error al eliminar el proyecto'
           });
         }
       } catch (error: any) {
         console.error('Error al eliminar proyecto:', error);
-        setMessage({ 
-          type: 'danger', 
-          text: `Error al eliminar el proyecto: ${error.response?.data?.message || error.message}` 
+        setMessage({
+          type: 'danger',
+          text: `Error al eliminar el proyecto: ${error.response?.data?.message || error.message}`
         });
       }
     }
@@ -423,9 +423,9 @@ const Projects = () => {
 
           {/* 🎯 MENSAJES DE ESTADO */}
           {message && (
-            <Alert 
-              variant={message.type} 
-              dismissible 
+            <Alert
+              variant={message.type}
+              dismissible
               onClose={() => setMessage(null)}
               className="mb-3"
             >
@@ -558,16 +558,16 @@ const Projects = () => {
                         <div>
                           <ButtonGroup>
                             <Button
-                              variant={activeView === 'gantt' ? 'primary' : 'outline-primary'}
-                              onClick={() => setActiveView('gantt')}
-                            >
-                              <i className="bi bi-bar-chart-line me-1"></i> Gantt
-                            </Button>
-                            <Button
                               variant={activeView === 'kanban' ? 'primary' : 'outline-primary'}
                               onClick={() => setActiveView('kanban')}
                             >
                               <i className="bi bi-kanban me-1"></i> Kanban
+                            </Button>
+                            <Button
+                              variant={activeView === 'gantt' ? 'primary' : 'outline-primary'}
+                              onClick={() => setActiveView('gantt')}
+                            >
+                              <i className="bi bi-bar-chart-line me-1"></i> Gantt
                             </Button>
                             <Button
                               variant={activeView === 'lista' ? 'primary' : 'outline-primary'}
@@ -581,7 +581,7 @@ const Projects = () => {
 
                       {activeView === 'gantt' && <AdvancedGanttChart />}
                       {activeView === 'kanban' && <KanbanBoard />}
-                      
+
                       {/* 🎯 NUEVA VISTA: LISTA DE PROYECTOS CON FUNCIONALIDAD DE CONVERSIÓN */}
                       {activeView === 'lista' && (
                         <div>
@@ -589,12 +589,12 @@ const Projects = () => {
                             <h6 className="mb-0">Lista de Proyectos</h6>
                             {proyectosConvertibles > 0 && (
                               <Badge bg="warning" className="fs-6">
-                                {proyectosConvertibles} proyecto{proyectosConvertibles !== 1 ? 's' : ''} 
+                                {proyectosConvertibles} proyecto{proyectosConvertibles !== 1 ? 's' : ''}
                                 {proyectosConvertibles !== 1 ? ' listos' : ' listo'} para conversión
                               </Badge>
                             )}
                           </div>
-                          
+
                           <Table responsive hover>
                             <thead className="table-dark">
                               <tr>
@@ -635,12 +635,11 @@ const Projects = () => {
                                     <td>
                                       <div className="d-flex align-items-center">
                                         <div className="progress me-2" style={{ width: '60px', height: '8px' }}>
-                                          <div 
-                                            className={`progress-bar ${
-                                              (proyecto.progreso || 0) === 100 ? 'bg-success' :
-                                              (proyecto.progreso || 0) >= 50 ? 'bg-primary' :
-                                              (proyecto.progreso || 0) >= 25 ? 'bg-warning' : 'bg-secondary'
-                                            }`}
+                                          <div
+                                            className={`progress-bar ${(proyecto.progreso || 0) === 100 ? 'bg-success' :
+                                                (proyecto.progreso || 0) >= 50 ? 'bg-primary' :
+                                                  (proyecto.progreso || 0) >= 25 ? 'bg-warning' : 'bg-secondary'
+                                              }`}
                                             style={{ width: `${proyecto.progreso || 0}%` }}
                                           ></div>
                                         </div>
@@ -671,21 +670,21 @@ const Projects = () => {
                                           placement="top"
                                           overlay={<Tooltip>Ver detalles del proyecto</Tooltip>}
                                         >
-                                          <Button 
-                                            variant="outline-primary" 
+                                          <Button
+                                            variant="outline-primary"
                                             size="sm"
                                             onClick={() => handleViewProject(proyecto)}
                                           >
                                             <i className="bi bi-eye"></i>
                                           </Button>
                                         </OverlayTrigger>
-                                        
+
                                         <OverlayTrigger
                                           placement="top"
                                           overlay={<Tooltip>Editar proyecto</Tooltip>}
                                         >
-                                          <Button 
-                                            variant="outline-warning" 
+                                          <Button
+                                            variant="outline-warning"
                                             size="sm"
                                             onClick={() => handleEditProject(proyecto)}
                                           >
@@ -697,15 +696,15 @@ const Projects = () => {
                                           placement="top"
                                           overlay={<Tooltip>Eliminar proyecto</Tooltip>}
                                         >
-                                          <Button 
-                                            variant="outline-danger" 
+                                          <Button
+                                            variant="outline-danger"
                                             size="sm"
                                             onClick={() => handleDeleteProject(proyecto)}
                                           >
                                             <i className="bi bi-trash"></i>
                                           </Button>
                                         </OverlayTrigger>
-                                        
+
                                         {/* 🎯 BOTÓN DE CONVERSIÓN A HITO */}
                                         {puedeConvertirseAHito(proyecto) ? (
                                           <ConvertToHito
@@ -714,31 +713,31 @@ const Projects = () => {
                                             onConversionComplete={handleConversionComplete}
                                           />
                                         ) : (
-                                            <OverlayTrigger
-                                              placement="top"
-                                              overlay={
-                                                <Tooltip>
-                                                  {proyecto.estado !== 'completado' && proyecto.estado !== 'finalizado'
-                                                    ? 'El proyecto debe estar completado para convertir a hito'
-                                                    : proyecto.total_tareas && proyecto.total_tareas > 0 && 
-                                                      proyecto.tareas_completadas !== proyecto.total_tareas
-                                                      ? 'Todas las tareas deben estar completadas'
-                                                      : 'Este proyecto no es elegible para conversión'
-                                                  }
-                                                </Tooltip>
-                                              }
-                                            >
-                                              <span className="d-inline-block">
-                                                <Button 
-                                                  variant="outline-secondary" 
-                                                  size="sm" 
-                                                  disabled
-                                                  style={{ pointerEvents: 'none' }}
-                                                >
-                                                  <i className="bi bi-star"></i>
-                                                </Button>
-                                              </span>
-                                            </OverlayTrigger>
+                                          <OverlayTrigger
+                                            placement="top"
+                                            overlay={
+                                              <Tooltip>
+                                                {proyecto.estado !== 'completado' && proyecto.estado !== 'finalizado'
+                                                  ? 'El proyecto debe estar completado para convertir a hito'
+                                                  : proyecto.total_tareas && proyecto.total_tareas > 0 &&
+                                                    proyecto.tareas_completadas !== proyecto.total_tareas
+                                                    ? 'Todas las tareas deben estar completadas'
+                                                    : 'Este proyecto no es elegible para conversión'
+                                                }
+                                              </Tooltip>
+                                            }
+                                          >
+                                            <span className="d-inline-block">
+                                              <Button
+                                                variant="outline-secondary"
+                                                size="sm"
+                                                disabled
+                                                style={{ pointerEvents: 'none' }}
+                                              >
+                                                <i className="bi bi-star"></i>
+                                              </Button>
+                                            </span>
+                                          </OverlayTrigger>
                                         )}
                                       </div>
                                     </td>

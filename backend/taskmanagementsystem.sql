@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 09-05-2025 a las 22:32:57
+-- Tiempo de generación: 05-06-2025 a las 21:02:19
 -- Versión del servidor: 10.4.25-MariaDB
 -- Versión de PHP: 8.2.0
 
@@ -2313,7 +2313,80 @@ INSERT INTO `bitacora` (`id`, `tipo_evento`, `descripcion`, `id_usuario`, `nombr
 (67, 'ACTUALIZACIÓN', 'Proyecto actualizado: POC Huawei (pendiente)', 3, 'SuperAdmin', 11, 'POC Huawei', NULL, NULL, NULL, NULL, '2025-05-05 16:02:46'),
 (68, 'ACTUALIZACIÓN', 'Proyecto actualizado: POC Huawei (en progreso)', 3, 'SuperAdmin', 11, 'POC Huawei', NULL, NULL, NULL, NULL, '2025-05-05 16:02:53'),
 (69, 'ACTUALIZACIÓN', 'Proyecto actualizado: POC Huawei (pendiente)', 3, 'SuperAdmin', 11, 'POC Huawei', NULL, NULL, NULL, NULL, '2025-05-07 18:38:53'),
-(70, 'ACTUALIZACIÓN', 'Proyecto actualizado: POC Huawei (en progreso)', 3, 'SuperAdmin', 11, 'POC Huawei', NULL, NULL, NULL, NULL, '2025-05-07 18:39:02');
+(70, 'ACTUALIZACIÓN', 'Proyecto actualizado: POC Huawei (en progreso)', 3, 'SuperAdmin', 11, 'POC Huawei', NULL, NULL, NULL, NULL, '2025-05-07 18:39:02'),
+(71, 'CREACIÓN', 'Proyecto creado: Ticky - Nuevo flujo cambio de plan', 3, 'SuperAdmin', 16, 'Ticky - Nuevo flujo cambio de plan', NULL, NULL, NULL, NULL, '2025-05-16 14:09:37'),
+(72, 'ACTUALIZACIÓN', 'Proyecto actualizado: Ticky - Nuevo flujo cambio de plan (en progreso)', 3, 'SuperAdmin', 16, 'Ticky - Nuevo flujo cambio de plan', NULL, NULL, NULL, NULL, '2025-05-16 14:11:08'),
+(73, 'ACTUALIZACIÓN', 'Proyecto actualizado: Ticky - Nuevo flujo cambio de plan (completado)', 3, 'SuperAdmin', 16, 'Ticky - Nuevo flujo cambio de plan', NULL, NULL, NULL, NULL, '2025-05-16 14:11:16'),
+(74, 'ACTUALIZACIÓN', 'Proyecto actualizado: Antiguo (en progreso)', 3, 'SuperAdmin', 13, 'Antiguo', NULL, NULL, NULL, NULL, '2025-06-03 00:12:01'),
+(75, 'ACTUALIZACIÓN', 'Proyecto actualizado: POC GENESYS (en progreso)', 3, 'SuperAdmin', 12, 'POC GENESYS', NULL, NULL, NULL, NULL, '2025-06-03 00:12:06'),
+(76, 'ACTUALIZACIÓN', 'Proyecto actualizado: Ticky - Nuevo flujo cambio de plan (en progreso)', 3, 'SuperAdmin', 16, 'Ticky - Nuevo flujo cambio de plan', NULL, NULL, NULL, NULL, '2025-06-03 00:12:10'),
+(77, 'ACTUALIZACIÓN', 'Proyecto actualizado: Ticky - Nuevo flujo cambio de plan (completado)', 3, 'SuperAdmin', 16, 'Ticky - Nuevo flujo cambio de plan', NULL, NULL, NULL, NULL, '2025-06-03 00:12:24'),
+(78, 'CREACIÓN', 'Hito creado: HITO de prueba', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-06-03 00:14:32'),
+(79, 'ACTUALIZACIÓN', 'Hito actualizado: HITO2 de prueba', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-06-03 00:14:54'),
+(80, 'CREACIÓN', 'Tarea creada: Nuevo flujo cambio de plan', 3, 'SuperAdmin', 16, 'Ticky - Nuevo flujo cambio de plan', 27, 'Nuevo flujo cambio de plan', NULL, NULL, '2025-06-03 14:36:10'),
+(81, 'CREACIÓN', 'Hito creado: hito manual', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-06-03 15:10:41'),
+(82, 'ACTUALIZACIÓN', 'Proyecto actualizado: a Ver! (completado)', 3, 'SuperAdmin', 14, 'a Ver!', NULL, NULL, NULL, NULL, '2025-06-03 15:56:21'),
+(83, 'ACTUALIZACIÓN', 'Proyecto actualizado: a Ver! (pendiente)', 3, 'SuperAdmin', 14, 'a Ver!', NULL, NULL, NULL, NULL, '2025-06-03 15:56:46'),
+(84, 'ACTUALIZACIÓN', 'Proyecto actualizado: POC Huawei (completado)', 3, 'SuperAdmin', 11, 'POC Huawei', NULL, NULL, NULL, NULL, '2025-06-03 15:56:51'),
+(85, 'ACTUALIZACIÓN', 'Proyecto actualizado: a Ver! (completado)', 3, 'SuperAdmin', 14, 'a Ver!', NULL, NULL, NULL, NULL, '2025-06-03 16:29:01'),
+(86, 'CONVERSIÓN', 'Proyecto convertido a hito: Ticky - Nuevo flujo cambio de plan', 3, NULL, 16, NULL, NULL, NULL, NULL, NULL, '2025-06-03 16:35:54'),
+(87, 'ACTUALIZACIÓN', 'Hito actualizado: HITO3 de prueba', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-06-03 16:37:59'),
+(88, 'ELIMINACIÓN', 'Hito eliminado: hito manual', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-06-03 16:38:23'),
+(89, 'ACTUALIZACIÓN', 'Hito actualizado: Ticky - Nuevo flujo cambio de plan', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-06-04 18:27:46'),
+(90, 'CREACIÓN', 'Hito creado: hito24', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-06-04 18:30:43'),
+(91, 'ACTUALIZACIÓN', 'Hito actualizado: hito24', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-06-04 22:16:54'),
+(92, 'ACTUALIZACIÓN', 'Hito actualizado: hito24', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-06-04 22:17:53'),
+(93, 'ACTUALIZACIÓN', 'Hito actualizado: hito24', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-06-04 22:18:42'),
+(94, 'ACTUALIZACIÓN', 'Hito actualizado: hito24', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-06-04 22:20:07'),
+(95, 'ACTUALIZACIÓN', 'Hito actualizado: hito24', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-06-04 22:21:05'),
+(96, 'ELIMINACIÓN', 'Hito eliminado: hito24', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-06-05 02:39:46'),
+(97, 'CREACIÓN', 'Hito creado: 2024', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-06-05 02:40:38');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `codigos_facturacion`
+--
+
+CREATE TABLE `codigos_facturacion` (
+  `id` int(11) NOT NULL,
+  `codigo` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Código para sistema administrativo',
+  `descripcion` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Descripción del código',
+  `notas` text COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Notas informativas sobre la aplicación del código',
+  `tipo` enum('guardia_pasiva','guardia_activa','hora_nocturna','feriado','fin_semana','adicional') COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Tipo de código',
+  `dias_aplicables` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'L,M,X,J,V,S,D' COMMENT 'Días a los que aplica (L,M,X,J,V,S,D,F)',
+  `hora_inicio` time DEFAULT NULL COMMENT 'Hora de inicio para aplicación',
+  `hora_fin` time DEFAULT NULL COMMENT 'Hora de fin para aplicación',
+  `factor_multiplicador` decimal(4,2) DEFAULT 1.00 COMMENT 'Factor para cálculos',
+  `fecha_vigencia_desde` date NOT NULL COMMENT 'Fecha desde la que aplica',
+  `fecha_vigencia_hasta` date DEFAULT NULL COMMENT 'Fecha hasta la que aplica (NULL = sin fin)',
+  `estado` enum('activo','inactivo') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'activo',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `tipo_calculo` enum('guardia_pasiva','hora_activa','adicional_nocturno') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'hora_activa' COMMENT 'Tipo de cálculo que aplica este código',
+  `factor_adicional` decimal(4,2) DEFAULT NULL COMMENT 'Factor adicional específico del código (ej: nocturno)',
+  `unidad_facturacion` enum('por_periodo','por_hora','por_minuto') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'por_hora' COMMENT 'Unidad de facturación del código',
+  `modalidad_convenio` enum('FC','DC') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'FC' COMMENT 'FC = Fuera de Convenio, DC = Dentro de Convenio'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Códigos para facturación de guardias';
+
+--
+-- Volcado de datos para la tabla `codigos_facturacion`
+--
+
+INSERT INTO `codigos_facturacion` (`id`, `codigo`, `descripcion`, `notas`, `tipo`, `dias_aplicables`, `hora_inicio`, `hora_fin`, `factor_multiplicador`, `fecha_vigencia_desde`, `fecha_vigencia_hasta`, `estado`, `created_at`, `updated_at`, `tipo_calculo`, `factor_adicional`, `unidad_facturacion`, `modalidad_convenio`) VALUES
+(4, 'AR0058', 'Adicional Nocturno 100%', 'Sábado, Domingo, Feriado o Franco, de 21 a 6 am', 'hora_nocturna', 'S,D,F', '21:00:00', '06:00:00', '1.00', '2025-05-20', NULL, 'activo', '2025-05-20 03:04:15', '2025-05-23 19:17:56', 'adicional_nocturno', '1.00', 'por_hora', 'FC'),
+(5, 'AR0059', 'Adicional Noctura Hábil', 'Adicional por trabajar en horario nocturno, comprendido entre las 21:00 y las 06:00 Hs. en día hábil', 'hora_nocturna', 'L,M,X,J,V', '21:00:00', '06:00:00', '0.50', '2025-05-20', NULL, 'activo', '2025-05-20 03:07:04', '2025-05-23 19:17:56', 'adicional_nocturno', '0.50', 'por_hora', 'FC'),
+(6, 'AR0143', 'Guardia Pasiva no laboral\n', 'Sábado desde las 13hs, Domingo o Feriado', 'fin_semana', 'S,D,F', NULL, NULL, '1.00', '2025-05-20', NULL, 'activo', '2025-05-20 03:09:43', '2025-05-23 19:17:56', 'guardia_pasiva', NULL, 'por_periodo', 'FC'),
+(7, 'AR0474', 'Guardia Activa', 'Se cargan cuando se interviene en un día hábil fuera de su jornada habitual o un día sábado hasta las 13hs.', 'guardia_activa', 'L,M,X,J,V,S,D', NULL, NULL, '1.00', '2025-05-20', NULL, 'activo', '2025-05-20 03:10:57', '2025-05-20 14:50:24', 'hora_activa', NULL, 'por_hora', 'FC'),
+(8, 'AR0475', 'Guardia Activa no Laboral', 'Sábados después de las 13 hs,  Domingos y  feriados. ', 'guardia_activa', 'S,D,F', NULL, NULL, '1.00', '2025-05-20', NULL, 'activo', '2025-05-20 03:12:54', '2025-05-20 16:21:15', 'hora_activa', NULL, 'por_hora', 'FC'),
+(9, 'AR0686', 'Guardia Pasiva en dia laboral', 'Se aplica a dias laborales', 'guardia_pasiva', 'L,M,X,J,V', NULL, NULL, '1.00', '2025-05-20', NULL, 'activo', '2025-05-20 03:14:26', '2025-05-29 02:08:36', 'guardia_pasiva', NULL, 'por_periodo', 'FC'),
+(24, 'AR0510', 'Guardia pasiva 16hs - Hábil', 'Dentro de convenio -Guardia pasiva -  Código aplicable a empleados dentro del convenio', 'guardia_pasiva', 'L,M,X,J,V', NULL, NULL, '1.00', '2025-05-28', NULL, 'activo', '2025-05-28 22:33:11', '2025-05-29 02:07:59', 'hora_activa', NULL, 'por_hora', 'DC'),
+(25, 'AR0525', 'Hora extra Hábil Nocturna', 'Dentro de convenio', 'hora_nocturna', 'L,M,X,J,V', NULL, NULL, '1.00', '2025-05-28', NULL, 'activo', '2025-05-28 22:36:50', '2025-05-28 22:36:50', 'hora_activa', NULL, 'por_hora', 'DC'),
+(26, 'AR0512', 'Guardia Pasiva 24hs - S, D y F', 'Dentro de convenio- pasiva fines de semana', 'guardia_pasiva', 'S,D,F', NULL, NULL, '1.00', '2025-05-28', NULL, 'activo', '2025-05-28 22:38:42', '2025-05-28 22:38:42', 'hora_activa', NULL, 'por_hora', 'DC'),
+(27, 'AR0524', 'Hora extra hábil diurna', 'Dentro de convenio', 'guardia_activa', 'L,M,X,J,V', NULL, NULL, '1.00', '2025-05-28', NULL, 'activo', '2025-05-28 22:39:48', '2025-05-29 02:07:27', 'hora_activa', NULL, 'por_hora', 'DC'),
+(28, 'AR0527', 'Hora extra Sabado diurna', 'Dentro de convenio', 'guardia_activa', 'S,D,F', NULL, NULL, '1.00', '2025-05-28', NULL, 'activo', '2025-05-28 22:41:18', '2025-05-29 02:07:14', 'hora_activa', NULL, 'por_hora', 'DC'),
+(29, 'AR0523', 'Hora extra feriado diurna', 'Dentro de convenio', 'guardia_activa', 'D,F', NULL, NULL, '1.00', '2025-05-28', NULL, 'activo', '2025-05-28 22:42:12', '2025-06-05 17:36:29', 'hora_activa', NULL, 'por_hora', 'DC'),
+(30, 'AR0526', 'Hora extra feriado noctura', 'Dentro de convenio', 'guardia_activa', 'D,F', NULL, NULL, '1.00', '2025-05-28', NULL, 'activo', '2025-05-28 22:43:56', '2025-05-29 02:07:00', 'hora_activa', NULL, 'por_hora', 'DC');
 
 -- --------------------------------------------------------
 
@@ -2332,6 +2405,239 @@ CREATE TABLE `comentarios` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `enlaces`
+--
+
+CREATE TABLE `enlaces` (
+  `id` int(11) NOT NULL,
+  `titulo` varchar(255) NOT NULL,
+  `url` varchar(512) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `creado_por` varchar(100) DEFAULT NULL,
+  `categoria_id` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Volcado de datos para la tabla `enlaces`
+--
+
+INSERT INTO `enlaces` (`id`, `titulo`, `url`, `descripcion`, `fecha_creacion`, `creado_por`, `categoria_id`) VALUES
+(3, 'Itracker', 'https://itracker.telecom.com.ar/', 'Ticketera itracker', '2025-05-16 21:51:17', 'Usuario', 6),
+(5, 'Genesys Administrator', 'https://pacga/wcm/LoginEJS.aspx', 'Aplicación: default\nhost: plpicpacapp66\nPuerto: 2025', '2025-05-16 22:06:51', 'Usuario', 1),
+(6, 'Pulse', 'https://pacpulse:8443/pulse/plugins/pulse/#/', 'Reporteria en tiempo real', '2025-05-16 22:08:55', 'Usuario', 3),
+(7, 'GI2', 'https://plpicpacapp70.telecom.com.ar:8443/BOE/BI', 'Genesys Interactive Insights (GI2) es una herramienta de análisis basada en SAP BusinessObjects que permite visualizar y generar reportes detallados sobre el rendimiento de agentes, colas y campañas en centros de contacto, utilizando datos históricos\n_________________________________\nGI2 Administrador\nuser:\nPass: \nAnte errores de acceso en chrome usar firefox o acceder por medio de un escritorio virtual', '2025-05-16 22:11:16', 'Usuario', 3),
+(8, 'GIR-Speechminer', 'https://grabadorgir.telecom.arg.telecom.com.ar/speechminer/pages/login/Login.aspx', 'En el momento del logueo, se debe seleccionar la opcion que dice Genesys para poder iniciar sesión correctamente', '2025-05-16 22:12:43', 'Usuario', 1),
+(9, 'PRM', 'https://prm/apsApp/rm/', 'Consulta de perfil y permisos de usuario', '2025-05-16 22:14:15', 'Usuario', 7),
+(10, 'TuID', 'https://tuid.telecom.com.ar/IDMProv/portal', '', '2025-05-16 22:18:07', 'Usuario', 7),
+(11, 'Director', 'https://apac-xapp-rep1/Director/LogOn.aspx?ReturnUrl=%2fDirector%2f&cc=true', '', '2025-05-16 22:20:06', 'Usuario', 3),
+(12, 'Aternity', 'https://telecomargentina.us3.aternity.com', 'Herramienta que permite monitorear dispositivos físicos, VDI y entornos Citrix o VMware. Permite detectar lentitud, errores o interrupciones en apps, escritorios virtuales, red, etc', '2025-05-16 22:20:56', 'Usuario', 9),
+(13, 'MyIdaptive', 'https://apac-xapp-rep1/Director/LogOn.aspx?ReturnUrl=%2fDirector%2f&cc=true', '', '2025-05-16 22:21:55', 'Usuario', 7),
+(14, 'Itickets', 'https://itickets.telecom.com.ar/', 'Se gestionan tickets para liberar sesiones de citrix, solicitar tickets internos a micro, cambio de equipos / celular, etc', '2025-05-16 22:22:31', 'Usuario', 6),
+(15, 'GAX', 'https://pacgax:8443/gax/?login', 'Es la interfaz web centralizada para administrar, configurar y monitorear todos los componentes del ecosistema Genesys.', '2025-05-16 22:22:54', 'Usuario', 1),
+(16, 'Rules', 'http://plpicpacapp68:8080/genesys-rules-authoring/index.jsp', 'Se accede desde el mediador, desde esta web se administran y gestionan, entre otras cosas,  los arboles de tabulacion, ', '2025-05-16 22:24:11', 'Usuario', 1),
+(17, 'Eflow', 'https://eflow/DTE/ExplicitDTESelection.aspx?', 'Turnero de sucursales', '2025-05-16 22:25:50', 'Usuario', 7),
+(18, 'EQA', 'https://plataformaeqa.solucionesdigitalesteco.com.ar/', '', '2025-05-16 22:27:03', 'Usuario', 9),
+(19, 'Citrix - Virtual Access', 'https://virtualaccess.telecom.com.ar/Citrix/StoreWeb/', 'Virtual Access WEB\nEs una herramienta que permite a los usuarios acceder a escritorios virtuales y aplicaciones corporativas alojadas en el centro de datos o en la nube, desde cualquier lugar y dispositivo, de forma segura y centralizada.', '2025-05-16 22:28:07', 'Usuario', 4),
+(20, 'Base de Conocimiento', 'https://basedeconocimientos.custhelp.com/app/home', 'La base de conocimiento es una web en donde se  busca toda la información necesaria y relevante  para gestionar. ', '2025-05-16 22:28:43', 'Usuario', 7),
+(21, 'Ysocial', 'https://human-agent-tecob2c.ysocial.net/Login.aspx?Redirect=~/Default.asp', 'B2C', '2025-05-16 22:31:41', 'Usuario', 8),
+(22, 'Ysocial SMB', 'https://tecob2b.ysocial.net/Login.aspx', 'SMB - B2B', '2025-05-16 22:35:37', 'Usuario', 8),
+(23, 'Yoizen ticketera', 'https://tecob2b.ysocial.net/agent/#/login', 'Ticketera Social+', '2025-05-16 22:36:29', 'Usuario', 8),
+(24, 'Conf Telefono Guardia', 'https://mitelefonoip/ucmuser', 'Usuario: SoporteTecnicoPlataformas\nPass: teco2020', '2025-05-16 22:46:39', 'Usuario', 4),
+(25, 'Downdetector', 'https://downdetector.com.ar/', 'Downdetector es una plataforma en línea que proporciona información en tiempo real sobre el estado de diversos servicios digitales, como redes sociales, plataformas de streaming, servicios bancarios, videojuegos y proveedores de internet', '2025-05-16 22:48:02', 'Usuario', 7),
+(26, 'Trainer', 'https://trainer.telecom.com.ar/login/index.php', 'Entrenamiento y capacitaciones', '2025-05-16 22:49:48', 'Usuario', 7),
+(27, 'CloudValley', 'https://cloudvalley.telecom.com.ar/', 'Para gestionar  habilitacion segmentos ip para Virtual access', '2025-05-16 22:52:41', 'Usuario', 4),
+(28, 'Meta Status', 'https://metastatus.com/', 'Verificar el estado de los servicios de Meta', '2025-05-16 22:53:14', 'Usuario', 7),
+(29, 'JIRA', 'https://tecocloud.atlassian.net/jira', 'Jira es una herramienta de software desarrollada por Atlassian utilizada principalmente para la gestión de proyectos, seguimiento de tareas y control de incidencias', '2025-05-16 23:08:44', 'Usuario', 5),
+(30, 'WebMail', 'https://outlook.office365.com/mail/', 'Outlook version web', '2025-05-16 23:15:01', 'Usuario', 5),
+(31, 'Genesys Pic WDE', 'https://pacwde/InteractionWorkspace/publish.htm', 'Instalador Genesys Pic WDE', '2025-05-20 23:04:00', 'Usuario', 1),
+(32, 'Dynatrace', 'https://sso.dynatrace.com/action/signin?goto=https%3A%2F%2Fsso.dynatrace.com%3A443%2Foauth2%2Fauthorize%2Fredirect%3FoAuth2CtxUuid%3Dc45bc51d-9574-497f-9465-9e1dfc0f4148&oAuth2RedirectUri=https%3A%2F%2Fexg91020.live.dynatrace.com', 'Plataforma de observabilidad y monitoreo automático que permite supervisar el rendimiento de aplicaciones, infraestructura, servicios y experiencia de usuario. Utiliza inteligencia artificial para detectar problemas proactivamente. Integra con sistemas en la nube, servidores on-premise, contenedores, bases de datos, entre otros.', '2025-05-21 13:55:00', 'Usuario', 9),
+(33, 'Qualtrics', 'https://telecom.yul1.qualtrics.com/', '', '2025-05-27 12:51:31', 'Usuario', 9);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `enlaces_categorias`
+--
+
+CREATE TABLE `enlaces_categorias` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `color` varchar(50) DEFAULT '#0d6efd'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Volcado de datos para la tabla `enlaces_categorias`
+--
+
+INSERT INTO `enlaces_categorias` (`id`, `nombre`, `color`) VALUES
+(1, 'Genesys', '#dc3545'),
+(3, 'Reporteria', '#0d6efd'),
+(4, 'Herramientas', '#6f42c1'),
+(5, 'Desarrollo', '#fd7e14'),
+(6, 'Ticketeras', '#20c997'),
+(7, 'Otros', '#0dcaf0'),
+(8, 'Yoizen', '#FFFF00'),
+(9, 'Monitoreo', '#f8c471');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `enlaces_urls`
+--
+
+CREATE TABLE `enlaces_urls` (
+  `id` int(11) NOT NULL,
+  `enlace_id` int(11) NOT NULL,
+  `url` varchar(512) NOT NULL,
+  `titulo` varchar(255) DEFAULT NULL,
+  `orden` int(11) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Volcado de datos para la tabla `enlaces_urls`
+--
+
+INSERT INTO `enlaces_urls` (`id`, `enlace_id`, `url`, `titulo`, `orden`) VALUES
+(6, 6, 'https://estpulse:8443/pulse/plugins/pulse/#/', 'Estomba', 1),
+(7, 10, 'https://tuidcloud.telecom.com.ar/sspr/public/', 'TuID Cloud', 1),
+(8, 10, 'https://tuid-balancer.telecom.com.ar', 'TuID Balancer', 2),
+(15, 3, 'https://itracker.personal.com.ar/', 'Itracker web', 1),
+(16, 3, 'https://consultaitracker/?L=index&m=redirected', 'Consulta itracker', 2),
+(17, 21, 'https://human-agent-tecob2c.ysocial.net/Agent/#/login/ ', 'Web Agente', 1),
+(18, 22, 'https://tecob2b.ysocial.net/agent/#/login', 'Web Agente SMB', 1),
+(25, 7, 'https://plpicpacapp70.telecom.com.ar:8443/BOE/CMC', 'GI2 Administrador', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `equipos_integrantes`
+--
+
+CREATE TABLE `equipos_integrantes` (
+  `id` int(11) NOT NULL,
+  `equipo_id` int(11) NOT NULL,
+  `integrante_id` int(11) NOT NULL,
+  `fecha_asignacion` datetime DEFAULT current_timestamp(),
+  `es_responsable_principal` tinyint(1) DEFAULT 0 COMMENT 'Indica si es el responsable principal del equipo',
+  `notas_asignacion` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Relación entre equipos e integrantes';
+
+--
+-- Volcado de datos para la tabla `equipos_integrantes`
+--
+
+INSERT INTO `equipos_integrantes` (`id`, `equipo_id`, `integrante_id`, `fecha_asignacion`, `es_responsable_principal`, `notas_asignacion`) VALUES
+(37, 4, 11, '2025-05-29 22:22:06', 0, NULL),
+(38, 4, 10, '2025-05-29 22:22:06', 0, NULL),
+(39, 4, 13, '2025-05-29 22:22:06', 0, NULL),
+(40, 4, 12, '2025-05-29 22:22:06', 0, NULL),
+(41, 4, 19, '2025-05-29 22:22:06', 0, NULL),
+(42, 4, 14, '2025-05-29 22:22:06', 0, NULL),
+(43, 4, 16, '2025-05-29 22:22:06', 0, NULL),
+(44, 4, 18, '2025-05-29 22:22:06', 0, NULL),
+(45, 4, 17, '2025-05-29 22:22:06', 0, NULL),
+(46, 4, 20, '2025-05-29 22:22:06', 0, NULL),
+(47, 4, 15, '2025-05-29 22:22:06', 0, NULL),
+(53, 3, 28, '2025-05-30 18:53:36', 0, NULL),
+(54, 3, 25, '2025-05-30 18:53:36', 0, NULL),
+(55, 1, 21, '2025-05-30 22:21:59', 0, NULL),
+(56, 1, 23, '2025-05-30 22:21:59', 0, NULL),
+(57, 1, 22, '2025-05-30 22:21:59', 0, NULL),
+(58, 1, 26, '2025-05-30 22:21:59', 0, NULL),
+(59, 1, 27, '2025-05-30 22:21:59', 0, NULL),
+(60, 1, 24, '2025-05-30 22:21:59', 0, NULL),
+(61, 2, 31, '2025-05-30 22:29:23', 0, NULL),
+(64, 7, 29, '2025-05-30 22:55:16', 0, NULL),
+(65, 7, 30, '2025-05-30 22:55:16', 0, NULL),
+(66, 7, 32, '2025-05-30 22:55:16', 0, NULL),
+(67, 10, 33, '2025-05-30 23:40:16', 0, NULL),
+(68, 10, 35, '2025-05-30 23:40:16', 0, NULL),
+(69, 10, 34, '2025-05-30 23:40:16', 0, NULL),
+(71, 11, 38, '2025-05-31 20:36:50', 0, NULL),
+(72, 11, 40, '2025-05-31 20:36:50', 0, NULL),
+(73, 11, 41, '2025-05-31 20:36:50', 0, NULL),
+(74, 11, 39, '2025-05-31 20:36:50', 0, NULL),
+(75, 11, 42, '2025-05-31 20:36:50', 0, NULL),
+(76, 12, 37, '2025-06-01 12:57:37', 0, NULL),
+(77, 12, 36, '2025-06-01 12:57:37', 0, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `equipos_sistemas`
+--
+
+CREATE TABLE `equipos_sistemas` (
+  `id` int(11) NOT NULL,
+  `equipo_id` int(11) NOT NULL,
+  `sistema_id` int(11) NOT NULL,
+  `es_responsable_principal` tinyint(1) DEFAULT 0 COMMENT 'Indica si es el equipo principal responsable',
+  `nivel_responsabilidad` enum('primario','secundario','soporte') DEFAULT 'primario',
+  `fecha_asignacion` datetime DEFAULT current_timestamp(),
+  `notas` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Relación entre equipos y sistemas que administran';
+
+--
+-- Volcado de datos para la tabla `equipos_sistemas`
+--
+
+INSERT INTO `equipos_sistemas` (`id`, `equipo_id`, `sistema_id`, `es_responsable_principal`, `nivel_responsabilidad`, `fecha_asignacion`, `notas`) VALUES
+(55, 1, 11, 0, 'primario', '2025-05-30 22:21:59', NULL),
+(56, 1, 8, 0, 'primario', '2025-05-30 22:21:59', NULL),
+(59, 1, 10, 0, 'primario', '2025-05-30 22:31:45', NULL),
+(60, 1, 9, 0, 'primario', '2025-05-30 22:34:14', NULL),
+(61, 2, 9, 0, 'primario', '2025-05-30 22:34:14', NULL),
+(62, 3, 9, 0, 'primario', '2025-05-30 22:34:14', NULL),
+(64, 7, 12, 0, 'primario', '2025-05-30 22:55:16', NULL),
+(66, 10, 7, 0, 'primario', '2025-05-30 23:40:16', NULL),
+(67, 8, 13, 0, 'primario', '2025-05-30 23:47:13', NULL),
+(68, 1, 14, 0, 'primario', '2025-05-31 00:30:05', NULL),
+(72, 1, 15, 0, 'primario', '2025-05-31 00:53:41', NULL),
+(74, 11, 15, 0, 'primario', '2025-05-31 20:36:50', NULL),
+(75, 1, 17, 0, 'primario', '2025-05-31 20:43:36', NULL),
+(77, 13, 18, 0, 'primario', '2025-06-02 13:06:56', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `equipos_tecnicos`
+--
+
+CREATE TABLE `equipos_tecnicos` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL COMMENT 'Nombre del equipo (ej: GDA, DBAdmin)',
+  `descripcion` text DEFAULT NULL COMMENT 'Descripción del equipo y responsabilidades',
+  `telefono_guardia` varchar(20) DEFAULT NULL COMMENT 'Teléfono principal de guardia',
+  `email_grupo` varchar(100) DEFAULT NULL COMMENT 'Email del grupo/equipo',
+  `color` varchar(7) DEFAULT '#007bff' COMMENT 'Color para identificación visual',
+  `estado` enum('activo','inactivo') DEFAULT 'activo',
+  `orden_visualizacion` int(11) DEFAULT 1 COMMENT 'Orden para mostrar en la interfaz',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Equipos técnicos de soporte';
+
+--
+-- Volcado de datos para la tabla `equipos_tecnicos`
+--
+
+INSERT INTO `equipos_tecnicos` (`id`, `nombre`, `descripcion`, `telefono_guardia`, `email_grupo`, `color`, `estado`, `orden_visualizacion`, `created_at`, `updated_at`) VALUES
+(1, 'GDA', 'ASEGURAMIENTO CONTACT CENTER - Gestión de Aplicaciones - Responsables de sistemas web y aplicaciones críticas', '+54 3434813911', 'gda-guardia@empresa.com', '#007bff', 'activo', 999, '2025-05-29 15:21:44', '2025-05-31 01:23:50'),
+(2, 'Yoizen', 'Ysocial - Yflow', '+54 1139882057', 'soporte@yoizen.com', '#ef9025', 'activo', 999, '2025-05-29 15:21:44', '2025-06-01 00:28:09'),
+(3, 'GDA Digital', 'Infraestructura Cloud - AWS, Azure, Kubernetes y servicios en la nube', '+54 381 777-8888', 'cloud@empresa.com', '#6f42c1', 'activo', 999, '2025-05-29 15:21:44', '2025-05-30 21:53:12'),
+(4, 'ATPC', 'Aseguramiento Técnico y de Plataformas de Contacto', '08004442228', 'AseguramientoTecnicoydePlataformasdeContacto@teco.com.ar', '#e5061c', 'activo', 999, '2025-05-29 15:21:44', '2025-05-31 01:50:15'),
+(5, 'Redes', 'Administración de Redes - Conectividad, switches, firewalls', '+54 381 555-1234', 'redes@empresa.com', '#dc3545', 'activo', 999, '2025-05-29 15:21:44', '2025-05-31 01:43:46'),
+(7, 'CItrix', 'Virtual access- escritorios virtuales- Vmware', 'S/tel. de guardia', NULL, '#3cba2c', 'activo', 999, '2025-05-31 01:39:11', '2025-05-31 01:39:59'),
+(8, 'Seguridad Informatica', 'Seguridad', NULL, NULL, '#5b19f5', 'activo', 999, '2025-05-31 01:43:25', '2025-05-31 01:43:25'),
+(9, 'Microinformatica', NULL, NULL, NULL, '#41a2d2', 'activo', 999, '2025-05-31 01:49:42', '2025-05-31 01:49:42'),
+(10, 'EFLOW', 'cambiar nombre equipo', 'sin tel', NULL, '#396d9d', 'activo', 999, '2025-05-31 02:03:47', '2025-05-31 16:47:11'),
+(11, 'Plataformas de Contacto', 'IVR - Ruteo - RO- NOREC', 'Sin tel. de guardia', 'PlataformaIntegraldeContactosPIC@teco.com.ar', '#6a5c84', 'activo', 999, '2025-05-31 03:52:51', '2025-06-02 13:37:14'),
+(12, 'Diseño y Metodologia QA', 'Calidad', 'Sin tel. guardia', NULL, '#757f8a', 'activo', 999, '2025-06-01 15:57:12', '2025-06-01 15:57:58'),
+(13, 'NOC', 'Monitoreo de redes', '+541148968467', 'operacionesnoc@teco.com.ar', '#383838', 'activo', 999, '2025-06-02 15:49:02', '2025-06-02 15:49:02');
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `eventos`
 --
 
@@ -2341,7 +2647,7 @@ CREATE TABLE `eventos` (
   `start` datetime NOT NULL COMMENT 'Fecha y hora de inicio',
   `end` datetime NOT NULL COMMENT 'Fecha y hora de fin',
   `allDay` tinyint(1) DEFAULT 0 COMMENT 'Indica si es un evento de todo el día',
-  `type` enum('task','event','holiday') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'event' COMMENT 'Tipo de evento: tarea, evento o feriado',
+  `type` enum('event','task','holiday','guardia','birthday','dayoff','gconect','vacation') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'event',
   `color` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Color personalizado del evento',
   `description` text COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Descripción detallada del evento',
   `location` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Ubicación del evento',
@@ -2356,11 +2662,64 @@ CREATE TABLE `eventos` (
 --
 
 INSERT INTO `eventos` (`id`, `title`, `start`, `end`, `allDay`, `type`, `color`, `description`, `location`, `completed`, `createdBy`, `createdAt`, `updatedAt`) VALUES
-(1, 'prueba eventos', '2025-05-06 03:07:23', '2025-05-06 03:07:23', 0, 'holiday', '#d0021b', 'nada', 'nada', 0, 1, '2025-05-05 22:08:35', '2025-05-05 22:10:09'),
 (2, 'otra prueba', '2025-05-07 21:00:00', '2025-05-07 21:00:00', 1, 'event', '#3174ad', 'nada', 'nada', 0, NULL, '2025-05-05 22:17:18', '2025-05-05 23:29:18'),
-(3, 'prueba', '2025-05-08 00:00:00', '2025-05-08 00:00:00', 1, 'task', '#7ed321', NULL, NULL, 1, NULL, '2025-05-06 18:11:14', '2025-05-07 19:14:03'),
 (4, 'Día de la Revolución de Mayo', '2025-05-25 21:00:00', '2025-05-25 22:00:00', 1, 'holiday', '#d0021b', 'Día de la Revolución de Mayo', 'nada', 0, NULL, '2025-05-06 20:38:28', '2025-05-06 20:40:02'),
-(5, 'Paso a la Inmortalidad del Gral. Don Martín Miguel de Güemes', '2025-06-16 00:00:00', '2025-06-16 00:00:00', 1, 'holiday', '#d0021b', 'Paso a la Inmortalidad del Gral. Don Martín Miguel de Güemes', NULL, 0, NULL, '2025-05-06 20:38:28', '2025-05-06 20:38:28');
+(5, 'Paso a la Inmortalidad del Gral. Don Martín Miguel de Güemes', '2025-06-16 00:00:00', '2025-06-16 00:00:00', 1, 'holiday', '#d0021b', 'Paso a la Inmortalidad del Gral. Don Martín Miguel de Güemes', NULL, 0, NULL, '2025-05-06 20:38:28', '2025-05-06 20:38:28'),
+(8, 'evento', '2025-05-09 00:00:00', '2025-05-11 00:00:00', 0, 'event', '#3174ad', 'probada', '', 0, NULL, '2025-05-10 20:28:03', '2025-05-10 20:30:10'),
+(11, 'TAREA', '2025-05-22 00:00:00', '2025-05-23 00:00:00', 0, 'task', '#3174ad', 'prueba tarea', NULL, 0, NULL, '2025-05-11 01:26:45', '2025-05-11 01:26:45'),
+(12, 'Paso a la Inmortalidad del Gral. Manuel Belgrano.', '2025-06-20 11:33:18', '2025-06-20 12:33:18', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:33:34', '2025-05-11 11:33:34'),
+(13, 'Día de la Independencia', '2025-07-09 11:33:58', '2025-07-09 12:33:58', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:34:27', '2025-05-11 11:34:27'),
+(14, 'Feriado turístico — Día no laborable con fines turísticos', '2025-08-15 11:35:01', '2025-08-15 12:35:01', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:35:17', '2025-05-11 11:35:17'),
+(15, 'Paso a la Inmortalidad del Gral. José de San Martín', '2025-08-17 11:35:40', '2025-08-17 12:35:40', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:35:52', '2025-05-11 11:35:52'),
+(16, 'Feriado trasladable — Día de la Raza', '2025-10-12 11:36:34', '2025-10-12 12:36:34', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:36:46', '2025-05-11 11:36:46'),
+(17, 'Día no laborable con fines turísticos', '2025-11-21 11:37:05', '2025-11-21 12:37:05', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:37:26', '2025-05-11 11:37:26'),
+(18, 'Feriado trasladable — Día de la Soberanía Nacional (20/11)', '2025-11-24 11:37:46', '2025-11-24 12:37:46', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:38:28', '2025-05-11 11:38:28'),
+(19, 'Feriado inamovible — Inmaculada Concepción de María', '2025-12-08 11:38:49', '2025-12-11 12:38:49', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:39:02', '2025-05-11 11:39:02'),
+(20, 'Navidad', '2025-12-25 11:39:05', '2025-12-25 12:39:05', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:39:26', '2025-05-11 11:39:26'),
+(21, 'Día del Trabajador-Feriado inamovible', '2025-05-01 11:40:50', '2025-05-01 11:40:50', 1, 'holiday', '#dc3545', '', '', 0, NULL, '2025-05-11 11:40:59', '2025-05-11 22:56:47'),
+(22, 'Día no laborable con fines turísticos', '2025-05-02 11:41:11', '2025-05-02 11:41:11', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:41:23', '2025-05-11 11:41:23'),
+(23, 'Jueves Santo Festividad Cristiana', '2025-04-17 11:41:54', '2025-04-17 11:41:54', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:42:13', '2025-05-11 11:42:13'),
+(24, 'Viernes Santo Festividad Cristiana', '2025-04-18 11:42:24', '2025-04-18 11:42:24', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:42:41', '2025-05-11 11:42:41'),
+(25, 'Día del Veterano y de los Caídos en la Guerra de Malvinas', '2025-04-02 11:42:52', '2025-04-02 11:42:52', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:43:04', '2025-05-11 11:43:04'),
+(26, 'Día Nacional de la Memoria por la Verdad y la Justicia', '2025-03-24 11:43:27', '2025-03-24 11:43:27', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:43:40', '2025-05-11 11:43:40'),
+(27, 'Carnaval', '2025-03-03 11:43:58', '2025-03-04 11:43:58', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:44:14', '2025-05-11 11:44:14'),
+(28, 'Año Nuevo', '2025-01-01 11:44:35', '2025-01-01 11:44:35', 1, 'holiday', '#dc3545', NULL, NULL, 0, NULL, '2025-05-11 11:44:55', '2025-05-11 11:44:55'),
+(29, 'prueba evento', '2025-05-20 11:51:33', '2025-05-20 12:51:33', 0, 'event', '#198754', NULL, NULL, 0, NULL, '2025-05-11 11:51:55', '2025-05-11 11:51:55'),
+(30, 'Cumple Diego', '2025-01-02 11:52:39', '2025-01-02 11:52:39', 1, 'birthday', '#ff9800', NULL, NULL, 0, NULL, '2025-05-11 11:53:06', '2025-05-11 11:53:06'),
+(31, 'Cumple Guille', '2025-05-22 11:53:18', '2025-05-22 12:53:18', 1, 'birthday', '#ff9800', NULL, NULL, 0, NULL, '2025-05-11 11:53:31', '2025-05-11 11:53:31'),
+(32, 'Cumple Charly', '2025-06-27 11:53:38', '2025-06-27 12:53:38', 1, 'birthday', '#ff9800', NULL, NULL, 0, NULL, '2025-05-11 11:53:50', '2025-05-11 11:53:50'),
+(33, 'Cumple Jaime', '2025-07-02 11:53:59', '2025-07-02 12:53:59', 1, 'birthday', '#ff9800', NULL, NULL, 0, NULL, '2025-05-11 11:54:17', '2025-05-11 11:54:17'),
+(34, 'Cumple Gus', '2025-07-27 11:54:21', '2025-07-27 12:54:21', 1, 'birthday', '#ff9800', NULL, NULL, 0, NULL, '2025-05-11 11:54:40', '2025-05-11 11:54:40'),
+(35, 'Cumple Pablo', '2025-10-05 11:54:49', '2025-10-05 12:54:49', 1, 'birthday', '#ff9800', NULL, NULL, 0, NULL, '2025-05-11 11:55:12', '2025-05-11 11:55:12'),
+(36, 'Cumple Dario', '2025-10-18 11:55:15', '2025-10-18 12:55:15', 1, 'birthday', '#ff9800', NULL, NULL, 0, NULL, '2025-05-11 11:55:33', '2025-05-11 11:55:33'),
+(37, 'Cumple Lucho', '2025-10-31 11:55:38', '2025-10-31 12:55:38', 1, 'birthday', '#ff9800', NULL, NULL, 0, NULL, '2025-05-11 11:55:51', '2025-05-11 11:55:51'),
+(38, 'Cumple Brian', '2025-11-06 11:55:57', '2025-11-06 12:55:57', 1, 'birthday', '#ff9800', NULL, NULL, 0, NULL, '2025-05-11 11:56:17', '2025-05-11 11:56:17'),
+(39, 'Cumple Sabri', '2025-11-08 11:56:26', '2025-11-08 12:56:26', 1, 'birthday', '#ff9800', '', '', 0, NULL, '2025-05-11 11:56:45', '2025-05-11 11:57:05'),
+(40, 'Cumple Gaston', '2025-12-22 11:57:09', '2025-12-22 12:57:09', 1, 'birthday', '#ff9800', NULL, NULL, 0, NULL, '2025-05-11 11:57:41', '2025-05-11 11:57:41'),
+(41, 'Vacaciones Sabri', '2025-01-06 14:03:10', '2025-01-12 15:03:10', 1, 'vacation', '#9e9e9e', '', '', 0, NULL, '2025-05-11 14:03:35', '2025-05-11 22:38:46'),
+(42, 'Guille guardia conect', '2025-05-05 14:03:42', '2025-05-11 14:03:42', 1, 'gconect', '#00bcd4', '', '', 0, NULL, '2025-05-11 14:04:06', '2025-05-11 14:04:14'),
+(43, 'Vacaciones Dario', '2025-01-06 22:36:09', '2025-01-12 22:36:09', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-05-11 22:36:34', '2025-05-11 22:36:34'),
+(44, 'Vacaciones Diego', '2025-01-06 22:36:40', '2025-01-19 22:36:40', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-05-11 22:37:21', '2025-05-11 22:37:21'),
+(45, 'Vacaciones Brian', '2025-01-20 22:37:45', '2025-02-02 22:37:45', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-05-11 22:38:34', '2025-05-11 22:38:34'),
+(46, 'Vacaciones Lucho', '2025-01-27 22:40:27', '2025-02-09 22:40:27', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-05-11 22:41:01', '2025-05-11 22:41:01'),
+(47, 'Vacaciones Gaston', '2025-02-03 22:41:26', '2025-02-16 22:41:26', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-05-11 22:41:59', '2025-05-11 22:41:59'),
+(48, 'Vacaciones Sabri', '2025-02-10 22:42:30', '2025-02-16 22:42:30', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-05-11 22:43:06', '2025-05-11 22:43:06'),
+(49, 'Vacaciones Dario', '2025-02-10 22:43:21', '2025-02-16 22:43:21', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-05-11 22:43:54', '2025-05-11 22:43:54'),
+(50, 'Vacaciones Gus', '2025-02-17 22:44:13', '2025-03-02 22:44:13', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-05-11 22:44:50', '2025-05-11 22:44:50'),
+(51, 'Vacaciones Charly', '2025-02-24 22:45:16', '2025-03-02 22:45:16', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-05-11 22:45:40', '2025-05-11 22:45:40'),
+(52, 'Vacaciones Guille', '2025-03-03 22:46:09', '2025-03-23 22:46:09', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-05-11 22:46:31', '2025-05-11 22:46:31'),
+(53, 'Vacaciones Jaime', '2025-03-03 22:46:44', '2025-03-09 22:46:44', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-05-11 22:47:11', '2025-05-11 22:47:11'),
+(54, 'Vacaciones Diego', '2025-03-10 22:47:24', '2025-03-23 22:47:24', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-05-11 22:47:48', '2025-05-11 22:47:48'),
+(55, 'Vacaciones Charly', '2025-03-17 22:48:04', '2025-03-30 22:48:04', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-05-11 22:48:29', '2025-05-11 22:48:29'),
+(56, 'Vacaciones Dario', '2025-04-07 22:49:01', '2025-04-13 22:49:01', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-05-11 22:49:33', '2025-05-11 22:49:33'),
+(58, 'Vacaciones Jaime', '2025-05-30 22:57:14', '2025-06-12 22:57:14', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-06-01 22:58:55', '2025-06-01 22:58:55'),
+(59, 'Vacaciones Diego', '2025-06-23 22:59:28', '2025-07-06 23:59:28', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-06-01 23:00:01', '2025-06-01 23:00:01'),
+(60, 'Guardia conectidad Pablo', '2025-06-02 23:04:08', '2025-06-08 00:04:08', 1, 'gconect', '#00bcd4', NULL, NULL, 0, NULL, '2025-06-01 23:04:46', '2025-06-01 23:04:46'),
+(61, 'Guardia conectidad Guille', '2025-06-09 23:04:53', '2025-06-15 00:04:53', 1, 'gconect', '#00bcd4', NULL, NULL, 0, NULL, '2025-06-01 23:05:17', '2025-06-01 23:05:17'),
+(62, 'Guardia conectidad Pablo', '2025-06-16 23:05:22', '2025-06-22 00:05:22', 1, 'gconect', '#00bcd4', NULL, NULL, 0, NULL, '2025-06-01 23:05:38', '2025-06-01 23:05:38'),
+(63, 'Guardia conectidad Guille', '2025-06-23 23:05:53', '2025-06-29 00:05:53', 1, 'gconect', '#00bcd4', NULL, NULL, 0, NULL, '2025-06-01 23:06:25', '2025-06-01 23:06:25'),
+(64, 'Guardia conectidad Pablo', '2025-06-30 23:06:30', '2025-07-30 00:06:30', 1, 'gconect', '#00bcd4', NULL, NULL, 0, NULL, '2025-06-01 23:06:49', '2025-06-01 23:06:49'),
+(65, 'Vacaciones Charly', '2025-06-30 23:16:55', '2025-07-06 00:16:55', 1, 'vacation', '#9e9e9e', NULL, NULL, 0, NULL, '2025-06-01 23:17:12', '2025-06-01 23:17:12');
 
 --
 -- Disparadores `eventos`
@@ -2383,6 +2742,208 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `flujos_escalamiento`
+--
+
+CREATE TABLE `flujos_escalamiento` (
+  `id` int(11) NOT NULL,
+  `sistema_id` int(11) NOT NULL,
+  `equipo_primario_id` int(11) NOT NULL COMMENT 'Equipo que atiende inicialmente',
+  `equipo_escalamiento_id` int(11) DEFAULT NULL COMMENT 'Equipo al que se escala si es necesario',
+  `condicion_escalamiento` text DEFAULT NULL COMMENT 'Condiciones para escalar (ej: si no responde en 30min)',
+  `tiempo_escalamiento_minutos` int(11) DEFAULT 30 COMMENT 'Tiempo antes de escalar',
+  `activo` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='DEPRECATED - Se usa flujo dinámico en getFlujoPorSistema()';
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `glosario`
+--
+
+CREATE TABLE `glosario` (
+  `id` int(11) NOT NULL,
+  `termino` varchar(255) NOT NULL,
+  `definicion` text NOT NULL,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `creado_por` varchar(100) DEFAULT NULL,
+  `categoria_id` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Volcado de datos para la tabla `glosario`
+--
+
+INSERT INTO `glosario` (`id`, `termino`, `definicion`, `fecha_creacion`, `creado_por`, `categoria_id`) VALUES
+(1, 'Bot', 'Abreviatura de robot. Un programa autónomo diseñado para interactuar con otros sistemas o usuarios de una manera concreta. Los bots suelen realizar tareas predeterminadas. Cuando se usan para automatizar servicios de atención al cliente o respuestas en redes sociales, pueden estar diseñados para responder a consultas sencillas. En el contexto de la desinformación, los bots suelen diseñarse para suplantar a usuarios reales.', '2025-05-15 14:35:40', 'Usuario', 1),
+(2, 'ABM', 'Alta, Baja, Modificación. Se refiere a la gestión de registros, usuarios, datos u objetos (crear, eliminar o editar).', '2025-05-15 14:39:07', 'Usuario', 1),
+(3, 'On Premise', 'Infraestructura o sistema instalado y ejecutado dentro de la organización, en servidores locales.', '2025-05-15 14:45:28', 'Usuario', 7),
+(4, 'Nube (Cloud)', 'Servicios alojados en servidores remotos accesibles vía internet. Ej.: AWS, Azure, Google Cloud. \nOfrece escalabilidad, disponibilidad y menor infraestructura local.', '2025-05-15 14:46:37', 'Usuario', 7),
+(5, 'Desarrollo', 'Entorno donde se realiza la construcción y pruebas iniciales de software o servicios.\nNo afecta usuarios finales. Se usa para test y cambios en curso.', '2025-05-15 14:47:26', 'Usuario', 6),
+(6, 'Producción', 'Entorno en el que se ejecutan servicios y aplicaciones que usan los usuarios finales.\nCambios aquí deben ser controlados y planificados.', '2025-05-15 14:48:05', 'Usuario', 6),
+(8, 'VLAN', 'Red de área local virtual. Permite separar lógicamente segmentos de red en una infraestructura común', '2025-05-15 14:49:22', 'Usuario', 3),
+(9, 'VPN', 'Red privada virtual que permite conectar de forma segura a una red interna a través de internet.', '2025-05-15 14:49:33', 'Usuario', 3),
+(10, 'LDAP', 'Lightweight Directory Access Protocol - Protocolo de acceso a servicios de directorio, como Active Directory.', '2025-05-15 14:50:03', 'Usuario', 1),
+(11, 'SLA', 'Acuerdo de nivel de servicio. Define tiempos de respuesta, disponibilidad, etc.', '2025-05-15 14:50:31', 'Usuario', 8),
+(13, 'Ticket', 'Registro de solicitud, incidencia o requerimiento en una herramienta de gestión. Base para seguimiento de tareas y soporte.', '2025-05-15 14:52:03', 'Usuario', 1),
+(14, 'IP Pública', 'Dirección IP visible en internet, usada para servicios accesibles desde fuera de la red interna.', '2025-05-15 14:55:02', 'Usuario', 3),
+(15, 'NAT', 'Traducción de direcciones de red. Convierte IPs privadas a públicas y viceversa.', '2025-05-15 14:55:49', 'Usuario', 3),
+(16, 'Contact Center', 'Centro de atención que gestiona interacciones con clientes a través de múltiples canales (teléfono, email, chat, redes sociales).', '2025-05-15 15:15:50', 'Usuario', 1),
+(17, 'B2B (Business to Business)', 'Modelo de negocio en el que una empresa ofrece productos o servicios a otras empresas.', '2025-05-15 15:16:11', 'Usuario', 1),
+(18, 'B2C (Business to Consumer)', 'Modelo de negocio donde la empresa vende directamente al consumidor final.', '2025-05-15 15:16:40', 'Usuario', 1),
+(19, 'Fulfillment', 'Proceso completo desde la recepción de un pedido hasta su entrega al cliente, incluyendo almacenamiento, preparación y despacho.', '2025-05-15 15:17:07', 'Usuario', 1),
+(20, 'POC (Proof of Concept)', 'Prueba de concepto. Es una demostración inicial para validar si una idea, tecnología o enfoque es viable antes de realizar una implementación completa. Se usa para evaluar herramientas, integraciones o propuestas técnicas sin comprometer recursos a gran escala.', '2025-05-15 15:20:20', 'Usuario', 8),
+(21, 'Agile', 'Conjunto de metodologías y principios para la gestión de proyectos que promueven la entrega continua, la colaboración entre equipos y la adaptación constante al cambio. Se basa en el Manifiesto Ágil y da origen a marcos como Scrum, Kanban y XP. Muy usado en desarrollo de software, pero también aplicable en otras áreas.', '2025-05-15 15:42:58', 'Usuario', 5),
+(22, 'Scrum', 'Marco de trabajo ágil que organiza el trabajo en ciclos cortos llamados sprints. Promueve entregas incrementales y reuniones diarias.', '2025-05-15 15:43:59', 'Usuario', 5),
+(23, 'Sprint', 'Ciclo de trabajo corto (generalmente de 1 a 4 semanas) en el que se entrega una parte funcional del producto. Parte clave de Scrum.', '2025-05-15 15:44:42', 'Usuario', 5),
+(24, 'Daily (Daily Standup)', 'Reunión diaria y breve para sincronizar al equipo sobre lo hecho, lo que se hará y obstáculos. Idealmente no más de 15 minutos.', '2025-05-15 15:45:13', 'Usuario', 5),
+(25, 'Kanban', 'Método visual de gestión del trabajo basado en tableros con columnas (ej.: \"Por hacer\", \"En progreso\", \"Hecho\").', '2025-05-15 15:45:46', 'Usuario', 5),
+(26, 'Git', 'Sistema de control de versiones distribuido que permite gestionar y rastrear cambios en el código fuente de un proyecto. Muy usado en entornos de desarrollo colaborativo. Permite crear ramas, fusionar cambios y mantener historial completo del proyecto.', '2025-05-15 15:49:26', 'Usuario', 2),
+(27, 'Repositorio (Repo)', 'Conjunto de archivos gestionados por Git, que incluye historial y versiones del proyecto. Puede estar alojado en GitHub, GitLab, Bitbucket, etc.', '2025-05-15 15:50:17', 'Usuario', 2),
+(28, 'Branch (Rama)', 'Línea paralela de desarrollo dentro del repositorio. Permite trabajar en nuevas funciones sin afectar el código principal.', '2025-05-15 15:53:37', 'Usuario', 2),
+(29, 'Commit', 'Registro de un cambio realizado en el código, acompañado de un mensaje descriptivo.', '2025-05-15 15:54:09', 'Usuario', 2),
+(30, 'Merge', 'Acción de combinar los cambios de una rama con otra (por ejemplo, de una feature branch a la rama main).', '2025-05-15 15:54:36', 'Usuario', 2),
+(31, 'Pull Request (PR)', 'Solicitud para revisar y fusionar cambios entre ramas en plataformas como GitHub.', '2025-05-15 15:54:58', 'Usuario', 2),
+(32, 'SQL (Structured Query Language)', 'Lenguaje estándar para consultar, manipular y administrar bases de datos relacionales.', '2025-05-15 16:12:14', 'Usuario', 4),
+(33, 'MySQL', 'Sistema de gestión de bases de datos relacional basado en SQL. Es de código abierto y muy utilizado en entornos web. Común en aplicaciones con backend Node.js, PHP, Python, etc. También es usado en servicios como XAMPP, WAMP y entornos cloud.', '2025-05-15 16:13:07', 'Usuario', 4),
+(34, 'Base de Datos ( BD o DB)', 'Conjunto organizado de información que se almacena y accede electrónicamente. Puede ser relacional (MySQL, PostgreSQL) o no relacional (MongoDB).', '2025-05-15 16:14:16', 'Usuario', 4),
+(35, 'Tabla', 'Estructura dentro de una base de datos que almacena datos en filas y columnas. Cada fila es un registro; cada columna un campo.', '2025-05-15 16:15:57', 'Usuario', 4),
+(36, 'Query (Consulta)', 'Consulta escrita en SQL para interactuar con la base de datos. Puede ser de lectura, escritura o modificación.', '2025-05-15 16:16:49', 'Usuario', 4),
+(37, 'Índice', 'Estructura que mejora la velocidad de las consultas sobre una tabla. Útil en columnas usadas frecuentemente en búsquedas o joins.', '2025-05-15 16:17:25', 'Usuario', 4),
+(38, 'VAG (Virtual Agent Group)', 'Grupo virtual de agentes que no tiene miembros permanentes. Los agentes se asignan dinámicamente al grupo si cumplen con ciertos criterios definidos por scripts.', '2025-05-15 21:34:02', 'Usuario', 9),
+(39, 'RP (Routing Point)', 'Punto de enrutamiento donde las interacciones esperan ser dirigidas por el Universal Routing Server (URS). Puede incluir lógica de enrutamiento, como IVR o scripts.', '2025-05-15 21:35:05', 'Usuario', 9),
+(40, 'VQ (Virtual Queue)', 'Dispositivo virtual creado y mantenido por la integración CTI, cuyo comportamiento es idéntico al de un Routing Point.', '2025-05-15 21:36:03', 'Usuario', 9),
+(41, 'DN (Directory Number)', 'Número lógico asociado a un agente, teléfono, IVR u otro recurso dentro del sistema Genesys.', '2025-05-15 21:37:28', 'Usuario', 9),
+(42, 'ACD (Automatic Call Distributor)', 'Sistema que distribuye automáticamente las llamadas entrantes a los agentes disponibles según reglas predefinidas.', '2025-05-15 21:40:54', 'Usuario', 9),
+(43, 'IVR (Interactive Voice Response)', 'Sistema automatizado que permite a los usuarios interactuar con un sistema telefónico mediante voz o teclado.', '2025-05-15 21:41:39', 'Usuario', 9),
+(44, 'Skill (based Routing)', 'Técnica que enruta las interacciones a los agentes con las habilidades más adecuadas para resolver el requerimiento.', '2025-05-15 21:42:39', 'Usuario', 9),
+(45, 'Tabulaciones', 'Wrap-up Codes - Códigos que los agentes seleccionan al finalizar una interacción para clasificarla (motivo de la llamada, resultado, etc.).', '2025-05-15 21:43:17', 'Usuario', 9),
+(46, 'SIP Server', 'Componentes que gestionan la señalización (SIP) en las llamadas dentro de Genesys. Esencial para la gestión VoIP, grabaciones, conferencias y llamadas externas', '2025-05-15 21:45:00', 'Usuario', 9),
+(47, 'GVQ', 'POsiblemente \"Grupo Virtual de Queues o una estructura lógica de agrupación de colas virtual\"', '2025-05-15 22:02:28', 'Usuario', 9),
+(48, 'Muxer', 'Recording Muxer Script: Script que combina las grabaciones de voz y pantalla de una interacción en un solo archivo sincronizado para su reproducción.', '2025-05-15 23:19:24', 'Usuario', 9),
+(49, 'Jira', 'Plataforma de Atlassian para la gestión de proyectos, seguimiento de tareas e incidencias, y soporte a metodologías ágiles como Scrum y Kanban.', '2025-05-16 03:31:52', 'Usuario', 5),
+(50, 'WDS', 'Windows Deployment Services: Servicio de Microsoft que permite la instalación remota de sistemas operativos Windows en computadoras a través de la red.', '2025-05-16 12:12:51', 'Usuario', 3),
+(51, 'TLS (Transport Layer Security)', 'Protocolo criptográfico que proporciona seguridad en las comunicaciones por red, garantizando confidencialidad, integridad y autenticación de los datos transmitidos.', '2025-05-16 12:19:40', 'Usuario', 3),
+(52, 'Rollback', 'Acción de revertir una versión de software a un estado anterior debido a fallos tras un despliegue.', '2025-05-16 12:29:47', 'Usuario', 6),
+(53, 'Deploy', 'Proceso de colocar una nueva versión de software en un entorno (desarrollo, testing, producción).', '2025-05-16 12:30:48', 'Usuario', 6),
+(54, 'Testing', 'Entorno donde se prueban nuevas funciones en condiciones más controladas antes de pasar a producción.', '2025-05-16 12:31:52', 'Usuario', 6),
+(55, 'Hotfix', 'Cambio urgente aplicado directamente en producción para corregir un error crítico.', '2025-05-16 12:32:42', 'Usuario', 6),
+(56, 'Release', 'Versión oficial de software que se entrega para uso, ya sea interna o públicamente. Asociada a versiones o ciclos definidos (por ejemplo, v1.2.0).\n', '2025-05-16 12:33:21', 'Usuario', 6),
+(57, 'Backlog', 'Lista priorizada de tareas, requerimientos o problemas pendientes. Se usa para gestionar el trabajo pendiente del equipo.', '2025-05-16 12:45:12', 'Usuario', 5),
+(58, 'PO (Product Owner)', 'El Product Owner es el responsable de definir, priorizar y comunicar las funcionalidades y requisitos de un producto al equipo de desarrollo.', '2025-05-16 12:45:52', 'Usuario', 5),
+(59, 'Scrum Master', 'Facilita el proceso Scrum, elimina impedimentos y asegura que se sigan las prácticas ágiles.', '2025-05-16 12:48:52', 'Usuario', 5),
+(60, 'Registro ( Fila- Row)', 'Conjunto de campos relacionados en una tabla, que representa una unidad de datos. Ejemplo: un usuario, una llamada, una tarea.', '2025-05-16 13:11:44', 'Usuario', 4),
+(61, 'Campo (Columna)', 'Unidad de información dentro de una tabla. Cada campo tiene un tipo de dato definido.', '2025-05-16 13:12:39', 'Usuario', 4),
+(62, 'Primary Key (PK)', 'Campo o combinación de campos que identifica de forma única cada registro en una tabla.', '2025-05-16 13:13:23', 'Usuario', 4),
+(63, 'Foreign Key (FK)', 'Campo que establece una relación entre dos tablas, apuntando a una PK de otra tabla.', '2025-05-16 13:13:44', 'Usuario', 4),
+(64, 'Iterar', 'Repetir un proceso o conjunto de pasos de forma controlada, generalmente con el objetivo de mejorar o refinar el resultado.', '2025-05-16 13:17:36', 'Usuario', 6),
+(65, 'Clone', 'Copia de un repositorio remoto en local para trabajar en él. Comando: git clone [URL]', '2025-05-16 13:28:29', 'Usuario', 2),
+(66, 'Pull', 'Trae cambios desde el repositorio remoto al local.\nComando: git pull', '2025-05-16 13:29:18', 'Usuario', 2),
+(67, 'Push', 'Envía los cambios locales al repositorio remoto.\nComando: git push', '2025-05-16 13:29:53', 'Usuario', 2),
+(68, 'Fork', 'Copia de un repositorio a una cuenta distinta (en GitHub, por ejemplo), permitiendo colaborar sin afectar el repo original.', '2025-05-16 13:30:26', 'Usuario', 2),
+(69, 'Stash', 'Guarda temporalmente cambios no confirmados para limpiar el entorno de trabajo.\nSe puede restaurar luego con git stash apply.', '2025-05-16 13:31:03', 'Usuario', 2),
+(70, 'Checkout', 'Permite cambiar entre ramas o versiones específicas del código.\nComando: git checkout [rama o commit]', '2025-05-16 13:31:39', 'Usuario', 2),
+(71, 'Tag', 'Marca usada para señalar versiones importantes del código, como releases o entregas.\nEjemplo: v1.0.0', '2025-05-16 13:32:18', 'Usuario', 2),
+(72, 'Conflict (Conflicto)', 'Ocurre cuando dos ramas modifican las mismas líneas de un archivo y Git no puede decidir cuál conservar. Se resuelve manualmente antes de hacer merge.', '2025-05-16 13:32:56', 'Usuario', 2),
+(73, 'gitignore ( .gitignore)', 'Archivo que define qué archivos o carpetas deben ser ignorados por Git (por ejemplo, archivos temporales o de configuración local).', '2025-05-16 13:33:33', 'Usuario', 2),
+(74, 'Proxy', 'Servidor intermedio entre el cliente y el recurso final que puede filtrar, registrar o acelerar el tráfico.', '2025-05-16 13:38:04', 'Usuario', 3),
+(75, 'MAC Address', 'Identificador único de la tarjeta de red de un dispositivo.', '2025-05-16 13:38:33', 'Usuario', 3),
+(76, 'Router', 'Dispositivo que conecta diferentes redes y enruta el tráfico entre ellas.', '2025-05-16 13:39:02', 'Usuario', 3),
+(77, 'Ping', 'Comando que verifica la conectividad con otro dispositivo en la red. Mide latencia y pérdida de paquetes.', '2025-05-16 13:39:34', 'Usuario', 3),
+(78, 'Tracert / Traceroute', 'Comando que muestra la ruta que sigue un paquete hasta su destino.', '2025-05-16 13:39:55', 'Usuario', 3),
+(79, 'VoIP (Voice over IP)', 'Tecnología que permite transmisión de voz sobre IP.', '2025-05-16 13:40:49', 'Usuario', 3),
+(80, 'SIP (Session Initiation Protocol)', 'Protocolo usado para iniciar y gestionar llamadas VoIP.', '2025-05-16 13:41:12', 'Usuario', 3),
+(81, 'WAN (Wide Area Network)', 'Red que cubre un área geográfica extensa; conecta múltiples redes LAN.', '2025-05-16 13:41:59', 'Usuario', 3),
+(82, 'LAN (Local Area Network)', 'Red local que conecta dispositivos dentro de un área geográfica limitada (como una oficina).', '2025-05-16 13:42:15', 'Usuario', 3),
+(83, 'IP (Internet Protocol)', 'Dirección única asignada a cada dispositivo en una red para identificarlo y comunicarse. Puede ser IPv4 (192.168.0.1) o IPv6.', '2025-05-16 13:43:01', 'Usuario', 3),
+(84, 'DNS (Domain Name System)', 'Sistema que traduce nombres de dominio (como google.com) a direcciones IP.\nEj.: dns.google → 8.8.8.8.', '2025-05-16 13:43:34', 'Usuario', 3),
+(85, 'DHCP (Dynamic Host Configuration Protocol)', 'Protocolo que asigna automáticamente direcciones IP a los dispositivos en una red.', '2025-05-16 13:43:55', 'Usuario', 3),
+(86, 'Firewall', 'Sistema que filtra tráfico de red entrante y saliente según reglas de seguridad.', '2025-05-16 13:44:17', 'Usuario', 3),
+(87, 'AD (Active Directory)', 'Servicio de directorio desarrollado por Microsoft para entornos Windows. Permite gestionar usuarios, equipos y recursos dentro de una red.', '2025-05-16 23:16:06', 'Usuario', 1),
+(89, 'ANI (Automatic Number Identification)', 'Número telefónico del llamante (similar al identificador de llamadas). Puede usarse para identificar al cliente o personalizar el enrutamiento.', '2025-05-17 01:49:33', 'Usuario', 9),
+(90, 'SL (Service Level)', 'Nivel de servicio. Métrica que indica el porcentaje de llamadas atendidas dentro de un tiempo determinado (ej: 80% de llamadas en menos de 20 segundos). Es una KPI esencial en call centers.', '2025-05-17 01:50:48', 'Usuario', 9),
+(91, 'VDI (Virtual Desktop Infrastructure)', 'Es una tecnología que permite ejecutar escritorios de Windows (u otros sistemas operativos) en máquinas virtuales alojadas en un servidor central, en lugar de en los dispositivos físicos de los usuarios.', '2025-05-17 02:00:24', 'Usuario', 1),
+(93, 'SAS (Statistical Analysis System)', 'SAS (Statistical Analysis System) es una suite de software avanzada diseñada para análisis estadístico, minería de datos y modelado predictivo. Proporciona un entorno completo para realizar análisis complejos, análisis de tendencias, predicciones y visualización de datos.', '2025-05-19 18:38:44', 'Usuario', 8),
+(94, 'SSAS (SQL Server Analysis Services)', 'SQL Server Analysis Services (SSAS) es una herramienta de Microsoft que proporciona capacidades para realizar análisis de datos mediante la creación de modelos multidimensionales o tabulares. SSAS permite almacenar y analizar grandes volúmenes de datos en un entorno OLAP (procesamiento analítico en línea) o tabular, facilitando la toma de decisiones empresariales a través de informes y análisis de datos.', '2025-05-19 18:46:28', 'Usuario', 4),
+(95, 'MuleSoft', 'Plataforma de integración que permite conectar aplicaciones, datos y sistemas mediante APIs y flujos de integración reutilizables, facilitando la comunicación entre servicios en la nube y on-premise.', '2025-05-19 18:58:29', 'Usuario', 8),
+(96, 'API (Application Programming Interface)', 'Es una interfaz que permite la comunicación entre diferentes aplicaciones, permitiéndoles intercambiar datos o acceder a funcionalidades sin necesidad de conocer el código interno de la otra.', '2025-05-19 19:33:11', 'Usuario', 6),
+(97, 'Endpoint', 'Un endpoint es una URL específica dentro de una API que permite acceder a una funcionalidad o conjunto de datos.\nEjemplo: https://api.ejemplo.com/usuarios puede ser un endpoint para obtener la lista de usuarios.', '2025-05-19 22:24:48', 'Usuario', 6),
+(98, 'Webhook', 'Un webhook es un mecanismo donde una aplicación envía datos a otra automáticamente cuando ocurre un evento.\n diferencia de una API que se consulta (\"pull\"), el webhook empuja (\"push\") la información.\nEjem: Cuando alguien hace una compra, el sistema de pagos puede enviar un webhook al sistema de facturación para generar la factura automáticamente', '2025-05-19 22:26:37', 'Usuario', 6),
+(99, 'REST ( API REST)', 'Representational State Transfer - Es un estilo de arquitectura para APIs muy usado en aplicaciones web. Utiliza los métodos HTTP estándar (GET, POST, PUT, DELETE) para interactuar con recursos que se representan como URLs.', '2025-05-19 22:28:33', 'Usuario', 6),
+(100, 'SOAP (API SOAP)', 'Simple Object Access Protocol - Es un protocolo más formal y estructurado que usa XML para intercambiar información entre sistemas. Muy utilizado en entornos corporativos y sistemas legados (banca, salud, etc.).', '2025-05-19 22:29:42', 'Usuario', 6),
+(101, 'GraphQL ( API)', 'Es un lenguaje de consulta para APIs creado por Facebook. Permite al cliente especificar exactamente qué datos necesita y recibirlos en una sola respuesta.', '2025-05-19 22:30:13', 'Usuario', 6),
+(102, '200 (OK)', 'La solicitud fue exitosa. Respuesta estándar para una solicitud exitosa.', '2025-05-20 17:08:50', 'Usuario', 10),
+(103, '201 (Created)', 'Recurso creado correctamente. Al enviar un POST exitoso.', '2025-05-20 17:15:09', 'Usuario', 10),
+(104, '204 (No Content)', 'La solicitud fue exitosa, pero no hay contenido para devolver. Común en eliminaciones (DELETE).', '2025-05-20 17:16:48', 'Usuario', 10),
+(105, '301 (Moved Permanently)', 'Redirección permanente. El recurso fue movido.', '2025-05-20 17:18:30', 'Usuario', 10),
+(106, '302 (Found / Moved Temporarily)', 'Redirección temporal.', '2025-05-20 17:19:24', 'Usuario', 10),
+(107, '400 (Bad Request)', 'La solicitud tiene errores de sintaxis o parámetros incorrectos. Fallos en formularios, errores de validación.', '2025-05-20 17:20:22', 'Usuario', 10),
+(108, '401 (Unauthorized)', 'No autorizado, requiere autenticación. Token inválido o no enviado.', '2025-05-20 17:21:14', 'Usuario', 10),
+(109, '403 (Forbidden)', 'Acceso prohibido, aunque autenticado. El usuario no tiene permisos suficientes.', '2025-05-20 17:22:04', 'Usuario', 10),
+(110, '404 (Not Found)', 'Recurso no encontrado. URL mal escrita o recurso no existe.', '2025-05-20 17:23:00', 'Usuario', 10),
+(111, '408 (Request Timeout)', 'El servidor agotó el tiempo de espera. Problemas de red o lentitud en la petición.', '2025-05-20 17:23:48', 'Usuario', 10),
+(112, '409 (Conflict)', 'Conflicto con el estado actual del recurso. Ej.: ID duplicado al crear un registro.	', '2025-05-20 17:24:57', 'Usuario', 10),
+(113, '500 (Internal Server Error)', 'Error interno del servidor. Bug en el backend o falla inesperada.', '2025-05-20 17:27:32', 'Usuario', 10),
+(114, '502 (Bad Gateway)', 'El servidor actuó como puerta de enlace y recibió una respuesta inválida.', '2025-05-20 17:32:12', 'Usuario', 10),
+(115, '503 (Service Unavailable)', 'El servidor está caído o sobrecargado. Mantenimiento o error crítico.', '2025-05-20 17:32:54', 'Usuario', 10),
+(116, '504 (Gateway Timeout)', 'Tiempo de espera agotado en un servicio intermedio. Microservicio lento o no disponible.', '2025-05-20 17:33:50', 'Usuario', 10),
+(117, '415 (Unsupported Media Type)', 'El formato del cuerpo de la solicitud no es compatible. JSON mal formado o tipo MIME no válido.', '2025-05-20 18:43:37', 'Usuario', 10),
+(118, '429 ( Too Many Requests)', 'Se ha excedido el número de solicitudes permitidas.', '2025-05-20 18:44:24', 'Usuario', 10),
+(119, 'Bug', 'Error, falla o comportamiento inesperado en un software o sistema.', '2025-05-20 18:46:45', 'Usuario', 6),
+(120, 'Fix', 'Corrección aplicada a un bug. También puede referirse a un bugfix, es decir, una actualización puntual que resuelve un problema específico.', '2025-05-20 18:47:14', 'Usuario', 6),
+(121, 'Patch', 'Conjunto de correcciones o mejoras que se aplican a una versión existente del software.', '2025-05-20 18:48:43', 'Usuario', 6),
+(122, 'Issue', 'Término general que describe cualquier tarea, mejora, error, pregunta o solicitud dentro de un sistema de seguimiento (como Jira).', '2025-05-20 18:49:07', 'Usuario', 6),
+(123, 'Dispatcher', 'Componente o módulo encargado de recibir solicitudes y redirigirlas al servicio o proceso correspondiente. También puede encargarse de priorizar, enrutar o distribuir tareas según reglas o condiciones. En Contact Centers puede referirse a rutinas de enrutamiento de llamadas o interacciones.', '2025-05-21 13:50:55', 'Usuario', 1),
+(124, 'Slack', 'Plataforma de mensajería orientada al trabajo en equipo. Permite la comunicación en canales organizados, envío de archivos, integración con otras herramientas (como Jira, GitHub, Trello, etc.), y automatización mediante bots. Muy usado en equipos Agile y entornos técnicos para reemplazar el correo interno.', '2025-05-21 13:52:39', 'Usuario', 5),
+(125, 'Framework', 'Conjunto estructurado de herramientas, bibliotecas y reglas que proporciona una base para desarrollar aplicaciones de forma más eficiente y organizada.', '2025-05-21 13:56:11', 'Usuario', 6),
+(126, 'Frontend', 'Parte del software que interactúa directamente con el usuario. Incluye todo lo que se ve en la pantalla: diseño, botones, formularios, navegación, etc. Se desarrolla comúnmente con HTML, CSS, JavaScript y frameworks como React, Vue o Angular.', '2025-05-21 14:00:55', 'Usuario', 6),
+(127, 'Backend', 'Parte del software que maneja la lógica de negocio, procesamiento de datos y comunicación con la base de datos. No es visible para el usuario final. Se desarrolla con lenguajes como Node.js, Java, Python, PHP, etc., y se conecta con APIs, bases de datos y servicios.', '2025-05-21 14:01:24', 'Usuario', 6),
+(128, 'UX (User Experience)', 'Hace referencia a la experiencia del usuario al interactuar con un producto, sistema o servicio digital. Involucra la facilidad de uso, accesibilidad, percepción de valor y satisfacción general.', '2025-05-22 20:22:11', 'Usuario', 6),
+(129, 'Feature (Enhancement)', 'Mejora o nueva funcionalidad.', '2025-05-23 00:10:33', 'Usuario', 6),
+(130, 'XML (eXtensible Markup Language)', 'Lenguaje de marcado utilizado para estructurar, almacenar e intercambiar datos.', '2025-05-23 00:14:26', 'Usuario', 1),
+(131, 'Yarn', 'Administrador de paquetes para proyectos JavaScript (alternativa a npm). Usado en proyectos frontend modernos con React o Vue.', '2025-05-23 00:15:13', 'Usuario', 6),
+(132, 'OJT', 'On the Job Training - Entrenamiento en el puesto de trabajo. Se refiere al proceso mediante el cual un nuevo agente o empleado aprende observando, practicando y trabajando en situaciones reales mientras está supervisado por un mentor, supervisor o formador.', '2025-05-23 15:35:19', 'Usuario', 1),
+(133, 'Schema', 'Un schema (esquema) es la estructura organizada de una base de datos, que define cómo se organizan y relacionan las tablas, vistas, índices, funciones, y otros elementos. Actúa como el \"plano\" de la base de datos.', '2025-05-29 14:02:38', 'Usuario', 4),
+(134, 'ERD (Entity Relationship Diagram)', 'Diagrama Entidad-Relación: Representación gráfica que muestra cómo se relacionan las entidades (tablas) dentro de una base de datos. Incluye entidades, atributos y relaciones (uno a muchos, muchos a muchos, etc.).', '2025-05-29 14:15:59', 'Usuario', 4),
+(135, 'HSM (Highly Structured Messages)', 'Mensajes altamente estructurados: Es el formato oficial de mensajes plantilla de WhatsApp Business, aprobado por Meta, que permite a las empresas enviar comunicaciones estructuradas, automatizadas y proactivas a los usuarios (por ejemplo: notificaciones, recordatorios, alertas, etc.).\n\nCaracterísticas:\n\nSon mensajes predefinidos que requieren aprobación previa por parte de WhatsApp.\n\nPueden incluir variables dinámicas, emojis, enlaces, imágenes y botones interactivos.\n\nSe utilizan principalmente en flujos automatizados o integrados a plataformas ', '2025-05-30 14:31:28', 'Usuario', 11),
+(136, 'SOHO (Small Office/Home Office)', 'El término SOHO hace referencia a pequeñas oficinas o trabajos desde casa. Se utiliza comúnmente para describir empresas o profesionales autónomos que operan desde una oficina pequeña o incluso desde su hogar, generalmente con un número reducido de empleados o incluso de manera individual.', '2025-05-30 19:15:35', 'Usuario', 1),
+(137, 'SMB (Small and Medium Business)', 'Hace referencia a Pequeñas y Medianas Empresas. Este término agrupa a empresas que no son lo suficientemente grandes como para ser consideradas grandes corporaciones, pero tampoco son de tamaño pequeño como las microempresas. Las SMBs suelen tener una cantidad moderada de empleados, ingresos y recursos.', '2025-05-30 19:17:10', 'Usuario', 1),
+(138, 'Deprecated', 'Deprecated (obsoleto o en desuso) se utiliza para describir una función, método, característica o tecnología que ya no se recomienda utilizar, generalmente porque existe una alternativa más moderna, segura o eficiente. Aunque todavía puede estar disponible, su uso futuro no está garantizado y podría eliminarse en versiones posteriores.', '2025-05-30 19:56:47', 'Usuario', 6);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `glosario_categorias`
+--
+
+CREATE TABLE `glosario_categorias` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `color` varchar(50) DEFAULT '#0d6efd'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Volcado de datos para la tabla `glosario_categorias`
+--
+
+INSERT INTO `glosario_categorias` (`id`, `nombre`, `color`) VALUES
+(1, 'General', '#0d6efd'),
+(2, 'Git', '#198754'),
+(3, 'Red', '#dc3545'),
+(4, 'Base de datos', '#6f42c1'),
+(5, 'Agile', '#fd7e14'),
+(6, 'Desarrollo', '#20c997'),
+(7, 'Cloud', '#0dcaf0'),
+(8, 'DevOps', '#6c757d'),
+(9, 'Genesys', '#9933ff'),
+(10, 'Códigos HTML', '#cb2ec9'),
+(11, 'RRSS', '#f2da0d');
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `guardias`
 --
 
@@ -2400,157 +2961,420 @@ CREATE TABLE `guardias` (
 --
 
 INSERT INTO `guardias` (`id`, `fecha`, `usuario`, `notas`, `createdAt`, `updatedAt`) VALUES
-(226, '2025-01-01', 'Gus', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(227, '2025-01-02', 'Sabri', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(228, '2025-01-03', 'Lucho', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(229, '2025-01-04', 'Gus', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(230, '2025-01-05', 'Charly', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(231, '2025-01-06', 'Gaston', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(232, '2025-01-07', 'Charly', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(233, '2025-01-08', 'Brian', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(234, '2025-01-09', 'Gus', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(235, '2025-01-10', 'Jaime', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(236, '2025-01-11', 'Lucho', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(237, '2025-01-12', 'Brian', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(238, '2025-01-13', 'Charly', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(239, '2025-01-14', 'Brian', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(240, '2025-01-15', 'Gaston', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(241, '2025-01-16', 'Sabri', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(242, '2025-01-17', 'Jaime', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(243, '2025-01-18', 'Lucho', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(244, '2025-01-19', 'Lucho', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(245, '2025-01-20', 'Sabri', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(246, '2025-01-21', 'Diego', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(247, '2025-01-22', 'Charly', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(248, '2025-01-23', 'Gaston', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(249, '2025-01-24', 'Gus', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(250, '2025-01-25', 'Diego', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(251, '2025-01-26', 'Sabri', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(252, '2025-01-27', 'Gus', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(253, '2025-01-28', 'Jaime', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(254, '2025-01-29', 'Gaston', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(255, '2025-01-30', 'Jaime', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(256, '2025-01-31', 'Diego', 'Importado desde Excel - Enero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(257, '2025-02-01', 'Gus', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(258, '2025-02-02', 'Jaime', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(259, '2025-02-03', 'Diego', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(260, '2025-02-04', 'Sabri', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(261, '2025-02-05', 'Brian', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(262, '2025-02-06', 'Charly', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(263, '2025-02-07', 'Gus', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(264, '2025-02-08', 'Jaime', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(265, '2025-02-09', 'Brian', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(266, '2025-02-10', 'Charly', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(267, '2025-02-11', 'Diego', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(268, '2025-02-12', 'Gus', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(269, '2025-02-13', 'Brian', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(270, '2025-02-14', 'Diego', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(271, '2025-02-15', 'Lucho', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(272, '2025-02-16', 'Charly', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(273, '2025-02-17', 'Brian', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(274, '2025-02-18', 'Charly', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(275, '2025-02-19', 'Gaston', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(276, '2025-02-20', 'Sabri', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(277, '2025-02-21', 'Lucho', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(278, '2025-02-22', 'Diego', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(279, '2025-02-23', 'Sabri', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(280, '2025-02-24', 'Gaston', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(281, '2025-02-25', 'Sabri', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(282, '2025-02-26', 'Jaime', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(283, '2025-02-27', 'Gaston', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(284, '2025-02-28', 'Lucho', 'Importado desde Excel - Febrero 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(286, '2025-03-01', 'Diego', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(287, '2025-03-02', 'Gaston', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(288, '2025-03-03', 'Lucho', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(289, '2025-03-04', 'Brian', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(290, '2025-03-05', 'Diego', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(291, '2025-03-06', 'Charly', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(292, '2025-03-07', 'Lucho', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(293, '2025-03-08', 'Gus', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(294, '2025-03-09', 'Charly', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(295, '2025-03-10', 'Brian', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(296, '2025-03-11', 'Sabri', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(297, '2025-03-12', 'Gaston', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(298, '2025-03-13', 'Charly', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(299, '2025-03-14', 'Jaime', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(300, '2025-03-15', 'Lucho', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(301, '2025-03-16', 'Sabri', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(302, '2025-03-17', 'Gaston', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(303, '2025-03-18', 'Gus', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(304, '2025-03-19', 'Jaime', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(305, '2025-03-20', 'Brian', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(306, '2025-03-21', 'Lucho', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(307, '2025-03-22', 'Jaime', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(308, '2025-03-23', 'Lucho', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(309, '2025-03-24', 'Sabri', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(310, '2025-03-25', 'Jaime', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(311, '2025-03-26', 'Gus', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(312, '2025-03-27', 'Sabri', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(313, '2025-03-28', 'Gaston', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(314, '2025-03-29', 'Brian', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(315, '2025-03-30', 'Brian', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(316, '2025-03-31', 'Gus', 'Importado desde Excel - Marzo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(317, '2025-04-01', 'Charly', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(318, '2025-04-02', 'Sabri', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(319, '2025-04-03', 'Diego', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(320, '2025-04-04', 'Lucho', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(321, '2025-04-05', 'Gus', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(322, '2025-04-06', 'Charly', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(323, '2025-04-07', 'Gaston', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(324, '2025-04-08', 'Sabri', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(325, '2025-04-09', 'Brian', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(326, '2025-04-10', 'Gus', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(327, '2025-04-11', 'Diego', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(328, '2025-04-12', 'Brian', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(329, '2025-04-13', 'Sabri', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(330, '2025-04-14', 'Brian', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(331, '2025-04-15', 'Gaston', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(332, '2025-04-16', 'Charly', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(333, '2025-04-17', 'Sabri', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(334, '2025-04-18', 'Charly', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(335, '2025-04-19', 'Diego', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(336, '2025-04-20', 'Lucho', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(337, '2025-04-21', 'Gus', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(338, '2025-04-22', 'Sabri', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(339, '2025-04-23', 'Lucho', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(340, '2025-04-24', 'Brian', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(341, '2025-04-25', 'Gus', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(342, '2025-04-26', 'Lucho', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(343, '2025-04-27', 'Charly', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(344, '2025-04-28', 'Charly', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(345, '2025-04-29', 'Gaston', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(346, '2025-04-30', 'Diego', 'Importado desde Excel - Abril 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(347, '2025-05-01', 'Charly', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(348, '2025-05-02', 'Brian', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(349, '2025-05-03', 'Gus', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(350, '2025-05-04', 'Gaston', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(351, '2025-05-05', 'Brian', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(352, '2025-05-06', 'Gus', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(353, '2025-05-07', 'Charly', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(354, '2025-05-08', 'Sabri', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:37', '2025-05-09 03:23:37'),
-(355, '2025-05-09', 'Gaston', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(356, '2025-05-10', 'Diego', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(357, '2025-05-11', 'Lucho', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(358, '2025-05-12', 'Charly', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(359, '2025-05-13', 'Gaston', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(360, '2025-05-14', 'Brian', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(361, '2025-05-15', 'Diego', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(362, '2025-05-16', 'Gus', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(363, '2025-05-17', 'Brian', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(364, '2025-05-18', 'Sabri', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(365, '2025-05-19', 'Gaston', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(366, '2025-05-20', 'Sabri', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(367, '2025-05-21', 'Lucho', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(368, '2025-05-22', 'Gus', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(369, '2025-05-23', 'Brian', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(370, '2025-05-24', 'Lucho', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(371, '2025-05-25', 'Charly', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(372, '2025-05-26', 'Diego', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(373, '2025-05-27', 'Gaston', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(374, '2025-05-28', 'Gus', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(375, '2025-05-29', 'Sabri', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(376, '2025-05-30', 'Lucho', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38'),
-(377, '2025-05-31', 'Diego', 'Importado desde Excel - Mayo 2025', '2025-05-09 03:23:38', '2025-05-09 03:23:38');
+(1411, '2025-01-01', 'Gus', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1412, '2025-01-02', 'Sabri', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1413, '2025-01-03', 'Lucho', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1414, '2025-01-04', 'Gus', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1415, '2025-01-05', 'Charly', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1416, '2025-01-06', 'Gaston', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1417, '2025-01-07', 'Charly', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1418, '2025-01-08', 'Brian', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1419, '2025-01-09', 'Gus', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1420, '2025-01-10', 'Jaime', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1421, '2025-01-11', 'Lucho', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1422, '2025-01-12', 'Brian', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1423, '2025-01-13', 'Charly', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1424, '2025-01-14', 'Brian', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1425, '2025-01-15', 'Gaston', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1426, '2025-01-16', 'Sabri', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1427, '2025-01-17', 'Jaime', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1428, '2025-01-18', 'Lucho', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1429, '2025-01-19', 'Lucho', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1430, '2025-01-20', 'Sabri', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1431, '2025-01-21', 'Diego', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1432, '2025-01-22', 'Charly', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1433, '2025-01-23', 'Gaston', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1434, '2025-01-24', 'Gus', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1435, '2025-01-25', 'Diego', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1436, '2025-01-26', 'Sabri', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1437, '2025-01-27', 'Gus', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1438, '2025-01-28', 'Jaime', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1439, '2025-01-29', 'Gaston', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1440, '2025-01-30', 'Jaime', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1441, '2025-01-31', 'Diego', 'Importado desde Excel - Enero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1442, '2025-02-01', 'Gus', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1443, '2025-02-02', 'Jaime', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1444, '2025-02-03', 'Diego', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1445, '2025-02-04', 'Sabri', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1446, '2025-02-05', 'Brian', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1447, '2025-02-06', 'Charly', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1448, '2025-02-07', 'Gus', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1449, '2025-02-08', 'Jaime', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1450, '2025-02-09', 'Brian', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1451, '2025-02-10', 'Charly', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1452, '2025-02-11', 'Diego', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1453, '2025-02-12', 'Gus', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1454, '2025-02-13', 'Brian', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1455, '2025-02-14', 'Diego', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1456, '2025-02-15', 'Lucho', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1457, '2025-02-16', 'Charly', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1458, '2025-02-17', 'Brian', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1459, '2025-02-18', 'Charly', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1460, '2025-02-19', 'Gaston', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1461, '2025-02-20', 'Sabri', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1462, '2025-02-21', 'Lucho', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1463, '2025-02-22', 'Diego', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1464, '2025-02-23', 'Sabri', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1465, '2025-02-24', 'Gaston', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1466, '2025-02-25', 'Sabri', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1467, '2025-02-26', 'Jaime', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1468, '2025-02-27', 'Gaston', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1469, '2025-02-28', 'Lucho', 'Importado desde Excel - Febrero 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1471, '2025-03-01', 'Diego', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1472, '2025-03-02', 'Gaston', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1473, '2025-03-03', 'Lucho', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1474, '2025-03-04', 'Brian', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1475, '2025-03-05', 'Diego', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1476, '2025-03-06', 'Charly', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1477, '2025-03-07', 'Lucho', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1478, '2025-03-08', 'Gus', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1479, '2025-03-09', 'Charly', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1480, '2025-03-10', 'Brian', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1481, '2025-03-11', 'Sabri', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1482, '2025-03-12', 'Gaston', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1483, '2025-03-13', 'Charly', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1484, '2025-03-14', 'Jaime', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1485, '2025-03-15', 'Lucho', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1486, '2025-03-16', 'Sabri', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1487, '2025-03-17', 'Gaston', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1488, '2025-03-18', 'Gus', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1489, '2025-03-19', 'Jaime', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1490, '2025-03-20', 'Brian', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1491, '2025-03-21', 'Lucho', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1492, '2025-03-22', 'Jaime', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1493, '2025-03-23', 'Lucho', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1494, '2025-03-24', 'Sabri', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1495, '2025-03-25', 'Jaime', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1496, '2025-03-26', 'Gus', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1497, '2025-03-27', 'Sabri', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1498, '2025-03-28', 'Gaston', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1499, '2025-03-29', 'Brian', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1500, '2025-03-30', 'Brian', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1501, '2025-03-31', 'Gus', 'Importado desde Excel - Marzo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1502, '2025-04-01', 'Charly', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1503, '2025-04-02', 'Sabri', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1504, '2025-04-03', 'Diego', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1505, '2025-04-04', 'Lucho', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1506, '2025-04-05', 'Gus', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1507, '2025-04-06', 'Charly', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1508, '2025-04-07', 'Gaston', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1509, '2025-04-08', 'Sabri', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1510, '2025-04-09', 'Brian', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1511, '2025-04-10', 'Gus', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1512, '2025-04-11', 'Diego', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1513, '2025-04-12', 'Brian', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1514, '2025-04-13', 'Sabri', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1515, '2025-04-14', 'Brian', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1516, '2025-04-15', 'Gaston', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1517, '2025-04-16', 'Charly', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1518, '2025-04-17', 'Sabri', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1519, '2025-04-18', 'Charly', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1520, '2025-04-19', 'Diego', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1521, '2025-04-20', 'Lucho', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1522, '2025-04-21', 'Gus', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1523, '2025-04-22', 'Sabri', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1524, '2025-04-23', 'Lucho', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1525, '2025-04-24', 'Brian', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1526, '2025-04-25', 'Gus', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1527, '2025-04-26', 'Lucho', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1528, '2025-04-27', 'Charly', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1529, '2025-04-28', 'Charly', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1530, '2025-04-29', 'Gaston', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1531, '2025-04-30', 'Diego', 'Importado desde Excel - Abril 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1533, '2025-05-02', 'Brian', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1534, '2025-05-03', 'Gus', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1535, '2025-05-04', 'Gaston', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:26', '2025-05-30 15:35:26'),
+(1536, '2025-05-05', 'Brian', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1537, '2025-05-06', 'Gus', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1538, '2025-05-07', 'Charly', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1539, '2025-05-08', 'Sabri', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1540, '2025-05-09', 'Gaston', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1541, '2025-05-10', 'Diego', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1542, '2025-05-11', 'Lucho', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1543, '2025-05-12', 'Charly', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1544, '2025-05-13', 'Gaston', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1545, '2025-05-14', 'Brian', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1546, '2025-05-15', 'Diego', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1547, '2025-05-16', 'Gus', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1548, '2025-05-17', 'Brian', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1549, '2025-05-18', 'Sabri', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1550, '2025-05-19', 'Gaston', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1551, '2025-05-20', 'Sabri', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1552, '2025-05-21', 'Lucho', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1553, '2025-05-22', 'Gus', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1554, '2025-05-23', 'Brian', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1555, '2025-05-24', 'Lucho', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1556, '2025-05-25', 'Charly', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1557, '2025-05-26', 'Diego', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1558, '2025-05-27', 'Gaston', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1559, '2025-05-28', 'Gus', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1560, '2025-05-29', 'Sabri', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1561, '2025-05-30', 'Lucho', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1562, '2025-05-31', 'Diego', 'Importado desde Excel - Mayo 2025', '2025-05-30 15:35:27', '2025-05-30 15:35:27'),
+(1716, '2025-06-02', 'Diego', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1717, '2025-06-03', 'Sabri', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1718, '2025-06-04', 'Brian', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1719, '2025-06-05', 'Charly', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1720, '2025-06-06', 'Lucho', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1721, '2025-06-07', 'Gus', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1722, '2025-06-08', 'Brian', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1723, '2025-06-09', 'Gaston', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1724, '2025-06-10', 'Charly', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1725, '2025-06-11', 'Diego', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1726, '2025-06-12', 'Sabri', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1727, '2025-06-13', 'Gus', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1728, '2025-06-14', 'Diego', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1729, '2025-06-15', 'Lucho', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1730, '2025-06-16', 'Sabri', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1731, '2025-06-17', 'Jaime', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1732, '2025-06-18', 'Lucho', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1733, '2025-06-19', 'Diego', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1734, '2025-06-20', 'Brian', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1735, '2025-06-21', 'Jaime', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1736, '2025-06-22', 'Charly', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1737, '2025-06-23', 'Brian', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1738, '2025-06-24', 'Gaston', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1739, '2025-06-25', 'Charly', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1740, '2025-06-26', 'Gus', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1741, '2025-06-27', 'Jaime', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1742, '2025-06-28', 'Lucho', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1743, '2025-06-29', 'Sabri', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(1744, '2025-06-30', 'Gus', 'Importado desde Excel - Junio 2025', '2025-05-30 15:37:06', '2025-05-30 15:37:06'),
+(2231, '2025-05-01', 'Charly', 'Importado desde Excel - Mayo 2025', '2025-05-30 16:19:23', '2025-05-30 16:19:23'),
+(2809, '2025-06-01', 'Gaston', 'Importado desde Excel - Junio 2025', '2025-06-05 17:25:21', '2025-06-05 17:25:21');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `historial_incidentes_contactos`
+--
+
+CREATE TABLE `historial_incidentes_contactos` (
+  `id` int(11) NOT NULL,
+  `sistema_id` int(11) NOT NULL,
+  `equipo_contactado_id` int(11) NOT NULL,
+  `integrante_contactado_id` int(11) DEFAULT NULL,
+  `fecha_incidente` datetime NOT NULL,
+  `medio_contacto` enum('telefono','whatsapp','email','presencial') NOT NULL,
+  `tiempo_respuesta_minutos` int(11) DEFAULT NULL,
+  `resuelto` tinyint(1) DEFAULT 0,
+  `observaciones` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL COMMENT 'Usuario que registró el contacto',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Historial de contactos realizados durante incidentes';
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `hitos`
+--
+
+CREATE TABLE `hitos` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(255) NOT NULL,
+  `fecha_inicio` date DEFAULT NULL,
+  `fecha_fin` date DEFAULT NULL,
+  `descripcion` text DEFAULT NULL,
+  `impacto` text DEFAULT NULL,
+  `id_proyecto_origen` int(11) DEFAULT NULL,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_actualizacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Volcado de datos para la tabla `hitos`
+--
+
+INSERT INTO `hitos` (`id`, `nombre`, `fecha_inicio`, `fecha_fin`, `descripcion`, `impacto`, `id_proyecto_origen`, `fecha_creacion`, `fecha_actualizacion`) VALUES
+(1, 'HITO3 de prueba', '2025-04-21', '2025-05-09', 'Probando los hitos carga manual', 'alto', 13, '2025-06-03 00:14:32', '2025-06-03 16:37:59'),
+(3, 'Ticky - Nuevo flujo cambio de plan', '2025-01-14', '2025-01-17', 'Se implementó para la opcion Cambio de Plan la integración con Ticky para optimizar la carga de esta categoria de Itrackers.', 'itrk', 16, '2025-06-03 16:35:54', '2025-06-03 16:35:54'),
+(5, '2024', '2024-10-03', '2024-10-16', 'prrueba otro año', 'bajo', NULL, '2025-06-05 02:40:38', '2025-06-05 02:40:38');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `hito_tareas`
+--
+
+CREATE TABLE `hito_tareas` (
+  `id` int(11) NOT NULL,
+  `id_hito` int(11) NOT NULL,
+  `nombre_tarea` varchar(255) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `estado` varchar(50) DEFAULT 'completada',
+  `fecha_inicio` date DEFAULT NULL,
+  `fecha_fin` date DEFAULT NULL,
+  `id_tarea_origen` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Volcado de datos para la tabla `hito_tareas`
+--
+
+INSERT INTO `hito_tareas` (`id`, `id_hito`, `nombre_tarea`, `descripcion`, `estado`, `fecha_inicio`, `fecha_fin`, `id_tarea_origen`) VALUES
+(1, 3, 'Nuevo flujo cambio de plan', 'Nuevo flujo cambio de plan', 'completado', '2025-01-15', '2025-01-16', 27);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `hito_usuarios`
+--
+
+CREATE TABLE `hito_usuarios` (
+  `id` int(11) NOT NULL,
+  `id_hito` int(11) NOT NULL,
+  `id_usuario` int(11) NOT NULL,
+  `rol` varchar(50) DEFAULT 'colaborador',
+  `fecha_asignacion` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Volcado de datos para la tabla `hito_usuarios`
+--
+
+INSERT INTO `hito_usuarios` (`id`, `id_hito`, `id_usuario`, `rol`, `fecha_asignacion`) VALUES
+(1, 1, 9, 'colaborador', '2025-06-03 16:37:59'),
+(2, 1, 3, 'supervisor', '2025-06-03 16:37:59'),
+(7, 3, 12, 'colaborador', '2025-06-04 18:27:46'),
+(11, 3, 8, 'colaborador', '2025-06-04 18:27:46'),
+(30, 5, 6, 'colaborador', '2025-06-05 02:40:38');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `incidentes_codigos`
+--
+
+CREATE TABLE `incidentes_codigos` (
+  `id` int(11) NOT NULL,
+  `id_incidente` int(11) NOT NULL,
+  `id_codigo` int(11) NOT NULL,
+  `minutos` int(11) NOT NULL COMMENT 'Minutos aplicables a este código',
+  `importe` decimal(10,2) DEFAULT NULL COMMENT 'Importe calculado (opcional)',
+  `id_tarifa_calculo` int(11) DEFAULT NULL COMMENT 'Tarifa utilizada para calcular este importe',
+  `observacion` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Relación entre incidentes y códigos aplicados';
+
+--
+-- Volcado de datos para la tabla `incidentes_codigos`
+--
+
+INSERT INTO `incidentes_codigos` (`id`, `id_incidente`, `id_codigo`, `minutos`, `importe`, `id_tarifa_calculo`, `observacion`, `created_at`) VALUES
+(78, 25, 7, 60, NULL, NULL, NULL, '2025-06-02 15:44:06'),
+(79, 25, 8, 60, NULL, NULL, NULL, '2025-06-02 15:44:06'),
+(80, 25, 6, 60, NULL, NULL, NULL, '2025-06-02 15:44:06'),
+(81, 25, 29, 30, NULL, NULL, NULL, '2025-06-02 15:44:06');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `incidentes_estado_historico`
+--
+
+CREATE TABLE `incidentes_estado_historico` (
+  `id` int(11) NOT NULL,
+  `id_incidente` int(11) NOT NULL,
+  `estado_anterior` varchar(20) DEFAULT NULL,
+  `estado_nuevo` varchar(20) NOT NULL,
+  `fecha_cambio` timestamp NOT NULL DEFAULT current_timestamp(),
+  `id_usuario` int(11) DEFAULT NULL,
+  `observaciones` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Volcado de datos para la tabla `incidentes_estado_historico`
+--
+
+INSERT INTO `incidentes_estado_historico` (`id`, `id_incidente`, `estado_anterior`, `estado_nuevo`, `fecha_cambio`, `id_usuario`, `observaciones`) VALUES
+(21, 25, NULL, 'registrado', '2025-06-02 15:44:06', NULL, 'Incidente creado');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `incidentes_guardia`
+--
+
+CREATE TABLE `incidentes_guardia` (
+  `id` int(11) NOT NULL,
+  `id_guardia` int(11) NOT NULL COMMENT 'ID de la guardia relacionada',
+  `inicio` datetime NOT NULL COMMENT 'Fecha y hora de inicio del incidente',
+  `fin` datetime NOT NULL COMMENT 'Fecha y hora de fin del incidente',
+  `duracion_minutos` int(11) GENERATED ALWAYS AS (timestampdiff(MINUTE,`inicio`,`fin`)) STORED COMMENT 'Duración calculada en minutos',
+  `descripcion` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Descripción del incidente',
+  `estado` enum('registrado','revisado','aprobado','rechazado','liquidado') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'registrado',
+  `id_usuario_registro` int(11) DEFAULT NULL COMMENT 'Usuario que registró el incidente',
+  `observaciones` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Incidentes ocurridos durante guardias';
+
+--
+-- Volcado de datos para la tabla `incidentes_guardia`
+--
+
+INSERT INTO `incidentes_guardia` (`id`, `id_guardia`, `inicio`, `fin`, `descripcion`, `estado`, `id_usuario_registro`, `observaciones`, `created_at`, `updated_at`) VALUES
+(25, 1716, '2025-06-02 12:43:00', '2025-06-02 13:43:00', 'hfjh', 'registrado', NULL, 'bgfhjk', '2025-06-02 15:44:06', '2025-06-02 15:44:06');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `integrantes`
+--
+
+CREATE TABLE `integrantes` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(50) NOT NULL,
+  `apellido` varchar(50) NOT NULL,
+  `rol` varchar(100) DEFAULT NULL COMMENT 'Rol dentro del equipo (Coordinador, Developer, etc.)',
+  `telefono_personal` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `whatsapp` varchar(20) DEFAULT NULL COMMENT 'Número de WhatsApp (puede ser diferente al teléfono)',
+  `disponibilidad` enum('disponible','ocupado','inactivo') DEFAULT 'disponible',
+  `es_coordinador` tinyint(1) DEFAULT 0 COMMENT 'Indica si es coordinador del equipo',
+  `notas` text DEFAULT NULL COMMENT 'Notas adicionales sobre el contacto',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Integrantes de los equipos técnicos';
+
+--
+-- Volcado de datos para la tabla `integrantes`
+--
+
+INSERT INTO `integrantes` (`id`, `nombre`, `apellido`, `rol`, `telefono_personal`, `email`, `whatsapp`, `disponibilidad`, `es_coordinador`, `notas`, `created_at`, `updated_at`) VALUES
+(10, 'Gus', 'Lozua', 'Analista', '+543812005416', 'sglozua@teco.com.ar', '+543812005416', 'disponible', 0, NULL, '2025-05-29 17:30:08', '2025-05-30 02:00:20'),
+(11, 'Dario', 'Panico', 'Coordinador', '+541168306701', 'dpanico@teco.com.ar', '+541168306701', 'disponible', 1, 'Lider equipo ATPC', '2025-05-30 00:15:37', '2025-05-30 00:15:37'),
+(12, 'Sabrina', 'Bustos', 'Analista', '+541160494380', 'sbustos@teco.com.ar', '+541160494380', 'disponible', 0, 'ATPC', '2025-05-30 00:19:12', '2025-05-30 02:01:14'),
+(13, 'Luciano', 'Centurion', 'Analista', '+541165985198', 'lncenturion@teco.com.ar', '+541165985198', 'disponible', 0, 'ATPC', '2025-05-30 00:22:25', '2025-05-30 02:00:48'),
+(14, 'Charly', 'Beltrame Petersen', 'Analista', '+541130092170', 'cbeltrame@teco.com.ar', '+541130092170', 'disponible', 0, 'ATPC', '2025-05-30 01:14:49', '2025-05-30 01:59:30'),
+(15, 'Pablo', 'Palomanes', 'Analista', '+543514592241', 'pjpalomanes@teco.com.ar', '+543514592241', 'disponible', 0, 'ATPC', '2025-05-30 01:15:49', '2025-05-30 02:00:59'),
+(16, 'Diego', 'D\'Agostino', 'Analista', '+543413770809', 'djdagostino@teco.com.ar', '+543413770809', 'disponible', 0, 'ATPC', '2025-05-30 01:17:06', '2025-05-30 01:59:47'),
+(17, 'Guille', 'Jacob', 'Analista', '+543436225057', 'gjjacob@teco.com.ar', '+543436225057', 'disponible', 0, 'ATPC', '2025-05-30 01:18:08', '2025-05-30 02:00:08'),
+(18, 'Gaston', 'Mingarelli', 'Analista', '+541169603470', 'gmmingarelli@teco.com.ar', '+541169603470', 'disponible', 0, 'ATPC', '2025-05-30 01:19:15', '2025-05-30 01:59:59'),
+(19, 'Brian', 'Ledezma', 'Analista', '+541165560542', 'bnledezma@teco.com.ar', '+541165560542', 'disponible', 0, 'ATPC', '2025-05-30 01:20:18', '2025-05-30 01:59:20'),
+(20, 'Jaime', 'Ocampo Solis', 'Analista', '+541169707596', 'jaocampo@teco.com.ar', '+541169707596', 'disponible', 0, 'ATPC', '2025-05-30 01:21:23', '2025-05-30 02:00:34'),
+(21, 'Santiago', 'Doval', 'Coordinador', '+541130713984', 'SDoval@teco.com.ar', '+541130713984', 'disponible', 1, 'GDA', '2025-05-30 21:30:55', '2025-05-30 21:32:56'),
+(22, 'Gabriel', 'Alonso', 'Analista', '+541149681221', 'GLAlonso@teco.com.ar', '+541144279320', 'disponible', 0, 'GDA', '2025-05-30 21:38:11', '2025-05-30 21:38:11'),
+(23, 'Juan', 'Daniluk', 'Analista', '+543516147172', 'jadaniluk@teco.com.ar', '+543514522987', 'disponible', 0, 'GDA', '2025-05-30 21:39:57', '2025-05-30 21:39:57'),
+(24, 'Dennis', 'Peña Juarez', 'Analista', '+541130874450', 'dapenajuarez@teco.com.ar', '+541130874450', 'disponible', 0, 'GDA', '2025-05-30 21:41:41', '2025-05-30 21:41:41'),
+(25, 'Ariel', 'Coelho', 'Otro', '+541167004008', 'acoelho@teco.com.ar', '+541167004008', 'disponible', 0, 'GDA Digital', '2025-05-30 21:45:02', '2025-05-30 21:45:02'),
+(26, 'Fernando', 'Maitini', 'IT', '+541157613268', 'FMaitini@proveedor.teco.com.ar', '+541157613268', 'disponible', 0, 'GDA', '2025-05-30 21:48:40', '2025-05-30 21:48:40'),
+(27, 'Leandro', 'Vicente', 'IT', '+541165735195', 'LVicente@proveedor.teco.com.ar', '+541165735195', 'disponible', 0, 'GDA', '2025-05-30 21:50:50', '2025-05-30 21:50:50'),
+(28, 'Anderson', 'Sánchez Mendez', 'IT', '+541121767225', 'AGSanchezMendez@proveedor.teco.com.ar', '+541121767225', 'disponible', 0, 'GDA Digital', '2025-05-30 21:52:58', '2025-05-30 21:52:58'),
+(29, 'Carlos', 'Arteaga', 'Coordinador', '+5402494439318', 'carteaga@teco.com.ar', '+5402494439318', 'disponible', 1, 'Adminitracion y Soporte Plataforma - Virtual Access', '2025-05-30 21:57:52', '2025-05-31 16:35:09'),
+(30, 'Silvia', 'Klodi', 'Analista', '+541147891771', 'seklodi@teco.com.ar', '+541147891771', 'disponible', 0, 'Adminsitración y Soporte Plataforma', '2025-05-30 21:59:28', '2025-05-31 16:38:58'),
+(31, 'Karin', 'Mayer', 'Gerente', '+541134331884', NULL, '+541134331884', 'disponible', 1, 'Yoizen', '2025-05-31 01:28:46', '2025-05-31 01:28:46'),
+(32, 'Leopoldo', 'Gadea', 'IT', '+541149927399', 'ligadea@teco.com.ar', '+541149927399', 'disponible', 0, 'Adminsitración y Soporte Plataforma - Citrix', '2025-05-31 01:54:50', '2025-05-31 23:54:53'),
+(33, 'Alejandro', 'Molaroni', 'Coordinador', '+541140527217', 'AGMolaroni@teco.com.ar', '+541140527217', 'disponible', 1, 'Eflow', '2025-05-31 02:36:25', '2025-05-31 23:51:12'),
+(34, 'Fabian', 'Acevedo', 'Analista Sr', '+541171744708', 'facevedo@teco.com.ar', '+541171744708', 'disponible', 0, 'Eflow', '2025-05-31 02:37:47', '2025-05-31 23:52:08'),
+(35, 'Mayra', 'Liendo', 'Analista', '+541124918762', 'MCLiendo@teco.com.ar', '+541124918762', 'disponible', 0, 'Eflow', '2025-05-31 02:39:39', '2025-05-31 23:55:30'),
+(36, 'Gabriel', 'Pellicer', 'Product Owner', '+543512562493', 'GAPellicer@teco.com.ar', '+543512562493', 'disponible', 0, 'EQA', '2025-05-31 02:42:50', '2025-05-31 23:53:07'),
+(37, 'Pablo', 'Gil', 'Product Owner', '+541166207147', 'PEGil@teco.com.ar', '+541166207147', 'disponible', 0, 'DISEÑO Y METODOLOGIA QA', '2025-05-31 03:11:55', '2025-05-31 03:13:51'),
+(38, 'Rafael', 'Caudevila', 'Coordinador', '+543516744792', 'LRCaudevila@teco.com.ar', '+543516744792', 'disponible', 1, 'Plataformas', '2025-05-31 23:27:10', '2025-05-31 23:27:10'),
+(39, 'Matías', 'Julián', 'Analista Sr', '+5491130958605', 'mfjulian@teco.com.ar', '+5491130958605', 'disponible', 0, 'Plataformas de contacto', '2025-05-31 23:30:52', '2025-05-31 23:30:52'),
+(40, 'Daniel', 'Rojas', 'Analista Sr', '+5491165541385', 'dnrojas@teco.com.ar', '+5491165541385', 'disponible', 0, 'Plataformas de contacto', '2025-05-31 23:32:06', '2025-05-31 23:32:06'),
+(41, 'Marcelo', 'Neri', 'Analista Sr', '+541130544846', 'mjneri@teco.com.ar', '+541130544846', 'disponible', 0, 'Plataforma de contacto', '2025-05-31 23:34:29', '2025-05-31 23:34:29'),
+(42, 'Patricio', 'Diaz', 'Analista Sr', '+541145630498', 'PatDiaz@teco.com.ar', '+541145630498', 'disponible', 0, 'Plataformas de contacto', '2025-05-31 23:35:51', '2025-05-31 23:35:51');
 
 -- --------------------------------------------------------
 
@@ -5645,6 +6469,155 @@ INSERT INTO `itracker_data` (`id`, `ticket_id`, `unido_a`, `t_0`, `t_1`, `t_2`, 
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `liquidaciones_detalle`
+--
+
+CREATE TABLE `liquidaciones_detalle` (
+  `id` int(11) NOT NULL,
+  `id_liquidacion` int(11) NOT NULL,
+  `id_incidente` int(11) NOT NULL,
+  `id_guardia` int(11) NOT NULL,
+  `usuario` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Usuario de guardia',
+  `fecha` date NOT NULL,
+  `total_minutos` int(11) NOT NULL,
+  `total_importe` decimal(10,2) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Detalle de liquidaciones de guardias';
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `liquidaciones_guardia`
+--
+
+CREATE TABLE `liquidaciones_guardia` (
+  `id` int(11) NOT NULL,
+  `periodo` varchar(7) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Formato YYYY-MM',
+  `fecha_generacion` datetime NOT NULL DEFAULT current_timestamp(),
+  `estado` enum('pendiente','enviada','procesada','cerrada') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pendiente',
+  `observaciones` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `id_usuario_generacion` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Cabecera de liquidaciones de guardias';
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `notificaciones`
+--
+
+CREATE TABLE `notificaciones` (
+  `id` int(11) NOT NULL,
+  `id_usuario` int(11) NOT NULL,
+  `tipo` varchar(50) NOT NULL,
+  `titulo` varchar(100) NOT NULL,
+  `mensaje` text NOT NULL,
+  `referencia_id` int(11) DEFAULT NULL,
+  `referencia_tipo` varchar(50) DEFAULT NULL,
+  `leida` tinyint(1) DEFAULT 0,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Volcado de datos para la tabla `notificaciones`
+--
+
+INSERT INTO `notificaciones` (`id`, `id_usuario`, `tipo`, `titulo`, `mensaje`, `referencia_id`, `referencia_tipo`, `leida`, `fecha_creacion`) VALUES
+(1, 3, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente que requiere revisión', 1, 'incidente', 1, '2025-05-22 13:35:04'),
+(2, 3, 'cambio_estado', 'Estado Actualizado', 'Un incidente ha cambiado de estado a revisado', 1, 'incidente', 1, '2025-05-22 13:35:04'),
+(3, 2, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: ojala q ande...', 14, 'incidente', 0, '2025-05-22 23:55:59'),
+(4, 9, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: ojala q ande...', 14, 'incidente', 0, '2025-05-22 23:56:00'),
+(5, 3, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: ojala q ande...', 14, 'incidente', 1, '2025-05-22 23:56:00'),
+(6, 1, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: ojala q ande...', 14, 'incidente', 0, '2025-05-22 23:56:00'),
+(7, 2, 'cambio_estado', 'Incidente liquidado', 'El incidente #14 cambió de \"aprobado\" a \"liquidado\"', 14, 'incidente', 0, '2025-05-23 01:18:04'),
+(8, 9, 'cambio_estado', 'Incidente liquidado', 'El incidente #14 cambió de \"aprobado\" a \"liquidado\"', 14, 'incidente', 0, '2025-05-23 01:18:04'),
+(9, 3, 'cambio_estado', 'Incidente liquidado', 'El incidente #14 cambió de \"aprobado\" a \"liquidado\"', 14, 'incidente', 1, '2025-05-23 01:18:04'),
+(10, 1, 'cambio_estado', 'Incidente liquidado', 'El incidente #14 cambió de \"aprobado\" a \"liquidado\"', 14, 'incidente', 0, '2025-05-23 01:18:04'),
+(11, 2, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: nuevoin...', 15, 'incidente', 0, '2025-05-23 01:22:45'),
+(12, 9, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: nuevoin...', 15, 'incidente', 0, '2025-05-23 01:22:46'),
+(13, 3, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: nuevoin...', 15, 'incidente', 0, '2025-05-23 01:22:46'),
+(14, 1, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: nuevoin...', 15, 'incidente', 0, '2025-05-23 01:22:46'),
+(15, 2, 'cambio_estado', 'Incidente revisado', 'El incidente #15 cambió de \"registrado\" a \"revisado\"', 15, 'incidente', 0, '2025-05-23 01:23:53'),
+(16, 9, 'cambio_estado', 'Incidente revisado', 'El incidente #15 cambió de \"registrado\" a \"revisado\"', 15, 'incidente', 0, '2025-05-23 01:23:53'),
+(17, 3, 'cambio_estado', 'Incidente revisado', 'El incidente #15 cambió de \"registrado\" a \"revisado\"', 15, 'incidente', 0, '2025-05-23 01:23:53'),
+(18, 1, 'cambio_estado', 'Incidente revisado', 'El incidente #15 cambió de \"registrado\" a \"revisado\"', 15, 'incidente', 0, '2025-05-23 01:23:53'),
+(19, 2, 'cambio_estado', 'Incidente registrado', 'El incidente #15 cambió a estado: registrado', 15, 'incidente', 0, '2025-05-23 01:24:03'),
+(20, 9, 'cambio_estado', 'Incidente registrado', 'El incidente #15 cambió a estado: registrado', 15, 'incidente', 0, '2025-05-23 01:24:03'),
+(21, 3, 'cambio_estado', 'Incidente registrado', 'El incidente #15 cambió a estado: registrado', 15, 'incidente', 0, '2025-05-23 01:24:03'),
+(22, 1, 'cambio_estado', 'Incidente registrado', 'El incidente #15 cambió a estado: registrado', 15, 'incidente', 0, '2025-05-23 01:24:03'),
+(23, 2, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: nuvoeflow...', 16, 'incidente', 0, '2025-05-23 21:52:14'),
+(24, 9, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: nuvoeflow...', 16, 'incidente', 0, '2025-05-23 21:52:14'),
+(25, 3, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: nuvoeflow...', 16, 'incidente', 0, '2025-05-23 21:52:14'),
+(26, 1, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: nuvoeflow...', 16, 'incidente', 0, '2025-05-23 21:52:14'),
+(27, 2, 'cambio_estado', 'Incidente revisado', 'El incidente #10 cambió de \"registrado\" a \"revisado\"', 10, 'incidente', 0, '2025-05-24 01:37:18'),
+(28, 9, 'cambio_estado', 'Incidente revisado', 'El incidente #10 cambió de \"registrado\" a \"revisado\"', 10, 'incidente', 0, '2025-05-24 01:37:18'),
+(29, 3, 'cambio_estado', 'Incidente revisado', 'El incidente #10 cambió de \"registrado\" a \"revisado\"', 10, 'incidente', 0, '2025-05-24 01:37:18'),
+(30, 1, 'cambio_estado', 'Incidente revisado', 'El incidente #10 cambió de \"registrado\" a \"revisado\"', 10, 'incidente', 0, '2025-05-24 01:37:18'),
+(31, 2, 'cambio_estado', 'Incidente registrado', 'El incidente #10 cambió a estado: registrado', 10, 'incidente', 0, '2025-05-24 01:37:52'),
+(32, 9, 'cambio_estado', 'Incidente registrado', 'El incidente #10 cambió a estado: registrado', 10, 'incidente', 0, '2025-05-24 01:37:52'),
+(33, 3, 'cambio_estado', 'Incidente registrado', 'El incidente #10 cambió a estado: registrado', 10, 'incidente', 0, '2025-05-24 01:37:52'),
+(34, 1, 'cambio_estado', 'Incidente registrado', 'El incidente #10 cambió a estado: registrado', 10, 'incidente', 0, '2025-05-24 01:37:52'),
+(35, 2, 'cambio_estado', 'Incidente revisado', 'El incidente #10 cambió de \"registrado\" a \"revisado\"', 10, 'incidente', 0, '2025-05-24 01:39:38'),
+(36, 9, 'cambio_estado', 'Incidente revisado', 'El incidente #10 cambió de \"registrado\" a \"revisado\"', 10, 'incidente', 0, '2025-05-24 01:39:38'),
+(37, 3, 'cambio_estado', 'Incidente revisado', 'El incidente #10 cambió de \"registrado\" a \"revisado\"', 10, 'incidente', 0, '2025-05-24 01:39:38'),
+(38, 1, 'cambio_estado', 'Incidente revisado', 'El incidente #10 cambió de \"registrado\" a \"revisado\"', 10, 'incidente', 0, '2025-05-24 01:39:38'),
+(39, 2, 'cambio_estado', 'Incidente aprobado', 'El incidente #10 cambió de \"revisado\" a \"aprobado\"', 10, 'incidente', 0, '2025-05-24 01:40:29'),
+(40, 9, 'cambio_estado', 'Incidente aprobado', 'El incidente #10 cambió de \"revisado\" a \"aprobado\"', 10, 'incidente', 0, '2025-05-24 01:40:29'),
+(41, 3, 'cambio_estado', 'Incidente aprobado', 'El incidente #10 cambió de \"revisado\" a \"aprobado\"', 10, 'incidente', 0, '2025-05-24 01:40:29'),
+(42, 1, 'cambio_estado', 'Incidente aprobado', 'El incidente #10 cambió de \"revisado\" a \"aprobado\"', 10, 'incidente', 0, '2025-05-24 01:40:29'),
+(43, 2, 'cambio_estado', 'Incidente revisado', 'El incidente #10 cambió a estado: revisado', 10, 'incidente', 0, '2025-05-24 01:40:34'),
+(44, 9, 'cambio_estado', 'Incidente revisado', 'El incidente #10 cambió a estado: revisado', 10, 'incidente', 0, '2025-05-24 01:40:34'),
+(45, 3, 'cambio_estado', 'Incidente revisado', 'El incidente #10 cambió a estado: revisado', 10, 'incidente', 0, '2025-05-24 01:40:34'),
+(46, 1, 'cambio_estado', 'Incidente revisado', 'El incidente #10 cambió a estado: revisado', 10, 'incidente', 0, '2025-05-24 01:40:34'),
+(47, 2, 'cambio_estado', 'Incidente aprobado', 'El incidente #10 cambió de \"revisado\" a \"aprobado\"', 10, 'incidente', 0, '2025-05-24 01:41:23'),
+(48, 9, 'cambio_estado', 'Incidente aprobado', 'El incidente #10 cambió de \"revisado\" a \"aprobado\"', 10, 'incidente', 0, '2025-05-24 01:41:23'),
+(49, 3, 'cambio_estado', 'Incidente aprobado', 'El incidente #10 cambió de \"revisado\" a \"aprobado\"', 10, 'incidente', 0, '2025-05-24 01:41:23'),
+(50, 1, 'cambio_estado', 'Incidente aprobado', 'El incidente #10 cambió de \"revisado\" a \"aprobado\"', 10, 'incidente', 0, '2025-05-24 01:41:23'),
+(51, 2, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: incidenteprobada...', 17, 'incidente', 0, '2025-05-25 02:16:04'),
+(52, 9, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: incidenteprobada...', 17, 'incidente', 0, '2025-05-25 02:16:04'),
+(53, 3, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: incidenteprobada...', 17, 'incidente', 0, '2025-05-25 02:16:04'),
+(54, 1, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: incidenteprobada...', 17, 'incidente', 0, '2025-05-25 02:16:04'),
+(55, 2, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba incidente nuevo...', 18, 'incidente', 0, '2025-05-25 16:41:00'),
+(56, 9, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba incidente nuevo...', 18, 'incidente', 0, '2025-05-25 16:41:00'),
+(57, 3, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba incidente nuevo...', 18, 'incidente', 0, '2025-05-25 16:41:00'),
+(58, 1, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba incidente nuevo...', 18, 'incidente', 0, '2025-05-25 16:41:00'),
+(59, 2, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba nueva...', 19, 'incidente', 0, '2025-05-26 17:56:10'),
+(60, 9, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba nueva...', 19, 'incidente', 0, '2025-05-26 17:56:10'),
+(61, 3, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba nueva...', 19, 'incidente', 0, '2025-05-26 17:56:10'),
+(62, 1, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba nueva...', 19, 'incidente', 0, '2025-05-26 17:56:10'),
+(63, 2, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: nuevo...', 20, 'incidente', 0, '2025-05-26 20:36:51'),
+(64, 9, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: nuevo...', 20, 'incidente', 0, '2025-05-26 20:36:51'),
+(65, 3, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: nuevo...', 20, 'incidente', 0, '2025-05-26 20:36:51'),
+(66, 1, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: nuevo...', 20, 'incidente', 0, '2025-05-26 20:36:51'),
+(67, 2, 'cambio_estado', 'Incidente revisado', 'El incidente #20 cambió de \"registrado\" a \"revisado\"', 20, 'incidente', 0, '2025-05-27 18:40:17'),
+(68, 9, 'cambio_estado', 'Incidente revisado', 'El incidente #20 cambió de \"registrado\" a \"revisado\"', 20, 'incidente', 0, '2025-05-27 18:40:17'),
+(69, 3, 'cambio_estado', 'Incidente revisado', 'El incidente #20 cambió de \"registrado\" a \"revisado\"', 20, 'incidente', 0, '2025-05-27 18:40:17'),
+(70, 1, 'cambio_estado', 'Incidente revisado', 'El incidente #20 cambió de \"registrado\" a \"revisado\"', 20, 'incidente', 0, '2025-05-27 18:40:17'),
+(71, 2, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: otro...', 21, 'incidente', 0, '2025-05-27 18:43:14'),
+(72, 9, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: otro...', 21, 'incidente', 0, '2025-05-27 18:43:14'),
+(73, 3, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: otro...', 21, 'incidente', 0, '2025-05-27 18:43:14'),
+(74, 1, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: otro...', 21, 'incidente', 0, '2025-05-27 18:43:14'),
+(75, 2, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba DC...', 22, 'incidente', 0, '2025-05-28 17:16:55'),
+(76, 9, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba DC...', 22, 'incidente', 0, '2025-05-28 17:16:55'),
+(77, 3, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba DC...', 22, 'incidente', 0, '2025-05-28 17:16:55'),
+(78, 1, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba DC...', 22, 'incidente', 0, '2025-05-28 17:16:55'),
+(79, 2, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba...', 23, 'incidente', 0, '2025-05-28 19:11:38'),
+(80, 9, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba...', 23, 'incidente', 0, '2025-05-28 19:11:38'),
+(81, 3, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba...', 23, 'incidente', 0, '2025-05-28 19:11:38'),
+(82, 1, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: prueba...', 23, 'incidente', 0, '2025-05-28 19:11:38'),
+(83, 2, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: hjkh...', 24, 'incidente', 0, '2025-05-29 21:12:37'),
+(84, 9, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: hjkh...', 24, 'incidente', 0, '2025-05-29 21:12:37'),
+(85, 3, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: hjkh...', 24, 'incidente', 0, '2025-05-29 21:12:37'),
+(86, 1, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: hjkh...', 24, 'incidente', 0, '2025-05-29 21:12:37'),
+(87, 2, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: hfjh...', 25, 'incidente', 0, '2025-06-02 15:44:06'),
+(88, 9, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: hfjh...', 25, 'incidente', 0, '2025-06-02 15:44:06'),
+(89, 3, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: hfjh...', 25, 'incidente', 0, '2025-06-02 15:44:06'),
+(90, 1, 'nuevo_incidente', 'Nuevo Incidente Registrado', 'Se ha registrado un nuevo incidente: hfjh...', 25, 'incidente', 0, '2025-06-02 15:44:06');
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `permisos`
 --
 
@@ -5813,7 +6786,15 @@ INSERT INTO `placas` (`id`, `numero_placa`, `titulo`, `descripcion`, `impacto`, 
 (94, '11023', 'IVER -  Falla Reconocimiento Outage ', 'Se presentaban errores para detectar Outages tanto en el canal telefónico como digital, esto generaba que haya mas tráfico de lo habitual en ambos canales.\n', 'bajo', 'Incidente', 'IVR', '2025-05-06 09:30:00', '2025-05-06 16:15:00', 405, 'Sabrina Bustos', 'Causa: Tarea Fallida sobre Firewall\nSolución: Se realizo rollback de la tarea.', '2025-05-06 21:54:39'),
 (95, '11032', 'Tarea de Mantenimiento - Genesys Pic', 'Durante la ventana de mantenimmiento se podrian presentar errores con la carga y uso de tabulaciones', NULL, 'Mantenimiento', 'No aplica', '2025-05-07 11:30:00', '2025-05-07 13:30:00', 120, 'Sabrina Bustos', 'Fin', '2025-05-08 12:36:46'),
 (96, '11044', 'Eflow -  Caida Masiva', 'Se presento caida del sistema tanto en los turneros como en los puestos de atencion de las oficinas comerciales', 'medio', 'Incidente', 'Eflow', '2025-05-08 19:55:00', '2025-05-08 20:20:00', 25, 'Sabrina Bustos', 'Se aplico unn reinicio', '2025-05-09 16:38:58'),
-(97, '11046', 'Social+ - Falla Derivación Linea Única ', 'Al navegar por las opciones de Soporte Técnico Internet, el bot realizaba un loop sin permitirle al cliente avanzar por el menú, esto generaba que no haya tráfico en la cola de atención Tecnico Conectividad.\n', 'medio', 'Incidente', 'Social+', '2025-05-09 00:00:00', '2025-05-09 09:45:00', 585, 'Sabrina Bustos', 'Causa: Falla en Servicio de diagnostico y desvio en el flujo del Bot\nSolución: Se reestableció el servicio afectado', '2025-05-09 16:41:46');
+(97, '11046', 'Social+ - Falla Derivación Linea Única ', 'Al navegar por las opciones de Soporte Técnico Internet, el bot realizaba un loop sin permitirle al cliente avanzar por el menú, esto generaba que no haya tráfico en la cola de atención Tecnico Conectividad.\n', 'medio', 'Incidente', 'Social+', '2025-05-09 00:00:00', '2025-05-09 09:45:00', 585, 'Sabrina Bustos', 'Causa: Falla en Servicio de diagnostico y desvio en el flujo del Bot\nSolución: Se reestableció el servicio afectado', '2025-05-09 16:41:46'),
+(98, '11064', 'IVR - Falla reconocimiento de clientes', 'Se detectaron fallas de reconocimiento de cliente, principalmente en las colas de Movil', 'bajo', 'Incidente', 'IVR', '2025-05-13 10:00:00', '2025-05-13 12:50:00', 170, 'Sabrina Bustos', 'Causa: En analisis', '2025-05-16 03:24:24'),
+(99, '11070', 'Eflow -  Sin Sistema', 'Se presentaron fallas en el funcionamiento de los nodos, los turnos no llegaban a puesto', 'bajo', 'Incidente', 'Eflow', '2025-05-14 08:10:00', '2025-05-14 09:00:00', 50, 'Guillermo Jacob', 'Causa: En analisis por el proveedor', '2025-05-16 03:27:01'),
+(100, '11099', 'Social+ - Tarea de mantenimiento', 'Durante la ventana de referencia se estara realizando un mantenimiento, por el cual tanto la Web de Agente como la de Supervisor no estaran disponible', NULL, 'Mantenimiento', 'Social+', '2025-05-21 22:30:00', '2025-05-21 22:40:00', 10, 'Sabrina Bustos', 'Fin', '2025-05-27 14:19:33'),
+(101, '11116', 'Citrix - Caida escritorios virtuales', 'Se reporta caida en los escritorio virtuales, seguida de imposibilidad de relogueo.', 'bajo', 'Incidente', 'Citrix', '2025-05-24 23:15:00', '2025-05-25 00:00:00', 45, 'Diego D´Agostino', 'Solucionado', '2025-05-27 14:23:02'),
+(102, '11117', 'Citrix - Inconvenientes con escritorio virtual', 'Se presentan inconvenientes masivos al tratar de abrir los escritorios virtuales, en los cuales se tarda mucho en cargar y al hacerlo el mismo queda en negro o da un error de no responder. A la falla al anterior se suma que al abrir el escritorio quienes lograron acceder se les congela la pantalla unos segundos o min de manera aleatoria y luego vuelve a responder. ', 'alto', 'Incidente', 'Citrix', '2025-05-25 10:25:00', '2025-05-25 13:45:00', 380, 'Carlos Beltrame Pertersen', 'Causa: En analisis', '2025-05-27 14:30:00'),
+(103, '11127', 'EQA - Modulo Reporteria', 'No se puede realizar exportacion en la solapa reporteria', 'bajo', 'Incidente', 'EQA', '2025-05-27 08:00:00', '0000-00-00 00:00:00', NULL, 'Diego D´Agostino', 'Pueden controlar la evolucion desde el dashboard de partituras', '2025-05-27 14:32:31'),
+(104, '11128', 'Tarea de Mantenimiento - Genesys Pic', 'Se llevará a cabo una tarea de mantenimiento en los servidores SIP de los Agentes. Durante la misma, los representantes pueden experimentar  la aparición de algún cartel de aviso en WDE, en caso de percibir deslogueo en Genesys Pic, requerirá que vuelvan a iniciar sesión una vez finalizada la tarea.', NULL, 'Mantenimiento', 'Genesys Pic', '2025-05-27 23:00:00', '2025-05-27 23:30:00', 30, 'Sabrina Bustos', 'Fin', '2025-05-27 15:46:16'),
+(105, '11129', 'Comunicado - Genesys Pic', 'A partir de hoy se pondrá disponible la nueva versión de WDE para ser descargada en los puestos físicos de los sitios al momento de ingresar a la herramienta. Esto genera que los primeros logueos en las PC  demoren un poco mas de lo normal ya que se descargara e instalara esta nueva versión.\nA nivel operativo esta nueva versión no trae ninguna diferencia por lo que no tendrán ningún otro impacto o cambio en la gestión.', NULL, 'Comunicado', 'Genesys Pic', '2025-05-27 16:00:00', '0000-00-00 00:00:00', NULL, 'Luciano Centurion', 'fin', '2025-05-28 15:28:54');
 
 -- --------------------------------------------------------
 
@@ -5836,11 +6817,12 @@ CREATE TABLE `proyectos` (
 --
 
 INSERT INTO `proyectos` (`id`, `nombre`, `descripcion`, `fecha_inicio`, `fecha_fin`, `estado`, `id_usuario_responsable`) VALUES
-(11, 'POC Huawei', 'nueva plataforma de atencion', '2024-11-25', '2025-04-30', 'en progreso', NULL),
-(12, 'POC GENESYS', 'nueva plataforma de atencion', '2024-09-25', '2024-11-20', 'completado', NULL),
-(13, 'Antiguo', 'redes sociales', '2024-08-08', '2024-09-28', 'completado', NULL),
-(14, 'a Ver!', 'nada', '2025-04-09', '2025-04-15', 'pendiente', 6),
-(15, 'prueba nueva', 'prueba para kpis', '2025-04-11', '2025-04-20', 'pendiente', 2);
+(11, 'POC Huawei', 'nueva plataforma de atencion', '2024-11-25', '2025-04-30', 'completado', NULL),
+(12, 'POC GENESYS', 'nueva plataforma de atencion', '2024-09-25', '2024-11-20', 'en progreso', NULL),
+(13, 'Antiguo', 'redes sociales', '2024-08-08', '2024-09-28', 'en progreso', NULL),
+(14, 'a Ver!', 'nada', '2025-04-09', '2025-04-15', 'completado', 6),
+(15, 'prueba nueva', 'prueba para kpis', '2025-04-11', '2025-04-20', 'pendiente', 2),
+(16, 'Ticky - Nuevo flujo cambio de plan', 'Se implementó para la opcion Cambio de Plan la integración con Ticky para optimizar la carga de esta categoria de Itrackers.', '2025-01-14', '2025-01-17', 'completado', NULL);
 
 -- --------------------------------------------------------
 
@@ -5869,7 +6851,9 @@ INSERT INTO `proyecto_usuarios` (`id`, `id_proyecto`, `id_usuario`, `rol`, `fech
 (37, 13, 6, 'responsable', '2025-04-15 11:35:46'),
 (40, 15, 1, 'responsable', '2025-04-16 18:20:56'),
 (41, 12, 1, 'colaborador', '2025-04-28 22:55:23'),
-(42, 13, 1, 'colaborador', '2025-05-01 11:53:28');
+(42, 13, 1, 'colaborador', '2025-05-01 11:53:28'),
+(43, 12, 9, 'responsable', '2025-05-16 12:06:09'),
+(44, 16, 12, 'colaborador', '2025-06-03 11:35:02');
 
 -- --------------------------------------------------------
 
@@ -6006,6 +6990,43 @@ INSERT INTO `rol_permiso` (`id`, `id_rol`, `id_permiso`) VALUES
 (83, 4, 28),
 (105, 6, 15),
 (104, 6, 20);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `sistemas_monitoreados`
+--
+
+CREATE TABLE `sistemas_monitoreados` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL COMMENT 'Nombre del sistema/aplicación',
+  `descripcion` text DEFAULT NULL COMMENT 'Descripción del sistema',
+  `criticidad` enum('alta','media','baja') DEFAULT 'media' COMMENT 'Nivel de criticidad del sistema',
+  `categoria` varchar(50) DEFAULT NULL COMMENT 'Categoría del sistema (BD, Web, API, etc.)',
+  `estado` enum('operativo','mantenimiento','inactivo') DEFAULT 'operativo',
+  `url_monitoreo` varchar(255) DEFAULT NULL COMMENT 'URL para monitorear el sistema',
+  `documentacion_url` varchar(255) DEFAULT NULL COMMENT 'URL de documentación',
+  `orden_visualizacion` int(11) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Sistemas bajo supervisión técnica';
+
+--
+-- Volcado de datos para la tabla `sistemas_monitoreados`
+--
+
+INSERT INTO `sistemas_monitoreados` (`id`, `nombre`, `descripcion`, `criticidad`, `categoria`, `estado`, `url_monitoreo`, `documentacion_url`, `orden_visualizacion`, `created_at`, `updated_at`) VALUES
+(7, 'Eflow', 'Turnero', 'media', 'Web Application', 'operativo', NULL, NULL, 999, '2025-05-29 16:53:44', '2025-05-29 23:38:30'),
+(8, 'Genesys PIC WDE', 'PIC WDE', 'media', 'Web Application', 'operativo', NULL, NULL, 999, '2025-05-30 01:22:59', '2025-05-31 03:30:28'),
+(9, 'Ysocial', 'Ysocial B2C Y B2B (SMB)', 'media', 'Web Application', 'operativo', NULL, NULL, 999, '2025-05-30 01:24:15', '2025-05-31 15:12:57'),
+(10, 'EQA', 'Eqa', 'media', 'Cloud Service', 'operativo', NULL, NULL, 999, '2025-05-30 01:24:59', '2025-05-30 01:24:59'),
+(11, 'GIR - Speechminer', 'GIR', 'baja', 'Monitoreo', 'operativo', NULL, NULL, 999, '2025-05-30 01:25:34', '2025-05-30 19:59:51'),
+(12, 'Citrix - Virtual Access', 'Citrix', 'media', 'Escritorios remotos', 'operativo', NULL, NULL, 999, '2025-05-30 02:03:08', '2025-05-30 02:04:47'),
+(13, 'TuID', 'TuID, TuID Cloud', 'media', 'API', 'operativo', NULL, NULL, 999, '2025-05-30 02:05:59', '2025-05-30 02:05:59'),
+(14, 'GI2', 'GI2 ', 'media', 'Monitoreo', 'operativo', NULL, NULL, 999, '2025-05-31 03:29:53', '2025-05-31 03:40:32'),
+(15, 'IVR', NULL, 'media', 'Telefonía', 'operativo', NULL, NULL, 999, '2025-05-31 03:31:35', '2025-05-31 03:31:35'),
+(17, 'Pulse', 'Genesys Pulse', 'baja', 'Monitoreo', 'operativo', NULL, NULL, 999, '2025-05-31 23:43:14', '2025-05-31 23:43:14'),
+(18, 'Redes - Conectividad', 'Incidentes en redes, conectividad en sitios', 'media', 'Red/Infraestructura', 'operativo', NULL, NULL, 999, '2025-06-01 15:43:24', '2025-06-01 15:44:58');
 
 -- --------------------------------------------------------
 
@@ -6761,7 +7782,8 @@ INSERT INTO `tareas` (`id`, `titulo`, `descripcion`, `estado`, `prioridad`, `fec
 (22, 'Audio 5 ', 'controles ', 'pendiente', 'baja', '2024-10-10', '2024-10-22', 12, 6, NULL, 1),
 (23, 'de nuevo', 'nada', 'pendiente', 'media', '2024-09-30', '2024-11-15', 12, 7, NULL, 1),
 (25, 'tarea de prueba', 'probando funcion de offcanva', 'completado', 'alta', '2025-04-10', '2025-04-15', 14, 6, NULL, 1),
-(26, 'tarea prueba', 'nada', 'pendiente', 'alta', '2025-04-12', '2025-04-18', 15, 6, NULL, 0);
+(26, 'tarea prueba', 'nada', 'pendiente', 'alta', '2025-04-12', '2025-04-18', 15, 6, NULL, 0),
+(27, 'Nuevo flujo cambio de plan', 'Nuevo flujo cambio de plan', 'completado', 'media', '2025-01-15', '2025-01-16', 16, 3, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -6791,6 +7813,34 @@ INSERT INTO `tarea_usuarios` (`id`, `id_tarea`, `id_usuario`, `fecha_asignacion`
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `tarifas`
+--
+
+CREATE TABLE `tarifas` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(255) NOT NULL,
+  `valor_guardia_pasiva` decimal(10,2) NOT NULL,
+  `valor_hora_activa` decimal(10,2) NOT NULL,
+  `valor_adicional_nocturno_habil` decimal(10,2) NOT NULL,
+  `valor_adicional_nocturno_no_habil` decimal(10,2) NOT NULL,
+  `vigencia_desde` date NOT NULL,
+  `vigencia_hasta` date DEFAULT NULL,
+  `estado` enum('activo','inactivo') DEFAULT 'activo',
+  `observaciones` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Volcado de datos para la tabla `tarifas`
+--
+
+INSERT INTO `tarifas` (`id`, `nombre`, `valor_guardia_pasiva`, `valor_hora_activa`, `valor_adicional_nocturno_habil`, `valor_adicional_nocturno_no_habil`, `vigencia_desde`, `vigencia_hasta`, `estado`, `observaciones`, `created_at`, `updated_at`) VALUES
+(1, 'Tarifa Base 2025', '2500.00', '350.00', '500.00', '750.00', '2025-05-01', NULL, 'activo', 'Tarifa base creada automáticamente', '2025-05-25 02:03:39', '2025-05-29 12:20:47');
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `usuarios`
 --
 
@@ -6813,11 +7863,12 @@ CREATE TABLE `usuarios` (
 INSERT INTO `usuarios` (`id`, `nombre`, `email`, `password`, `estado`, `fecha_creacion`, `imagen_perfil`, `ultimo_acceso`, `fecha_actualizacion`) VALUES
 (1, 'user SAdmin', 'user@atpc.com', '$2b$10$xoIgApsEfVaVzHCVvKvB1.QgUrg.T9y2j.egma3yGkxbubpanv8hq', 'activo', '2025-03-20 01:55:42', NULL, NULL, '2025-05-03 17:38:12'),
 (2, 'admin', 'admin@atpc.com', '$2b$10$SAdmrQe2E6AUEmsVHGtFa.9RVS30Xvyj3gCEqVLPdGrtEX6GtBSaa', 'activo', '2025-03-20 01:56:27', NULL, NULL, NULL),
-(3, 'SuperAdmin', 'superadmin@atpc.com', '$2b$10$Vt4lZc87dHR3mxFHkhhZEOHPIWUgdSMvdnz5nUH98XoQF0sUMa4Ce', 'activo', '2025-03-20 01:57:18', NULL, '2025-05-09 00:15:00', '2025-05-09 00:15:00'),
+(3, 'SuperAdmin', 'superadmin@atpc.com', '$2b$10$Vt4lZc87dHR3mxFHkhhZEOHPIWUgdSMvdnz5nUH98XoQF0sUMa4Ce', 'activo', '2025-03-20 01:57:18', NULL, '2025-06-05 13:18:05', '2025-06-05 13:18:05'),
 (6, 'Usuario Prueba', 'test@example.com', '$2b$10$I4H0E0WM5VBRmqVCULp0tu5xKT8Lph4fNoYdBwY9LK.7Z1J847QN6', 'bloqueado', '2025-03-21 02:19:40', NULL, '2025-05-01 11:49:46', '2025-05-03 18:35:51'),
 (7, 'Us Observador', 'observador@example.com', '$2b$10$2GlFgGWVw9i7cRjp71XWDO/cRxKKvpB1ypsgliK5yOhdYcUf2Jesy', 'activo', '2025-03-26 18:59:25', NULL, NULL, '2025-05-03 17:37:46'),
 (8, 'Us Gestor', 'gestor@example.com', '$2b$10$0IZelV/kbQ9PXVz5gr0O9eMIuP5QT8pgEmQ7.7h5jAMyVzhd5/3Z2', 'activo', '2025-03-26 20:44:41', NULL, NULL, '2025-05-03 17:37:25'),
-(9, 'Usuario', 'gustavo@example.com', '$2b$10$0JPGN3bqyGQvgHTQ/wFH5e20bi48jO3c2ZZs.CJJHC8BzCaaWnGBe', 'activo', '2025-04-30 22:36:17', NULL, '2025-04-30 19:38:39', '2025-05-05 12:40:36');
+(9, 'Usuario', 'gustavo@example.com', '$2b$10$0JPGN3bqyGQvgHTQ/wFH5e20bi48jO3c2ZZs.CJJHC8BzCaaWnGBe', 'activo', '2025-04-30 22:36:17', NULL, '2025-04-30 19:38:39', '2025-05-05 12:40:36'),
+(12, 'Gus Lozua', 'sglozua@teco.com.ar', '$2b$10$FB0suICHuGBs/0zqsYww9.Ori/CihaLow7nBAgE8mS.HQdeHHMGCK', 'activo', '2025-05-17 02:35:41', NULL, '2025-05-26 18:24:22', '2025-05-26 18:24:22');
 
 -- --------------------------------------------------------
 
@@ -6843,7 +7894,8 @@ INSERT INTO `usuario_rol` (`id`, `id_usuario`, `id_rol`) VALUES
 (49, 7, 2),
 (48, 7, 6),
 (47, 8, 4),
-(56, 9, 1);
+(56, 9, 1),
+(57, 12, 2);
 
 -- --------------------------------------------------------
 
@@ -6857,7 +7909,7 @@ CREATE TABLE `v_proximos_eventos` (
 ,`start` datetime
 ,`end` datetime
 ,`allDay` tinyint(1)
-,`type` enum('task','event','holiday')
+,`type` enum('event','task','holiday','guardia','birthday','dayoff','gconect','vacation')
 ,`color` varchar(50)
 ,`description` text
 ,`location` varchar(255)
@@ -6879,7 +7931,7 @@ CREATE TABLE `v_tareas_pendientes` (
 ,`start` datetime
 ,`end` datetime
 ,`allDay` tinyint(1)
-,`type` enum('task','event','holiday')
+,`type` enum('event','task','holiday','guardia','birthday','dayoff','gconect','vacation')
 ,`color` varchar(50)
 ,`description` text
 ,`location` varchar(255)
@@ -6932,12 +7984,77 @@ ALTER TABLE `bitacora`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indices de la tabla `codigos_facturacion`
+--
+ALTER TABLE `codigos_facturacion`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_codigo` (`codigo`),
+  ADD KEY `idx_tipo` (`tipo`),
+  ADD KEY `idx_estado_vigencia` (`estado`,`fecha_vigencia_desde`,`fecha_vigencia_hasta`),
+  ADD KEY `idx_modalidad_convenio` (`modalidad_convenio`,`estado`),
+  ADD KEY `idx_modalidad_convenio_estado` (`modalidad_convenio`,`estado`),
+  ADD KEY `idx_modalidad_tipo_estado` (`modalidad_convenio`,`tipo`,`estado`);
+
+--
 -- Indices de la tabla `comentarios`
 --
 ALTER TABLE `comentarios`
   ADD PRIMARY KEY (`id`),
   ADD KEY `id_usuario` (`id_usuario`),
   ADD KEY `id_tarea` (`id_tarea`);
+
+--
+-- Indices de la tabla `enlaces`
+--
+ALTER TABLE `enlaces`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_titulo` (`titulo`),
+  ADD KEY `idx_categoria_id` (`categoria_id`);
+
+--
+-- Indices de la tabla `enlaces_categorias`
+--
+ALTER TABLE `enlaces_categorias`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `nombre` (`nombre`);
+
+--
+-- Indices de la tabla `enlaces_urls`
+--
+ALTER TABLE `enlaces_urls`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_enlace_id` (`enlace_id`);
+
+--
+-- Indices de la tabla `equipos_integrantes`
+--
+ALTER TABLE `equipos_integrantes`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_equipo_integrante` (`equipo_id`,`integrante_id`),
+  ADD KEY `idx_equipo_id` (`equipo_id`),
+  ADD KEY `idx_integrante_id` (`integrante_id`),
+  ADD KEY `idx_responsable` (`es_responsable_principal`),
+  ADD KEY `idx_integrantes_equipo_disponibilidad` (`equipo_id`,`integrante_id`) COMMENT 'Búsqueda rápida de integrantes por equipo';
+
+--
+-- Indices de la tabla `equipos_sistemas`
+--
+ALTER TABLE `equipos_sistemas`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_equipo_sistema` (`equipo_id`,`sistema_id`),
+  ADD KEY `idx_equipo_id` (`equipo_id`),
+  ADD KEY `idx_sistema_id` (`sistema_id`),
+  ADD KEY `idx_responsable` (`es_responsable_principal`),
+  ADD KEY `idx_sistemas_equipo_responsabilidad` (`sistema_id`,`es_responsable_principal`) COMMENT 'Búsqueda rápida de equipos responsables por sistema';
+
+--
+-- Indices de la tabla `equipos_tecnicos`
+--
+ALTER TABLE `equipos_tecnicos`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_nombre_equipo` (`nombre`),
+  ADD KEY `idx_estado` (`estado`),
+  ADD KEY `idx_orden` (`orden_visualizacion`);
 
 --
 -- Indices de la tabla `eventos`
@@ -6952,11 +8069,107 @@ ALTER TABLE `eventos`
 ALTER TABLE `eventos` ADD FULLTEXT KEY `idx_search` (`title`,`description`,`location`);
 
 --
+-- Indices de la tabla `flujos_escalamiento`
+--
+ALTER TABLE `flujos_escalamiento`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_sistema_id` (`sistema_id`),
+  ADD KEY `idx_equipo_primario` (`equipo_primario_id`),
+  ADD KEY `idx_equipo_escalamiento` (`equipo_escalamiento_id`),
+  ADD KEY `idx_escalamiento_activo` (`sistema_id`,`activo`) COMMENT 'Búsqueda rápida de flujos de escalamiento activos';
+
+--
+-- Indices de la tabla `glosario`
+--
+ALTER TABLE `glosario`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_termino` (`termino`),
+  ADD KEY `idx_categoria_id` (`categoria_id`);
+
+--
+-- Indices de la tabla `glosario_categorias`
+--
+ALTER TABLE `glosario_categorias`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `nombre` (`nombre`);
+
+--
 -- Indices de la tabla `guardias`
 --
 ALTER TABLE `guardias`
   ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_fecha_usuario` (`fecha`,`usuario`),
   ADD KEY `idx_fecha` (`fecha`);
+
+--
+-- Indices de la tabla `historial_incidentes_contactos`
+--
+ALTER TABLE `historial_incidentes_contactos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_sistema_fecha` (`sistema_id`,`fecha_incidente`),
+  ADD KEY `idx_equipo_contactado` (`equipo_contactado_id`),
+  ADD KEY `idx_integrante_contactado` (`integrante_contactado_id`),
+  ADD KEY `idx_created_by` (`created_by`);
+
+--
+-- Indices de la tabla `hitos`
+--
+ALTER TABLE `hitos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_hitos_proyecto` (`id_proyecto_origen`),
+  ADD KEY `idx_hitos_fechas` (`fecha_inicio`,`fecha_fin`);
+
+--
+-- Indices de la tabla `hito_tareas`
+--
+ALTER TABLE `hito_tareas`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `id_tarea_origen` (`id_tarea_origen`),
+  ADD KEY `idx_hito_tareas_hito` (`id_hito`);
+
+--
+-- Indices de la tabla `hito_usuarios`
+--
+ALTER TABLE `hito_usuarios`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_hito_usuario` (`id_hito`,`id_usuario`),
+  ADD KEY `idx_hito_usuarios_hito` (`id_hito`),
+  ADD KEY `idx_hito_usuarios_usuario` (`id_usuario`);
+
+--
+-- Indices de la tabla `incidentes_codigos`
+--
+ALTER TABLE `incidentes_codigos`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_incidente_codigo` (`id_incidente`,`id_codigo`),
+  ADD KEY `idx_id_incidente` (`id_incidente`),
+  ADD KEY `idx_id_codigo` (`id_codigo`),
+  ADD KEY `idx_tarifa_calculo` (`id_tarifa_calculo`);
+
+--
+-- Indices de la tabla `incidentes_estado_historico`
+--
+ALTER TABLE `incidentes_estado_historico`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `id_incidente` (`id_incidente`);
+
+--
+-- Indices de la tabla `incidentes_guardia`
+--
+ALTER TABLE `incidentes_guardia`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_id_guardia` (`id_guardia`),
+  ADD KEY `idx_inicio_fin` (`inicio`,`fin`),
+  ADD KEY `idx_estado` (`estado`);
+
+--
+-- Indices de la tabla `integrantes`
+--
+ALTER TABLE `integrantes`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_nombre_apellido` (`nombre`,`apellido`),
+  ADD KEY `idx_disponibilidad` (`disponibilidad`),
+  ADD KEY `idx_coordinador` (`es_coordinador`);
 
 --
 -- Indices de la tabla `itracker_data`
@@ -6964,6 +8177,30 @@ ALTER TABLE `guardias`
 ALTER TABLE `itracker_data`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `ticket_id` (`ticket_id`);
+
+--
+-- Indices de la tabla `liquidaciones_detalle`
+--
+ALTER TABLE `liquidaciones_detalle`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_id_liquidacion` (`id_liquidacion`),
+  ADD KEY `idx_id_incidente` (`id_incidente`),
+  ADD KEY `idx_id_guardia` (`id_guardia`),
+  ADD KEY `idx_usuario_fecha` (`usuario`,`fecha`);
+
+--
+-- Indices de la tabla `liquidaciones_guardia`
+--
+ALTER TABLE `liquidaciones_guardia`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_periodo` (`periodo`),
+  ADD KEY `idx_estado` (`estado`);
+
+--
+-- Indices de la tabla `notificaciones`
+--
+ALTER TABLE `notificaciones`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indices de la tabla `permisos`
@@ -7017,6 +8254,16 @@ ALTER TABLE `rol_permiso`
   ADD KEY `id_permiso` (`id_permiso`);
 
 --
+-- Indices de la tabla `sistemas_monitoreados`
+--
+ALTER TABLE `sistemas_monitoreados`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_nombre_sistema` (`nombre`),
+  ADD KEY `idx_criticidad` (`criticidad`),
+  ADD KEY `idx_estado` (`estado`),
+  ADD KEY `idx_categoria` (`categoria`);
+
+--
 -- Indices de la tabla `subtareas`
 --
 ALTER TABLE `subtareas`
@@ -7054,6 +8301,12 @@ ALTER TABLE `tarea_usuarios`
   ADD KEY `id_usuario` (`id_usuario`);
 
 --
+-- Indices de la tabla `tarifas`
+--
+ALTER TABLE `tarifas`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indices de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
@@ -7088,7 +8341,13 @@ ALTER TABLE `abm_social`
 -- AUTO_INCREMENT de la tabla `bitacora`
 --
 ALTER TABLE `bitacora`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=71;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=98;
+
+--
+-- AUTO_INCREMENT de la tabla `codigos_facturacion`
+--
+ALTER TABLE `codigos_facturacion`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT de la tabla `comentarios`
@@ -7097,22 +8356,142 @@ ALTER TABLE `comentarios`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `enlaces`
+--
+ALTER TABLE `enlaces`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
+
+--
+-- AUTO_INCREMENT de la tabla `enlaces_categorias`
+--
+ALTER TABLE `enlaces_categorias`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT de la tabla `enlaces_urls`
+--
+ALTER TABLE `enlaces_urls`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+
+--
+-- AUTO_INCREMENT de la tabla `equipos_integrantes`
+--
+ALTER TABLE `equipos_integrantes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
+
+--
+-- AUTO_INCREMENT de la tabla `equipos_sistemas`
+--
+ALTER TABLE `equipos_sistemas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=78;
+
+--
+-- AUTO_INCREMENT de la tabla `equipos_tecnicos`
+--
+ALTER TABLE `equipos_tecnicos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
 -- AUTO_INCREMENT de la tabla `eventos`
 --
 ALTER TABLE `eventos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
+
+--
+-- AUTO_INCREMENT de la tabla `flujos_escalamiento`
+--
+ALTER TABLE `flujos_escalamiento`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT de la tabla `glosario`
+--
+ALTER TABLE `glosario`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=139;
+
+--
+-- AUTO_INCREMENT de la tabla `glosario_categorias`
+--
+ALTER TABLE `glosario_categorias`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT de la tabla `guardias`
 --
 ALTER TABLE `guardias`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=378;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2839;
+
+--
+-- AUTO_INCREMENT de la tabla `historial_incidentes_contactos`
+--
+ALTER TABLE `historial_incidentes_contactos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `hitos`
+--
+ALTER TABLE `hitos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT de la tabla `hito_tareas`
+--
+ALTER TABLE `hito_tareas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT de la tabla `hito_usuarios`
+--
+ALTER TABLE `hito_usuarios`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+
+--
+-- AUTO_INCREMENT de la tabla `incidentes_codigos`
+--
+ALTER TABLE `incidentes_codigos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=82;
+
+--
+-- AUTO_INCREMENT de la tabla `incidentes_estado_historico`
+--
+ALTER TABLE `incidentes_estado_historico`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+
+--
+-- AUTO_INCREMENT de la tabla `incidentes_guardia`
+--
+ALTER TABLE `incidentes_guardia`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+
+--
+-- AUTO_INCREMENT de la tabla `integrantes`
+--
+ALTER TABLE `integrantes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
 
 --
 -- AUTO_INCREMENT de la tabla `itracker_data`
 --
 ALTER TABLE `itracker_data`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16461;
+
+--
+-- AUTO_INCREMENT de la tabla `liquidaciones_detalle`
+--
+ALTER TABLE `liquidaciones_detalle`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `liquidaciones_guardia`
+--
+ALTER TABLE `liquidaciones_guardia`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `notificaciones`
+--
+ALTER TABLE `notificaciones`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=91;
 
 --
 -- AUTO_INCREMENT de la tabla `permisos`
@@ -7124,19 +8503,19 @@ ALTER TABLE `permisos`
 -- AUTO_INCREMENT de la tabla `placas`
 --
 ALTER TABLE `placas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=98;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=106;
 
 --
 -- AUTO_INCREMENT de la tabla `proyectos`
 --
 ALTER TABLE `proyectos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT de la tabla `proyecto_usuarios`
 --
 ALTER TABLE `proyecto_usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
 -- AUTO_INCREMENT de la tabla `reportes`
@@ -7157,6 +8536,12 @@ ALTER TABLE `rol_permiso`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=109;
 
 --
+-- AUTO_INCREMENT de la tabla `sistemas_monitoreados`
+--
+ALTER TABLE `sistemas_monitoreados`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+
+--
 -- AUTO_INCREMENT de la tabla `subtareas`
 --
 ALTER TABLE `subtareas`
@@ -7172,7 +8557,7 @@ ALTER TABLE `subtarea_usuarios`
 -- AUTO_INCREMENT de la tabla `tareas`
 --
 ALTER TABLE `tareas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT de la tabla `tarea_usuarios`
@@ -7181,16 +8566,22 @@ ALTER TABLE `tarea_usuarios`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
+-- AUTO_INCREMENT de la tabla `tarifas`
+--
+ALTER TABLE `tarifas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT de la tabla `usuario_rol`
 --
 ALTER TABLE `usuario_rol`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
 
 --
 -- Restricciones para tablas volcadas
@@ -7204,10 +8595,107 @@ ALTER TABLE `comentarios`
   ADD CONSTRAINT `comentarios_ibfk_2` FOREIGN KEY (`id_tarea`) REFERENCES `tareas` (`id`) ON DELETE CASCADE;
 
 --
+-- Filtros para la tabla `enlaces`
+--
+ALTER TABLE `enlaces`
+  ADD CONSTRAINT `fk_enlaces_categoria` FOREIGN KEY (`categoria_id`) REFERENCES `enlaces_categorias` (`id`) ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `enlaces_urls`
+--
+ALTER TABLE `enlaces_urls`
+  ADD CONSTRAINT `fk_enlaces_urls_enlace` FOREIGN KEY (`enlace_id`) REFERENCES `enlaces` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `equipos_integrantes`
+--
+ALTER TABLE `equipos_integrantes`
+  ADD CONSTRAINT `fk_equipos_integrantes_equipo` FOREIGN KEY (`equipo_id`) REFERENCES `equipos_tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_equipos_integrantes_integrante` FOREIGN KEY (`integrante_id`) REFERENCES `integrantes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `equipos_sistemas`
+--
+ALTER TABLE `equipos_sistemas`
+  ADD CONSTRAINT `fk_equipos_sistemas_equipo` FOREIGN KEY (`equipo_id`) REFERENCES `equipos_tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_equipos_sistemas_sistema` FOREIGN KEY (`sistema_id`) REFERENCES `sistemas_monitoreados` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
 -- Filtros para la tabla `eventos`
 --
 ALTER TABLE `eventos`
   ADD CONSTRAINT `fk_eventos_createdBy` FOREIGN KEY (`createdBy`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `flujos_escalamiento`
+--
+ALTER TABLE `flujos_escalamiento`
+  ADD CONSTRAINT `fk_flujos_equipo_escalamiento` FOREIGN KEY (`equipo_escalamiento_id`) REFERENCES `equipos_tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_flujos_equipo_primario` FOREIGN KEY (`equipo_primario_id`) REFERENCES `equipos_tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_flujos_sistema` FOREIGN KEY (`sistema_id`) REFERENCES `sistemas_monitoreados` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `glosario`
+--
+ALTER TABLE `glosario`
+  ADD CONSTRAINT `fk_glosario_categoria` FOREIGN KEY (`categoria_id`) REFERENCES `glosario_categorias` (`id`) ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `historial_incidentes_contactos`
+--
+ALTER TABLE `historial_incidentes_contactos`
+  ADD CONSTRAINT `fk_historial_created_by` FOREIGN KEY (`created_by`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_historial_equipo` FOREIGN KEY (`equipo_contactado_id`) REFERENCES `equipos_tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_historial_integrante` FOREIGN KEY (`integrante_contactado_id`) REFERENCES `integrantes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_historial_sistema` FOREIGN KEY (`sistema_id`) REFERENCES `sistemas_monitoreados` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `hitos`
+--
+ALTER TABLE `hitos`
+  ADD CONSTRAINT `hitos_ibfk_1` FOREIGN KEY (`id_proyecto_origen`) REFERENCES `proyectos` (`id`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `hito_tareas`
+--
+ALTER TABLE `hito_tareas`
+  ADD CONSTRAINT `hito_tareas_ibfk_1` FOREIGN KEY (`id_hito`) REFERENCES `hitos` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `hito_tareas_ibfk_2` FOREIGN KEY (`id_tarea_origen`) REFERENCES `tareas` (`id`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `hito_usuarios`
+--
+ALTER TABLE `hito_usuarios`
+  ADD CONSTRAINT `hito_usuarios_ibfk_1` FOREIGN KEY (`id_hito`) REFERENCES `hitos` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `hito_usuarios_ibfk_2` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `incidentes_codigos`
+--
+ALTER TABLE `incidentes_codigos`
+  ADD CONSTRAINT `fk_codigo_tarifa` FOREIGN KEY (`id_tarifa_calculo`) REFERENCES `tarifas` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_incidente_codigos_codigo` FOREIGN KEY (`id_codigo`) REFERENCES `codigos_facturacion` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_incidente_codigos_incidente` FOREIGN KEY (`id_incidente`) REFERENCES `incidentes_guardia` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `incidentes_estado_historico`
+--
+ALTER TABLE `incidentes_estado_historico`
+  ADD CONSTRAINT `incidentes_estado_historico_ibfk_1` FOREIGN KEY (`id_incidente`) REFERENCES `incidentes_guardia` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `incidentes_guardia`
+--
+ALTER TABLE `incidentes_guardia`
+  ADD CONSTRAINT `fk_incidente_guardia` FOREIGN KEY (`id_guardia`) REFERENCES `guardias` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `liquidaciones_detalle`
+--
+ALTER TABLE `liquidaciones_detalle`
+  ADD CONSTRAINT `fk_liquidaciones_detalle_guardia` FOREIGN KEY (`id_guardia`) REFERENCES `guardias` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_liquidaciones_detalle_incidente` FOREIGN KEY (`id_incidente`) REFERENCES `incidentes_guardia` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_liquidaciones_detalle_liquidacion` FOREIGN KEY (`id_liquidacion`) REFERENCES `liquidaciones_guardia` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `proyectos`

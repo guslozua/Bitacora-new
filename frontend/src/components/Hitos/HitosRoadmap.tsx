@@ -89,7 +89,7 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
   // Años disponibles
   const availableYears = useMemo(() => {
     const currentYear = new Date().getFullYear();
-    return Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+    return Array.from({ length: 3 }, (_, i) => currentYear - 2 + i);
   }, []);
 
   // Cargar todos los hitos y organizarlos por año
@@ -666,7 +666,7 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
                 {hitos.length > 0 && (
                   <div style={{ fontSize: '10px', marginTop: '4px' }}>
                     Desde {formatDate(hitos[0]?._fechaInicioDate, { month: 'short' })} 
-                    a {formatDate(hitos[hitos.length - 1]?._fechaInicioDate, { month: 'short' })}
+                    {' '}a {formatDate(hitos[hitos.length - 1]?._fechaInicioDate, { month: 'short' })}
                   </div>
                 )}
               </div>

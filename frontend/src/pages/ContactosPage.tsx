@@ -182,7 +182,7 @@ const ContactosPage: React.FC = () => {
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
               <div>
-                <h2 className="mb-0 fw-bold">📞 Agenda de Contactos</h2>
+                <h2 className="mb-0 fw-bold">Agenda de Contactos</h2>
                 <p className="text-muted mb-0">Gestión completa de equipos, contactos y sistemas</p>
               </div>
               
