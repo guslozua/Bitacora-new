@@ -1,5 +1,44 @@
 const pool = require('../config/db');
 
+// Función para normalizar nombres de usuario
+function normalizeUserName(userName) {
+  if (!userName || typeof userName !== 'string') return 'Desconocido';
+  
+  // Convertir a minúsculas para comparaciones
+  const normalized = userName.toLowerCase().trim();
+  
+  // Mapeo de nombres conocidos que deben unificarse
+  const userMappings = {
+    'sergio g lozua': 'Gustavo Lozua',
+    'gustavo lozua': 'Gustavo Lozua',
+    // Agregar más mapeos según sea necesario
+    // 'juan c perez': 'Juan Carlos Perez',
+    // 'j.c. perez': 'Juan Carlos Perez',
+  };
+  
+  // Buscar si existe un mapeo directo
+  if (userMappings[normalized]) {
+    return userMappings[normalized];
+  }
+  
+  // Si no hay mapeo directo, buscar por coincidencia parcial de apellidos
+  for (const [key, value] of Object.entries(userMappings)) {
+    const keyWords = key.split(' ');
+    const normalizedWords = normalized.split(' ');
+    
+    // Si el apellido coincide (última palabra), usar el nombre mapeado
+    const lastName = keyWords[keyWords.length - 1];
+    if (normalizedWords.includes(lastName) && lastName.length > 3) {
+      return value;
+    }
+  }
+  
+  // Si no hay coincidencias, devolver el nombre original con formato título
+  return userName.split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
 exports.getTabulacionesStats = async (req, res) => {
   try {
     const year = req.query.year;
@@ -59,10 +98,10 @@ exports.getTabulacionesStats = async (req, res) => {
       ORDER BY fecha
     `, [...params]))[0];
 
-    // 3. Completado por usuario (solo para tareas con completado_por no nulo)
-    const completadoPor = (await pool.query(`
+    // 3. Completado por usuario (MODIFICADO para normalizar nombres)
+    const completadoPorRaw = (await pool.query(`
       SELECT 
-        COALESCE(completado_por, 'Desconocido') AS usuario, 
+        completado_por, 
         COUNT(*) AS cantidad
       FROM tabulaciones_data
       ${whereFinalizadas}
@@ -71,10 +110,22 @@ exports.getTabulacionesStats = async (req, res) => {
       ORDER BY cantidad DESC
     `, [...params]))[0];
 
-    // 4. Creado por usuario
-    const creadoPor = (await pool.query(`
+    // Normalizar y reagrupar usuarios
+    const usuariosNormalizados = {};
+    completadoPorRaw.forEach(item => {
+      const nombreNormalizado = normalizeUserName(item.completado_por);
+      usuariosNormalizados[nombreNormalizado] = (usuariosNormalizados[nombreNormalizado] || 0) + item.cantidad;
+    });
+
+    // Convertir a array y ordenar
+    const completadoPor = Object.entries(usuariosNormalizados)
+      .map(([usuario, cantidad]) => ({ usuario, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad);
+
+    // 4. Creado por usuario (TAMBIÉN normalizado)
+    const creadoPorRaw = (await pool.query(`
       SELECT 
-        COALESCE(creado_por, 'Desconocido') AS usuario, 
+        creado_por, 
         COUNT(*) AS cantidad
       FROM tabulaciones_data
       ${baseWhere}
@@ -82,6 +133,18 @@ exports.getTabulacionesStats = async (req, res) => {
       GROUP BY creado_por
       ORDER BY cantidad DESC
     `, [...params]))[0];
+
+    // Normalizar y reagrupar usuarios creadores
+    const creadoresNormalizados = {};
+    creadoPorRaw.forEach(item => {
+      const nombreNormalizado = normalizeUserName(item.creado_por);
+      creadoresNormalizados[nombreNormalizado] = (creadoresNormalizados[nombreNormalizado] || 0) + item.cantidad;
+    });
+
+    // Convertir a array y ordenar
+    const creadoPor = Object.entries(creadoresNormalizados)
+      .map(([usuario, cantidad]) => ({ usuario, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad);
 
     // 5. Obtener datos crudos para procesamiento avanzado
     const rawTabulaciones = (await pool.query(`
@@ -164,6 +227,10 @@ exports.getTabulacionesStats = async (req, res) => {
       FROM tabulaciones_data
       ${baseWhere}
     `, [...params]))[0][0];
+
+    console.log('✅ Estadísticas procesadas correctamente');
+    console.log(`📊 Usuarios únicos completaron tareas: ${completadoPor.length}`);
+    console.log(`📊 Usuarios únicos crearon tareas: ${creadoPor.length}`);
 
     res.json({
       total,

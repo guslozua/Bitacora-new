@@ -106,21 +106,21 @@ const AdminPanel: React.FC = () => {
   const sidebarItemsMeta: SidebarItemMeta[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'bi-clipboard-data-fill', color: '#3498db' },
     { id: 'proyectos', label: 'Proyectos', icon: 'bi-diagram-3-fill', color: '#2ecc71' },
+    { id: 'hitos', label: 'Hitos', icon: 'bi-flag-fill', color: '#1abc9c' },
     { id: 'placas', label: 'Placas', icon: 'bi-clipboard', color: '#f1c40f' },
     { id: 'usuarios', label: 'ABM Usuarios', icon: 'bi-people-fill', color: '#e74c3c' },
-    { id: 'bitacora', label: 'Bitácora', icon: 'bi-journal-text', color: '#9b59b6' },
-    { id: 'hitos', label: 'Hitos', icon: 'bi-flag-fill', color: '#1abc9c' },
     { id: 'itracker', label: 'iTracker', icon: 'bi-circle', color: '#3498db' },
     { id: 'tabulaciones', label: 'Tabulaciones', icon: 'bi-table', color: '#2ecc71' },
     //{ id: 'incidencias', label: 'Inc. en Guardia', icon: 'bi-shield-exclamation', color: '#f1c40f' },
     { id: 'contactos', label: 'Agenda de Contactos', icon: 'bi-telephone-fill', color: '#c30b4e' },
-    { id: 'stats', label: 'Estadísticas', icon: 'bi-graph-up', color: '#e74c3c' },
-    { id: 'reports', label: 'Informes', icon: 'bi-file-earmark-text', color: '#1abc9c' },
     { id: 'calendar', label: 'Calendario', icon: 'bi-calendar-date', color: '#3498db' },
     { id: 'messages', label: 'Mensajes', icon: 'bi-chat-dots-fill', color: '#2ecc71' },
     { id: 'notifications', label: 'Notificaciones', icon: 'bi-bell-fill', color: '#f1c40f' },
     { id: 'links', label: 'Links', icon: 'bi-link-45deg', color: '#e67e22' },  // Nuevo ítem Links
     { id: 'glosario', label: 'Glosario', icon: 'bi-book', color: '#8e44ad' },  // Nuevo ítem Glosario
+    { id: 'bitacora', label: 'Bitácora', icon: 'bi-journal-text', color: '#9b59b6' },
+    { id: 'stats', label: 'Estadísticas', icon: 'bi-graph-up', color: '#e74c3c' },
+    { id: 'reports', label: 'Informes', icon: 'bi-file-earmark-text', color: '#1abc9c' },
     //{ id: 'informes', label: 'informes y estadisticas', icon: 'bi-bar-chart-fill', color: '#8e44ad' },  // Nuevo ítem
     { id: 'admin', label: 'Configuración', icon: 'bi-gear-fill', color: '#9b59b6' },
   ];
@@ -564,7 +564,7 @@ const AdminPanel: React.FC = () => {
                       }}>
                       <i className="bi bi-cloud-upload-fill fs-3 text-danger"></i>
                     </div>
-                    <span className="fw-medium">Subir archivos PIC & Social</span>
+                    <span className="fw-medium">Subir archivos ABM PIC & Social</span>
                   </Button>
                 </Card.Body>
               </Card>

@@ -177,21 +177,21 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
   const menuItems = [
     { id: 'dashboard', icon: 'bi-clipboard-data-fill', label: 'Dashboard', route: '/dashboard' },
     { id: 'proyectos', icon: 'bi-diagram-3-fill', label: 'Proyectos', route: '/projects' },
+    { id: 'hitos', icon: 'bi-flag-fill', label: 'Hitos', route: '/hitos' },
     { id: 'placas', icon: 'bi-clipboard', label: 'Placas', route: '/placasdash' },
     { id: 'usuarios', icon: 'bi-people-fill', label: 'ABM Usuarios', route: '/abmdashboard' },
-    { id: 'bitacora', icon: 'bi-journal-text', label: 'Bitácora', route: '/bitacora' },
-    { id: 'hitos', icon: 'bi-flag-fill', label: 'Hitos', route: '/hitos' },
     { id: 'itracker', icon: 'bi-circle', label: 'iTracker', route: '/itrackerdash' },
     { id: 'tabulaciones', icon: 'bi-table', label: 'Tabulaciones', route: '/tabulacionesdash' },
     //{ id: 'incidencias', icon: 'bi-shield-exclamation', label: 'Inc. en Guardia', route: '/incidencias' },
     { id: 'contactos', icon: 'bi-telephone-fill', label: 'Agenda de Contactos', route: '/contactos' }, // ✅ AGREGADO
-    { id: 'stats', icon: 'bi-graph-up', label: 'Estadísticas', route: '/stats' }, 
-    { id: 'reports', icon: 'bi-file-earmark-text', label: 'Informes', route: '/reports' },
     { id: 'calendar', icon: 'bi-calendar-date', label: 'Calendario', route: '/calendar' },
     { id: 'messages', icon: 'bi-chat-dots-fill', label: 'Mensajes', route: '/messages' },
     { id: 'notifications', icon: 'bi-bell-fill', label: 'Notificaciones', route: '/notificaciones' },
     { id: 'links', icon: 'bi-link-45deg', label: 'Links', route: '/links' },
     { id: 'glosario', icon: 'bi-book', label: 'Glosario', route: '/glosario' },
+    { id: 'bitacora', icon: 'bi-journal-text', label: 'Bitácora', route: '/bitacora' },
+    { id: 'stats', icon: 'bi-graph-up', label: 'Estadísticas', route: '/stats' }, 
+    { id: 'reports', icon: 'bi-file-earmark-text', label: 'Informes', route: '/reports' },
     //{ id: 'informes', icon: 'bi-bar-chart-fill', label: 'Informes y Estadísticas', route: '/informes' },//
     { id: 'admin', icon: 'bi-gear-fill', label: 'Configuración', route: '/admin' },
   ];
