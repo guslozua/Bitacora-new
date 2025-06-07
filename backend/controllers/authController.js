@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const UserModel = require('../models/UserModel');
 const db = require('../config/db');
+const { logSystemEvent } = require('../utils/logEvento'); // 🆕 AGREGADO
 
 // Registro de usuario
 const registerUser = async (req, res) => {
@@ -25,6 +26,14 @@ const registerUser = async (req, res) => {
     
     if (existingUsers.length > 0) {
       console.log('Email ya registrado:', email);
+      // 🆕 Log de intento de registro con email duplicado
+      await logSystemEvent.logEvento({
+        tipo_evento: 'WARNING',
+        descripcion: `Intento de registro con email duplicado: ${email}`,
+        id_usuario: null,
+        nombre_usuario: email
+      }, req);
+      
       return res.status(400).json({ message: 'El email ya está registrado' });
     }
 
@@ -61,6 +70,14 @@ const registerUser = async (req, res) => {
       }
     }
 
+    // 🆕 Log de registro exitoso
+    await logSystemEvent.logEvento({
+      tipo_evento: 'CREATE',
+      descripcion: `Nuevo usuario registrado: ${nombre} (${email})`,
+      id_usuario: userId,
+      nombre_usuario: nombre
+    }, req);
+
     // Generar token JWT
     const payload = {
       id: userId
@@ -78,6 +95,10 @@ const registerUser = async (req, res) => {
     );
   } catch (err) {
     console.error('Error no controlado en registerUser:', err);
+    
+    // 🆕 Log de error en registro
+    await logSystemEvent.apiError('/api/auth/register', err, null, req);
+    
     res.status(500).json({ message: 'Error en el servidor', error: err.message });
   }
 };
@@ -109,6 +130,10 @@ const loginUser = async (req, res) => {
 
     if (users.length === 0) {
       console.log('Email no encontrado:', email);
+      
+      // 🆕 Log de intento de login con email no encontrado
+      await logSystemEvent.loginFailed(email, req);
+      
       return res.status(400).json({ message: 'Credenciales inválidas' });
     }
 
@@ -118,6 +143,15 @@ const loginUser = async (req, res) => {
     // Verificar estado del usuario
     if (user.estado === 'bloqueado') {
       console.log('Usuario bloqueado:', email);
+      
+      // 🆕 Log de intento de login con cuenta bloqueada
+      await logSystemEvent.logEvento({
+        tipo_evento: 'WARNING',
+        descripcion: `Intento de login con cuenta bloqueada: ${email}`,
+        id_usuario: user.id,
+        nombre_usuario: user.nombre
+      }, req);
+      
       return res.status(403).json({ message: 'Cuenta bloqueada. Contacte al administrador.' });
     }
 
@@ -125,6 +159,10 @@ const loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       console.log('Contraseña incorrecta para usuario:', email);
+      
+      // 🆕 Log de intento de login con contraseña incorrecta
+      await logSystemEvent.loginFailed(email, req);
+      
       return res.status(400).json({ message: 'Credenciales inválidas' });
     }
 
@@ -133,6 +171,9 @@ const loginUser = async (req, res) => {
     if (user.roles) {
       roles = user.roles.split(',');
     }
+
+    // 🆕 Log de login exitoso
+    await logSystemEvent.login(user.id, user.nombre, req);
 
     // Generar token JWT
     const payload = {
@@ -171,6 +212,10 @@ const loginUser = async (req, res) => {
     );
   } catch (err) {
     console.error('Error no controlado en loginUser:', err);
+    
+    // 🆕 Log de error en login
+    await logSystemEvent.apiError('/api/auth/login', err, null, req);
+    
     res.status(500).json({ message: 'Error en el servidor', error: err.message });
   }
 };
@@ -195,6 +240,14 @@ const changePassword = async (req, res) => {
     // Verificar contraseña actual
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
+      // 🆕 Log de intento de cambio de contraseña con contraseña actual incorrecta
+      await logSystemEvent.logEvento({
+        tipo_evento: 'WARNING',
+        descripcion: 'Intento de cambio de contraseña con contraseña actual incorrecta',
+        id_usuario: userId,
+        nombre_usuario: req.user.nombre
+      }, req);
+      
       return res.status(400).json({ message: 'Contraseña actual incorrecta' });
     }
 
@@ -205,9 +258,21 @@ const changePassword = async (req, res) => {
     // Actualizar contraseña
     await db.query('UPDATE Usuarios SET password = ? WHERE id = ?', [hashedPassword, userId]);
 
+    // 🆕 Log de cambio de contraseña exitoso
+    await logSystemEvent.logEvento({
+      tipo_evento: 'UPDATE',
+      descripcion: 'Contraseña actualizada correctamente',
+      id_usuario: userId,
+      nombre_usuario: req.user.nombre
+    }, req);
+
     res.json({ message: 'Contraseña actualizada correctamente' });
   } catch (err) {
     console.error('Error en changePassword:', err);
+    
+    // 🆕 Log de error en cambio de contraseña
+    await logSystemEvent.apiError('/api/auth/change-password', err, userId, req);
+    
     res.status(500).json({ message: 'Error en el servidor', error: err.message });
   }
 };
@@ -226,6 +291,14 @@ const requestPasswordReset = async (req, res) => {
     const [users] = await db.query('SELECT * FROM Usuarios WHERE email = ?', [email]);
     
     if (users.length === 0) {
+      // 🆕 Log de solicitud de reset con email no encontrado
+      await logSystemEvent.logEvento({
+        tipo_evento: 'WARNING',
+        descripcion: `Solicitud de reset de contraseña con email no encontrado: ${email}`,
+        id_usuario: null,
+        nombre_usuario: email
+      }, req);
+      
       return res.status(404).json({ message: 'No existe una cuenta con ese email' });
     }
 
@@ -241,6 +314,14 @@ const requestPasswordReset = async (req, res) => {
     // Guardar token en la base de datos
     await db.query('UPDATE Usuarios SET reset_token = ? WHERE id = ?', [resetToken, user.id]);
 
+    // 🆕 Log de solicitud de reset exitosa
+    await logSystemEvent.logEvento({
+      tipo_evento: 'INFO',
+      descripcion: `Solicitud de reset de contraseña generada para: ${email}`,
+      id_usuario: user.id,
+      nombre_usuario: user.nombre
+    }, req);
+
     // Aquí se enviaría el email con el enlace para resetear la contraseña
     // Por ahora, solo devolvemos el token para pruebas
     console.log('Token de reseteo generado para:', email);
@@ -251,6 +332,10 @@ const requestPasswordReset = async (req, res) => {
     });
   } catch (err) {
     console.error('Error en requestPasswordReset:', err);
+    
+    // 🆕 Log de error en solicitud de reset
+    await logSystemEvent.apiError('/api/auth/request-password-reset', err, null, req);
+    
     res.status(500).json({ message: 'Error en el servidor', error: err.message });
   }
 };
@@ -267,8 +352,18 @@ const resetPassword = async (req, res) => {
     const [users] = await db.query('SELECT * FROM Usuarios WHERE id = ? AND reset_token = ?', [decoded.id, token]);
     
     if (users.length === 0) {
+      // 🆕 Log de intento de reset con token inválido
+      await logSystemEvent.logEvento({
+        tipo_evento: 'WARNING',
+        descripcion: 'Intento de reset de contraseña con token inválido o expirado',
+        id_usuario: decoded.id || null,
+        nombre_usuario: 'UNKNOWN'
+      }, req);
+      
       return res.status(400).json({ message: 'Token inválido o expirado' });
     }
+
+    const user = users[0];
 
     // Cifrar nueva contraseña
     const salt = await bcrypt.genSalt(10);
@@ -277,13 +372,33 @@ const resetPassword = async (req, res) => {
     // Actualizar contraseña y limpiar token
     await db.query('UPDATE Usuarios SET password = ?, reset_token = NULL WHERE id = ?', [hashedPassword, decoded.id]);
 
+    // 🆕 Log de reset de contraseña exitoso
+    await logSystemEvent.logEvento({
+      tipo_evento: 'UPDATE',
+      descripcion: 'Contraseña restablecida correctamente mediante token de reset',
+      id_usuario: user.id,
+      nombre_usuario: user.nombre
+    }, req);
+
     res.json({ message: 'Contraseña restablecida correctamente' });
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
+      // 🆕 Log de token expirado
+      await logSystemEvent.logEvento({
+        tipo_evento: 'WARNING',
+        descripcion: 'Intento de reset de contraseña con token expirado',
+        id_usuario: null,
+        nombre_usuario: 'UNKNOWN'
+      }, req);
+      
       return res.status(400).json({ message: 'El token ha expirado' });
     }
     
     console.error('Error en resetPassword:', err);
+    
+    // 🆕 Log de error en reset
+    await logSystemEvent.apiError('/api/auth/reset-password', err, null, req);
+    
     res.status(500).json({ message: 'Error en el servidor', error: err.message });
   }
 };

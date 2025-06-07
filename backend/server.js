@@ -27,6 +27,7 @@ const codigosRoutes = require('./routes/codigos.routes');
 const informesRoutes = require('./routes/informes.routes');
 const tarifasRoutes = require('./routes/tarifas.routes');
 const contactosRoutes = require('./routes/contactosRoutes');
+const diagnosticsRoutes = require('./routes/diagnosticsRoutes'); //sistema de diagnósticos
 
 // 🔔 AGREGAR IMPORT DE HITOS
 const hitosRoutes = require('./routes/hitos');
@@ -36,6 +37,9 @@ const notificacionesRoutes = require('./routes/notificaciones.routes');
 
 // Importar el programador de limpieza
 const { scheduleCleanup, cleanupUploadsFolder } = require('./utils/cleanupScheduler');
+
+// 🆕 IMPORTAR SISTEMA DE LOGS
+const { logSystemEvent } = require('./utils/logEvento');
 
 // Inicializar Express
 const app = express();
@@ -75,7 +79,7 @@ app.use('/api/abm/stats', require('./routes/abmStats'));
 app.use('/api/placas', placasRoutes);
 app.use('/api/permisos', require('./routes/permisoRoutes'));
 app.use('/api/roles', roleRoutes);
-app.use('/api/eventos', eventosRoutes); // Agregar la ruta de eventos al servidor
+app.use('/api/eventos', eventosRoutes); // ruta de eventos al servidor
 app.use('/api/guardias', guardiasRoutes);
 app.use('/api/glosario', glosarioRoutes);
 app.use('/api/enlaces', enlacesRoutes);
@@ -84,6 +88,7 @@ app.use('/api/codigos', codigosRoutes);
 app.use('/api/informes', informesRoutes);
 app.use('/api/tarifas', tarifasRoutes);
 app.use('/api/contactos', contactosRoutes);
+app.use('/api/diagnostics', diagnosticsRoutes); // Ruta del sistema de diagnósticos
 
 // 🔔 RUTA DE HITOS
 app.use('/api/hitos', hitosRoutes);
@@ -91,16 +96,96 @@ app.use('/api/hitos', hitosRoutes);
 // 🔔 RUTA DE NOTIFICACIONES
 app.use('/api/notificaciones', notificacionesRoutes);
 
+console.log('\n🔍 === ANÁLISIS DE RUTAS REGISTRADAS ===');
+
+// Función para extraer rutas de un router
+function extractRoutes(stack, basePath = '') {
+  const routes = [];
+  
+  stack.forEach((layer) => {
+    if (layer.route) {
+      // Ruta directa
+      const methods = Object.keys(layer.route.methods);
+      methods.forEach(method => {
+        routes.push({
+          method: method.toUpperCase(),
+          path: basePath + layer.route.path,
+          name: layer.route.path
+        });
+      });
+    } else if (layer.name === 'router' && layer.regexp) {
+      // Sub-router
+      const match = layer.regexp.source.match(/^\^\\?\/([^\\]+)/);
+      const prefix = match ? '/' + match[1] : '';
+      
+      if (layer.handle && layer.handle.stack) {
+        const subRoutes = extractRoutes(layer.handle.stack, basePath + prefix);
+        routes.push(...subRoutes);
+      }
+    }
+  });
+  
+  return routes;
+}
+
+// Extraer todas las rutas de la aplicación
+const allRoutes = extractRoutes(app._router.stack);
+
+// Agrupar por prefijo
+const routesByPrefix = {};
+allRoutes.forEach(route => {
+  const prefix = route.path.split('/')[1] || 'root';
+  if (!routesByPrefix[prefix]) {
+    routesByPrefix[prefix] = [];
+  }
+  routesByPrefix[prefix].push(route);
+});
+
+// Mostrar rutas organizadas
+Object.keys(routesByPrefix).sort().forEach(prefix => {
+  console.log(`\n📁 /${prefix}:`);
+  routesByPrefix[prefix].forEach(route => {
+    console.log(`   ${route.method.padEnd(6)} ${route.path}`);
+  });
+});
+
+// Buscar específicamente rutas que contengan palabras clave
+console.log('\n🔍 BÚSQUEDA DE RUTAS ESPECÍFICAS:');
+const searchTerms = ['notificacion', 'contacto', 'placa', 'informe', 'tabulacion'];
+
+searchTerms.forEach(term => {
+  console.log(`\n🔍 Rutas que contienen "${term}":`);
+  const matchingRoutes = allRoutes.filter(route => 
+    route.path.toLowerCase().includes(term)
+  );
+  
+  if (matchingRoutes.length > 0) {
+    matchingRoutes.forEach(route => {
+      console.log(`   ✅ ${route.method} ${route.path}`);
+    });
+  } else {
+    console.log(`   ❌ No se encontraron rutas con "${term}"`);
+  }
+});
+
+console.log('\n' + '='.repeat(80));
+console.log('💡 RECOMENDACIONES:');
+console.log('1. Verifica si las rutas requieren parámetros (ej: /notificaciones/usuario/:id)');
+console.log('2. Algunos endpoints podrían usar POST en lugar de GET');
+console.log('3. Revisa si hay rutas similares con nombres diferentes');
+console.log('='.repeat(80) + '\n');
+
+
 // Depuración: Listar rutas registradas en Express
 app._router.stack.forEach((middleware) => {
-  if (middleware.route) { 
-      console.log(middleware.route.path);
+  if (middleware.route) {
+    console.log(middleware.route.path);
   } else if (middleware.name === 'router') {
-      middleware.handle.stack.forEach((handler) => {
-          if (handler.route) {
-              console.log(handler.route.path);
-          }
-      });
+    middleware.handle.stack.forEach((handler) => {
+      if (handler.route) {
+        console.log(handler.route.path);
+      }
+    });
   }
 });
 
@@ -118,21 +203,78 @@ app.get('/api/test', (req, res) => {
   });
 });
 
+// 🆕 MIDDLEWARE GLOBAL DE LOGGING PARA ERRORES NO MANEJADOS
+process.on('uncaughtException', async (error) => {
+  console.error('Uncaught Exception:', error);
+  try {
+    await logSystemEvent.logEvento({
+      tipo_evento: 'ERROR_SYSTEM',
+      descripcion: `Excepción no manejada: ${error.message}`,
+      id_usuario: null,
+      nombre_usuario: 'SYSTEM'
+    });
+  } catch (logError) {
+    console.error('Error logging uncaught exception:', logError);
+  }
+  process.exit(1);
+});
+
+process.on('unhandledRejection', async (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  try {
+    const { logEvento } = require('./utils/logEvento');
+    await logEvento({
+      tipo_evento: 'ERROR_SYSTEM',
+      descripcion: `Promise rechazada no manejada: ${reason}`,
+      id_usuario: null,
+      nombre_usuario: 'SYSTEM'
+    });
+  } catch (logError) {
+    console.error('Error logging unhandled rejection:', logError);
+  }
+});
+
 // Iniciar servidor
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Servidor corriendo en puerto ${PORT} 🚀`);
-  
+
+  // 🆕 REGISTRAR INICIO DEL SISTEMA EN LA BITÁCORA
+  try {
+    await logSystemEvent.systemStart();
+    console.log('✅ Evento de inicio del sistema registrado en bitácora');
+  } catch (error) {
+    console.error('❌ Error registrando inicio del sistema:', error);
+  }
+
   // Ejecutar limpieza inicial al iniciar el servidor
   console.log('Ejecutando limpieza inicial de la carpeta uploads...');
   cleanupUploadsFolder();
-  
+
   // Programar limpiezas periódicas
   scheduleCleanup();
   console.log('Sistema de limpieza automática de archivos configurado 🧹');
-  
+
   // 🔔 MENSAJE DE CONFIRMACIÓN PARA HITOS
   console.log('✅ Rutas de hitos registradas correctamente');
-  
+
   // 🔔 MENSAJE DE CONFIRMACIÓN PARA NOTIFICACIONES
   console.log('✅ Rutas de notificaciones registradas correctamente');
+
+  // 🆕 MENSAJE DE CONFIRMACIÓN PARA SISTEMA DE LOGS
+  console.log('✅ Sistema de logs integrado con bitácora');
+
+  
+
+  // 🆕 REGISTRAR FINALIZACIÓN DE CONFIGURACIÓN
+  try {
+    const { logEvento } = require('./utils/logEvento');
+    await logEvento({
+      tipo_evento: 'SYSTEM_START',
+      descripcion: `Servidor TaskManager iniciado correctamente en puerto ${PORT}`,
+      id_usuario: null,
+      nombre_usuario: 'SYSTEM'
+    });
+  } catch (error) {
+    console.error('Error registrando configuración completa:', error);
+  }
 });

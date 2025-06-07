@@ -46,6 +46,9 @@ import UserForm from './components/users/UserForm';
 // 🔔 NUEVO IMPORT PARA NOTIFICACIONES
 import NotificacionesList from './components/notificaciones/NotificacionesList';
 
+// 🚀 NUEVO IMPORT PARA DIAGNÓSTICOS
+import DiagnosticsPage from './pages/DiagnosticsPage';
+
 // Función helper para obtener el userId actual
 const getCurrentUserId = (): number => {
   const userStr = localStorage.getItem('user');
@@ -208,6 +211,12 @@ const App: React.FC = () => {
           <Route 
             path="/admin/users/:id/edit" 
             element={<ProtectedRoute element={<UserForm />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+          />
+
+          {/* 🚀 NUEVA RUTA PARA DIAGNÓSTICOS */}
+          <Route 
+            path="/admin/diagnostics" 
+            element={<ProtectedRoute element={<DiagnosticsPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
           />
           
           {/* Ruta para errores */}
