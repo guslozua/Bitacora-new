@@ -6,6 +6,8 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import { SidebarVisibilityProvider } from './services/SidebarVisibilityContext';
 import { initializeAuth, isAuthenticated } from './services/authService'; // Importar funciones de autenticación
 
+
+
 // Páginas
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
@@ -37,6 +39,9 @@ import GestionGuardiasPage from './pages/GestionGuardiasPage';
 // import InformesPage from './pages/InformesPage';
 // import CodigosPage from './pages/CodigosPage'; 
 // import AdminGuardiasPage from './pages/AdminGuardiasPage';
+
+// Para que todas las paginas inicien con el scroll al inicio
+import ScrollToTop from './components/ScrollToTop';
 
 // Nuevos imports para el panel de administración de usuarios
 import AdminUsersDashboard from './pages/AdminUsersDashboard';
@@ -128,6 +133,7 @@ const App: React.FC = () => {
   return (
     <Router>
       <SidebarVisibilityProvider>
+        <ScrollToTop />
         <Routes>
           {/* Rutas públicas */}
           <Route path="/" element={<LoginPage />} />

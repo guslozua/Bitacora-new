@@ -258,652 +258,660 @@ const AdminPanel: React.FC = () => {
   };
 
   return (
-    <Container fluid className="py-4 px-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <div className="d-flex align-items-center mb-1">
-            <img
-              src="logoxside22.png"
-              alt="icono"
-              style={{ width: '32px', height: '32px', marginRight: '10px' }}
-            />
-            <h2 className="mb-0 fw-bold">Panel de Administración</h2>
+    <div
+      className="d-flex flex-column"
+      style={{
+        minHeight: '100vh',
+        backgroundColor: '#f8f9fa'
+      }}
+    >
+      <Container fluid className="py-4 px-4">
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <div className="d-flex align-items-center mb-1">
+              <img
+                src="logoxside22.png"
+                alt="icono"
+                style={{ width: '32px', height: '32px', marginRight: '10px' }}
+              />
+              <h2 className="mb-0 fw-bold">Panel de Administración</h2>
+            </div>
+            <p className="text-muted mb-0">
+              Configura el comportamiento y apariencia del sistema
+            </p>
           </div>
-          <p className="text-muted mb-0">
-            Configura el comportamiento y apariencia del sistema
-          </p>
+
+          <div className="d-flex">
+            {/* Botón para ir al dashboard */}
+            <Button
+              variant="outline-primary"
+              className="me-2 shadow-sm"
+              onClick={() => navigate('/dashboard')}
+            >
+              <i className="bi bi-house-door me-1"></i> Dashboard Principal
+            </Button>
+
+            {isDirty && (
+              <>
+                <Button variant="success" className="me-2 shadow-sm" onClick={saveChanges}>
+                  <i className="bi bi-check-circle me-1"></i> Guardar cambios
+                </Button>
+                <Button variant="light" className="shadow-sm" onClick={cancelChanges}>
+                  <i className="bi bi-x-circle me-1"></i> Cancelar
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
-        <div className="d-flex">
-          {/* Botón para ir al dashboard */}
-          <Button
-            variant="outline-primary"
-            className="me-2 shadow-sm"
-            onClick={() => navigate('/dashboard')}
-          >
-            <i className="bi bi-house-door me-1"></i> Dashboard Principal
-          </Button>
-
-          {isDirty && (
-            <>
-              <Button variant="success" className="me-2 shadow-sm" onClick={saveChanges}>
-                <i className="bi bi-check-circle me-1"></i> Guardar cambios
-              </Button>
-              <Button variant="light" className="shadow-sm" onClick={cancelChanges}>
-                <i className="bi bi-x-circle me-1"></i> Cancelar
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Estadísticas rápidas */}
-      <Row className="g-4 mb-4">
-        {adminStats.map((stat, index) => (
-          <Col md={3} key={index}>
-            <Card className="border-0 shadow-sm h-100">
-              <Card.Body>
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <h6 className="text-muted mb-1">{stat.title}</h6>
-                    <h2 className="fw-bold mb-0">{stat.value}</h2>
-                  </div>
-                  <div className="rounded-circle d-flex align-items-center justify-content-center"
-                    style={{
-                      backgroundColor: `${stat.color}20`,
-                      width: '3.5rem',      // Ancho fijo
-                      height: '3.5rem',     // Alto igual al ancho
-                      padding: 0            // Quita el padding que causa la deformación
-                    }}>
-                    <i className={`bi ${stat.icon} fs-3`} style={{ color: stat.color }} />
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-
-      {/* Configuración del Sidebar con Vista Previa */}
-      <Card className="mb-4 border-0 shadow-sm">
-        <Card.Header className="bg-white py-3">
-          <h5 className="fw-bold mb-0">
-            <i className="bi bi-layout-sidebar me-2 text-primary"></i>
-            Menú lateral (Sidebar)
-          </h5>
-        </Card.Header>
-        <Card.Body>
-          <Row>
-            {/* Vista previa del sidebar - Con tamaño reducido pero mostrando todas las opciones */}
-            <Col md={3}>
-              <div className="pb-2 d-flex align-items-center">
-                <h6 className="fw-bold mb-0">
-                  <i className="bi bi-eye me-2 text-primary"></i>
-                  Vista previa
-                </h6>
-              </div>
-              <Card className="border-0 shadow-sm">
-                <Card.Body className="p-0">
-                  <div className="sidebar-preview" style={{ backgroundColor: '#2c3e50', borderRadius: '8px', overflow: 'hidden' }}>
-                    <div className="sidebar-header p-3 d-flex align-items-center" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                      <div className="d-flex align-items-center">
-                        {/* Logo real sidebar */}
-                        <img src="/logoxside.png" alt="Logo" height="24" className="me-2" />
-                        <h6 className="mb-0 text-white">TASK manager</h6>
-                      </div>
-                      <Button variant="link" className="ms-auto p-0 text-white">
-                        <i className="bi bi-chevron-left"></i>
-                      </Button>
+        {/* Estadísticas rápidas */}
+        <Row className="g-4 mb-4">
+          {adminStats.map((stat, index) => (
+            <Col md={3} key={index}>
+              <Card className="border-0 shadow-sm h-100">
+                <Card.Body>
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <h6 className="text-muted mb-1">{stat.title}</h6>
+                      <h2 className="fw-bold mb-0">{stat.value}</h2>
                     </div>
-                    <div className="sidebar-body py-2" style={{ fontSize: '0.85rem' }}>
-                      {sidebarItemsMeta.map(item => (
-                        localVisibility[item.id] !== false && (
-                          <div key={item.id} className="sidebar-item d-flex align-items-center px-3 py-1 text-white">
-                            <i className={`bi ${item.icon} me-2`}></i>
-                            <span>{item.label}</span>
-                          </div>
-                        )
-                      ))}
-                      <div className="mt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                        <div className="sidebar-item d-flex align-items-center px-3 py-1 text-white mt-2">
-                          <i className="bi bi-box-arrow-right me-2"></i>
-                          <span>Cerrar sesión</span>
-                        </div>
-                      </div>
+                    <div className="rounded-circle d-flex align-items-center justify-content-center"
+                      style={{
+                        backgroundColor: `${stat.color}20`,
+                        width: '3.5rem',      // Ancho fijo
+                        height: '3.5rem',     // Alto igual al ancho
+                        padding: 0            // Quita el padding que causa la deformación
+                      }}>
+                      <i className={`bi ${stat.icon} fs-3`} style={{ color: stat.color }} />
                     </div>
-                  </div>
-
-                  <div className="text-center mt-3">
-                    <small className="text-muted">
-                      {isDirty ?
-                        "Las modificaciones solo se aplicarán al guardar los cambios" :
-                        "El sidebar se muestra como está actualmente configurado"}
-                    </small>
                   </div>
                 </Card.Body>
               </Card>
             </Col>
+          ))}
+        </Row>
 
-            {/* Opciones de configuración - Con ajuste de tamaño */}
-            <Col md={9}>
-              <div className="pb-2 d-flex align-items-center">
-                <h6 className="fw-bold mb-0">
-                  <i className="bi bi-toggles me-2 text-primary"></i>
-                  Opciones de visibilidad
-                </h6>
-              </div>
-              <Row>
-                {sidebarItemsMeta.map(item => (
-                  <Col xs={12} md={6} lg={4} key={item.id} className="mb-3">
-                    <Card className="border shadow-sm h-100">
-                      <Card.Body className="p-3">
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div className="d-flex align-items-center">
-                            <div
-                              className="rounded-circle me-3 d-flex align-items-center justify-content-center"
-                              style={{
-                                backgroundColor: `${item.color}20`,
-                                width: '2.5rem',      // Ancho fijo
-                                height: '2.5rem',     // Alto igual al ancho
-                                padding: 0            // Quita el padding que causa la deformación
-                              }}
-                            >
-                              <i
-                                className={`bi ${item.icon}`}
-                                style={{ color: item.color, fontSize: '1rem' }}
-                              ></i>
-                            </div>
-                            <span className="fw-medium">{item.label}</span>
-                          </div>
-                          <Form.Check
-                            type="switch"
-                            id={`switch-${item.id}`}
-                            checked={localVisibility[item.id] !== false}
-                            onChange={() => toggleSidebarItem(item.id)}
-                          />
+        {/* Configuración del Sidebar con Vista Previa */}
+        <Card className="mb-4 border-0 shadow-sm">
+          <Card.Header className="bg-white py-3">
+            <h5 className="fw-bold mb-0">
+              <i className="bi bi-layout-sidebar me-2 text-primary"></i>
+              Menú lateral (Sidebar)
+            </h5>
+          </Card.Header>
+          <Card.Body>
+            <Row>
+              {/* Vista previa del sidebar - Con tamaño reducido pero mostrando todas las opciones */}
+              <Col md={3}>
+                <div className="pb-2 d-flex align-items-center">
+                  <h6 className="fw-bold mb-0">
+                    <i className="bi bi-eye me-2 text-primary"></i>
+                    Vista previa
+                  </h6>
+                </div>
+                <Card className="border-0 shadow-sm">
+                  <Card.Body className="p-0">
+                    <div className="sidebar-preview" style={{ backgroundColor: '#2c3e50', borderRadius: '8px', overflow: 'hidden' }}>
+                      <div className="sidebar-header p-3 d-flex align-items-center" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div className="d-flex align-items-center">
+                          {/* Logo real sidebar */}
+                          <img src="/logoxside.png" alt="Logo" height="24" className="me-2" />
+                          <h6 className="mb-0 text-white">TASK manager</h6>
                         </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
-
-      {/* Configuración del Dashboard */}
-      <Card className="mb-4 border-0 shadow-sm">
-        <Card.Header className="bg-white py-3">
-          <h5 className="fw-bold mb-0">
-            <i className="bi bi-grid-1x2 me-2 text-success"></i>
-            Contenido del Dashboard Principal
-          </h5>
-        </Card.Header>
-        <Card.Body>
-          <Row>
-            {dashboardItems.map((item, index) => (
-              <Col xs={12} md={6} lg={4} key={item.id} className="mb-3">
-                <Card className="border shadow-sm h-100">
-                  <Card.Body className="p-3">
-                    <div className="d-flex justify-content-between align-items-center">
-                      <div className="d-flex align-items-center">
-                        <div className="rounded-circle me-3 d-flex align-items-center justify-content-center"
-                          style={{
-                            backgroundColor: '#f8f9fa',
-                            width: '2.5rem',
-                            height: '2.5rem',
-                            padding: 0
-                          }}>
-                          <i className="bi bi-window-dock text-dark" style={{ fontSize: '1.2rem' }}></i>
-                        </div>
-                        <span className="fw-medium">{item.label}</span>
+                        <Button variant="link" className="ms-auto p-0 text-white">
+                          <i className="bi bi-chevron-left"></i>
+                        </Button>
                       </div>
-                      <Form.Check
-                        type="switch"
-                        id={`switch-dash-${item.id}`}
-                        checked={item.visible}
-                        onChange={() => toggleDashboardItem(item.id)}
-                        className="fs-4"
-                      />
+                      <div className="sidebar-body py-2" style={{ fontSize: '0.85rem' }}>
+                        {sidebarItemsMeta.map(item => (
+                          localVisibility[item.id] !== false && (
+                            <div key={item.id} className="sidebar-item d-flex align-items-center px-3 py-1 text-white">
+                              <i className={`bi ${item.icon} me-2`}></i>
+                              <span>{item.label}</span>
+                            </div>
+                          )
+                        ))}
+                        <div className="mt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                          <div className="sidebar-item d-flex align-items-center px-3 py-1 text-white mt-2">
+                            <i className="bi bi-box-arrow-right me-2"></i>
+                            <span>Cerrar sesión</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-center mt-3">
+                      <small className="text-muted">
+                        {isDirty ?
+                          "Las modificaciones solo se aplicarán al guardar los cambios" :
+                          "El sidebar se muestra como está actualmente configurado"}
+                      </small>
                     </div>
                   </Card.Body>
                 </Card>
               </Col>
-            ))}
-          </Row>
-        </Card.Body>
-      </Card>
 
-      {/* Accesos rápidos a herramientas */}
-      <Card className="mb-4 border-0 shadow-sm">
-        <Card.Header className="bg-white py-3">
-          <h5 className="fw-bold mb-0">
-            <i className="bi bi-tools me-2 text-warning"></i>
-            Herramientas Administrativas
-          </h5>
-        </Card.Header>
-        <Card.Body>
-          <Row>
-            <Col md={4} className="mb-3">
-              <Card className="h-100 border-0 shadow-sm">
-                <Card.Body className="p-0">
-                  <Button
-                    variant="light"
-                    className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                    onClick={() => navigate('/admin/users')}
-                  >
-                    <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
-                      style={{
-                        width: '3.5rem',
-                        height: '3.5rem',
-                        padding: 0
-                      }}>
-                      <i className="bi bi-people-fill fs-3 text-primary"></i>
-                    </div>
-                    <span className="fw-medium">Gestión de Usuarios</span>
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={4} className="mb-3">
-              <Card className="h-100 border-0 shadow-sm">
-                <Card.Body className="p-0">
-                  <Button
-                    variant="light"
-                    className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                    onClick={() => setShowItrackerModal(true)}
-                  >
-                    <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
-                      style={{
-                        width: '3.5rem',
-                        height: '3.5rem',
-                        padding: 0
-                      }}>
-                      <i className="bi bi-file-earmark-excel fs-3 text-success"></i>
-                    </div>
-                    <span className="fw-medium">Subir archivos iTracker</span>
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={4} className="mb-3">
-              <Card className="h-100 border-0 shadow-sm">
-                <Card.Body className="p-0">
-                  <Button
-                    variant="light"
-                    className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                    onClick={() => setShowTabulacionesModal(true)}
-                  >
-                    <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
-                      style={{
-                        width: '3.5rem',
-                        height: '3.5rem',
-                        padding: 0
-                      }}>
-                      <i className="bi bi-table fs-3 text-info"></i>
-                    </div>
-                    <span className="fw-medium">Subir archivos Tabulaciones</span>
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={4} className="mb-3">
-              <Card className="h-100 border-0 shadow-sm">
-                <Card.Body className="p-0">
-                  <Button
-                    variant="light"
-                    className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                    onClick={() => setShowAbmUploadModal(true)}
-                  >
-                    <div className="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
-                      style={{
-                        width: '3.5rem',
-                        height: '3.5rem',
-                        padding: 0
-                      }}>
-                      <i className="bi bi-cloud-upload-fill fs-3 text-danger"></i>
-                    </div>
-                    <span className="fw-medium">Subir archivos ABM PIC & Social</span>
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
+              {/* Opciones de configuración - Con ajuste de tamaño */}
+              <Col md={9}>
+                <div className="pb-2 d-flex align-items-center">
+                  <h6 className="fw-bold mb-0">
+                    <i className="bi bi-toggles me-2 text-primary"></i>
+                    Opciones de visibilidad
+                  </h6>
+                </div>
+                <Row>
+                  {sidebarItemsMeta.map(item => (
+                    <Col xs={12} md={6} lg={4} key={item.id} className="mb-3">
+                      <Card className="border shadow-sm h-100">
+                        <Card.Body className="p-3">
+                          <div className="d-flex justify-content-between align-items-center">
+                            <div className="d-flex align-items-center">
+                              <div
+                                className="rounded-circle me-3 d-flex align-items-center justify-content-center"
+                                style={{
+                                  backgroundColor: `${item.color}20`,
+                                  width: '2.5rem',      // Ancho fijo
+                                  height: '2.5rem',     // Alto igual al ancho
+                                  padding: 0            // Quita el padding que causa la deformación
+                                }}
+                              >
+                                <i
+                                  className={`bi ${item.icon}`}
+                                  style={{ color: item.color, fontSize: '1rem' }}
+                                ></i>
+                              </div>
+                              <span className="fw-medium">{item.label}</span>
+                            </div>
+                            <Form.Check
+                              type="switch"
+                              id={`switch-${item.id}`}
+                              checked={localVisibility[item.id] !== false}
+                              onChange={() => toggleSidebarItem(item.id)}
+                            />
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
 
-            {/* 🚀 NUEVO BOTÓN: GESTIÓN INTEGRAL DE GUARDIAS */}
-            <Col md={4} className="mb-3">
-              <Card className="h-100 border-0 shadow-sm">
-                <Card.Body className="p-0">
-                  <Button
-                    variant="light"
-                    className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0 position-relative"
-                    onClick={() => navigate('/admin/gestion-guardias')}
-                    style={{
-                      borderLeft: '4px solid #0d6efd',
-                      backgroundColor: '#f8f9fa'
-                    }}
-                  >
-                    <div
-                      className="rounded-circle d-flex align-items-center justify-content-center mb-3"
+        {/* Configuración del Dashboard */}
+        <Card className="mb-4 border-0 shadow-sm">
+          <Card.Header className="bg-white py-3">
+            <h5 className="fw-bold mb-0">
+              <i className="bi bi-grid-1x2 me-2 text-success"></i>
+              Contenido del Dashboard Principal
+            </h5>
+          </Card.Header>
+          <Card.Body>
+            <Row>
+              {dashboardItems.map((item, index) => (
+                <Col xs={12} md={6} lg={4} key={item.id} className="mb-3">
+                  <Card className="border shadow-sm h-100">
+                    <Card.Body className="p-3">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div className="d-flex align-items-center">
+                          <div className="rounded-circle me-3 d-flex align-items-center justify-content-center"
+                            style={{
+                              backgroundColor: '#f8f9fa',
+                              width: '2.5rem',
+                              height: '2.5rem',
+                              padding: 0
+                            }}>
+                            <i className="bi bi-window-dock text-dark" style={{ fontSize: '1.2rem' }}></i>
+                          </div>
+                          <span className="fw-medium">{item.label}</span>
+                        </div>
+                        <Form.Check
+                          type="switch"
+                          id={`switch-dash-${item.id}`}
+                          checked={item.visible}
+                          onChange={() => toggleDashboardItem(item.id)}
+                          className="fs-4"
+                        />
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </Card.Body>
+        </Card>
+
+        {/* Accesos rápidos a herramientas */}
+        <Card className="mb-4 border-0 shadow-sm">
+          <Card.Header className="bg-white py-3">
+            <h5 className="fw-bold mb-0">
+              <i className="bi bi-tools me-2 text-warning"></i>
+              Herramientas Administrativas
+            </h5>
+          </Card.Header>
+          <Card.Body>
+            <Row>
+              <Col md={4} className="mb-3">
+                <Card className="h-100 border-0 shadow-sm">
+                  <Card.Body className="p-0">
+                    <Button
+                      variant="light"
+                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
+                      onClick={() => navigate('/admin/users')}
+                    >
+                      <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                        style={{
+                          width: '3.5rem',
+                          height: '3.5rem',
+                          padding: 0
+                        }}>
+                        <i className="bi bi-people-fill fs-3 text-primary"></i>
+                      </div>
+                      <span className="fw-medium">Gestión de Usuarios</span>
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
+              <Col md={4} className="mb-3">
+                <Card className="h-100 border-0 shadow-sm">
+                  <Card.Body className="p-0">
+                    <Button
+                      variant="light"
+                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
+                      onClick={() => setShowItrackerModal(true)}
+                    >
+                      <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                        style={{
+                          width: '3.5rem',
+                          height: '3.5rem',
+                          padding: 0
+                        }}>
+                        <i className="bi bi-file-earmark-excel fs-3 text-success"></i>
+                      </div>
+                      <span className="fw-medium">Subir archivos iTracker</span>
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
+              <Col md={4} className="mb-3">
+                <Card className="h-100 border-0 shadow-sm">
+                  <Card.Body className="p-0">
+                    <Button
+                      variant="light"
+                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
+                      onClick={() => setShowTabulacionesModal(true)}
+                    >
+                      <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                        style={{
+                          width: '3.5rem',
+                          height: '3.5rem',
+                          padding: 0
+                        }}>
+                        <i className="bi bi-table fs-3 text-info"></i>
+                      </div>
+                      <span className="fw-medium">Subir archivos Tabulaciones</span>
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
+              <Col md={4} className="mb-3">
+                <Card className="h-100 border-0 shadow-sm">
+                  <Card.Body className="p-0">
+                    <Button
+                      variant="light"
+                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
+                      onClick={() => setShowAbmUploadModal(true)}
+                    >
+                      <div className="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                        style={{
+                          width: '3.5rem',
+                          height: '3.5rem',
+                          padding: 0
+                        }}>
+                        <i className="bi bi-cloud-upload-fill fs-3 text-danger"></i>
+                      </div>
+                      <span className="fw-medium">Subir archivos ABM PIC & Social</span>
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
+
+              {/* 🚀 NUEVO BOTÓN: GESTIÓN INTEGRAL DE GUARDIAS */}
+              <Col md={4} className="mb-3">
+                <Card className="h-100 border-0 shadow-sm">
+                  <Card.Body className="p-0">
+                    <Button
+                      variant="light"
+                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0 position-relative"
+                      onClick={() => navigate('/admin/gestion-guardias')}
                       style={{
-                        backgroundColor: '#0d6efd20',
-                        width: '3.5rem',
-                        height: '3.5rem',
-                        padding: 0
-                      }}>
-                      <i className="bi bi-shield-check fs-3" style={{ color: '#0d6efd' }}></i>
-                    </div>
-                    <span className="fw-medium" style={{ color: '#0d6efd' }}>Gestión Integral de Guardias</span>
-                    <Badge
-                      className="mt-2"
-                      style={{
-                        backgroundColor: '#0d6efd',
-                        color: 'white',
-                        fontSize: '0.7rem'
+                        borderLeft: '4px solid #0d6efd',
+                        backgroundColor: '#f8f9fa'
                       }}
                     >
-                      <i className="bi bi-star-fill me-1"></i>
-                      Nuevo Sistema Unificado
-                    </Badge>
-                    <div className="position-absolute top-0 end-0 m-2">
-                      <Badge
-                        className="rounded-pill"
+                      <div
+                        className="rounded-circle d-flex align-items-center justify-content-center mb-3"
                         style={{
-                          backgroundColor: '#198754',
-                          color: 'white'
+                          backgroundColor: '#0d6efd20',
+                          width: '3.5rem',
+                          height: '3.5rem',
+                          padding: 0
+                        }}>
+                        <i className="bi bi-shield-check fs-3" style={{ color: '#0d6efd' }}></i>
+                      </div>
+                      <span className="fw-medium" style={{ color: '#0d6efd' }}>Gestión Integral de Guardias</span>
+                      <Badge
+                        className="mt-2"
+                        style={{
+                          backgroundColor: '#0d6efd',
+                          color: 'white',
+                          fontSize: '0.7rem'
                         }}
                       >
-                        <i className="bi bi-check-circle-fill"></i>
+                        <i className="bi bi-star-fill me-1"></i>
+                        Nuevo Sistema Unificado
                       </Badge>
-                    </div>
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
+                      <div className="position-absolute top-0 end-0 m-2">
+                        <Badge
+                          className="rounded-pill"
+                          style={{
+                            backgroundColor: '#198754',
+                            color: 'white'
+                          }}
+                        >
+                          <i className="bi bi-check-circle-fill"></i>
+                        </Badge>
+                      </div>
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
 
-            {/* 🔄 BOTÓN ORIGINAL: CÓDIGOS GUARDIAS (MANTENIDO COMO RESPALDO) */}
-            <Col md={4} className="mb-3">
-              <Card className="h-100 border-0 shadow-sm">
-                <Card.Body className="p-0">
-                  <Button
-                    variant="light"
-                    className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0 position-relative"
-                    onClick={() => navigate('/admin/codigos')}
-                  >
-                    <div
-                      className="rounded-circle d-flex align-items-center justify-content-center mb-3"
-                      style={{
-                        backgroundColor: '#8e44ad20',
-                        width: '3.5rem',
-                        height: '3.5rem',
-                        padding: 0
-                      }}>
-                      <i className="bi bi-upc-scan fs-3" style={{ color: '#8e44ad' }}></i>
-                    </div>
-                    <span className="fw-medium">Códigos Guardias</span>
-                    <Badge
-                      className="mt-2"
-                      style={{
-                        backgroundColor: '#ffc107',
-                        color: '#000',
-                        fontSize: '0.7rem'
-                      }}
+              {/* 🔄 BOTÓN ORIGINAL: CÓDIGOS GUARDIAS (MANTENIDO COMO RESPALDO) */}
+              <Col md={4} className="mb-3">
+                <Card className="h-100 border-0 shadow-sm">
+                  <Card.Body className="p-0">
+                    <Button
+                      variant="light"
+                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0 position-relative"
+                      onClick={() => navigate('/admin/codigos')}
                     >
-                      <i className="bi bi-exclamation-triangle me-1"></i>
-                      Versión Anterior
-                    </Badge>
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-
-            {/* 🚀 NUEVO BOTÓN: PANEL DE DIAGNÓSTICOS */}
-            <Col md={4} className="mb-3">
-              <Card className="h-100 border-0 shadow-sm">
-                <Card.Body className="p-0">
-                  <Button
-                    variant="light"
-                    className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0 position-relative"
-                    onClick={() => navigate('/admin/diagnostics')}
-                    style={{
-                      borderLeft: '4px solid #28a745',
-                      backgroundColor: '#f8f9fa'
-                    }}
-                  >
-                    <div
-                      className="rounded-circle d-flex align-items-center justify-content-center mb-3"
-                      style={{
-                        backgroundColor: '#28a74520',
-                        width: '3.5rem',
-                        height: '3.5rem',
-                        padding: 0
-                      }}>
-                      <i className="bi bi-activity fs-3" style={{ color: '#28a745' }}></i>
-                    </div>
-                    <span className="fw-medium" style={{ color: '#28a745' }}>Panel de Diagnósticos</span>
-                    <Badge
-                      className="mt-2"
-                      style={{
-                        backgroundColor: '#28a745',
-                        color: 'white',
-                        fontSize: '0.7rem'
-                      }}
-                    >
-                      <i className="bi bi-shield-check me-1"></i>
-                      Sistema de Monitoreo
-                    </Badge>
-                    <div className="position-absolute top-0 end-0 m-2">
-                      <Badge
-                        className="rounded-pill"
+                      <div
+                        className="rounded-circle d-flex align-items-center justify-content-center mb-3"
                         style={{
-                          backgroundColor: '#17a2b8',
-                          color: 'white'
+                          backgroundColor: '#8e44ad20',
+                          width: '3.5rem',
+                          height: '3.5rem',
+                          padding: 0
+                        }}>
+                        <i className="bi bi-upc-scan fs-3" style={{ color: '#8e44ad' }}></i>
+                      </div>
+                      <span className="fw-medium">Códigos Guardias</span>
+                      <Badge
+                        className="mt-2"
+                        style={{
+                          backgroundColor: '#ffc107',
+                          color: '#000',
+                          fontSize: '0.7rem'
                         }}
                       >
-                        <i className="bi bi-gear-fill"></i>
+                        <i className="bi bi-exclamation-triangle me-1"></i>
+                        Versión Anterior
                       </Badge>
-                    </div>
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
 
-            <Col md={4} className="mb-3">
-              <Card className="h-100 border-0 shadow-sm">
-                <Card.Body className="p-0">
-                  <Button
-                    variant="light"
-                    className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                    disabled
-                  >
-                    <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+              {/* 🚀 NUEVO BOTÓN: PANEL DE DIAGNÓSTICOS */}
+              <Col md={4} className="mb-3">
+                <Card className="h-100 border-0 shadow-sm">
+                  <Card.Body className="p-0">
+                    <Button
+                      variant="light"
+                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0 position-relative"
+                      onClick={() => navigate('/admin/diagnostics')}
                       style={{
-                        width: '3.5rem',
-                        height: '3.5rem',
-                        padding: 0
-                      }}>
-                      <i className="bi bi-clock-history fs-3 text-warning"></i>
-                    </div>
-                    <span className="fw-medium">Historial de cargas</span>
-                    <Badge bg="secondary" className="mt-2">Proximamente</Badge>
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={4} className="mb-3">
-              <Card className="h-100 border-0 shadow-sm">
-                <Card.Body className="p-0">
-                  <Button
-                    variant="light"
-                    className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                    disabled
-                  >
-                    <div className="bg-dark bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
-                      style={{
-                        width: '3.5rem',
-                        height: '3.5rem',
-                        padding: 0
-                      }}>
-                      <i className="bi bi-journal-text fs-3 text-dark"></i>
-                    </div>
-                    <span className="fw-medium">Bitácora del sistema</span>
-                    <Badge bg="secondary" className="mt-2">Proximamente</Badge>
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
+                        borderLeft: '4px solid #28a745',
+                        backgroundColor: '#f8f9fa'
+                      }}
+                    >
+                      <div
+                        className="rounded-circle d-flex align-items-center justify-content-center mb-3"
+                        style={{
+                          backgroundColor: '#28a74520',
+                          width: '3.5rem',
+                          height: '3.5rem',
+                          padding: 0
+                        }}>
+                        <i className="bi bi-activity fs-3" style={{ color: '#28a745' }}></i>
+                      </div>
+                      <span className="fw-medium" style={{ color: '#28a745' }}>Panel de Diagnósticos</span>
+                      <Badge
+                        className="mt-2"
+                        style={{
+                          backgroundColor: '#28a745',
+                          color: 'white',
+                          fontSize: '0.7rem'
+                        }}
+                      >
+                        <i className="bi bi-shield-check me-1"></i>
+                        Sistema de Monitoreo
+                      </Badge>
+                      <div className="position-absolute top-0 end-0 m-2">
+                        <Badge
+                          className="rounded-pill"
+                          style={{
+                            backgroundColor: '#17a2b8',
+                            color: 'white'
+                          }}
+                        >
+                          <i className="bi bi-gear-fill"></i>
+                        </Badge>
+                      </div>
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
 
-      {/* Modal para subir archivos iTracker */}
-      <Modal
-        show={showItrackerModal}
-        onHide={resetItrackerModal}
-        centered
-      >
-        <Modal.Header closeButton className="border-0 pb-0">
-          <Modal.Title className="d-flex align-items-center">
-            <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
-              style={{
-                width: '2.5rem',
-                height: '2.5rem',
-                padding: 0
-              }}>
-              <i className="bi bi-file-earmark-excel text-success"></i>
-            </div>
-            Carga reporte iTracker
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form ref={itrackerFormRef} onSubmit={handleItrackerUpload}>
-            <Form.Group controlId="formItrackerFile" className="mb-3">
-              <Form.Label>Archivo Excel (.xlsx)</Form.Label>
-              <Form.Control
-                type="file"
-                accept=".xlsx"
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const files = e.target.files;
-                  setItrackerFile(files?.[0] || null);
-                  setUploadMessage('');
-                  setUploadError('');
-                }}
-              />
-              <Form.Text className="text-muted">
-                Selecciona el archivo de reporte iTracker para procesar.
-              </Form.Text>
-            </Form.Group>
+              <Col md={4} className="mb-3">
+                <Card className="h-100 border-0 shadow-sm">
+                  <Card.Body className="p-0">
+                    <Button
+                      variant="light"
+                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
+                      disabled
+                    >
+                      <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                        style={{
+                          width: '3.5rem',
+                          height: '3.5rem',
+                          padding: 0
+                        }}>
+                        <i className="bi bi-clock-history fs-3 text-warning"></i>
+                      </div>
+                      <span className="fw-medium">Historial de cargas</span>
+                      <Badge bg="secondary" className="mt-2">Proximamente</Badge>
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
+              <Col md={4} className="mb-3">
+                <Card className="h-100 border-0 shadow-sm">
+                  <Card.Body className="p-0">
+                    <Button
+                      variant="light"
+                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
+                      disabled
+                    >
+                      <div className="bg-dark bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                        style={{
+                          width: '3.5rem',
+                          height: '3.5rem',
+                          padding: 0
+                        }}>
+                        <i className="bi bi-journal-text fs-3 text-dark"></i>
+                      </div>
+                      <span className="fw-medium">Bitácora del sistema</span>
+                      <Badge bg="secondary" className="mt-2">Proximamente</Badge>
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
 
-            {uploadMessage && <Alert variant="success" className="mt-3">{uploadMessage}</Alert>}
-            {uploadError && <Alert variant="danger" className="mt-3">{uploadError}</Alert>}
-          </Form>
-        </Modal.Body>
-        <Modal.Footer className="border-0 pt-0">
-          <Button
-            variant="secondary"
-            onClick={resetItrackerModal}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => {
-              if (itrackerFormRef.current) {
-                itrackerFormRef.current.dispatchEvent(
-                  new Event('submit', { cancelable: true, bubbles: true })
-                );
-              }
-            }}
-            disabled={uploading || !itrackerFile}
-          >
-            {uploading ? (
-              <>
-                <Spinner animation="border" size="sm" className="me-1" /> Procesando...
-              </>
-            ) : "Subir archivo"}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        {/* Modal para subir archivos iTracker */}
+        <Modal
+          show={showItrackerModal}
+          onHide={resetItrackerModal}
+          centered
+        >
+          <Modal.Header closeButton className="border-0 pb-0">
+            <Modal.Title className="d-flex align-items-center">
+              <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
+                style={{
+                  width: '2.5rem',
+                  height: '2.5rem',
+                  padding: 0
+                }}>
+                <i className="bi bi-file-earmark-excel text-success"></i>
+              </div>
+              Carga reporte iTracker
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form ref={itrackerFormRef} onSubmit={handleItrackerUpload}>
+              <Form.Group controlId="formItrackerFile" className="mb-3">
+                <Form.Label>Archivo Excel (.xlsx)</Form.Label>
+                <Form.Control
+                  type="file"
+                  accept=".xlsx"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const files = e.target.files;
+                    setItrackerFile(files?.[0] || null);
+                    setUploadMessage('');
+                    setUploadError('');
+                  }}
+                />
+                <Form.Text className="text-muted">
+                  Selecciona el archivo de reporte iTracker para procesar.
+                </Form.Text>
+              </Form.Group>
 
-      {/* Modal para subir archivos Tabulaciones */}
-      <Modal
-        show={showTabulacionesModal}
-        onHide={resetTabulacionesModal}
-        centered
-      >
-        <Modal.Header closeButton className="border-0 pb-0">
-          <Modal.Title className="d-flex align-items-center">
-            <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
-              style={{
-                width: '2.5rem',
-                height: '2.5rem',
-                padding: 0
-              }}>
-              <i className="bi bi-table text-info"></i>
-            </div>
-            Carga de Tabulaciones
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form ref={tabulacionesFormRef} onSubmit={handleTabulacionesUpload}>
-            <Form.Group controlId="formTabulacionesFile" className="mb-3">
-              <Form.Label>Archivo Excel (.xlsx) con la hoja "Tareas"</Form.Label>
-              <Form.Control
-                type="file"
-                accept=".xlsx"
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const files = e.target.files;
-                  setTabulacionesFile(files?.[0] || null);
-                  setUploadMessage('');
-                  setUploadError('');
-                }}
-              />
-              <Form.Text className="text-muted">
-                Selecciona el archivo de tabulaciones para procesar.
-              </Form.Text>
-            </Form.Group>
+              {uploadMessage && <Alert variant="success" className="mt-3">{uploadMessage}</Alert>}
+              {uploadError && <Alert variant="danger" className="mt-3">{uploadError}</Alert>}
+            </Form>
+          </Modal.Body>
+          <Modal.Footer className="border-0 pt-0">
+            <Button
+              variant="secondary"
+              onClick={resetItrackerModal}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                if (itrackerFormRef.current) {
+                  itrackerFormRef.current.dispatchEvent(
+                    new Event('submit', { cancelable: true, bubbles: true })
+                  );
+                }
+              }}
+              disabled={uploading || !itrackerFile}
+            >
+              {uploading ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-1" /> Procesando...
+                </>
+              ) : "Subir archivo"}
+            </Button>
+          </Modal.Footer>
+        </Modal>
 
-            {uploadMessage && <Alert variant="success" className="mt-3">{uploadMessage}</Alert>}
-            {uploadError && <Alert variant="danger" className="mt-3">{uploadError}</Alert>}
-          </Form>
-        </Modal.Body>
-        <Modal.Footer className="border-0 pt-0">
-          <Button
-            variant="secondary"
-            onClick={resetTabulacionesModal}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => {
-              if (tabulacionesFormRef.current) {
-                tabulacionesFormRef.current.dispatchEvent(
-                  new Event('submit', { cancelable: true, bubbles: true })
-                );
-              }
-            }}
-            disabled={uploading || !tabulacionesFile}
-          >
-            {uploading ? (
-              <>
-                <Spinner animation="border" size="sm" className="me-1" /> Procesando...
-              </>
-            ) : "Subir archivo"}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        {/* Modal para subir archivos Tabulaciones */}
+        <Modal
+          show={showTabulacionesModal}
+          onHide={resetTabulacionesModal}
+          centered
+        >
+          <Modal.Header closeButton className="border-0 pb-0">
+            <Modal.Title className="d-flex align-items-center">
+              <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
+                style={{
+                  width: '2.5rem',
+                  height: '2.5rem',
+                  padding: 0
+                }}>
+                <i className="bi bi-table text-info"></i>
+              </div>
+              Carga de Tabulaciones
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form ref={tabulacionesFormRef} onSubmit={handleTabulacionesUpload}>
+              <Form.Group controlId="formTabulacionesFile" className="mb-3">
+                <Form.Label>Archivo Excel (.xlsx) con la hoja "Tareas"</Form.Label>
+                <Form.Control
+                  type="file"
+                  accept=".xlsx"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const files = e.target.files;
+                    setTabulacionesFile(files?.[0] || null);
+                    setUploadMessage('');
+                    setUploadError('');
+                  }}
+                />
+                <Form.Text className="text-muted">
+                  Selecciona el archivo de tabulaciones para procesar.
+                </Form.Text>
+              </Form.Group>
 
-      {/* Modal para subir archivos PIC y Social */}
-      <AbmUploadModal
-        show={showAbmUploadModal}
-        onHide={() => setShowAbmUploadModal(false)}
-        onSuccess={handleAbmUploadSuccess}
-      />
+              {uploadMessage && <Alert variant="success" className="mt-3">{uploadMessage}</Alert>}
+              {uploadError && <Alert variant="danger" className="mt-3">{uploadError}</Alert>}
+            </Form>
+          </Modal.Body>
+          <Modal.Footer className="border-0 pt-0">
+            <Button
+              variant="secondary"
+              onClick={resetTabulacionesModal}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                if (tabulacionesFormRef.current) {
+                  tabulacionesFormRef.current.dispatchEvent(
+                    new Event('submit', { cancelable: true, bubbles: true })
+                  );
+                }
+              }}
+              disabled={uploading || !tabulacionesFile}
+            >
+              {uploading ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-1" /> Procesando...
+                </>
+              ) : "Subir archivo"}
+            </Button>
+          </Modal.Footer>
+        </Modal>
 
-      <LightFooter />
-    </Container>
-  );
+        {/* Modal para subir archivos PIC y Social */}
+        <AbmUploadModal
+          show={showAbmUploadModal}
+          onHide={() => setShowAbmUploadModal(false)}
+          onSuccess={handleAbmUploadSuccess}
+        />
+
+        <LightFooter />
+      </Container>
+      </div>
+      );
 };
 
-export default AdminPanel;
+      export default AdminPanel;
