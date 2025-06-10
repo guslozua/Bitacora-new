@@ -1,11 +1,12 @@
-// services/hitoService.ts - Versión corregida
+// services/hitoService.ts - Versión corregida con tipos
 import axios from 'axios';
 import type { 
   HitoFormData, 
   HitoFilters, 
   ApiResponse, 
   HitoCompleto,
-  ConversionData 
+  ConversionData,
+  Usuario // 🔧 IMPORTAR: Usuario desde hitos.types.ts
 } from '../types/hitos.types';
 
 // Configuración de axios consistente con el resto del proyecto
@@ -227,26 +228,61 @@ class HitoService {
     }
   }
 
-  // Obtener todos los usuarios (para el formulario)
-  async getUsers(): Promise<any[]> {
+  // 🔧 CORREGIDO: Obtener todos los usuarios (para el formulario) con tipos correctos
+  async getUsers(): Promise<Usuario[]> {
     try {
       console.log('👥 Obteniendo lista de usuarios');
-      const response = await api.get('/users');
+      
+      // Usar limit=all para obtener todos los usuarios
+      const response = await api.get('/users?limit=all');
       console.log('📥 Respuesta usuarios:', response.data);
       
       // Manejar diferentes formatos de respuesta
+      let usuarios: Usuario[] = [];
+      
       if (Array.isArray(response.data)) {
-        return response.data;
+        usuarios = response.data;
+      } else if (response.data.success && Array.isArray(response.data.data)) {
+        usuarios = response.data.data;
       } else if (response.data.data && Array.isArray(response.data.data)) {
-        return response.data.data;
-      } else if (response.data.success && Array.isArray(response.data.users)) {
-        return response.data.users;
+        usuarios = response.data.data;
+      } else if (response.data.users && Array.isArray(response.data.users)) {
+        usuarios = response.data.users;
+      } else if (response.data.usuarios && Array.isArray(response.data.usuarios)) {
+        usuarios = response.data.usuarios;
       } else {
         console.warn('⚠️ Formato de respuesta inesperado para usuarios:', response.data);
         return [];
       }
+      
+      console.log(`✅ Usuarios obtenidos: ${usuarios.length} usuarios disponibles`);
+      
+      // 🔧 CORREGIDO: Filtrar solo usuarios activos con tipado explícito
+      const usuariosActivos = usuarios.filter((usuario: Usuario) => 
+        usuario.estado === 'activo' || usuario.estado === 1 || !usuario.estado
+      );
+      
+      console.log(`📋 Usuarios activos para selección: ${usuariosActivos.length}`);
+      
+      return usuariosActivos;
     } catch (error) {
       console.error('❌ Error al obtener usuarios:', error);
+      
+      // Si falla con limit=all, intentar sin parámetros
+      try {
+        console.log('🔄 Reintentando sin parámetros...');
+        const fallbackResponse = await api.get('/users');
+        
+        if (fallbackResponse.data?.data && Array.isArray(fallbackResponse.data.data)) {
+          console.log(`📥 Fallback exitoso: ${fallbackResponse.data.data.length} usuarios`);
+          return fallbackResponse.data.data.filter((usuario: Usuario) => 
+            usuario.estado === 'activo' || usuario.estado === 1 || !usuario.estado
+          );
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback también falló:', fallbackError);
+      }
+      
       return [];
     }
   }

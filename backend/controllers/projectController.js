@@ -2,7 +2,7 @@
 const projectModel = require('../models/ProjectModel');
 const { validationResult } = require('express-validator');
 const db = require('../config/db');
-const logEvento = require('../utils/logEvento');
+const { logEvento } = require('../utils/logEvento');
 
 // Obtener todos los proyectos con filtros
 exports.getProjects = async (req, res) => {

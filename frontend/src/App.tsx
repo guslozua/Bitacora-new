@@ -4,16 +4,15 @@ import logo from './logo.svg';
 import './App.css';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { SidebarVisibilityProvider } from './services/SidebarVisibilityContext';
-import { initializeAuth, isAuthenticated } from './services/authService'; // Importar funciones de autenticación
-
-
+import { ThemeProvider } from './context/ThemeContext'; // 🔥 NUEVO IMPORT
+import { initializeAuth, isAuthenticated } from './services/authService';
 
 // Páginas
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
 import Tasks from './pages/Tasks';
-import HitosPage from './pages/HitosPage'; // 🔔 NUEVO IMPORT PARA HITOS
+import HitosPage from './pages/HitosPage';
 import ItrackerUpload from './pages/ItrackerUpload';
 import ItrackerDash from './pages/ItrackerDash';
 import TabulacionesUpload from './pages/TabulacionesUpload';
@@ -34,11 +33,6 @@ import EventPage from './pages/EventPage';
 
 // 🚀 NUEVA PÁGINA UNIFICADA DE GESTIÓN DE GUARDIAS
 import GestionGuardiasPage from './pages/GestionGuardiasPage';
-
-// 🔄 PÁGINAS INDIVIDUALES (MANTENER TEMPORALMENTE COMO RESPALDO)
-// import InformesPage from './pages/InformesPage';
-// import CodigosPage from './pages/CodigosPage'; 
-// import AdminGuardiasPage from './pages/AdminGuardiasPage';
 
 // Para que todas las paginas inicien con el scroll al inicio
 import ScrollToTop from './components/ScrollToTop';
@@ -131,105 +125,99 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <Router>
-      <SidebarVisibilityProvider>
-        <ScrollToTop />
-        <Routes>
-          {/* Rutas públicas */}
-          <Route path="/" element={<LoginPage />} />
-          
-          {/* Rutas protegidas */}
-          <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
-          <Route path="/projects" element={<ProtectedRoute element={<Projects />} />} />
-          <Route path="/tasks" element={<ProtectedRoute element={<Tasks />} />} />
-          
-          {/* 🔔 NUEVA RUTA PARA HITOS */}
-          <Route path="/hitos" element={<ProtectedRoute element={<HitosPage />} />} />
-          
-          <Route path="/itracker" element={<ProtectedRoute element={<ItrackerUpload />} />} />
-          <Route path="/itrackerdash" element={<ProtectedRoute element={<ItrackerDash />} />} />
-          <Route path="/tabulaciones" element={<ProtectedRoute element={<TabulacionesUpload />} />} />
-          <Route path="/tabulacionesdash" element={<ProtectedRoute element={<TabulacionesDash />} />} />
-          <Route path="/admin" element={<ProtectedRoute element={<AdminPanel />} />} />
-          <Route path="/abmdashboard" element={<ProtectedRoute element={<AbmDashboard />} />} />
-          <Route path="/abm" element={<ProtectedRoute element={<AbmUpload />} />} />
-          <Route path="/placasdash" element={<ProtectedRoute element={<PlacasDash />} />} />
-          <Route path="/glosario" element={<ProtectedRoute element={<Glosario />} />} />
-          <Route path="/links" element={<ProtectedRoute element={<Enlaces />} />} />
-          <Route path="/contactos" element={<ProtectedRoute element={<ContactosPage />} />} />
-          
-          {/* 🔔 NUEVA RUTA PARA NOTIFICACIONES */}
-          <Route 
-            path="/notificaciones" 
-            element={
-              <ProtectedRoute 
-                element={<NotificacionesList userId={getCurrentUserId()} />} 
-              />
-            } 
-          />
-          
-          {/* Rutas del Calendario */}
-          <Route path="/calendar" element={<ProtectedRoute element={<CalendarPage />} />} />
-          <Route path="/calendar/admin" element={<ProtectedRoute element={<AdminCalendarPage />} />} />
-          <Route path="/calendar/event/:id" element={<ProtectedRoute element={<EventPage />} />} />
-          
-          {/* 🚀 NUEVA RUTA UNIFICADA PARA GESTIÓN DE GUARDIAS */}
-          <Route 
-            path="/admin/gestion-guardias" 
-            element={<ProtectedRoute element={<GestionGuardiasPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
-          />
-          
-          {/* 🔄 RUTAS DE COMPATIBILIDAD (REDIRECCIONES) */}
-          {/* Redirigir las rutas antiguas a la nueva página unificada */}
-          <Route 
-            path="/admin/guardias" 
-            element={<Navigate to="/admin/gestion-guardias?tab=cronograma" replace />} 
-          />
-          <Route 
-            path="/admin/codigos" 
-            element={<Navigate to="/admin/gestion-guardias?tab=facturacion" replace />} 
-          />
-          <Route 
-            path="/informes" 
-            element={<Navigate to="/admin/gestion-guardias?tab=informes" replace />} 
-          />
-          
-          {/* 🔄 RUTAS INDIVIDUALES COMENTADAS (RESPALDO TEMPORAL)
-          // Mantener comentadas por si necesitas volver a las páginas individuales
-          // <Route path="/informes" element={<InformesPage />} />
-          // <Route path="/admin/codigos" element={<ProtectedRoute element={<CodigosPage />} />} />
-          // <Route path="/admin/guardias" element={<ProtectedRoute element={<AdminGuardiasPage />} />} />
-          */}
-          
-          {/* Rutas de administración de usuarios */}
-          <Route 
-            path="/admin/users" 
-            element={<ProtectedRoute element={<AdminUsersDashboard />} allowedRoles={['Admin', 'SuperAdmin']} />} 
-          />
-          <Route 
-            path="/admin/users/new" 
-            element={<ProtectedRoute element={<UserForm />} allowedRoles={['Admin', 'SuperAdmin']} />} 
-          />
-          <Route 
-            path="/admin/users/:id" 
-            element={<ProtectedRoute element={<UserDetail />} allowedRoles={['Admin', 'SuperAdmin']} />} 
-          />
-          <Route 
-            path="/admin/users/:id/edit" 
-            element={<ProtectedRoute element={<UserForm />} allowedRoles={['Admin', 'SuperAdmin']} />} 
-          />
+    <ThemeProvider> {/* 🔥 WRAPPER DEL THEME PROVIDER */}
+      <Router>
+        <SidebarVisibilityProvider>
+          <ScrollToTop />
+          <Routes>
+            {/* Rutas públicas */}
+            <Route path="/" element={<LoginPage />} />
+            
+            {/* Rutas protegidas */}
+            <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
+            <Route path="/projects" element={<ProtectedRoute element={<Projects />} />} />
+            <Route path="/tasks" element={<ProtectedRoute element={<Tasks />} />} />
+            
+            {/* 🔔 NUEVA RUTA PARA HITOS */}
+            <Route path="/hitos" element={<ProtectedRoute element={<HitosPage />} />} />
+            
+            <Route path="/itracker" element={<ProtectedRoute element={<ItrackerUpload />} />} />
+            <Route path="/itrackerdash" element={<ProtectedRoute element={<ItrackerDash />} />} />
+            <Route path="/tabulaciones" element={<ProtectedRoute element={<TabulacionesUpload />} />} />
+            <Route path="/tabulacionesdash" element={<ProtectedRoute element={<TabulacionesDash />} />} />
+            <Route path="/admin" element={<ProtectedRoute element={<AdminPanel />} />} />
+            <Route path="/abmdashboard" element={<ProtectedRoute element={<AbmDashboard />} />} />
+            <Route path="/abm" element={<ProtectedRoute element={<AbmUpload />} />} />
+            <Route path="/placasdash" element={<ProtectedRoute element={<PlacasDash />} />} />
+            <Route path="/glosario" element={<ProtectedRoute element={<Glosario />} />} />
+            <Route path="/links" element={<ProtectedRoute element={<Enlaces />} />} />
+            <Route path="/contactos" element={<ProtectedRoute element={<ContactosPage />} />} />
+            
+            {/* 🔔 NUEVA RUTA PARA NOTIFICACIONES */}
+            <Route 
+              path="/notificaciones" 
+              element={
+                <ProtectedRoute 
+                  element={<NotificacionesList userId={getCurrentUserId()} />} 
+                />
+              } 
+            />
+            
+            {/* Rutas del Calendario */}
+            <Route path="/calendar" element={<ProtectedRoute element={<CalendarPage />} />} />
+            <Route path="/calendar/admin" element={<ProtectedRoute element={<AdminCalendarPage />} />} />
+            <Route path="/calendar/event/:id" element={<ProtectedRoute element={<EventPage />} />} />
+            
+            {/* 🚀 NUEVA RUTA UNIFICADA PARA GESTIÓN DE GUARDIAS */}
+            <Route 
+              path="/admin/gestion-guardias" 
+              element={<ProtectedRoute element={<GestionGuardiasPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+            />
+            
+            {/* 🔄 RUTAS DE COMPATIBILIDAD (REDIRECCIONES) */}
+            <Route 
+              path="/admin/guardias" 
+              element={<Navigate to="/admin/gestion-guardias?tab=cronograma" replace />} 
+            />
+            <Route 
+              path="/admin/codigos" 
+              element={<Navigate to="/admin/gestion-guardias?tab=facturacion" replace />} 
+            />
+            <Route 
+              path="/informes" 
+              element={<Navigate to="/admin/gestion-guardias?tab=informes" replace />} 
+            />
+            
+            {/* Rutas de administración de usuarios */}
+            <Route 
+              path="/admin/users" 
+              element={<ProtectedRoute element={<AdminUsersDashboard />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+            />
+            <Route 
+              path="/admin/users/new" 
+              element={<ProtectedRoute element={<UserForm />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+            />
+            <Route 
+              path="/admin/users/:id" 
+              element={<ProtectedRoute element={<UserDetail />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+            />
+            <Route 
+              path="/admin/users/:id/edit" 
+              element={<ProtectedRoute element={<UserForm />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+            />
 
-          {/* 🚀 NUEVA RUTA PARA DIAGNÓSTICOS */}
-          <Route 
-            path="/admin/diagnostics" 
-            element={<ProtectedRoute element={<DiagnosticsPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
-          />
-          
-          {/* Ruta para errores */}
-          <Route path="*" element={<Error404 />} />
-        </Routes>
-      </SidebarVisibilityProvider>
-    </Router>
+            {/* 🚀 NUEVA RUTA PARA DIAGNÓSTICOS */}
+            <Route 
+              path="/admin/diagnostics" 
+              element={<ProtectedRoute element={<DiagnosticsPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+            />
+            
+            {/* Ruta para errores */}
+            <Route path="*" element={<Error404 />} />
+          </Routes>
+        </SidebarVisibilityProvider>
+      </Router>
+    </ThemeProvider>
   );
 };
 

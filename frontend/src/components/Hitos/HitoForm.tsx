@@ -9,6 +9,7 @@ import {
   Alert,
   Spinner
 } from 'react-bootstrap';
+import Swal from 'sweetalert2'; // 🔧 Import de SweetAlert2
 import hitoService from '../../services/hitoService';
 import type { 
   HitoCompleto, 
@@ -38,10 +39,12 @@ const HitoForm: React.FC<HitoFormProps> = ({ show, onHide, onSave, hito }) => {
   const [loadingData, setLoadingData] = useState<boolean>(false);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [hasBeenSaved, setHasBeenSaved] = useState<boolean>(false); // 🔧 NUEVO: Flag para indicar que se guardó
 
   // Cargar datos iniciales
   useEffect(() => {
     if (show) {
+      setHasBeenSaved(false); // 🔧 Resetear al abrir el modal
       setLoadingData(true);
       setApiError(null);
       
@@ -83,6 +86,7 @@ const HitoForm: React.FC<HitoFormProps> = ({ show, onHide, onSave, hito }) => {
   const fetchUsuarios = async (): Promise<void> => {
     try {
       const data = await hitoService.getUsers();
+      console.log(`✅ Usuarios cargados en formulario: ${data.length}`);
       setUsuarios(data);
     } catch (error) {
       console.error('Error al obtener usuarios:', error);
@@ -185,31 +189,118 @@ const HitoForm: React.FC<HitoFormProps> = ({ show, onHide, onSave, hito }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Enviar formulario
+  // 🔧 CORREGIDO: Manejar envío del formulario con SweetAlert2
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     
     if (!validateForm()) return;
     
+    // 🎯 Confirmación con SweetAlert2
+    const result = await Swal.fire({
+      title: hito ? '¿Actualizar hito?' : '¿Guardar nuevo hito?',
+      text: `Confirme para ${hito ? 'actualizar' : 'crear'} el hito "${formData.nombre}"`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: hito ? 'Actualizar' : 'Crear Hito',
+      cancelButtonText: 'Cancelar'
+    });
+    
+    if (!result.isConfirmed) {
+      return;
+    }
+    
     setLoading(true);
     
     try {
       await onSave(formData);
-      handleClose();
-    } catch (error) {
+      
+      // 🔧 IMPORTANTE: Marcar como guardado ANTES del mensaje de éxito
+      setHasBeenSaved(true);
+      
+      // 🎯 Mensaje de éxito con SweetAlert2
+      Swal.fire({
+        icon: 'success',
+        title: hito ? 'Hito actualizado' : 'Hito creado',
+        text: `El hito "${formData.nombre}" se ha ${hito ? 'actualizado' : 'creado'} correctamente`,
+        timer: 1500,
+        showConfirmButton: false
+      });
+      
+      // 🔧 CORREGIDO: Esperar y cerrar sin confirmación adicional
+      setTimeout(() => {
+        handleCloseWithoutConfirmation(); // 🔧 NUEVO: Función específica para cerrar sin confirmar
+      }, 1500);
+      
+    } catch (error: any) {
       console.error('Error al guardar hito:', error);
-      setApiError('Error al guardar el hito. Por favor, intente nuevamente.');
+      
+      // 🎯 Mensaje de error con SweetAlert2
+      const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `Error al ${hito ? 'actualizar' : 'crear'} el hito: ${errorMessage}`,
+        confirmButtonColor: '#3085d6'
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  // 🔧 NUEVO: Función para cerrar sin confirmación (después de guardar exitosamente)
+  const handleCloseWithoutConfirmation = (): void => {
+    resetForm();
+    onHide();
+  };
+
+  // 🔧 CORREGIDO: Manejar cierre del modal con confirmación SOLO si no se ha guardado
   const handleClose = (): void => {
+    // 🔧 Si ya se guardó exitosamente, cerrar sin preguntar
+    if (hasBeenSaved) {
+      handleCloseWithoutConfirmation();
+      return;
+    }
+
+    // 🔧 CORREGIDO: Detectar cambios con verificación de undefined
+    const hasChanges = formData.nombre.trim() !== '' || 
+                      (formData.descripcion && formData.descripcion.trim() !== '') || 
+                      (formData.impacto && formData.impacto.trim() !== '') ||
+                      formData.fecha_inicio !== null ||
+                      formData.fecha_fin !== null ||
+                      formData.id_proyecto_origen !== null ||
+                      (formData.usuarios && formData.usuarios.length > 0);
+    
+    // 🔧 Solo mostrar confirmación si hay cambios Y es un nuevo hito Y no se ha guardado
+    if (hasChanges && !hito && !hasBeenSaved) {
+      Swal.fire({
+        title: '¿Descartar cambios?',
+        text: 'Los cambios no guardados se perderán',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, descartar',
+        cancelButtonText: 'No, continuar editando'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          handleCloseWithoutConfirmation();
+        }
+      });
+    } else {
+      handleCloseWithoutConfirmation();
+    }
+  };
+
+  // 🔧 CORREGIDO: Función para resetear el formulario
+  const resetForm = (): void => {
     setFormData(initialFormState);
     setSelectedUsers([]);
     setErrors({});
     setApiError(null);
-    onHide();
+    setHasBeenSaved(false); // 🔧 IMPORTANTE: Resetear el flag de guardado
   };
 
   // Mostrar spinner mientras se cargan los datos
@@ -225,7 +316,7 @@ const HitoForm: React.FC<HitoFormProps> = ({ show, onHide, onSave, hito }) => {
   }
 
   return (
-    <Modal show={show} onHide={handleClose} size="lg">
+    <Modal show={show} onHide={handleClose} size="lg" backdrop="static">
       <Modal.Header closeButton>
         <Modal.Title>
           {hito ? 'Editar Hito' : 'Crear Nuevo Hito'}
@@ -354,7 +445,10 @@ const HitoForm: React.FC<HitoFormProps> = ({ show, onHide, onSave, hito }) => {
           <Row>
             <Col md={12}>
               <Form.Group className="mb-3">
-                <Form.Label>Usuarios Asignados</Form.Label>
+                <Form.Label>
+                  Usuarios Asignados 
+                  <span className="text-muted">({usuarios.length} usuarios disponibles)</span>
+                </Form.Label>
                 <div className="border rounded p-3" style={{ maxHeight: '200px', overflowY: 'auto' }}>
                   {usuarios.length === 0 ? (
                     <p className="text-muted mb-0">No hay usuarios disponibles</p>

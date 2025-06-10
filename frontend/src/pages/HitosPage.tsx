@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { Container } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import Footer from '../components/Footer';
+import ThemedFooter from '../components/ThemedFooter'; // 🔥 CAMBIO: Footer temático
 import HitosList from '../components/Hitos/HitosList';
 import HitosRoadmap from '../components/Hitos/HitosRoadmap'; // Roadmap horizontal
 import { useSidebarVisibility } from '../services/SidebarVisibilityContext';
+import { useTheme } from '../context/ThemeContext'; // 🔥 AGREGAR IMPORT
 
 const HitosPage: React.FC = () => {
+  const { isDarkMode } = useTheme(); // 🔥 AGREGAR HOOK
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [activeTab, setActiveTab] = useState<'lista' | 'roadmap'>('lista');
@@ -23,19 +25,52 @@ const HitosPage: React.FC = () => {
     navigate('/');
   };
 
-  // Estilos para las pestañas (manteniendo el diseño original)
+  // 🎨 COLORES DINÁMICOS SEGÚN EL TEMA
+  const getThemeColors = () => {
+    if (isDarkMode) {
+      return {
+        // Modo oscuro
+        background: '#212529',
+        textPrimary: '#ffffff',
+        textSecondary: '#adb5bd',
+        textMuted: '#6c757d',
+        tabBackground: '#343a40',
+        tabBorder: '#495057',
+        tabHover: '#495057',
+        tabActive: '#495057',
+        tabActiveBorder: '#0d6efd'
+      };
+    } else {
+      return {
+        // Modo claro (original)
+        background: '#ffffff',
+        textPrimary: '#495057',
+        textSecondary: '#6c757d',
+        textMuted: '#6c757d',
+        tabBackground: '#ffffff',
+        tabBorder: '#e9ecef',
+        tabHover: '#f8f9fa',
+        tabActive: '#ffffff',
+        tabActiveBorder: '#007bff'
+      };
+    }
+  };
+
+  const themeColors = getThemeColors();
+
+  // Estilos para las pestañas (adaptados al tema)
   const tabStyles = {
     tabContainer: {
-      borderBottom: '2px solid #e9ecef',
+      borderBottom: `2px solid ${themeColors.tabBorder}`,
       marginBottom: '20px',
       display: 'flex',
       gap: '0'
     },
     tab: (isActive: boolean) => ({
       padding: '12px 24px',
-      background: isActive ? '#fff' : 'transparent',
-      color: isActive ? '#495057' : '#6c757d',
-      borderBottom: isActive ? '3px solid #007bff' : '3px solid transparent',
+      background: isActive ? themeColors.tabActive : 'transparent',
+      color: isActive ? themeColors.textPrimary : themeColors.textSecondary,
+      borderBottom: isActive ? `3px solid ${themeColors.tabActiveBorder}` : '3px solid transparent',
       cursor: 'pointer',
       fontSize: '16px',
       fontWeight: isActive ? '600' : '400',
@@ -43,7 +78,7 @@ const HitosPage: React.FC = () => {
       borderRadius: '8px 8px 0 0',
       position: 'relative' as const,
       transform: isActive ? 'translateY(2px)' : 'translateY(0)',
-      boxShadow: isActive ? '0 -2px 10px rgba(0,123,255,0.1)' : 'none',
+      boxShadow: isActive ? `0 -2px 10px rgba(${isDarkMode ? '13, 110, 253' : '0, 123, 255'}, 0.1)` : 'none',
       border: 'none'
     }),
     tabContent: {
@@ -54,7 +89,7 @@ const HitosPage: React.FC = () => {
 
   return (
     <div className="d-flex">
-      {/* CSS para animaciones (original) */}
+      {/* CSS para animaciones (actualizado) */}
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }
@@ -62,12 +97,19 @@ const HitosPage: React.FC = () => {
         }
         
         .tab-button:hover {
-          background-color: #f8f9fa !important;
-          color: #495057 !important;
+          background-color: ${themeColors.tabHover} !important;
+          color: ${themeColors.textPrimary} !important;
         }
         
         .tab-content-container {
           animation: fadeIn 0.3s ease-in-out;
+        }
+
+        /* Asegurar que el contenedor principal use el tema */
+        .hitos-page-container {
+          background-color: ${themeColors.background};
+          color: ${themeColors.textPrimary};
+          transition: background-color 0.3s ease, color 0.3s ease;
         }
       `}</style>
 
@@ -78,6 +120,7 @@ const HitosPage: React.FC = () => {
       />
       
       <div
+        className="hitos-page-container"
         style={{
           marginLeft: sidebarCollapsed ? '80px' : '250px',
           transition: 'all 0.3s',
@@ -85,14 +128,17 @@ const HitosPage: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           minHeight: '100vh',
+          backgroundColor: themeColors.background
         }}
       >
         <Container fluid className="py-4 px-4">
-          {/* Header original */}
+          {/* Header adaptado al tema */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div>
-              <h2 className="mb-0 fw-bold">Gestión de Hitos</h2>
-              <p className="text-muted mb-0">
+              <h2 className="mb-0 fw-bold" style={{ color: themeColors.textPrimary }}>
+                Gestión de Hitos
+              </h2>
+              <p className="mb-0" style={{ color: themeColors.textMuted }}>
                 Administra y visualiza los hitos de tus proyectos
               </p>
             </div>
@@ -126,7 +172,7 @@ const HitosPage: React.FC = () => {
           </div>
         </Container>
 
-        <Footer />
+        <ThemedFooter />
       </div>
     </div>
   );

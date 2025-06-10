@@ -4,7 +4,7 @@ const { validationResult } = require('express-validator');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
-const logEvento = require('../utils/logEvento');
+const { logEvento } = require('../utils/logEvento');
 
 // Obtener todos los hitos con filtros opcionales
 exports.getHitos = async (req, res) => {
@@ -499,7 +499,7 @@ exports.manageHitoTasks = async (req, res) => {
   }
 };
 
-// Exportar hito a PDF
+// 🎨 VERSIÓN MEJORADA: Exportar hito a PDF con logo y diseño profesional
 exports.exportHitoToPDF = async (req, res) => {
   try {
     const hitoId = req.params.id;
@@ -529,70 +529,329 @@ exports.exportHitoToPDF = async (req, res) => {
     const fileName = `hito_${hitoId}_${Date.now()}.pdf`;
     const filePath = path.join(tempDir, fileName);
 
-    // Crear documento PDF
-    const doc = new PDFDocument({ margin: 50 });
+    // 🎨 CONFIGURACIÓN MEJORADA DEL DOCUMENTO
+    const doc = new PDFDocument({ 
+      margin: 50,
+      size: 'A4',
+      info: {
+        Title: `Reporte de Hito - ${hito.nombre}`,
+        Author: 'Sistema de Gestión de Hitos',
+        Subject: 'Informe detallado de hito',
+        Creator: 'Bitácora System',
+        Producer: 'PDFKit'
+      }
+    });
+    
     const stream = fs.createWriteStream(filePath);
     doc.pipe(stream);
 
-    // Título y encabezado
-    doc.fontSize(25).text('Informe de Hito', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(15).text(hito.nombre, { align: 'center' });
-    doc.moveDown();
+    // 🎨 COLORES SOBRIOS Y PROFESIONALES
+    const colors = {
+      primary: '#1e293b',    // Azul oscuro
+      secondary: '#64748b',  // Gris medio
+      accent: '#334155',     // Gris azulado
+      text: '#000000',       // Negro para texto
+      lightGray: '#f8fafc',  // Gris muy claro para fondos
+      darkGray: '#475569'    // Gris oscuro
+    };
 
-    // Información general
-    doc.fontSize(12).text('Información General', { underline: true });
-    doc.moveDown(0.5);
-    doc.fontSize(10).text(`Fecha de inicio: ${hito.fecha_inicio ? new Date(hito.fecha_inicio).toLocaleDateString() : 'No especificada'}`);
-    doc.fontSize(10).text(`Fecha de finalización: ${hito.fecha_fin ? new Date(hito.fecha_fin).toLocaleDateString() : 'No especificada'}`);
-    doc.fontSize(10).text(`Proyecto origen: ${hito.proyecto_origen_nombre || 'Ninguno (hito manual)'}`);
-    doc.moveDown();
+    // 📐 DIMENSIONES Y POSICIONES
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    const margin = 50;
+    const contentWidth = pageWidth - (margin * 2);
+    
+    // 🖼️ FUNCIÓN PARA AGREGAR LOGO (tamaño más pequeño y proporcional)
+    const addLogo = () => {
+      // 🔧 OPCIÓN 1: Logo desde archivo con tamaño reducido
+      const logoPath = path.join(__dirname, '../assets/logo.png');
+      
+      try {
+        if (fs.existsSync(logoPath)) {
+          doc.image(logoPath, margin, margin, { width: 50, height: 50 });
+        } else {
+          // 🔧 OPCIÓN 2: Logo de texto más sobrio
+          doc.fontSize(14)
+             .fillColor(colors.primary)
+             .font('Helvetica-Bold')
+             .text('TASKMANAGER', margin, margin + 15)
+             .fontSize(8)
+             .fillColor(colors.secondary)
+             .font('Helvetica')
+             .text('Sistema de Gestión', margin, margin + 35);
+        }
+      } catch (error) {
+        console.log('Logo no disponible, usando texto:', error.message);
+        // Fallback a logo de texto sobrio
+        doc.fontSize(14)
+           .fillColor(colors.primary)
+           .font('Helvetica-Bold')
+           .text('TASKMANAGER', margin, margin + 15)
+           .fontSize(8)
+           .fillColor(colors.secondary)
+           .font('Helvetica')
+           .text('Sistema de Gestión', margin, margin + 35);
+      }
+    };
 
-    // Descripción
-    doc.fontSize(12).text('Descripción', { underline: true });
-    doc.moveDown(0.5);
-    doc.fontSize(10).text(hito.descripcion || 'Sin descripción');
-    doc.moveDown();
+    // 🎨 FUNCIÓN PARA ENCABEZADO PROFESIONAL
+    const addHeader = () => {
+      // Logo
+      addLogo();
+      
+      // Información de la empresa (lado derecho)
+      const headerRightX = pageWidth - margin - 200;
+      doc.fontSize(10)
+         .fillColor(colors.secondary)
+         .font('Helvetica')
+         .text('Fecha de generación:', headerRightX, margin + 10)
+         .font('Helvetica-Bold')
+         .fillColor(colors.text)
+         .text(new Date().toLocaleDateString('es-ES', {
+           year: 'numeric',
+           month: 'long',
+           day: 'numeric',
+           hour: '2-digit',
+           minute: '2-digit'
+         }), headerRightX, margin + 25)
+         .font('Helvetica')
+         .fillColor(colors.secondary)
+         .text('ID del Hito:', headerRightX, margin + 45)
+         .font('Helvetica-Bold')
+         .fillColor(colors.primary)
+         .text(`#${hitoId}`, headerRightX + 60, margin + 45);
 
-    // Impacto
-    doc.fontSize(12).text('Impacto', { underline: true });
-    doc.moveDown(0.5);
-    doc.fontSize(10).text(hito.impacto || 'No especificado');
-    doc.moveDown();
+      // Línea separadora más sutil
+      doc.strokeColor(colors.primary)
+         .lineWidth(2)
+         .moveTo(margin, margin + 75)
+         .lineTo(pageWidth - margin, margin + 75)
+         .stroke();
+    };
 
-    // Usuarios involucrados
-    doc.fontSize(12).text('Usuarios Involucrados', { underline: true });
-    doc.moveDown(0.5);
-    if (usuarios.length > 0) {
-      usuarios.forEach(usuario => {
-        doc.fontSize(10).text(`- ${usuario.nombre} (${usuario.email}) - Rol: ${usuario.rol}`);
-      });
-    } else {
-      doc.fontSize(10).text('No hay usuarios asignados');
-    }
-    doc.moveDown();
-
-    // Tareas
-    doc.fontSize(12).text('Tareas Relacionadas', { underline: true });
-    doc.moveDown(0.5);
-    if (tareas.length > 0) {
-      tareas.forEach(tarea => {
-        doc.fontSize(10).text(`- ${tarea.nombre_tarea}`);
-        doc.fontSize(8).text(`  Descripción: ${tarea.descripcion || 'Sin descripción'}`);
-        doc.fontSize(8).text(`  Estado: ${tarea.estado}`);
-        doc.fontSize(8).text(`  Fechas: ${tarea.fecha_inicio ? new Date(tarea.fecha_inicio).toLocaleDateString() : 'No especificada'} - ${tarea.fecha_fin ? new Date(tarea.fecha_fin).toLocaleDateString() : 'No especificada'}`);
+    // 🎨 FUNCIÓN PARA TÍTULOS CON ESTILO
+    const addStyledTitle = (title, y, options = {}) => {
+      const fontSize = options.fontSize || 20;
+      const color = options.color || colors.primary;
+      const moveDown = options.moveDown !== false;
+      
+      doc.fontSize(fontSize)
+         .fillColor(color)
+         .font('Helvetica-Bold')
+         .text(title, margin, y, { align: options.align || 'center' });
+         
+      if (moveDown) {
         doc.moveDown(0.5);
+      }
+      
+      return doc.y;
+    };
+
+    // 🎨 FUNCIÓN PARA SECCIONES CON FONDO
+    const addSection = (title, content, y) => {
+      const sectionHeight = 25;
+      
+      // Fondo de la sección
+      doc.rect(margin, y, contentWidth, sectionHeight)
+         .fillColor(colors.lightGray)
+         .fill();
+      
+      // Título de la sección
+      doc.fontSize(12)
+         .fillColor(colors.primary)
+         .font('Helvetica-Bold')
+         .text(title, margin + 10, y + 8);
+      
+      // Contenido
+      const contentY = y + sectionHeight + 10;
+      doc.fontSize(10)
+         .fillColor(colors.text)
+         .font('Helvetica')
+         .text(content, margin + 10, contentY, { 
+           width: contentWidth - 20,
+           lineGap: 3
+         });
+      
+      return doc.y + 15; // Retornar nueva posición Y
+    };
+
+    // 🎨 FUNCIÓN PARA TABLAS ESTILIZADAS
+    const addStyledTable = (title, data, y) => {
+      let currentY = y;
+      
+      // Título de la tabla
+      doc.fontSize(12)
+         .fillColor(colors.primary)
+         .font('Helvetica-Bold')
+         .text(title, margin, currentY);
+      
+      currentY += 25;
+      
+      if (data.length === 0) {
+        doc.fontSize(10)
+           .fillColor(colors.secondary)
+           .font('Helvetica-Oblique')
+           .text('No hay información disponible', margin + 10, currentY);
+        return currentY + 20;
+      }
+      
+      // Cabecera de la tabla
+      const rowHeight = 25;
+      const colWidth = (contentWidth - 20) / 3;
+      
+      // Fondo de cabecera
+      doc.rect(margin, currentY, contentWidth, rowHeight)
+         .fillColor(colors.primary)
+         .fill();
+      
+      data.forEach((item, index) => {
+        const rowY = currentY + (index * rowHeight);
+        
+        // Fondo alternado
+        if (index > 0 && index % 2 === 0) {
+          doc.rect(margin, rowY, contentWidth, rowHeight)
+             .fillColor(colors.lightGray)
+             .fill();
+        }
+        
+        // Texto del elemento
+        doc.fontSize(9)
+           .fillColor(index === 0 ? 'white' : colors.text)
+           .font(index === 0 ? 'Helvetica-Bold' : 'Helvetica')
+           .text(item.text || item, margin + 10, rowY + 8, {
+             width: contentWidth - 20,
+             ellipsis: true
+           });
       });
-    } else {
-      doc.fontSize(10).text('No hay tareas registradas');
+      
+      return currentY + (data.length * rowHeight) + 15;
+    };
+
+    // 🎨 GENERAR CONTENIDO DEL PDF
+    
+    // Encabezado
+    addHeader();
+    
+    let currentY = margin + 90;
+    
+    // Título principal del hito
+    currentY = addStyledTitle('INFORME DE HITO', currentY, { fontSize: 22 });
+    currentY = addStyledTitle(hito.nombre, currentY, { 
+      fontSize: 16, 
+      color: colors.darkGray,
+      moveDown: true 
+    });
+    
+    currentY += 20;
+    
+    // Información general sin emojis
+    const infoGeneral = [
+      `Fecha de inicio: ${hito.fecha_inicio ? new Date(hito.fecha_inicio).toLocaleDateString('es-ES') : 'No especificada'}`,
+      `Fecha de finalización: ${hito.fecha_fin ? new Date(hito.fecha_fin).toLocaleDateString('es-ES') : 'No especificada'}`,
+      `Proyecto origen: ${hito.proyecto_origen_nombre || 'Ninguno (hito manual)'}`,
+      `Usuarios involucrados: ${usuarios.length}`,
+      `Tareas asociadas: ${tareas.length}`
+    ].join('\n\n');
+    
+    currentY = addSection('INFORMACIÓN GENERAL', infoGeneral, currentY);
+    
+    // Descripción
+    if (hito.descripcion) {
+      currentY = addSection('DESCRIPCIÓN', hito.descripcion, currentY);
     }
-
-    // Pie de página
-    doc.moveDown(2);
-    doc.fontSize(8).text(`Generado el ${new Date().toLocaleString()}`, { align: 'center' });
-
+    
+    // Impacto
+    if (hito.impacto) {
+      currentY = addSection('IMPACTO', hito.impacto, currentY);
+    }
+    
+    // Nueva página si es necesario
+    if (currentY > pageHeight - 200) {
+      doc.addPage();
+      currentY = margin;
+    }
+    
+    // Usuarios involucrados sin emojis
+    const usuariosData = usuarios.length > 0 
+      ? [{ text: 'Usuario - Email - Rol' }, ...usuarios.map(u => `${u.nombre} - ${u.email} - ${u.rol.toUpperCase()}`)]
+      : [];
+    
+    currentY = addStyledTable('USUARIOS INVOLUCRADOS', usuariosData, currentY);
+    
+    // Tareas relacionadas sin emojis
+    if (tareas.length > 0) {
+      currentY += 10;
+      
+      doc.fontSize(12)
+         .fillColor(colors.primary)
+         .font('Helvetica-Bold')
+         .text('TAREAS RELACIONADAS', margin, currentY);
+      
+      currentY += 25;
+      
+      tareas.forEach((tarea, index) => {
+        // Verificar si necesitamos nueva página
+        if (currentY > pageHeight - 150) {
+          doc.addPage();
+          currentY = margin;
+        }
+        
+        // Caja para cada tarea con bordes más sutiles
+        const taskBoxHeight = 80;
+        
+        doc.rect(margin, currentY, contentWidth, taskBoxHeight)
+           .strokeColor(colors.lightGray)
+           .lineWidth(1)
+           .stroke();
+        
+        // Contenido de la tarea
+        doc.fontSize(11)
+           .fillColor(colors.primary)
+           .font('Helvetica-Bold')
+           .text(`${index + 1}. ${tarea.nombre_tarea}`, margin + 10, currentY + 10);
+        
+        doc.fontSize(9)
+           .fillColor(colors.text)
+           .font('Helvetica')
+           .text(`Descripción: ${tarea.descripcion || 'Sin descripción'}`, margin + 10, currentY + 28)
+           .text(`Estado: ${tarea.estado}`, margin + 10, currentY + 45)
+           .text(`Período: ${tarea.fecha_inicio ? new Date(tarea.fecha_inicio).toLocaleDateString('es-ES') : 'N/A'} - ${tarea.fecha_fin ? new Date(tarea.fecha_fin).toLocaleDateString('es-ES') : 'N/A'}`, margin + 10, currentY + 60);
+        
+        currentY += taskBoxHeight + 10;
+      });
+    }
+    
+    // Pie de página con texto personalizado
+    const addFooter = () => {
+      const footerY = pageHeight - margin - 30;
+      
+      // Línea separadora más sutil
+      doc.strokeColor(colors.lightGray)
+         .lineWidth(1)
+         .moveTo(margin, footerY)
+         .lineTo(pageWidth - margin, footerY)
+         .stroke();
+      
+      // Texto del pie personalizado
+      doc.fontSize(8)
+         .fillColor(colors.secondary)
+         .font('Helvetica')
+         .text('Informe generado por TaskManager', margin, footerY + 10)
+         .text(`Página 1 | ${new Date().toLocaleString('es-ES')}`, margin, footerY + 20, { align: 'right' });
+    };
+    
+    addFooter();
+    
     // Finalizar documento
     doc.end();
+
+    // Registrar evento de exportación
+    await logEvento({
+      tipo_evento: 'EXPORTACIÓN',
+      descripcion: `Hito exportado a PDF: ${hito.nombre}`,
+      id_usuario: req.user?.id,
+      id_hito: hitoId
+    });
 
     // Esperar a que se complete la escritura del archivo
     stream.on('finish', () => {

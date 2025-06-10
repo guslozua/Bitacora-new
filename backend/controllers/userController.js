@@ -60,10 +60,19 @@ const getUserProfile = async (req, res) => {
 // Obtener todos los usuarios con filtros y paginación
 const getAllUsers = async (req, res) => {
     try {
-        const { nombre, email, rol, estado, page = 1, limit = 10 } = req.query;
+        const { nombre, email, rol, estado, page = 1, limit } = req.query;
         
-        // Calcular offset para paginación
-        const offset = (page - 1) * limit;
+        // 🔧 CORRECCIÓN: Manejar el caso cuando limit = 'all'
+        let shouldPaginate = true;
+        let limitNum = 10; // valor por defecto
+        let offset = 0;
+        
+        if (limit === 'all' || limit === undefined) {
+            shouldPaginate = false;
+        } else {
+            limitNum = parseInt(limit) || 10;
+            offset = (parseInt(page) - 1) * limitNum;
+        }
         
         // Consulta base con JOIN para obtener roles
         let sqlQuery = `
@@ -100,11 +109,21 @@ const getAllUsers = async (req, res) => {
         }
         
         // Agrupar por ID de usuario
-        sqlQuery += ` GROUP BY u.id`;
+        sqlQuery += ` GROUP BY u.id ORDER BY u.nombre ASC`;
         
-        // Añadir ORDER BY y LIMIT para paginación
-        sqlQuery += ` ORDER BY u.id DESC LIMIT ? OFFSET ?`;
-        queryParams.push(parseInt(limit), parseInt(offset));
+        // 🔧 CORRECCIÓN: Solo agregar LIMIT si shouldPaginate es true
+        if (shouldPaginate) {
+            sqlQuery += ` LIMIT ? OFFSET ?`;
+            queryParams.push(limitNum, offset);
+        }
+        
+        console.log('🔍 Ejecutando consulta de usuarios:', {
+            shouldPaginate,
+            limit: limit,
+            limitNum,
+            offset,
+            totalParams: queryParams.length
+        });
         
         // Ejecutar consulta principal
         const [results] = await db.query(sqlQuery, queryParams);
@@ -118,13 +137,24 @@ const getAllUsers = async (req, res) => {
             WHERE 1=1
         `;
         
-        // Los mismos filtros pero sin paginación
-        const countParams = [...queryParams.slice(0, -2)]; // Remover limit y offset
-        
-        if (nombre) countQuery += ` AND u.nombre LIKE ?`;
-        if (email) countQuery += ` AND u.email LIKE ?`;
-        if (rol) countQuery += ` AND r.nombre = ?`;
-        if (estado) countQuery += ` AND u.estado = ?`;
+        // Los mismos filtros para el conteo
+        const countParams = [];
+        if (nombre) {
+            countQuery += ` AND u.nombre LIKE ?`;
+            countParams.push(`%${nombre}%`);
+        }
+        if (email) {
+            countQuery += ` AND u.email LIKE ?`;
+            countParams.push(`%${email}%`);
+        }
+        if (rol) {
+            countQuery += ` AND r.nombre = ?`;
+            countParams.push(rol);
+        }
+        if (estado) {
+            countQuery += ` AND u.estado = ?`;
+            countParams.push(estado);
+        }
         
         // Ejecutar consulta de conteo
         const [countResult] = await db.query(countQuery, countParams);
@@ -136,21 +166,25 @@ const getAllUsers = async (req, res) => {
             roles: user.roles ? user.roles.split(',') : []
         }));
         
-        // Calcular el total de páginas
-        const totalPages = Math.ceil(totalUsers / limit);
+        console.log(`✅ Usuarios obtenidos: ${users.length} de ${totalUsers} total`);
         
-        res.json({
+        // Preparar respuesta
+        const response = {
             success: true,
             data: users,
+            count: users.length, // 🔧 AGREGAR: count para compatibilidad
             pagination: {
                 total: totalUsers,
-                page: parseInt(page),
-                limit: parseInt(limit),
-                totalPages
+                page: shouldPaginate ? parseInt(page) : 1,
+                limit: shouldPaginate ? limitNum : totalUsers,
+                totalPages: shouldPaginate ? Math.ceil(totalUsers / limitNum) : 1,
+                hasMore: shouldPaginate ? (parseInt(page) * limitNum) < totalUsers : false
             }
-        });
+        };
+        
+        res.json(response);
     } catch (err) {
-        console.error('Error obteniendo usuarios:', err);
+        console.error('❌ Error obteniendo usuarios:', err);
         return res.status(500).json({ 
             success: false,
             message: 'Error obteniendo usuarios', 

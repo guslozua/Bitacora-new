@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import hitoService from '../../services/hitoService';
 import type { HitoCompleto, HitoFilters, ApiResponse } from '../../types/hitos.types';
+import { useTheme } from '../../context/ThemeContext'; // 🔥 AGREGAR IMPORT
 
 // Tipos para el roadmap
 type CategoriaHito = 'principal' | 'secundario' | 'features';
@@ -40,6 +41,7 @@ interface TimeMarker {
 }
 
 const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) => {
+  const { isDarkMode } = useTheme(); // 🔥 AGREGAR HOOK
   const [hitosData, setHitosData] = useState<Record<number, RoadmapHito[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +49,49 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
   const [animationPhase, setAnimationPhase] = useState(0);
   const [tooltip, setTooltip] = useState<Tooltip>({ visible: false, x: 0, y: 0, hito: null });
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // 🎨 COLORES DINÁMICOS SEGÚN EL TEMA
+  const getThemeColors = () => {
+    if (isDarkMode) {
+      return {
+        // Modo oscuro
+        background: 'linear-gradient(135deg, #212529 0%, #343a40 100%)',
+        cardBackground: 'rgba(52, 58, 64, 0.9)',
+        textPrimary: '#ffffff',
+        textSecondary: '#adb5bd',
+        textMuted: '#6c757d',
+        border: '#495057',
+        headerBackground: 'rgba(52, 58, 64, 0.95)',
+        buttonBackground: '#495057',
+        buttonHover: '#6c757d',
+        timelineGradient: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%)',
+        errorBackground: 'linear-gradient(135deg, #2d1b1b 0%, #4a2020 100%)',
+        errorBorder: '#dc3545',
+        successBackground: 'linear-gradient(135deg, #0f2027 0%, #203a43 100%)',
+        successBorder: '#198754'
+      };
+    } else {
+      return {
+        // Modo claro (original)
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+        cardBackground: 'rgba(255, 255, 255, 0.9)',
+        textPrimary: '#1e293b',
+        textSecondary: '#64748b',
+        textMuted: '#94a3b8',
+        border: '#e2e8f0',
+        headerBackground: 'rgba(255, 255, 255, 0.9)',
+        buttonBackground: '#ffffff',
+        buttonHover: '#f1f5f9',
+        timelineGradient: 'linear-gradient(90deg, rgb(10, 13, 189) 0%, #8b5cf6 50%, #06b6d4 100%)',
+        errorBackground: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+        errorBorder: '#fecaca',
+        successBackground: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+        successBorder: '#e2e8f0'
+      };
+    }
+  };
+
+  const themeColors = getThemeColors();
 
   // Función auxiliar para convertir fechas de forma segura
   const formatDate = (fecha: Date | string | undefined, options: Intl.DateTimeFormatOptions): string => {
@@ -237,14 +282,6 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
       // Asegurar que esté entre 0 y 1
       const proporcionFinal = Math.max(0, Math.min(1, proporcionDelAño));
       
-      // 📍 Debugging: Log para verificar cálculos
-      console.log(`🔍 Hito: ${hito.nombre}`);
-      console.log(`📅 Fecha: ${fechaInicio.toLocaleDateString('es-ES')}`);
-      console.log(`📊 Mes base-0: ${mesNumero} (${fechaInicio.toLocaleDateString('es-ES', { month: 'short' })}), Día: ${diaDelMes}/${diasDelMes}`);
-      console.log(`🔢 Mes decimal: ${mesDecimal.toFixed(3)}`);
-      console.log(`⚡ Proporción: ${(proporcionFinal * 100).toFixed(1)}%`);
-      console.log(`🎯 Para mes ${mesNumero+1}: debería estar al ${(((mesNumero+1)/12)*100).toFixed(1)}% aprox`);
-      
       // Mapear a posición horizontal: 100px inicio + ancho disponible
       const x = 100 + proporcionFinal * availableWidth;
       
@@ -346,9 +383,6 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
       const proporcion = month / 12; // 🔧 CORREGIDO: dividir por 12
       const position = 100 + proporcion * availableWidth;
       
-      // 📍 Debugging para marcadores
-      console.log(`📌 Marcador ${label}: Mes ${month}/12 -> ${(proporcion * 100).toFixed(1)}% -> ${position.toFixed(1)}px`);
-      
       const fechaMarcador = new Date(selectedYear, month, 1);
       
       markers.push({
@@ -397,10 +431,10 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
             alignItems: 'center',
             justifyContent: 'center',
             height: '400px',
-            color: '#64748b'
+            color: themeColors.textSecondary
           }}>
             <div style={{ fontSize: '4rem', marginBottom: '20px' }}>📅</div>
-            <h3 style={{ margin: '0 0 8px 0' }}>No hay hitos para {selectedYear}</h3>
+            <h3 style={{ margin: '0 0 8px 0', color: themeColors.textPrimary }}>No hay hitos para {selectedYear}</h3>
             <p style={{ margin: '0', textAlign: 'center' }}>
               Use la navegación para cambiar de año
             </p>
@@ -414,10 +448,12 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
               left: '100px',
               right: '100px',
               height: '8px',
-              background: 'linear-gradient(90deg,rgb(10, 13, 189) 0%, #8b5cf6 50%, #06b6d4 100%)',
+              background: themeColors.timelineGradient,
               borderRadius: '2px',
               zIndex: 5,
-              boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)'
+              boxShadow: isDarkMode 
+                ? '0 2px 8px rgba(99, 102, 241, 0.4)' 
+                : '0 2px 8px rgba(99, 102, 241, 0.3)'
             }}>
               {/* 🔧 Marcadores de meses corregidos */}
               {timeMarkers.map((marker, index) => (
@@ -428,7 +464,7 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
                   transform: 'translateX(-50%) rotate(-90deg)',
                   fontSize: '18px',
                   fontWeight: '700',
-                  color: '#c6c8c9',
+                  color: themeColors.textMuted,
                   padding: '6px 12px',
                   borderRadius: '8px',
                   minWidth: '45px',
@@ -488,7 +524,7 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
                     width: '20px',
                     height: '20px',
                     borderRadius: '50%',
-                    background: '#fff',
+                    background: isDarkMode ? '#343a40' : '#fff',
                     border: `5px solid ${colors.border}`,
                     zIndex: 15,
                     transition: 'all 0.3s ease',
@@ -523,7 +559,9 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
                       ? 'translateY(0) scale(1)' 
                       : `translateY(${hito.isAbove ? '-20px' : '20px'}) scale(0.8)`,
                     opacity: shouldShow ? 1 : 0,
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    boxShadow: isDarkMode 
+                      ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
+                      : '0 4px 12px rgba(0, 0, 0, 0.1)',
                     zIndex: 20,
                     display: 'flex',
                     flexDirection: 'column',
@@ -577,19 +615,21 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
               position: 'absolute',
               top: '5px',
               right: '5px',
-              background: 'rgba(255, 255, 255, 0.95)',
+              background: themeColors.cardBackground,
               padding: '16px',
               borderRadius: '10px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              boxShadow: isDarkMode 
+                ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
+                : '0 4px 12px rgba(0, 0, 0, 0.1)',
               fontSize: '12px',
-              border: '1px solid #e2e8f0',
+              border: `1px solid ${themeColors.border}`,
               zIndex: 30
             }}>
               <h4 style={{ 
                 margin: '0 0 12px 0', 
                 fontSize: '13px', 
                 fontWeight: '700', 
-                color: '#374151' 
+                color: themeColors.textPrimary
               }}>
                 Categorías
               </h4>
@@ -620,7 +660,7 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
                       }}></div>
                       <span style={{ 
                         fontWeight: '600', 
-                        color: '#374151',
+                        color: themeColors.textPrimary,
                         fontSize: '11px'
                       }}>
                         {labels[categoria]}
@@ -644,23 +684,25 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
               position: 'absolute',
               bottom: '5px',
               left: '5px',
-              background: 'rgba(255, 255, 255, 0.95)',
+              background: themeColors.cardBackground,
               padding: '16px',
               borderRadius: '10px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              boxShadow: isDarkMode 
+                ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
+                : '0 4px 12px rgba(0, 0, 0, 0.1)',
               fontSize: '12px',
-              border: '1px solid #e2e8f0',
+              border: `1px solid ${themeColors.border}`,
               zIndex: 30
             }}>
               <div style={{ 
                 fontWeight: '700', 
                 marginBottom: '8px', 
-                color: '#374151', 
+                color: themeColors.textPrimary, 
                 fontSize: '13px' 
               }}>
                 📊 Resumen {selectedYear}
               </div>
-              <div style={{ color: '#64748b', lineHeight: '1.4' }}>
+              <div style={{ color: themeColors.textSecondary, lineHeight: '1.4' }}>
                 <div>Total: <strong>{hitos.length}</strong> hitos</div>
                 <div>Principales: <strong>{hitos.filter(h => h.categoria === 'principal').length}</strong></div>
                 {hitos.length > 0 && (
@@ -680,7 +722,7 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
   if (loading) {
     return (
       <div style={{
-        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+        background: themeColors.background,
         borderRadius: '16px',
         padding: '40px',
         minHeight: '500px',
@@ -688,11 +730,11 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'column',
-        border: '1px solid #e2e8f0'
+        border: `1px solid ${themeColors.border}`
       }} className={className}>
         <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🚀</div>
-        <h3 style={{ color: '#64748b', margin: '0 0 8px 0' }}>Cargando Roadmap...</h3>
-        <p style={{ color: '#94a3b8', margin: '0' }}>Obteniendo hitos desde la base de datos</p>
+        <h3 style={{ color: themeColors.textSecondary, margin: '0 0 8px 0' }}>Cargando Roadmap...</h3>
+        <p style={{ color: themeColors.textMuted, margin: '0' }}>Obteniendo hitos desde la base de datos</p>
       </div>
     );
   }
@@ -700,7 +742,7 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
   if (error) {
     return (
       <div style={{
-        background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+        background: themeColors.errorBackground,
         borderRadius: '16px',
         padding: '40px',
         minHeight: '500px',
@@ -708,7 +750,7 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'column',
-        border: '1px solid #fecaca'
+        border: `1px solid ${themeColors.errorBorder}`
       }} className={className}>
         <div style={{ fontSize: '3rem', marginBottom: '20px' }}>⚠️</div>
         <h3 style={{ color: '#dc2626', margin: '0 0 8px 0' }}>Error al cargar el Roadmap</h3>
@@ -732,32 +774,34 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+      background: themeColors.background,
       borderRadius: '16px',
       padding: '30px',
       minHeight: '500px',
       position: 'relative',
       overflow: 'visible',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      border: '1px solid #e2e8f0'
+      border: `1px solid ${themeColors.border}`
     }} className={className}>
       
       {/* Header */}
       <div style={{
-        background: 'rgba(255, 255, 255, 0.9)',
+        background: themeColors.headerBackground,
         borderRadius: '12px',
         padding: '20px',
         marginBottom: '40px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+        boxShadow: isDarkMode 
+          ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
+          : '0 4px 12px rgba(0, 0, 0, 0.05)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        border: '1px solid rgba(255, 255, 255, 0.2)'
+        border: `1px solid ${themeColors.border}`
       }}>
         <div>
           <h2 style={{ 
             margin: '0 0 4px 0', 
-            color: '#1e293b', 
+            color: themeColors.textPrimary, 
             fontWeight: '700',
             fontSize: '24px'
           }}>
@@ -765,7 +809,7 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
           </h2>
           <p style={{ 
             margin: '0', 
-            color: '#64748b', 
+            color: themeColors.textSecondary, 
             fontSize: '14px',
             fontWeight: '500'
           }}>
@@ -825,28 +869,28 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
                 borderRadius: '18px',
                 fontSize: '13px',
                 fontWeight: '700',
-                background: selectedYear === year ? '#3b82f6' : 'rgba(255, 255, 255, 0.9)',
-                color: selectedYear === year ? 'white' : '#6b7280',
+                background: selectedYear === year ? '#3b82f6' : themeColors.cardBackground,
+                color: selectedYear === year ? 'white' : themeColors.textSecondary,
                 cursor: isTransitioning ? 'not-allowed' : 'pointer',
                 transition: 'all 0.3s ease',
-                boxShadow: selectedYear === year ? '0 2px 8px rgba(59, 130, 246, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.1)',
+                boxShadow: selectedYear === year ? '0 2px 8px rgba(59, 130, 246, 0.3)' : `0 2px 6px rgba(0, 0, 0, ${isDarkMode ? '0.3' : '0.1'})`,
                 opacity: isTransitioning ? 0.6 : 1,
                 whiteSpace: 'nowrap',
                 backdropFilter: 'blur(10px)',
-                border: selectedYear === year ? 'none' : '1px solid rgba(255, 255, 255, 0.8)'
+                border: selectedYear === year ? 'none' : `1px solid ${themeColors.border}`
               }}
               onMouseEnter={(e) => {
                 if (selectedYear !== year && !isTransitioning) {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 1)';
-                  e.currentTarget.style.color = '#374151';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                  e.currentTarget.style.background = themeColors.buttonHover;
+                  e.currentTarget.style.color = themeColors.textPrimary;
+                  e.currentTarget.style.boxShadow = `0 4px 12px rgba(0, 0, 0, ${isDarkMode ? '0.4' : '0.15'})`;
                 }
               }}
               onMouseLeave={(e) => {
                 if (selectedYear !== year && !isTransitioning) {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.9)';
-                  e.currentTarget.style.color = '#6b7280';
-                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.1)';
+                  e.currentTarget.style.background = themeColors.cardBackground;
+                  e.currentTarget.style.color = themeColors.textSecondary;
+                  e.currentTarget.style.boxShadow = `0 2px 6px rgba(0, 0, 0, ${isDarkMode ? '0.3' : '0.1'})`;
                 }
               }}
             >
@@ -880,8 +924,8 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
           onMouseEnter={(e) => {
             if (!isTransitioning) {
               e.currentTarget.style.opacity = '1';
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.9)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+              e.currentTarget.style.background = themeColors.cardBackground;
+              e.currentTarget.style.boxShadow = `0 4px 12px rgba(0, 0, 0, ${isDarkMode ? '0.4' : '0.15'})`;
             }
           }}
           onMouseLeave={(e) => {
@@ -893,7 +937,7 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
           }}
         >
           <span style={{
-            color: '#374151',
+            color: themeColors.textPrimary,
             fontSize: '28px',
             fontWeight: 'bold',
             lineHeight: '1'
@@ -924,8 +968,8 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
           onMouseEnter={(e) => {
             if (!isTransitioning) {
               e.currentTarget.style.opacity = '1';
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.9)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+              e.currentTarget.style.background = themeColors.cardBackground;
+              e.currentTarget.style.boxShadow = `0 4px 12px rgba(0, 0, 0, ${isDarkMode ? '0.4' : '0.15'})`;
             }
           }}
           onMouseLeave={(e) => {
@@ -937,7 +981,7 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
           }}
         >
           <span style={{
-            color: '#374151',
+            color: themeColors.textPrimary,
             fontSize: '28px',
             fontWeight: 'bold',
             lineHeight: '1'
@@ -946,7 +990,9 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
 
         {/* Contenido del roadmap */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.05)',
+          background: isDarkMode 
+            ? 'rgba(52, 58, 64, 0.05)' 
+            : 'rgba(255, 255, 255, 0.05)',
           borderRadius: '12px',
           minHeight: '500px',
           position: 'relative'
@@ -961,16 +1007,17 @@ const HitosRoadmap: React.FC<RoadmapProps> = ({ className = '', filters = {} }) 
           position: 'fixed',
           left: `${tooltip.x + 10}px`,
           top: `${tooltip.y - 10}px`,
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          backgroundColor: isDarkMode ? 'rgba(52, 58, 64, 0.95)' : 'rgba(0, 0, 0, 0.9)',
           color: 'white',
           padding: '12px',
           borderRadius: '8px',
           fontSize: '12px',
           maxWidth: '280px',
           zIndex: 1000,
-          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+          boxShadow: `0 8px 24px rgba(0, 0, 0, ${isDarkMode ? '0.5' : '0.3'})`,
           pointerEvents: 'none',
-          transform: 'translateY(-100%)'
+          transform: 'translateY(-100%)',
+          border: isDarkMode ? '1px solid #6c757d' : 'none'
         }}>
           <div style={{ 
             fontWeight: '700', 

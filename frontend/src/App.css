@@ -38,6 +38,104 @@
   }
 }
 
+/* ======================== */
+/* 🌙 THEME SYSTEM STYLES */
+/* ======================== */
+
+/* Variables CSS para temas */
+:root {
+  --transition-theme: all 0.3s ease;
+  --border-radius: 8px;
+  --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-dark: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Transiciones suaves para cambio de tema */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Estilos para modo claro */
+.light-mode {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --border-color: #dee2e6;
+  --shadow: var(--shadow-light);
+}
+
+/* Estilos para modo oscuro */
+.dark-mode {
+  --bg-primary: #212529;
+  --bg-secondary: #343a40;
+  --text-primary: #ffffff;
+  --text-secondary: #adb5bd;
+  --border-color: #495057;
+  --shadow: var(--shadow-dark);
+}
+
+/* Aplicar variables a elementos */
+.themed-card {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+}
+
+.themed-bg-secondary {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Estilos específicos para SweetAlert2 en modo oscuro */
+.dark-mode .swal2-popup {
+  background-color: #343a40 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .swal2-title {
+  color: #ffffff !important;
+}
+
+.dark-mode .swal2-content {
+  color: #adb5bd !important;
+}
+
+.dark-mode .swal2-input {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+  border: 1px solid #6c757d !important;
+}
+
+.dark-mode .swal2-select {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+  border: 1px solid #6c757d !important;
+}
+
+.dark-mode .swal2-textarea {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+  border: 1px solid #6c757d !important;
+}
+
+/* Estilos para mantener el LoginPage neutro */
+.login-page-override {
+  background-color: #f8f9fa !important;
+  color: #212529 !important;
+}
+
+.login-page-override .card {
+  background-color: #ffffff !important;
+  color: #212529 !important;
+  border: 1px solid #dee2e6 !important;
+}
+
+/* ======================== */
+/* 🎯 GANTT CHART STYLES */
+/* ======================== */
+
 /* Gantt Custom Styling */
 .gantt .bar-label {
   fill: white;
@@ -109,7 +207,6 @@
   opacity: 0.6;
 }
 
-
 /* ======================== */
 /* 🎯 NUEVOS ESTILOS GANTT */
 /* ======================== */
@@ -162,13 +259,20 @@
   fill: #ffffff;
 }
 
+/* Modo oscuro para Gantt */
+.dark-mode .gantt .grid-row:nth-child(even) {
+  fill: #343a40;
+}
+.dark-mode .gantt .grid-row:nth-child(odd) {
+  fill: #495057;
+}
+
 /* Sombra sutil en barras */
 .gantt .bar {
   filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.1));
   rx: 4;
   ry: 4;
 }
-
 
 /* ======================== */
 /* 🎯 ESTILOS SIDEBAR */
@@ -208,8 +312,11 @@
   }
 }
 
-/* Estilos manuales para react-split-pane */
+/* ======================== */
+/* 🎯 SPLIT PANE STYLES */
+/* ======================== */
 
+/* Estilos manuales para react-split-pane */
 .SplitPane {
   position: relative !important;
   width: 100% !important;
@@ -242,4 +349,1202 @@
   height: 8px;
   margin: -4px 0;
   cursor: row-resize;
+}
+
+/* Modo oscuro para resizer */
+.dark-mode .Resizer {
+  background: #6c757d;
+}
+
+.dark-mode .Resizer:hover {
+  background: #adb5bd;
+}
+
+/* ======================== */
+/* 🎯 THEME TOGGLE STYLES - MEJORADO */
+/* ======================== */
+
+.theme-toggle-switch {
+  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  transform-origin: center;
+}
+
+.theme-toggle-switch:hover {
+  transform: translateY(-1px) scale(1.02);
+  filter: brightness(1.05);
+}
+
+.theme-toggle-switch:active {
+  transform: translateY(0) scale(0.98);
+  transition: all 0.1s ease;
+}
+
+.theme-toggle-switch:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
+}
+
+/* Animación suave para cambios de tema globales */
+* {
+  transition: background-color 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              color 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              border-color 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              box-shadow 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Clases específicas para transiciones más rápidas cuando sea necesario */
+.fast-transition {
+  transition: all 0.2s ease !important;
+}
+
+.no-transition {
+  transition: none !important;
+}
+
+/* ======================== */
+/* 🎯 KANBAN BOARD DARK MODE */
+/* ======================== */
+
+/* Contenedor principal del Kanban */
+.dark-mode .kanban-board-container {
+  background-color: #212529 !important;
+  color: #ffffff !important;
+}
+
+/* Wrapper del board */
+.dark-mode .kanban-board-wrapper {
+  background-color: #212529 !important;
+}
+
+/* Lanes/Columnas del Kanban */
+.dark-mode .custom-lane {
+  background-color: #343a40 !important;
+  border: 1px solid #495057 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Headers de las lanes */
+.dark-mode .lane-header {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .lane-count {
+  color: #adb5bd !important;
+}
+
+/* Cards del Kanban */
+.dark-mode .lane-cards {
+  background-color: #343a40 !important;
+}
+
+/* Controles de filtro */
+.dark-mode .filter-controls .form-control {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .filter-controls .form-control:focus {
+  background-color: #495057 !important;
+  border-color: #0d6efd !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .filter-controls .form-select {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+/* Leyenda del Kanban */
+.dark-mode .bg-light {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+}
+
+/* ======================== */
+/* 🎯 GANTT CHART DARK MODE */
+/* ======================== */
+
+/* Contenedor del Gantt */
+.dark-mode .gantt_container {
+  background-color: #343a40 !important;
+  color: #ffffff !important;
+}
+
+/* Grid del Gantt */
+.dark-mode .gantt_grid {
+  background-color: #212529 !important;
+}
+
+.dark-mode .gantt_grid_head_cell,
+.dark-mode .gantt_grid_data {
+  background-color: #343a40 !important;
+  border-color: #495057 !important;
+  color: #ffffff !important;
+}
+
+/* Task list del Gantt */
+.dark-mode .gantt_task_list {
+  background-color: #343a40 !important;
+  border-color: #495057 !important;
+}
+
+.dark-mode .gantt_task_row {
+  background-color: #343a40 !important;
+  border-color: #495057 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .gantt_task_row:nth-child(even) {
+  background-color: #495057 !important;
+}
+
+/* Calendar header del Gantt */
+.dark-mode .gantt_cal_light_head {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+/* Timeline del Gantt */
+.dark-mode .gantt_task_scale {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+/* Bars del Gantt */
+.dark-mode .gantt_task_line {
+  background-color: #343a40 !important;
+}
+
+/* Tooltip del Gantt */
+.dark-mode .gantt_tooltip {
+  background-color: rgba(52, 58, 64, 0.95) !important;
+  border: 1px solid #6c757d !important;
+  color: #ffffff !important;
+}
+
+/* Leyenda de colores del Gantt */
+.dark-mode .border.rounded.bg-light {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+/* ======================== */
+/* 🎯 PROJECTS PAGE DARK MODE */
+/* ======================== */
+
+/* Tabla de proyectos */
+.dark-mode .table {
+  color: #ffffff !important;
+  background-color: #343a40 !important;
+}
+
+.dark-mode .table-dark {
+  background-color: #212529 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .table-dark th {
+  background-color: #212529 !important;
+  border-color: #495057 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .table > :not(caption) > * > * {
+  border-color: #495057 !important;
+}
+
+.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > td,
+.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > th {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.dark-mode .table-hover > tbody > tr:hover > td,
+.dark-mode .table-hover > tbody > tr:hover > th {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Progress bars */
+.dark-mode .progress {
+  background-color: #495057 !important;
+}
+
+/* Badges en modo oscuro */
+.dark-mode .badge {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ======================== */
+/* 🎯 RECHARTS DARK MODE */
+/* ======================== */
+
+/* Gráficos de Recharts */
+.dark-mode .recharts-wrapper {
+  color: #ffffff !important;
+}
+
+.dark-mode .recharts-cartesian-axis-tick-value {
+  fill: #ffffff !important;
+}
+
+.dark-mode .recharts-legend-wrapper {
+  color: #ffffff !important;
+}
+
+.dark-mode .recharts-legend-item-text {
+  color: #ffffff !important;
+}
+
+.dark-mode .recharts-tooltip-wrapper {
+  background-color: rgba(52, 58, 64, 0.95) !important;
+  border: 1px solid #6c757d !important;
+  border-radius: 4px;
+}
+
+.dark-mode .recharts-default-tooltip {
+  background-color: #343a40 !important;
+  border: 1px solid #6c757d !important;
+  color: #ffffff !important;
+}
+
+/* Grid lines en gráficos */
+.dark-mode .recharts-cartesian-grid-horizontal line,
+.dark-mode .recharts-cartesian-grid-vertical line {
+  stroke: #495057 !important;
+}
+
+/* ======================== */
+/* 🎯 GANTT TASK REACT LIBRARY */
+/* ======================== */
+
+/* Estilos específicos para gantt-task-react */
+.dark-mode .gantt-container {
+  background-color: #212529 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .gantt-header {
+  background-color: #343a40 !important;
+  border-color: #495057 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .gantt-table {
+  background-color: #343a40 !important;
+  border-color: #495057 !important;
+}
+
+.dark-mode .gantt-table-row {
+  background-color: #343a40 !important;
+  border-color: #495057 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .gantt-table-row:hover {
+  background-color: #495057 !important;
+}
+
+/* ======================== */
+/* 🎯 OFFCANVAS DARK MODE */
+/* ======================== */
+
+.dark-mode .offcanvas {
+  background-color: #343a40 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .offcanvas-header {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .offcanvas-title {
+  color: #ffffff !important;
+}
+
+.dark-mode .offcanvas-body {
+  background-color: #343a40 !important;
+  color: #ffffff !important;
+}
+
+/* ======================== */
+/* 🎯 SELECT COMPONENTS */
+/* ======================== */
+
+/* React-Select en modo oscuro */
+.dark-mode .select__control {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+}
+
+.dark-mode .select__control:hover {
+  border-color: #adb5bd !important;
+}
+
+.dark-mode .select__control--is-focused {
+  border-color: #0d6efd !important;
+  box-shadow: 0 0 0 1px #0d6efd !important;
+}
+
+.dark-mode .select__single-value {
+  color: #ffffff !important;
+}
+
+.dark-mode .select__placeholder {
+  color: #adb5bd !important;
+}
+
+.dark-mode .select__menu {
+  background-color: #495057 !important;
+  border: 1px solid #6c757d !important;
+}
+
+.dark-mode .select__option {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .select__option--is-focused {
+  background-color: #6c757d !important;
+}
+
+.dark-mode .select__option--is-selected {
+  background-color: #0d6efd !important;
+}
+
+.dark-mode .select__multi-value {
+  background-color: #6c757d !important;
+}
+
+.dark-mode .select__multi-value__label {
+  color: #ffffff !important;
+}
+
+.dark-mode .select__multi-value__remove {
+  color: #ffffff !important;
+}
+
+.dark-mode .select__multi-value__remove:hover {
+  background-color: #dc3545 !important;
+  color: #ffffff !important;
+}
+
+/* ======================== */
+/* 🎯 TABS DARK MODE */
+/* ======================== */
+
+.dark-mode .nav-tabs {
+  border-color: #495057 !important;
+}
+
+.dark-mode .nav-tabs .nav-link {
+  color: #adb5bd !important;
+  border-color: transparent !important;
+}
+
+.dark-mode .nav-tabs .nav-link:hover {
+  color: #ffffff !important;
+  border-color: #495057 !important;
+}
+
+.dark-mode .nav-tabs .nav-link.active {
+  color: #ffffff !important;
+  background-color: #343a40 !important;
+  border-color: #495057 #495057 #343a40 !important;
+}
+
+.dark-mode .tab-content {
+  background-color: #343a40 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .tab-pane {
+  background-color: #343a40 !important;
+  color: #ffffff !important;
+}
+
+/* ======================== */
+/* 🎯 CARD OVERRIDES */
+/* ======================== */
+
+/* Asegurar que las cards respeten el tema */
+.dark-mode .card {
+  background-color: #343a40 !important;
+  border-color: #495057 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .card-header {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .card-footer {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .card-body {
+  background-color: #343a40 !important;
+  color: #ffffff !important;
+}
+
+/* ======================== */
+/* 🎯 UTILITIES ADICIONALES */
+/* ======================== */
+
+/* Text colors */
+.dark-mode .text-muted {
+  color: #adb5bd !important;
+}
+
+.dark-mode .text-secondary {
+  color: #6c757d !important;
+}
+
+/* Borders */
+.dark-mode .border {
+  border-color: #495057 !important;
+}
+
+.dark-mode .border-top {
+  border-top-color: #495057 !important;
+}
+
+.dark-mode .border-bottom {
+  border-bottom-color: #495057 !important;
+}
+
+/* Shadows adaptados */
+.dark-mode .shadow,
+.dark-mode .shadow-sm {
+  box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .5) !important;
+}
+
+/* Button group en modo oscuro */
+.dark-mode .btn-group .btn-outline-primary {
+  border-color: #0d6efd !important;
+  color: #0d6efd !important;
+}
+
+.dark-mode .btn-group .btn-outline-primary:hover {
+  background-color: #0d6efd !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .btn-group .btn-outline-primary.active {
+  background-color: #0d6efd !important;
+  border-color: #0d6efd !important;
+  color: #ffffff !important;
+}
+
+/* ======================== */
+/* 🎯 MINI CALENDAR DARK MODE */
+/* ======================== */
+
+/* Contenedor principal */
+.dark-mode .mini-calendar-container {
+  background-color: #343a40 !important;
+  border-color: #495057 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .mini-calendar-container .card-header {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .mini-calendar-container .card-body {
+  background-color: #343a40 !important;
+  color: #ffffff !important;
+}
+
+/* Fondo del calendario */
+.dark-mode .calendar-with-bg {
+  background-color: #495057 !important;
+}
+
+/* Header del calendario - mantener el rojo pero más oscuro */
+.dark-mode .calendar-with-bg::before {
+  background-color: #dc3545 !important; /* Rojo más oscuro para modo oscuro */
+}
+
+/* Anillos del calendario */
+.dark-mode .calendar-with-bg::after {
+  background-image: 
+    radial-gradient(circle at 25% 0, #6c757d 0, #6c757d 5px, transparent 5px),
+    radial-gradient(circle at 75% 0, #6c757d 0, #6c757d 5px, transparent 5px) !important;
+}
+
+/* Días de la semana */
+.dark-mode .calendar .days {
+  background-color: rgba(108, 117, 125, 0.3) !important;
+  border-color: #6c757d !important;
+}
+
+.dark-mode .calendar .day-name {
+  color: #ffffff !important;
+}
+
+/* Cuerpo del calendario */
+.dark-mode .calendar .body {
+  background-color: rgba(52, 58, 64, 0.85) !important;
+}
+
+/* Celdas del calendario */
+.dark-mode .calendar .cell {
+  color: #ffffff !important;
+}
+
+.dark-mode .calendar .cell:hover {
+  background-color: rgba(108, 117, 125, 0.3) !important;
+}
+
+.dark-mode .calendar .disabled {
+  color: #6c757d !important;
+}
+
+/* Día seleccionado - mantener el rojo */
+.dark-mode .calendar .cell.selected .number {
+  background-color: #dc3545 !important;
+  color: white !important;
+}
+
+/* Eventos próximos */
+.dark-mode .upcoming-events {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .upcoming-events h6 {
+  color: #ffffff !important;
+}
+
+.dark-mode .upcoming-event {
+  color: #ffffff !important;
+}
+
+.dark-mode .upcoming-event:hover {
+  background-color: #6c757d !important;
+}
+
+.dark-mode .upcoming-event .event-date {
+  color: #adb5bd !important;
+}
+
+/* Botones de navegación - mantener blanco en el header rojo */
+.dark-mode .calendar .nav-button {
+  color: white !important;
+}
+
+.dark-mode .calendar .nav-button:hover {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* ======================== */
+/* 🎯 TABLE OVERRIDES */
+/* ======================== */
+
+/* Tablas en modo oscuro */
+.dark-mode .table {
+  color: #ffffff !important;
+}
+
+.dark-mode .table-dark {
+  background-color: #495057 !important;
+}
+
+.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > td,
+.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > th {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.dark-mode .table-hover > tbody > tr:hover > td,
+.dark-mode .table-hover > tbody > tr:hover > th {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ======================== */
+/* 🎯 FORM OVERRIDES */
+/* ======================== */
+
+/* Formularios en modo oscuro */
+.dark-mode .form-control {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .form-control:focus {
+  background-color: #495057 !important;
+  border-color: #0d6efd !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+.dark-mode .form-select {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .form-label {
+  color: #ffffff !important;
+}
+
+.dark-mode .form-text {
+  color: #adb5bd !important;
+}
+
+/* ======================== */
+/* 🎯 MODAL OVERRIDES */
+/* ======================== */
+
+/* Modales en modo oscuro */
+.dark-mode .modal-content {
+  background-color: #343a40 !important;
+  border-color: #495057 !important;
+}
+
+.dark-mode .modal-header {
+  border-color: #495057 !important;
+}
+
+.dark-mode .modal-footer {
+  border-color: #495057 !important;
+}
+
+.dark-mode .modal-title {
+  color: #ffffff !important;
+}
+
+.dark-mode .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* ======================== */
+/* 🎯 NAVIGATION OVERRIDES */
+/* ======================== */
+
+/* Navegación en modo oscuro */
+.dark-mode .navbar {
+  background-color: #343a40 !important;
+}
+
+.dark-mode .navbar-brand {
+  color: #ffffff !important;
+}
+
+.dark-mode .nav-link {
+  color: #adb5bd !important;
+}
+
+.dark-mode .nav-link:hover,
+.dark-mode .nav-link:focus {
+  color: #ffffff !important;
+}
+
+/* ======================== */
+/* 🎯 PAGINATION OVERRIDES */
+/* ======================== */
+
+/* Paginación en modo oscuro */
+.dark-mode .page-link {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .page-link:hover {
+  background-color: #6c757d !important;
+  border-color: #adb5bd !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .page-item.active .page-link {
+  background-color: #0d6efd !important;
+  border-color: #0d6efd !important;
+}
+
+/* ======================== */
+/* 🎯 ALERT OVERRIDES */
+/* ======================== */
+
+/* Alertas en modo oscuro */
+.dark-mode .alert-primary {
+  background-color: rgba(13, 110, 253, 0.2) !important;
+  border-color: #0d6efd !important;
+  color: #9ec5fe !important;
+}
+
+.dark-mode .alert-success {
+  background-color: rgba(25, 135, 84, 0.2) !important;
+  border-color: #198754 !important;
+  color: #75b798 !important;
+}
+
+.dark-mode .alert-warning {
+  background-color: rgba(255, 193, 7, 0.2) !important;
+  border-color: #ffc107 !important;
+  color: #ffda6a !important;
+}
+
+.dark-mode .alert-danger {
+  background-color: rgba(220, 53, 69, 0.2) !important;
+  border-color: #dc3545 !important;
+  color: #f5c2c7 !important;
+}
+
+/* ======================== */
+/* 🎯 UTILITIES */
+/* ======================== */
+
+/* Utilidades de tema */
+.theme-transition {
+  transition: var(--transition-theme);
+}
+
+.theme-shadow {
+  box-shadow: var(--shadow);
+}
+
+.theme-border {
+  border-color: var(--border-color);
+}
+
+/* Ocultar scrollbar pero mantener funcionalidad */
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+/* ======================== */
+/* 🎯 TABLE DARK MODE FIXES - ESPECÍFICO PARA DASHBOARDS */
+/* ======================== */
+
+/* Headers de tabla en modo oscuro */
+.dark-mode .table th,
+.dark-mode .table thead th {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+  border-color: #6c757d !important;
+}
+
+/* Celdas de tabla en modo oscuro */
+.dark-mode .table td {
+  background-color: #343a40 !important;
+  color: #ffffff !important;
+  border-color: #495057 !important;
+}
+
+/* Filas alternas en modo oscuro */
+.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > td,
+.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > th {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Hover de filas en modo oscuro */
+.dark-mode .table-hover > tbody > tr:hover > td,
+.dark-mode .table-hover > tbody > tr:hover > th {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+/* Headers específicos para Bootstrap table-dark */
+.dark-mode .table-dark,
+.dark-mode .table-dark th,
+.dark-mode .table-dark td {
+  background-color: #343a40 !important;
+  color: #ffffff !important;
+  border-color: #495057 !important;
+}
+
+.dark-mode .table-dark thead th {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+}
+
+/* Input de búsqueda en tablas */
+.dark-mode .form-control {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+  border-color: #6c757d !important;
+}
+
+.dark-mode .form-control::placeholder {
+  color: #adb5bd !important;
+}
+
+.dark-mode .form-control:focus {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+  border-color: #0d6efd !important;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+/* Selects en modo oscuro */
+.dark-mode .form-select {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+  border-color: #6c757d !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e") !important;
+}
+
+.dark-mode .form-select:focus {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+  border-color: #0d6efd !important;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+/* Botones en modo oscuro */
+.dark-mode .btn-primary {
+  background-color: #0d6efd !important;
+  border-color: #0d6efd !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .btn-secondary {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .btn-outline-primary {
+  color: #0d6efd !important;
+  border-color: #0d6efd !important;
+}
+
+.dark-mode .btn-outline-primary:hover {
+  background-color: #0d6efd !important;
+  border-color: #0d6efd !important;
+  color: #ffffff !important;
+}
+
+/* Badges en modo oscuro */
+.dark-mode .badge {
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.dark-mode .badge.bg-success {
+  background-color: #198754 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #212529 !important;
+}
+
+.dark-mode .badge.bg-danger {
+  background-color: #dc3545 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .badge.bg-info {
+  background-color: #0dcaf0 !important;
+  color: #212529 !important;
+}
+
+.dark-mode .badge.bg-primary {
+  background-color: #0d6efd !important;
+  color: #ffffff !important;
+}
+
+/* Paginación en modo oscuro */
+.dark-mode .pagination .page-link {
+  background-color: #343a40 !important;
+  border-color: #495057 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .pagination .page-link:hover {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .pagination .page-item.active .page-link {
+  background-color: #0d6efd !important;
+  border-color: #0d6efd !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .pagination .page-item.disabled .page-link {
+  background-color: #6c757d !important;
+  border-color: #495057 !important;
+  color: #adb5bd !important;
+}
+
+/* Alertas en modo oscuro */
+.dark-mode .alert {
+  border-color: #495057 !important;
+}
+
+.dark-mode .alert-info {
+  background-color: rgba(13, 202, 240, 0.2) !important;
+  border-color: #0dcaf0 !important;
+  color: #9eeaf9 !important;
+}
+
+.dark-mode .alert-warning {
+  background-color: rgba(255, 193, 7, 0.2) !important;
+  border-color: #ffc107 !important;
+  color: #ffda6a !important;
+}
+
+.dark-mode .alert-success {
+  background-color: rgba(25, 135, 84, 0.2) !important;
+  border-color: #198754 !important;
+  color: #75b798 !important;
+}
+
+.dark-mode .alert-danger {
+  background-color: rgba(220, 53, 69, 0.2) !important;
+  border-color: #dc3545 !important;
+  color: #f5c2c7 !important;
+}
+
+/* Spinners en modo oscuro */
+.dark-mode .spinner-border {
+  color: #0d6efd !important;
+}
+
+/* Texto en modo oscuro */
+.dark-mode .text-muted {
+  color: #adb5bd !important;
+}
+
+.dark-mode .text-secondary {
+  color: #6c757d !important;
+}
+
+.dark-mode .text-primary {
+  color: #9ec5fe !important;
+}
+
+.dark-mode .text-success {
+  color: #75b798 !important;
+}
+
+.dark-mode .text-warning {
+  color: #ffda6a !important;
+}
+
+.dark-mode .text-danger {
+  color: #f5c2c7 !important;
+}
+
+.dark-mode .text-info {
+  color: #9eeaf9 !important;
+}
+
+/* Cards de dashboard en modo oscuro */
+.dark-mode .card {
+  background-color: #343a40 !important;
+  border-color: #495057 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .card-header {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .card-body {
+  background-color: #343a40 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .card-footer {
+  background-color: #495057 !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+/* Dropdowns en modo oscuro */
+.dark-mode .dropdown-menu {
+  background-color: #343a40 !important;
+  border-color: #495057 !important;
+}
+
+.dark-mode .dropdown-item {
+  color: #ffffff !important;
+}
+
+.dark-mode .dropdown-item:hover,
+.dark-mode .dropdown-item:focus {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .dropdown-divider {
+  border-color: #495057 !important;
+}
+
+/* Borders en modo oscuro */
+.dark-mode .border {
+  border-color: #495057 !important;
+}
+
+.dark-mode .border-top {
+  border-top-color: #495057 !important;
+}
+
+.dark-mode .border-bottom {
+  border-bottom-color: #495057 !important;
+}
+
+.dark-mode .border-start {
+  border-left-color: #495057 !important;
+}
+
+.dark-mode .border-end {
+  border-right-color: #495057 !important;
+}
+
+/* Shadows en modo oscuro */
+.dark-mode .shadow,
+.dark-mode .shadow-sm {
+  box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .5) !important;
+}
+
+.dark-mode .shadow-lg {
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, .5) !important;
+}
+
+/* Backgrounds utilitarios en modo oscuro */
+.dark-mode .bg-light {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .bg-white {
+  background-color: #343a40 !important;
+  color: #ffffff !important;
+}
+
+.dark-mode .bg-secondary {
+  background-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+/* Container y fluid en modo oscuro */
+.dark-mode .container,
+.dark-mode .container-fluid {
+  color: #ffffff !important;
+}
+
+/* ======================== */
+/* 🎯 ESPECÍFICO PARA COMPONENTES DE DASHBOARDS */
+/* ======================== */
+
+/* DataTables (si se usa) */
+.dark-mode .dataTables_wrapper {
+  color: #ffffff !important;
+}
+
+.dark-mode .dataTables_wrapper .dataTables_length select,
+.dark-mode .dataTables_wrapper .dataTables_filter input {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+  border-color: #6c757d !important;
+}
+
+.dark-mode .dataTables_wrapper .dataTables_info {
+  color: #adb5bd !important;
+}
+
+.dark-mode .dataTables_wrapper .dataTables_paginate .paginate_button {
+  background-color: #343a40 !important;
+  color: #ffffff !important;
+  border-color: #495057 !important;
+}
+
+.dark-mode .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+  border-color: #6c757d !important;
+}
+
+/* React Bootstrap específico */
+.dark-mode .table-responsive {
+  color: #ffffff !important;
+}
+
+/* Asegurar que todos los elementos de tabla usen el tema */
+.dark-mode table,
+.dark-mode .table,
+.dark-mode .table-responsive table {
+  color: #ffffff !important;
+}
+
+.dark-mode table thead,
+.dark-mode .table thead {
+  background-color: #495057 !important;
+}
+
+.dark-mode table tbody,
+.dark-mode .table tbody {
+  background-color: #343a40 !important;
+}
+
+/* Filtros y controles específicos */
+.dark-mode input[type="text"],
+.dark-mode input[type="search"],
+.dark-mode input[type="email"],
+.dark-mode input[type="password"],
+.dark-mode input[type="number"] {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+  border-color: #6c757d !important;
+}
+
+.dark-mode input[type="text"]:focus,
+.dark-mode input[type="search"]:focus,
+.dark-mode input[type="email"]:focus,
+.dark-mode input[type="password"]:focus,
+.dark-mode input[type="number"]:focus {
+  background-color: #495057 !important;
+  color: #ffffff !important;
+  border-color: #0d6efd !important;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+/* Labels en formularios */
+.dark-mode label,
+.dark-mode .form-label {
+  color: #ffffff !important;
+}
+
+/* Text helpers */
+.dark-mode .form-text {
+  color: #adb5bd !important;
+}
+
+/* ======================== */
+/* 🎯 OVERRIDE DE ALTA PRIORIDAD */
+/* ======================== */
+
+/* Asegurar que TODAS las tablas respeten el tema oscuro */
+.dark-mode * {
+  --bs-table-bg: #343a40 !important;
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.05) !important;
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.1) !important;
+  --bs-table-border-color: #495057 !important;
+  --bs-table-color: #ffffff !important;
 }

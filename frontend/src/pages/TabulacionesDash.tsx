@@ -3,7 +3,8 @@ import { Container, Row, Col, Card, Spinner, Alert, Form, Badge } from 'react-bo
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Sidebar from '../components/Sidebar';
-import Footer from '../components/Footer';
+import ThemedFooter from '../components/ThemedFooter'; // 🔥 CAMBIO: Footer temático
+import { useTheme } from '../context/ThemeContext'; // 🔥 AGREGAR IMPORT
 
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -286,6 +287,7 @@ function agruparPorArbol(tareas: any[]): { arbol: string; cantidad: number }[] {
 }
 
 const TabulacionesDash = () => {
+  const { isDarkMode } = useTheme(); // 🔥 AGREGAR HOOK
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [data, setData] = useState<TabulacionesStats | null>(null);
@@ -300,6 +302,33 @@ const TabulacionesDash = () => {
     localStorage.clear();
     navigate('/');
   };
+
+  // 🎨 COLORES DINÁMICOS SEGÚN EL TEMA
+  const getThemeColors = () => {
+    if (isDarkMode) {
+      return {
+        // Modo oscuro
+        background: '#212529',
+        textPrimary: '#ffffff',
+        textSecondary: '#adb5bd',
+        textMuted: '#6c757d',
+        gridColor: '#495057',
+        tooltipBg: 'rgba(52, 58, 64, 0.95)'
+      };
+    } else {
+      return {
+        // Modo claro (original)
+        background: '#ffffff',
+        textPrimary: '#212529',
+        textSecondary: '#6c757d',
+        textMuted: '#94a3b8',
+        gridColor: '#f0f0f0',
+        tooltipBg: 'rgba(255, 255, 255, 0.95)'
+      };
+    }
+  };
+
+  const themeColors = getThemeColors();
 
   const fetchStats = async () => {
     setLoading(true);
@@ -415,10 +444,18 @@ const TabulacionesDash = () => {
     }));
   };
 
+  // 🎨 TOOLTIP ADAPTADO AL TEMA
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-2 border shadow-sm rounded">
+        <div 
+          className="p-2 border shadow-sm rounded"
+          style={{
+            backgroundColor: themeColors.tooltipBg,
+            color: themeColors.textPrimary,
+            borderColor: isDarkMode ? '#6c757d' : '#dee2e6'
+          }}
+        >
           <p className="mb-0"><strong>{label}</strong></p>
           <p className="mb-0 text-primary">{`${payload[0].name}: ${formatNumber(payload[0].value)}`}</p>
         </div>
@@ -450,6 +487,7 @@ const TabulacionesDash = () => {
     display: 'flex' as 'flex',
     flexDirection: 'column' as 'column',
     minHeight: '100vh',
+    backgroundColor: themeColors.background, // 🔥 AGREGAR BACKGROUND DINÁMICO
   };
 
   // NUEVO: Componente para mostrar la última actualización de datos
@@ -516,11 +554,13 @@ const TabulacionesDash = () => {
     return (
       <Card className="shadow-sm border-0 mb-4">
         <Card.Body className="p-4">
-          <h5 className="fw-bold mb-3 text-center">
+          <h5 className="fw-bold mb-3 text-center" style={{ color: themeColors.textPrimary }}>
             <i className="bi bi-clock-history me-2 text-primary"></i>
             Última Actualización de Datos
           </h5>
-          <div className="fs-3 mb-2 text-center text-muted">{latestInfo}</div>
+          <div className="fs-3 mb-2 text-center" style={{ color: themeColors.textMuted }}>
+            {latestInfo}
+          </div>
         </Card.Body>
       </Card>
     );
@@ -533,7 +573,9 @@ const TabulacionesDash = () => {
       <div style={contentStyle}>
         <Container fluid className="py-4 px-4">
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h2 className="mb-0 fw-bold">Dashboard Tabulaciones</h2>
+            <h2 className="mb-0 fw-bold" style={{ color: themeColors.textPrimary }}>
+              Dashboard Tabulaciones
+            </h2>
             <div className="d-flex gap-2">
               <select
                 className="form-select shadow-sm"
@@ -572,16 +614,19 @@ const TabulacionesDash = () => {
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center">
                         <div>
-                          <h6 className="text-muted mb-1">Total Tareas</h6>
-                          <h2 className="fw-bold mb-0">{formatNumber(data.total)}</h2>
+                          <h6 className="mb-1" style={{ color: themeColors.textMuted }}>Total Tareas</h6>
+                          <h2 className="fw-bold mb-0" style={{ color: themeColors.textPrimary }}>
+                            {formatNumber(data.total)}
+                          </h2>
                         </div>
-                        <div className="bg-light rounded-circle d-flex align-items-center justify-content-center"
+                        <div className="rounded-circle d-flex align-items-center justify-content-center"
                           style={{
                             width: '3.5rem',
                             height: '3.5rem',
-                            padding: 0
+                            padding: 0,
+                            backgroundColor: isDarkMode ? '#495057' : '#f8f9fa'
                           }}>
-                          <i className="bi bi-collection fs-3 text-dark" />
+                          <i className="bi bi-collection fs-3" style={{ color: themeColors.textPrimary }} />
                         </div>
                       </div>
                     </Card.Body>
@@ -595,7 +640,7 @@ const TabulacionesDash = () => {
                         <Card.Body>
                           <div className="d-flex justify-content-between align-items-center">
                             <div>
-                              <h6 className="text-muted mb-1">Tareas Finalizadas</h6>
+                              <h6 className="mb-1" style={{ color: themeColors.textMuted }}>Tareas Finalizadas</h6>
                               <h2 className="fw-bold mb-0 text-primary">
                                 {formatNumber(data.diagnostico.total_registros - data.diagnostico.sin_fecha_finalizacion)}
                               </h2>
@@ -618,7 +663,7 @@ const TabulacionesDash = () => {
                         <Card.Body>
                           <div className="d-flex justify-content-between align-items-center">
                             <div>
-                              <h6 className="text-muted mb-1">Tareas Pendientes</h6>
+                              <h6 className="mb-1" style={{ color: themeColors.textMuted }}>Tareas Pendientes</h6>
                               <h2 className="fw-bold mb-0 text-warning">
                                 {formatNumber(data.diagnostico.sin_fecha_finalizacion)}
                               </h2>
@@ -641,7 +686,7 @@ const TabulacionesDash = () => {
                         <Card.Body>
                           <div className="d-flex justify-content-between align-items-center">
                             <div>
-                              <h6 className="text-muted mb-1">Sin Usuario</h6>
+                              <h6 className="mb-1" style={{ color: themeColors.textMuted }}>Sin Usuario</h6>
                               <h2 className="fw-bold mb-0 text-danger">
                                 {formatNumber(data.diagnostico.sin_completado_por)}
                               </h2>
@@ -688,7 +733,9 @@ const TabulacionesDash = () => {
                 <Col md={6}>
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
-                      <h5 className="fw-bold mb-3">Tareas por Mes</h5>
+                      <h5 className="fw-bold mb-3" style={{ color: themeColors.textPrimary }}>
+                        Tareas por Mes
+                      </h5>
                       <ResponsiveContainer width="100%" height={250}>
                         <LineChart
                           data={data.porFechaFinal?.length > 0
@@ -700,10 +747,9 @@ const TabulacionesDash = () => {
                             }))
                           }
                         >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                          <XAxis dataKey="nombre" />
-
-                          <YAxis />
+                          <CartesianGrid strokeDasharray="3 3" stroke={themeColors.gridColor} />
+                          <XAxis dataKey="nombre" tick={{ fill: themeColors.textSecondary }} />
+                          <YAxis tick={{ fill: themeColors.textSecondary }} />
                           <Tooltip content={<CustomTooltip />} />
                           <Line
                             type="monotone"
@@ -724,7 +770,9 @@ const TabulacionesDash = () => {
                 <Col md={6}>
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
-                      <h5 className="fw-bold mb-3">Estado de Tareas</h5>
+                      <h5 className="fw-bold mb-3" style={{ color: themeColors.textPrimary }}>
+                        Estado de Tareas
+                      </h5>
                       {data.diagnostico ? (
                         <div className="d-flex justify-content-center">
                           <ResponsiveContainer width="80%" height={250}>
@@ -757,12 +805,13 @@ const TabulacionesDash = () => {
                                 verticalAlign="bottom"
                                 height={36}
                                 iconType="circle"
+                                wrapperStyle={{ color: themeColors.textPrimary }}
                               />
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
                       ) : (
-                        <div className="text-center py-5 text-muted">
+                        <div className="text-center py-5" style={{ color: themeColors.textMuted }}>
                           <p>No hay datos de estado disponibles</p>
                         </div>
                       )}
@@ -776,7 +825,9 @@ const TabulacionesDash = () => {
                 <Col md={6}>
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
-                      <h5 className="fw-bold mb-3">Tareas Completadas por Usuario</h5>
+                      <h5 className="fw-bold mb-3" style={{ color: themeColors.textPrimary }}>
+                        Tareas Completadas por Usuario
+                      </h5>
                       {data.completadoPor && data.completadoPor.length > 0 ? (
                         <ResponsiveContainer width="100%" height={300}>
                           <BarChart
@@ -784,12 +835,12 @@ const TabulacionesDash = () => {
                             layout="vertical"
                             margin={{ left: 120 }}
                           >
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                            <XAxis type="number" />
+                            <CartesianGrid strokeDasharray="3 3" stroke={themeColors.gridColor} horizontal={false} />
+                            <XAxis type="number" tick={{ fill: themeColors.textSecondary }} />
                             <YAxis
                               dataKey="usuario"
                               type="category"
-                              tick={{ fontSize: 10 }}
+                              tick={{ fontSize: 10, fill: themeColors.textSecondary }}
                             />
                             <Tooltip content={<CustomTooltip />} />
                             <Bar
@@ -801,7 +852,7 @@ const TabulacionesDash = () => {
                           </BarChart>
                         </ResponsiveContainer>
                       ) : (
-                        <div className="text-center py-5 text-muted">
+                        <div className="text-center py-5" style={{ color: themeColors.textMuted }}>
                           <p>No hay datos de tareas completadas disponibles</p>
                         </div>
                       )}
@@ -813,7 +864,9 @@ const TabulacionesDash = () => {
                 <Col md={6}>
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
-                      <h5 className="fw-bold mb-3">Ranking Usuarios solicitantes</h5>
+                      <h5 className="fw-bold mb-3" style={{ color: themeColors.textPrimary }}>
+                        Ranking Usuarios solicitantes
+                      </h5>
                       {data.creadoPor && data.creadoPor.length > 0 ? (
                         <ResponsiveContainer width="100%" height={300}>
                           <BarChart
@@ -821,12 +874,12 @@ const TabulacionesDash = () => {
                             layout="vertical"
                             margin={{ left: 120 }}
                           >
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                            <XAxis type="number" />
+                            <CartesianGrid strokeDasharray="3 3" stroke={themeColors.gridColor} horizontal={false} />
+                            <XAxis type="number" tick={{ fill: themeColors.textSecondary }} />
                             <YAxis
                               dataKey="usuario"
                               type="category"
-                              tick={{ fontSize: 10 }}
+                              tick={{ fontSize: 10, fill: themeColors.textSecondary }}
                             />
                             <Tooltip content={<CustomTooltip />} />
                             <Bar
@@ -838,7 +891,7 @@ const TabulacionesDash = () => {
                           </BarChart>
                         </ResponsiveContainer>
                       ) : (
-                        <div className="text-center py-5 text-muted">
+                        <div className="text-center py-5" style={{ color: themeColors.textMuted }}>
                           <p>No hay datos de creación de tareas disponibles</p>
                         </div>
                       )}
@@ -853,7 +906,9 @@ const TabulacionesDash = () => {
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center mb-3">
-                        <h5 className="fw-bold mb-0">Ranking Árboles de Tabulación</h5>
+                        <h5 className="fw-bold mb-0" style={{ color: themeColors.textPrimary }}>
+                          Ranking Árboles de Tabulación
+                        </h5>
                       </div>
                       {data.rankingTab && data.rankingTab.length > 0 ? (
                         <ResponsiveContainer width="100%" height={300}>
@@ -862,12 +917,12 @@ const TabulacionesDash = () => {
                             layout="vertical"
                             margin={{ left: 120 }}
                           >
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                            <XAxis type="number" />
+                            <CartesianGrid strokeDasharray="3 3" stroke={themeColors.gridColor} horizontal={false} />
+                            <XAxis type="number" tick={{ fill: themeColors.textSecondary }} />
                             <YAxis
                               dataKey="arbol"
                               type="category"
-                              tick={{ fontSize: 10 }}
+                              tick={{ fontSize: 10, fill: themeColors.textSecondary }}
                             />
                             <Tooltip content={<CustomTooltip />} />
                             <Bar
@@ -880,7 +935,7 @@ const TabulacionesDash = () => {
                           </BarChart>
                         </ResponsiveContainer>
                       ) : (
-                        <div className="text-center py-5 text-muted">
+                        <div className="text-center py-5" style={{ color: themeColors.textMuted }}>
                           <p>No hay datos de árboles de tabulación disponibles</p>
                         </div>
                       )}
@@ -905,7 +960,7 @@ const TabulacionesDash = () => {
           ) : null}
         </Container>
 
-        <Footer />
+        <ThemedFooter />
       </div>
     </div>
   );

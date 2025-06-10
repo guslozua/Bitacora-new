@@ -15,23 +15,29 @@ import {
 
 import GanttChart from '../components/GanttChart';
 import Sidebar from '../components/Sidebar';
-import Footer from '../components/Footer';
+import ThemedFooter from '../components/ThemedFooter';
+import ThemedLogo from '../components/ThemedLogo';
+import ThemeToggleButton from '../components/ThemeToggleButton'; // 🔥 Toggle elegante
+import RefreshIconButton from '../components/RefreshIconButton'; // 🔥 NUEVO: Ícono de refresh
 import MiniCalendar from '../components/MiniCalendar/MiniCalendar';
 import { fetchEvents } from '../services/EventService';
 import { Event } from '../models/Event';
-import CampanillaNot from '../components/notificaciones/CampanillaNot'; //notificaciones
+import CampanillaNot from '../components/notificaciones/CampanillaNot';
+import { useTheme } from '../context/ThemeContext';
 
 // Importamos funciones del servicio de autenticación
 import { getUserName, logout, getToken } from '../services/authService';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { isDarkMode } = useTheme();
 
   const [usuarios, setUsuarios] = useState<number | null>(null);
   const [tareas, setTareas] = useState<number | null>(null);
   const [proyectos, setProyectos] = useState<number | null>(null);
   const [actividadReciente, setActividadReciente] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // 🔥 NUEVO: Estado para el ícono de refresh
   const [error, setError] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [showDataInfo, setShowDataInfo] = useState(false);
@@ -405,14 +411,15 @@ const Dashboard = () => {
     setShowDataInfo(!showDataInfo);
   };
 
-  // Función para forzar recarga de datos
-  const handleRefresh = () => {
-    setLoading(true);
-    fetchUserProfile();
-    // Simular un pequeño retraso para que se vea el spinner
+  // 🔥 ACTUALIZADA: Función para forzar recarga de datos con animación
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchUserProfile();
+    
+    // Simular un pequeño retraso para que se vea la animación
     setTimeout(() => {
       window.location.reload();
-    }, 500);
+    }, 1000);
   };
 
   const contentStyle = {
@@ -430,29 +437,50 @@ const Dashboard = () => {
 
       <div style={contentStyle}>
         <Container className="py-4 px-4">
+          {/* 🔥 ACTUALIZADO: Header con nuevo toggle y refresh icon */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div className="d-flex align-items-center gap-3">
+              {/* <ThemedLogo width="50px" height="50px" className="me-2" />*/}
               <h2 className="mb-0 fw-bold">Bienvenido, {nombreUsuario}</h2>
               <CampanillaNot
                 userId={profileInfo?.id || 3}
                 refreshInterval={30000}
               />
             </div>
-            <div className="d-flex gap-2">
-              <Button variant="outline-info" className="me-2" onClick={handleRefresh}>
-                <i className="bi bi-arrow-clockwise me-1"></i>
-                Recargar
-              </Button>
-              <Button variant="outline-secondary" onClick={() => navigate('/projects')}>
+            <div className="d-flex gap-3 align-items-center">
+              {/* 🔥 NUEVO: Toggle elegante */}
+              <ThemeToggleButton size="md" />
+              
+              {/* 🔥 NUEVO: Ícono de refresh */}
+              <RefreshIconButton 
+                onClick={handleRefresh}
+                loading={refreshing}
+                size="md"
+              />
+              
+              {/*<Button variant="outline-secondary" onClick={() => navigate('/projects')}>
                 <i className="bi bi-plus me-2"></i>
                 Nuevo Proyecto
-              </Button>
-              <Button variant="outline-primary">
+              </Button> */}
+              {/*<Button variant="outline-primary">
                 <i className="bi bi-plus me-2"></i>
                 Nueva Tarea
-              </Button>
+              </Button>*/}
             </div>
           </div>
+
+          {/* 🔥 ACTUALIZADO: Indicador de tema con mejor diseño */}
+          {isDarkMode && (
+            <Alert variant="dark" className="mb-4 border-0" style={{
+              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+              borderLeft: '4px solid #667eea'
+            }}>
+              <div className="d-flex align-items-center">
+                <i className="bi bi-moon-stars me-2" style={{ color: '#667eea' }}></i>
+                <small>Modo oscuro activado - Perfecto para trabajar en ambientes con poca luz</small>
+              </div>
+            </Alert>
+          )}
 
           {profileError && (
             <Alert variant="info" className="mb-4">
@@ -503,7 +531,7 @@ const Dashboard = () => {
             <>
               <Row className="g-4 mb-4">
                 <Col md={4}>
-                  <Card className="border-0 shadow-sm h-100">
+                  <Card className="border-0 shadow-sm h-100 themed-card">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center">
                         <div>
@@ -523,7 +551,7 @@ const Dashboard = () => {
                   </Card>
                 </Col>
                 <Col md={4}>
-                  <Card className="border-0 shadow-sm h-100">
+                  <Card className="border-0 shadow-sm h-100 themed-card">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center">
                         <div>
@@ -543,7 +571,7 @@ const Dashboard = () => {
                   </Card>
                 </Col>
                 <Col md={4}>
-                  <Card className="border-0 shadow-sm h-100">
+                  <Card className="border-0 shadow-sm h-100 themed-card">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center">
                         <div>
@@ -566,15 +594,19 @@ const Dashboard = () => {
 
               <Row className="g-4 mb-4">
                 <Col md={6}>
-                  <Card className="shadow-sm h-100 border-0">
+                  <Card className="shadow-sm h-100 border-0 themed-card">
                     <Card.Body>
                       <h5 className="fw-bold mb-3">Actividad Reciente</h5>
                       <ListGroup variant="flush">
                         {actividadReciente.length === 0 ? (
-                          <ListGroup.Item>No hay actividad reciente</ListGroup.Item>
+                          <ListGroup.Item className="themed-bg-secondary">
+                            No hay actividad reciente
+                          </ListGroup.Item>
                         ) : (
                           actividadReciente.map((item, idx) => (
-                            <ListGroup.Item key={idx}>{item}</ListGroup.Item>
+                            <ListGroup.Item key={idx} className="themed-bg-secondary">
+                              {item}
+                            </ListGroup.Item>
                           ))
                         )}
                       </ListGroup>
@@ -583,7 +615,7 @@ const Dashboard = () => {
                 </Col>
 
                 <Col md={6}>
-                  <Card className="shadow-sm h-100 border-0">
+                  <Card className="shadow-sm h-100 border-0 themed-card">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center mb-3">
                         <h5 className="fw-bold mb-0">Calendario</h5>
@@ -605,7 +637,7 @@ const Dashboard = () => {
                           events={calendarEvents}
                           onDateClick={handleDateClick}
                           onEventClick={handleEventClick}
-                          showHeader={false} // Añadida la prop para no mostrar el encabezado duplicado
+                          showHeader={false}
                         />
                       )}
                     </Card.Body>
@@ -615,7 +647,7 @@ const Dashboard = () => {
 
               <Row className="g-4 mb-4">
                 <Col md={6}>
-                  <Card className="shadow-sm h-100 border-0">
+                  <Card className="shadow-sm h-100 border-0 themed-card">
                     <Card.Body>
                       <h5 className="fw-bold mb-3">Reportes Rápidos</h5>
                       <ResponsiveContainer width="100%" height={200}>
@@ -625,14 +657,26 @@ const Dashboard = () => {
                           margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
                           barCategoryGap={20}
                         >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                          <Tooltip />
+                          <CartesianGrid 
+                            strokeDasharray="3 3" 
+                            stroke={isDarkMode ? "#495057" : "#f0f0f0"} 
+                          />
+                          <Tooltip 
+                            contentStyle={{
+                              backgroundColor: isDarkMode ? '#343a40' : '#ffffff',
+                              border: `1px solid ${isDarkMode ? '#495057' : '#dee2e6'}`,
+                              color: isDarkMode ? '#ffffff' : '#212529'
+                            }}
+                          />
                           <XAxis type="number" hide />
                           <YAxis
                             dataKey="nombre"
                             type="category"
                             width={100}
-                            tick={{ fontWeight: 'bold' }}
+                            tick={{ 
+                              fontWeight: 'bold',
+                              fill: isDarkMode ? '#ffffff' : '#212529'
+                            }}
                             axisLine={false}
                             tickLine={false}
                           />
@@ -648,12 +692,14 @@ const Dashboard = () => {
                 </Col>
 
                 <Col md={6}>
-                  <Card className="shadow-sm h-100 border-0">
+                  <Card className="shadow-sm h-100 border-0 themed-card">
                     <Card.Body>
                       <h5 className="fw-bold mb-3">Próximos Eventos</h5>
                       <ListGroup variant="flush">
                         {calendarEvents.length === 0 ? (
-                          <ListGroup.Item>No hay eventos próximos</ListGroup.Item>
+                          <ListGroup.Item className="themed-bg-secondary">
+                            No hay eventos próximos
+                          </ListGroup.Item>
                         ) : (
                           calendarEvents
                             .filter(event => new Date(event.start) >= new Date())
@@ -662,7 +708,7 @@ const Dashboard = () => {
                             .map((event, idx) => (
                               <ListGroup.Item
                                 key={idx}
-                                className="d-flex justify-content-between align-items-center"
+                                className="d-flex justify-content-between align-items-center themed-bg-secondary"
                                 action
                                 onClick={() => handleEventClick(event)}
                               >
@@ -687,7 +733,7 @@ const Dashboard = () => {
                 </Col>
               </Row>
 
-              <Card className="shadow-sm mb-4 border-0">
+              <Card className="shadow-sm mb-4 border-0 themed-card">
                 <Card.Body>
                   <GanttChart />
                 </Card.Body>
@@ -696,7 +742,8 @@ const Dashboard = () => {
           )}
         </Container>
 
-        <Footer />
+        {/* 🔥 CAMBIO: Footer temático que cambia según el tema */}
+        <ThemedFooter />
       </div>
     </div>
   );

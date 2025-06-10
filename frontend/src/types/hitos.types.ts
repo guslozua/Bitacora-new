@@ -65,6 +65,7 @@ export interface Usuario {
   id: number;
   nombre: string;
   email: string;
+  estado?: string | number; // 🔧 AGREGAR esta línea
   roles?: string[];
 }
 
