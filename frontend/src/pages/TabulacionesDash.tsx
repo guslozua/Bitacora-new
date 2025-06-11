@@ -293,7 +293,7 @@ const TabulacionesDash = () => {
   const [data, setData] = useState<TabulacionesStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedYear, setSelectedYear] = useState('all');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [rawTabulaciones, setRawTabulaciones] = useState<any[]>([]);
 

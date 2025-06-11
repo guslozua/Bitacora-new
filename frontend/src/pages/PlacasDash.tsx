@@ -61,7 +61,7 @@ interface PlacasStats {
 const PlacasDash = () => {
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  const [selectedYear, setSelectedYear] = useState('all');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [stats, setStats] = useState<PlacasStats | null>(null);
   const [loading, setLoading] = useState(false);

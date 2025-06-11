@@ -1,12 +1,26 @@
 import React, { useState } from 'react';
-import { Button, Modal, Form, Spinner, Alert } from 'react-bootstrap';
+import { Button, Modal, Form, Spinner, Alert, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import hitoService from '../../services/hitoService';
-import type { ConvertToHitoProps } from '../../types/hitos.types';
+
+// 🔧 INTERFAZ CORREGIDA - solo 'sm' y 'lg' para React Bootstrap
+interface ConvertToHitoProps {
+  projectId: number;
+  projectName: string;
+  onConversionComplete?: () => void;
+  buttonVariant?: 'outline-warning' | 'warning' | 'outline-primary' | 'primary';
+  buttonSize?: 'sm' | 'lg'; // 🔧 CORREGIDO: solo sm y lg
+  showText?: boolean; // 🆕 NUEVA: Controla si mostrar texto o solo ícono
+  className?: string;
+}
 
 const ConvertToHito: React.FC<ConvertToHitoProps> = ({ 
   projectId, 
   projectName, 
-  onConversionComplete 
+  onConversionComplete,
+  buttonVariant = 'outline-warning',
+  buttonSize = 'sm', // 🔧 CORREGIDO: valor por defecto válido
+  showText = true, // 🆕 Por defecto muestra texto
+  className = ''
 }) => {
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -85,66 +99,127 @@ const ConvertToHito: React.FC<ConvertToHitoProps> = ({
     }
   };
 
-  return (
-    <>
-      <Button
-        variant="outline-warning"
-        size="sm"
-        onClick={handleShow}
-        className="d-flex align-items-center"
-      >
+  // 🆕 RENDERIZADO CONDICIONAL: Solo ícono o ícono + texto
+  const renderButton = () => {
+    const buttonContent = showText ? (
+      <>
         <i className="bi bi-star me-1"></i>
         Convertir a Hito
+      </>
+    ) : (
+      <i className="bi bi-star"></i>
+    );
+
+    const button = (
+      <Button
+        variant={buttonVariant}
+        size={buttonSize}
+        onClick={handleShow}
+        className={`d-flex align-items-center justify-content-center ${className}`}
+        disabled={loading}
+      >
+        {buttonContent}
       </Button>
+    );
+
+    // 🔧 Si no muestra texto, envolver en tooltip para mejor UX
+    if (!showText) {
+      return (
+        <OverlayTrigger
+          placement="top"
+          overlay={
+            <Tooltip>
+              Convertir proyecto a hito
+            </Tooltip>
+          }
+        >
+          {button}
+        </OverlayTrigger>
+      );
+    }
+
+    return button;
+  };
+
+  return (
+    <>
+      {renderButton()}
       
       <Modal show={show} onHide={handleClose} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Convertir Proyecto a Hito</Modal.Title>
+          <Modal.Title>
+            <i className="bi bi-star me-2"></i>
+            Convertir Proyecto a Hito
+          </Modal.Title>
         </Modal.Header>
         
         <Modal.Body>
           {message && (
             <Alert variant={message.type} className="mb-3">
-              {message.text}
+              <div className="d-flex align-items-center">
+                <i className={`bi ${message.type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle'} me-2`}></i>
+                {message.text}
+              </div>
             </Alert>
           )}
           
           <div className="mb-3">
-            <p>
-              Está a punto de convertir el proyecto <strong>{projectName}</strong> en un hito. 
-              Esta acción conservará toda la información del proyecto, incluyendo tareas y usuarios asignados.
-            </p>
-            
-            {/* Debug info */}
-            <div className="small text-muted border rounded p-2 mb-3">
-              <strong>Debug Info:</strong><br/>
-              ID del Proyecto: {projectId}<br/>
-              Nombre: {projectName}
+            <div className="d-flex align-items-center mb-3 p-3 bg-light rounded">
+              <i className="bi bi-info-circle text-primary me-2" style={{ fontSize: '1.5rem' }}></i>
+              <div>
+                <strong>Proyecto a convertir:</strong><br/>
+                <span className="text-primary">{projectName}</span>
+              </div>
             </div>
+            
+            <p className="text-muted small">
+              Esta acción convertirá el proyecto completado en un hito, conservando toda la información 
+              del proyecto, incluyendo tareas y usuarios asignados.
+            </p>
+
+            {/* Debug info solo en desarrollo */}
+            {process.env.NODE_ENV === 'development' && (
+              <details className="small text-muted border rounded p-2 mb-3">
+                <summary style={{ cursor: 'pointer' }}>
+                  <strong>Información de desarrollo</strong>
+                </summary>
+                <div className="mt-2">
+                  <strong>ID del Proyecto:</strong> {projectId}<br/>
+                  <strong>Nombre:</strong> {projectName}<br/>
+                  <strong>showText:</strong> {showText ? 'true' : 'false'}<br/>
+                  <strong>buttonVariant:</strong> {buttonVariant}<br/>
+                  <strong>buttonSize:</strong> {buttonSize}
+                </div>
+              </details>
+            )}
           </div>
           
           <Form.Group className="mb-3">
-            <Form.Label>Impacto del Hito</Form.Label>
+            <Form.Label>
+              <i className="bi bi-lightbulb me-1"></i>
+              Impacto del Hito
+            </Form.Label>
             <Form.Control
               as="textarea"
               rows={3}
               value={impacto}
               onChange={(e) => setImpacto(e.target.value)}
-              placeholder="Describa el impacto o relevancia que tuvo este proyecto para la organización"
+              placeholder="Describa el impacto o relevancia que tuvo este proyecto para la organización..."
               disabled={loading}
             />
             <Form.Text className="text-muted">
-              Describa el impacto o relevancia que tuvo este proyecto para la organización
+              Opcional: Describa la importancia o el impacto que tuvo este proyecto
             </Form.Text>
           </Form.Group>
         </Modal.Body>
         
-        <Modal.Footer>
+        <Modal.Footer className="d-flex justify-content-between">
           <Button 
-            variant="secondary" 
+            variant="outline-secondary" 
             onClick={handleClose} 
             disabled={loading}
           >
+            <i className="bi bi-x-circle me-1"></i>
             Cancelar
           </Button>
           <Button 
@@ -165,7 +240,10 @@ const ConvertToHito: React.FC<ConvertToHitoProps> = ({
                 Convirtiendo...
               </>
             ) : (
-              'Convertir a Hito'
+              <>
+                <i className="bi bi-star-fill me-1"></i>
+                Convertir a Hito
+              </>
             )}
           </Button>
         </Modal.Footer>

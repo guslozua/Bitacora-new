@@ -65,7 +65,7 @@ export interface Usuario {
   id: number;
   nombre: string;
   email: string;
-  estado?: string | number; // 🔧 AGREGAR esta línea
+  estado?: string | number; // 🔧 MANTENER: Para filtrar usuarios activos
   roles?: string[];
 }
 
@@ -76,6 +76,30 @@ export interface Proyecto {
   estado?: string;
   fecha_inicio?: string;
   fecha_fin?: string;
+}
+
+// 🆕 NUEVA INTERFAZ: Para manejar información de hitos existentes
+export interface HitoExistente {
+  id: number;
+  nombre: string;
+  id_proyecto_origen: number | null;
+  fecha_creacion: string;
+}
+
+// 🔧 EXTENDER la interfaz de Proyecto si es necesario
+export interface ProyectoConHito extends Proyecto {
+  progreso?: number;
+  total_tareas?: number;
+  tareas_completadas?: number;
+  yaEsHito?: boolean; // 🆕 NUEVA: Indica si ya fue convertido a hito
+  hitoId?: number; // 🆕 NUEVA: ID del hito asociado si existe
+}
+
+// 🆕 NUEVA INTERFAZ: Para la respuesta de verificación de hitos
+export interface VerificacionHitosResponse {
+  success: boolean;
+  data: HitoExistente[];
+  proyectosConvertidos: number[];
 }
 
 // Enums para tipos específicos
@@ -94,8 +118,12 @@ export interface ApiResponse<T> {
   errors?: any[];
 }
 
+// 🔧 ACTUALIZAR ConversionData para incluir más campos opcionales
 export interface ConversionData {
   impacto?: string;
+  descripcion_adicional?: string;
+  fecha_conversion?: string;
+  notas?: string;
 }
 
 // Interfaces para componentes de UI
@@ -106,10 +134,15 @@ export interface HitoFormProps {
   hito?: HitoCompleto | null;
 }
 
+// 🔧 ACTUALIZAR ConvertToHitoProps con nuevas opciones de renderizado
 export interface ConvertToHitoProps {
   projectId: number;
   projectName: string;
   onConversionComplete?: () => void;
+  buttonVariant?: 'outline-warning' | 'warning' | 'outline-primary' | 'primary';
+  buttonSize?: 'sm' | 'lg';
+  showText?: boolean; // 🆕 NUEVA: Controla si mostrar texto o solo ícono
+  className?: string;
 }
 
 export interface HitoRowProps {
@@ -249,6 +282,43 @@ export interface TimelineEvent {
   data?: any;
 }
 
+// 🆕 NUEVAS INTERFACES PARA PROYECTO CON INFORMACIÓN DE HITOS
+export interface ProyectoCompleto {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+  estado: 'activo' | 'completado' | 'pausado' | 'cancelado' | 'finalizado' | 'en progreso';
+  fecha_inicio?: string;
+  fecha_fin?: string;
+  progreso?: number;
+  total_tareas?: number;
+  tareas_completadas?: number;
+  // 🆕 Información relacionada con hitos
+  yaEsHito?: boolean;
+  hitoId?: number;
+  hitoNombre?: string;
+  fechaConversion?: string;
+}
+
+// 🆕 NUEVA INTERFAZ: Estados de conversión de hito
+export interface EstadoConversionHito {
+  puedeConvertirse: boolean;
+  yaConvertido: boolean;
+  razon?: string; // Si no puede convertirse, explica por qué
+  hitoExistente?: HitoExistente;
+}
+
+// 🆕 NUEVA INTERFAZ: Props extendidas para componentes de proyectos
+export interface ProyectoConAccionesProps {
+  proyecto: ProyectoCompleto;
+  onEdit: (proyecto: ProyectoCompleto) => void;
+  onDelete: (proyecto: ProyectoCompleto) => void;
+  onView: (proyecto: ProyectoCompleto) => void;
+  onConvertToHito?: (proyecto: ProyectoCompleto) => void;
+  onUpdateUsers?: (projectId: number) => void;
+  estadoConversion?: EstadoConversionHito;
+}
+
 // =====================================
 // CONSTANTES ÚTILES
 // =====================================
@@ -268,6 +338,20 @@ export const ROL_COLORS = {
   colaborador: 'primary',
   responsable: 'success',
   supervisor: 'warning'
+} as const;
+
+// 🆕 NUEVOS COLORES para estados de conversión de hito
+export const CONVERSION_COLORS = {
+  canConvert: 'warning',      // Puede convertirse - amarillo
+  alreadyConverted: 'success', // Ya convertido - verde
+  cannotConvert: 'secondary'   // No puede convertirse - gris
+} as const;
+
+// 🆕 NUEVOS ICONOS para estados de conversión
+export const CONVERSION_ICONS = {
+  canConvert: 'bi-star',         // Estrella vacía
+  alreadyConverted: 'bi-star-fill', // Estrella llena
+  cannotConvert: 'bi-star',      // Estrella vacía (deshabilitada)
 } as const;
 
 // Colores para timeline basados en proyecto origen

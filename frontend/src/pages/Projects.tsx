@@ -12,9 +12,12 @@ import {
   Badge,
   OverlayTrigger,
   Tooltip,
-  Alert
+  Alert,
+  Nav,
+  Tab,
+  ProgressBar
 } from 'react-bootstrap';
-import { Tabs, Tab } from 'react-bootstrap';
+import { Tabs } from 'react-bootstrap';
 import KanbanBoard from '../components/KanbanBoard';
 import { ButtonGroup } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +25,8 @@ import axios from 'axios';
 
 import AdvancedGanttChart from '../components/AdvancedGanttChart';
 import ConvertToHito from '../components/Hitos/ConvertToHito';
+import UserAvatars from '../components/UserAvatars';
+import UserAssignment from '../components/UserAssignment';
 import '../styles/kanban.css';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
@@ -72,6 +77,41 @@ const Projects = () => {
   const [proyectosConvertibles, setProyectosConvertibles] = useState(0);
   const [message, setMessage] = useState<{ type: 'success' | 'danger' | 'warning' | 'info', text: string } | null>(null);
 
+  // 🆕 NUEVOS ESTADOS PARA DETALLES Y EDICIÓN
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [showDetails, setShowDetails] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState('detalles');
+  const [editingProject, setEditingProject] = useState<Proyecto | null>(null);
+
+  // 🆕 NUEVO ESTADO para manejar hitos existentes
+  const [hitosExistentes, setHitosExistentes] = useState<number[]>([]);
+
+  // 📝 FUNCIÓN PARA TRUNCAR DESCRIPCIÓN
+  const truncateDescription = (description: string, maxLines: number = 4): { text: string, isTruncated: boolean } => {
+    if (!description) return { text: '', isTruncated: false };
+    
+    // Estimar aproximadamente 80 caracteres por línea
+    const maxChars = maxLines * 80;
+    
+    if (description.length <= maxChars) {
+      return { text: description, isTruncated: false };
+    }
+    
+    // Buscar el último espacio antes del límite para no cortar palabras
+    let truncateAt = maxChars;
+    while (truncateAt > 0 && description[truncateAt] !== ' ') {
+      truncateAt--;
+    }
+    
+    // Si no encontramos espacio, usar el límite exacto
+    if (truncateAt === 0) truncateAt = maxChars;
+    
+    return {
+      text: description.substring(0, truncateAt).trim() + '...',
+      isTruncated: true
+    };
+  };
+
   // 🔧 FUNCIÓN PARA VALIDAR SI UN PROYECTO PUEDE CONVERTIRSE A HITO
   const puedeConvertirseAHito = (proyecto: Proyecto): boolean => {
     // Verificar que el proyecto esté completado
@@ -86,6 +126,40 @@ const Projects = () => {
     const todasTareasCompletas = proyecto.tareas_completadas === proyecto.total_tareas;
 
     return estaCompletado && todasTareasCompletas;
+  };
+
+  // 🆕 FUNCIÓN NUEVA: Verificar si un proyecto ya fue convertido a hito
+  const yaFueConvertidoAHito = (proyectoId: number): boolean => {
+    return hitosExistentes.includes(proyectoId);
+  };
+
+  // 🔧 FUNCIÓN CORREGIDA: Verificar hitos existentes y devolver la lista
+  const verificarHitosExistentes = async (): Promise<number[]> => {
+    try {
+      const config = {
+        headers: { 'x-auth-token': token || '' },
+      };
+      
+      // Obtener todos los hitos para verificar cuáles proyectos ya fueron convertidos
+      const hitosRes = await axios.get('http://localhost:5000/api/hitos', config);
+      
+      if (hitosRes.data && hitosRes.data.data) {
+        const proyectosConvertidos = hitosRes.data.data
+          .filter((hito: any) => hito.id_proyecto_origen)
+          .map((hito: any) => hito.id_proyecto_origen);
+        
+        setHitosExistentes(proyectosConvertidos);
+        console.log('🎯 Proyectos ya convertidos a hitos:', proyectosConvertidos);
+        return proyectosConvertidos; // 🆕 DEVOLVER la lista para uso inmediato
+      }
+      
+      setHitosExistentes([]);
+      return [];
+    } catch (error) {
+      console.error('Error al verificar hitos existentes:', error);
+      setHitosExistentes([]);
+      return [];
+    }
   };
 
   // 🔄 CALLBACK PARA MANEJAR LA CONVERSIÓN EXITOSA
@@ -117,6 +191,14 @@ const Projects = () => {
     }, 10000);
   };
 
+  // 🔧 FUNCIÓN NUEVA: Manejar actualización de usuarios de proyecto
+  const handleUpdateProjectUsers = async (projectId: number) => {
+    console.log('Actualizando usuarios del proyecto:', projectId);
+    // Recargar datos después de la actualización
+    await fetchData();
+  };
+
+  // 🔧 FUNCIÓN FETCHDATA CORREGIDA:
   const fetchData = async () => {
     try {
       const config = {
@@ -128,6 +210,9 @@ const Projects = () => {
 
       // Obtenemos datos de tareas
       const tasksRes = await axios.get('http://localhost:5000/api/tasks', config);
+
+      // 🆕 OBTENER hitos existentes INMEDIATAMENTE
+      const hitosExistentesActuales = await verificarHitosExistentes();
 
       // Extraemos los datos relevantes
       const proyectosData = projectsRes.data?.data || [];
@@ -207,21 +292,31 @@ const Projects = () => {
       }).length;
       setProximosVencer(proximos);
 
-      // 🎯 CALCULAR PROYECTOS CONVERTIBLES A HITOS
+      // 🎯 CALCULAR PROYECTOS CONVERTIBLES USANDO LA LISTA ACTUAL DE HITOS
       const convertibles = proyectosEnriquecidos.filter((proyecto: any) => {
         const puedeConvertir = puedeConvertirseAHito(proyecto);
-
-        // Debug para entender por qué algunos proyectos no son convertibles
+        const yaConvertido = hitosExistentesActuales.includes(proyecto.id); // 🔧 USAR LISTA ACTUAL
+        
+        // Solo contar si puede convertirse Y no ha sido convertido
+        const esConvertible = puedeConvertir && !yaConvertido;
+        
+        // Debug mejorado
         console.log(`Proyecto "${proyecto.nombre}":`, {
+          id: proyecto.id,
           estado: proyecto.estado,
           total_tareas: proyecto.total_tareas,
           tareas_completadas: proyecto.tareas_completadas,
           progreso: proyecto.progreso,
-          puede_convertir: puedeConvertir
+          puede_convertir: puedeConvertir,
+          ya_convertido: yaConvertido,
+          es_convertible: esConvertible,
+          hitos_existentes: hitosExistentesActuales
         });
 
-        return puedeConvertir;
+        return esConvertible;
       }).length;
+      
+      console.log('🔢 Total proyectos convertibles calculados:', convertibles);
       setProyectosConvertibles(convertibles);
 
     } catch (error) {
@@ -259,6 +354,14 @@ const Projects = () => {
     setProjectData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // 🔧 FUNCIÓN PARA CERRAR EL OFFCANVAS Y LIMPIAR ESTADO
+  const handleCloseOffcanvas = () => {
+    setShowOffcanvas(false);
+    setProjectData({ name: '', description: '', startDate: '', endDate: '' });
+    setEditingProject(null);
+  };
+
+  // 🔧 FUNCIÓN MODIFICADA PARA CREAR/EDITAR PROYECTO
   const handleCreateProject = async () => {
     const start = new Date(projectData.startDate);
     const end = new Date(projectData.endDate);
@@ -278,35 +381,45 @@ const Projects = () => {
         },
       };
 
-      const newProject = {
+      const projectPayload = {
         nombre: projectData.name.trim(),
         descripcion: projectData.description.trim(),
         fecha_inicio: projectData.startDate,
         fecha_fin: projectData.endDate,
       };
 
-      const response = await axios.post('http://localhost:5000/api/projects', newProject, config);
+      let response;
+      let successMessage;
+
+      if (editingProject) {
+        // Modo edición
+        response = await axios.put(`http://localhost:5000/api/projects/${editingProject.id}`, projectPayload, config);
+        successMessage = '✅ Proyecto actualizado con éxito';
+      } else {
+        // Modo creación
+        response = await axios.post('http://localhost:5000/api/projects', projectPayload, config);
+        successMessage = '✅ Proyecto creado con éxito';
+      }
 
       if (response.data.success) {
         setMessage({
           type: 'success',
-          text: '✅ Proyecto creado con éxito'
+          text: successMessage
         });
-        setShowOffcanvas(false);
-        setProjectData({ name: '', description: '', startDate: '', endDate: '' });
-        await fetchData(); // Recargar datos en lugar de window.location.reload()
+        handleCloseOffcanvas();
+        await fetchData(); // Recargar datos
       } else {
         setMessage({
           type: 'danger',
-          text: '❌ Error al crear el proyecto'
+          text: '❌ Error al procesar el proyecto'
         });
         console.log(response.data);
       }
     } catch (error: any) {
-      console.error('❌ Error al crear proyecto:', error.response?.data || error.message);
+      console.error('❌ Error al procesar proyecto:', error.response?.data || error.message);
       setMessage({
         type: 'danger',
-        text: 'Error al crear el proyecto. Inténtalo de nuevo.'
+        text: 'Error al procesar el proyecto. Inténtalo de nuevo.'
       });
     }
   };
@@ -335,24 +448,50 @@ const Projects = () => {
     return new Date(fecha).toLocaleDateString('es-ES');
   };
 
-  // 🔧 FUNCIONES PARA MANEJAR ACCIONES DE PROYECTOS
+  // 🔧 FUNCIÓN MEJORADA PARA VER DETALLES DEL PROYECTO
   const handleViewProject = (proyecto: Proyecto) => {
-    // Aquí puedes implementar la navegación a la vista detallada del proyecto
     console.log('Ver detalles del proyecto:', proyecto);
-    // Ejemplo: navigate(`/proyecto/${proyecto.id}`);
-    setMessage({
-      type: 'info',
-      text: `Ver detalles del proyecto: ${proyecto.nombre}`
-    });
+    
+    // Crear un objeto similar al que espera el Gantt para mostrar detalles
+    const projectDetails = {
+      id: `project-${proyecto.id}`,
+      name: proyecto.nombre,
+      start: proyecto.fecha_inicio ? new Date(proyecto.fecha_inicio) : new Date(),
+      end: proyecto.fecha_fin ? new Date(proyecto.fecha_fin) : new Date(),
+      type: 'project' as const,
+      progress: proyecto.progreso || 0,
+      isSubtask: false,
+      dependencies: [],
+      originalProject: proyecto // Guardamos el proyecto original para referencia
+    };
+    
+    // Abrir el panel de detalles
+    setSelectedTask(projectDetails);
+    setShowDetails(true);
+    setActiveTab('detalles');
   };
 
+  // 🔧 FUNCIÓN MEJORADA PARA EDITAR PROYECTO
   const handleEditProject = (proyecto: Proyecto) => {
-    // Aquí puedes implementar la navegación al formulario de edición
     console.log('Editar proyecto:', proyecto);
-    // Ejemplo: navigate(`/proyecto/${proyecto.id}/editar`);
+    
+    // Rellenar el formulario con los datos del proyecto existente
+    setProjectData({
+      name: proyecto.nombre,
+      description: proyecto.descripcion || '',
+      startDate: proyecto.fecha_inicio ? proyecto.fecha_inicio.split('T')[0] : '',
+      endDate: proyecto.fecha_fin ? proyecto.fecha_fin.split('T')[0] : ''
+    });
+    
+    // Establecer que estamos editando (no creando)
+    setEditingProject(proyecto);
+    
+    // Abrir el panel lateral
+    setShowOffcanvas(true);
+    
     setMessage({
       type: 'info',
-      text: `Editar proyecto: ${proyecto.nombre}`
+      text: `Editando proyecto: ${proyecto.nombre}`
     });
   };
 
@@ -525,7 +664,7 @@ const Projects = () => {
                   </Card>
                 </Col>
 
-                {/* 🎯 NUEVA TARJETA: PROYECTOS CONVERTIBLES A HITOS */}
+                {/* 🎯 TARJETA CORREGIDA: PROYECTOS CONVERTIBLES A HITOS */}
                 <Col md={3} lg={true}>
                   <Card className="border-0 shadow-sm h-100">
                     <Card.Body>
@@ -582,15 +721,23 @@ const Projects = () => {
                       {activeView === 'gantt' && <AdvancedGanttChart />}
                       {activeView === 'kanban' && <KanbanBoard />}
 
-                      {/* 🎯 NUEVA VISTA: LISTA DE PROYECTOS CON FUNCIONALIDAD DE CONVERSIÓN */}
+                      {/* 🎯 VISTA DE LISTA CON TODAS LAS MEJORAS IMPLEMENTADAS */}
                       {activeView === 'lista' && (
                         <div>
+                          {/* BADGE CORREGIDO PARA MOSTRAR SOLO PROYECTOS NO CONVERTIDOS */}
                           <div className="d-flex justify-content-between align-items-center mb-3">
                             <h6 className="mb-0">Lista de Proyectos</h6>
                             {proyectosConvertibles > 0 && (
                               <Badge bg="warning" className="fs-6">
-                                {proyectosConvertibles} proyecto{proyectosConvertibles !== 1 ? 's' : ''}
+                                <i className="bi bi-star me-1"></i>
+                                {proyectosConvertibles} proyecto{proyectosConvertibles !== 1 ? 's' : ''} 
                                 {proyectosConvertibles !== 1 ? ' listos' : ' listo'} para conversión
+                              </Badge>
+                            )}
+                            {proyectosConvertibles === 0 && proyectos.some(p => puedeConvertirseAHito(p)) && (
+                              <Badge bg="success" className="fs-6">
+                                <i className="bi bi-check-circle me-1"></i>
+                                Todos los proyectos elegibles ya fueron convertidos
                               </Badge>
                             )}
                           </div>
@@ -604,25 +751,54 @@ const Projects = () => {
                                 <th>Fecha Inicio</th>
                                 <th>Fecha Fin</th>
                                 <th>Tareas</th>
+                                <th>Usuarios</th>
                                 <th>Acciones</th>
                               </tr>
                             </thead>
                             <tbody>
                               {proyectos.length === 0 ? (
                                 <tr>
-                                  <td colSpan={7} className="text-center py-4">
+                                  <td colSpan={8} className="text-center py-4">
                                     No se encontraron proyectos
                                   </td>
                                 </tr>
                               ) : (
                                 proyectos.map((proyecto) => (
                                   <tr key={proyecto.id}>
+                                    {/* COLUMNA DE PROYECTO CON DESCRIPCIÓN TRUNCADA */}
                                     <td>
                                       <div>
                                         <strong>{proyecto.nombre}</strong>
                                         {proyecto.descripcion && (
                                           <div className="text-muted small">
-                                            {proyecto.descripcion}
+                                            {(() => {
+                                              const { text, isTruncated } = truncateDescription(proyecto.descripcion, 4);
+                                              return (
+                                                <>
+                                                  {text}
+                                                  {isTruncated && (
+                                                    <OverlayTrigger
+                                                      placement="top"
+                                                      overlay={
+                                                        <Tooltip id={`tooltip-desc-${proyecto.id}`}>
+                                                          Ver detalles completos del proyecto
+                                                        </Tooltip>
+                                                      }
+                                                    >
+                                                      <Button
+                                                        variant="link"
+                                                        size="sm"
+                                                        className="p-0 ms-1 text-decoration-none"
+                                                        onClick={() => handleViewProject(proyecto)}
+                                                        style={{ fontSize: '0.75rem', verticalAlign: 'baseline' }}
+                                                      >
+                                                        Ver más
+                                                      </Button>
+                                                    </OverlayTrigger>
+                                                  )}
+                                                </>
+                                              );
+                                            })()}
                                           </div>
                                         )}
                                       </div>
@@ -649,23 +825,43 @@ const Projects = () => {
                                     <td>{formatearFecha(proyecto.fecha_inicio)}</td>
                                     <td>{formatearFecha(proyecto.fecha_fin)}</td>
                                     <td>
-                                      <div className="d-flex align-items-center">
-                                        <span className="text-muted me-2">
-                                          {proyecto.tareas_completadas || 0} / {proyecto.total_tareas || 0}
-                                        </span>
-                                        {(proyecto.total_tareas || 0) === 0 ? (
-                                          <Badge bg="light" text="dark" className="small">Sin tareas</Badge>
-                                        ) : (proyecto.tareas_completadas || 0) === (proyecto.total_tareas || 0) ? (
-                                          <Badge bg="success" className="small">Todas completadas</Badge>
-                                        ) : (
-                                          <Badge bg="primary" className="small">
-                                            {Math.round(((proyecto.tareas_completadas || 0) / (proyecto.total_tareas || 1)) * 100)}% completo
-                                          </Badge>
-                                        )}
+                                      <div className="d-flex flex-column align-items-center">
+                                        {/* Primera línea: Conteo numérico */}
+                                        <div className="d-flex align-items-center mb-1">
+                                          <span className="badge bg-light text-dark border" style={{ minWidth: '45px', fontSize: '0.75rem' }}>
+                                            {proyecto.tareas_completadas || 0} / {proyecto.total_tareas || 0}
+                                          </span>
+                                        </div>
+                                        
+                                        {/* Segunda línea: Badge de estado */}
+                                        <div>
+                                          {(proyecto.total_tareas || 0) === 0 ? (
+                                            <Badge bg="light" text="dark" className="small">Sin tareas</Badge>
+                                          ) : (proyecto.tareas_completadas || 0) === (proyecto.total_tareas || 0) ? (
+                                            <Badge bg="success" className="small">Completas</Badge>
+                                          ) : (
+                                            <Badge bg="primary" className="small">
+                                              {Math.round(((proyecto.tareas_completadas || 0) / (proyecto.total_tareas || 1)) * 100)}%
+                                            </Badge>
+                                          )}
+                                        </div>
                                       </div>
                                     </td>
+
+                                    {/* COLUMNA DE USUARIOS */}
                                     <td>
-                                      <div className="d-flex gap-1">
+                                      <div className="d-flex align-items-center justify-content-center">
+                                        <UserAvatars 
+                                          itemId={proyecto.id.toString()} 
+                                          itemType="project" 
+                                          maxDisplay={3} 
+                                          size="sm" 
+                                        />
+                                      </div>
+                                    </td>
+
+                                    <td>
+                                      <div className="d-flex gap-1 justify-content-center">
                                         <OverlayTrigger
                                           placement="top"
                                           overlay={<Tooltip>Ver detalles del proyecto</Tooltip>}
@@ -705,25 +901,82 @@ const Projects = () => {
                                           </Button>
                                         </OverlayTrigger>
 
-                                        {/* 🎯 BOTÓN DE CONVERSIÓN A HITO */}
-                                        {puedeConvertirseAHito(proyecto) ? (
-                                          <ConvertToHito
-                                            projectId={proyecto.id}
-                                            projectName={proyecto.nombre}
-                                            onConversionComplete={handleConversionComplete}
-                                          />
-                                        ) : (
+                                        {/* BOTÓN DE CONVERSIÓN A HITO CON TOOLTIPS CORREGIDOS */}
+                                        {yaFueConvertidoAHito(proyecto.id) ? (
+                                          // Ya fue convertido - tooltip corregido
                                           <OverlayTrigger
                                             placement="top"
                                             overlay={
-                                              <Tooltip>
-                                                {proyecto.estado !== 'completado' && proyecto.estado !== 'finalizado'
-                                                  ? 'El proyecto debe estar completado para convertir a hito'
-                                                  : proyecto.total_tareas && proyecto.total_tareas > 0 &&
-                                                    proyecto.tareas_completadas !== proyecto.total_tareas
-                                                    ? 'Todas las tareas deben estar completadas'
-                                                    : 'Este proyecto no es elegible para conversión'
-                                                }
+                                              <Tooltip id={`tooltip-convertido-${proyecto.id}`}>
+                                                <div className="text-center">
+                                                  <i className="bi bi-check-circle me-1"></i>
+                                                  <strong>Proyecto ya convertido a hito</strong>
+                                                  <br />
+                                                  <small>Este proyecto fue exitosamente convertido</small>
+                                                </div>
+                                              </Tooltip>
+                                            }
+                                          >
+                                            <span className="d-inline-block">
+                                              <Button
+                                                variant="success"
+                                                size="sm"
+                                                disabled
+                                                style={{ opacity: 0.9, cursor: 'default', pointerEvents: 'none' }}
+                                              >
+                                                <i className="bi bi-star-fill"></i>
+                                              </Button>
+                                            </span>
+                                          </OverlayTrigger>
+                                        ) : puedeConvertirseAHito(proyecto) ? (
+                                          // Puede convertirse - mantener como está
+                                          <OverlayTrigger
+                                            placement="top"
+                                            overlay={
+                                              <Tooltip id={`tooltip-convertible-${proyecto.id}`}>
+                                                <div className="text-center">
+                                                  <i className="bi bi-star me-1"></i>
+                                                  <strong>Convertir a hito</strong>
+                                                  <br />
+                                                  <small>Proyecto listo para conversión</small>
+                                                </div>
+                                              </Tooltip>
+                                            }
+                                          >
+                                            <span className="d-inline-block">
+                                              <ConvertToHito
+                                                projectId={proyecto.id}
+                                                projectName={proyecto.nombre}
+                                                onConversionComplete={() => {
+                                                  handleConversionComplete();
+                                                  verificarHitosExistentes();
+                                                }}
+                                                buttonVariant="outline-warning"
+                                                buttonSize="sm"
+                                                showText={false}
+                                              />
+                                            </span>
+                                          </OverlayTrigger>
+                                        ) : (
+                                          // No puede convertirse - tooltip corregido
+                                          <OverlayTrigger
+                                            placement="top"
+                                            overlay={
+                                              <Tooltip id={`tooltip-no-convertible-${proyecto.id}`}>
+                                                <div className="text-center">
+                                                  <i className="bi bi-exclamation-triangle me-1"></i>
+                                                  <strong>No disponible</strong>
+                                                  <br />
+                                                  <small>
+                                                    {proyecto.estado !== 'completado' && proyecto.estado !== 'finalizado'
+                                                      ? 'Proyecto debe estar completado'
+                                                      : proyecto.total_tareas && proyecto.total_tareas > 0 &&
+                                                        proyecto.tareas_completadas !== proyecto.total_tareas
+                                                        ? 'Faltan tareas por completar'
+                                                        : 'Proyecto no elegible'
+                                                    }
+                                                  </small>
+                                                </div>
                                               </Tooltip>
                                             }
                                           >
@@ -732,7 +985,7 @@ const Projects = () => {
                                                 variant="outline-secondary"
                                                 size="sm"
                                                 disabled
-                                                style={{ pointerEvents: 'none' }}
+                                                style={{ opacity: 0.5, cursor: 'not-allowed', pointerEvents: 'none' }}
                                               >
                                                 <i className="bi bi-star"></i>
                                               </Button>
@@ -759,9 +1012,12 @@ const Projects = () => {
         <Footer />
       </div>
 
-      <Offcanvas show={showOffcanvas} onHide={() => setShowOffcanvas(false)} placement="end">
+      {/* Panel lateral para crear/editar proyecto */}
+      <Offcanvas show={showOffcanvas} onHide={handleCloseOffcanvas} placement="end">
         <Offcanvas.Header closeButton>
-          <Offcanvas.Title className="fw-bold">Nuevo Proyecto</Offcanvas.Title>
+          <Offcanvas.Title className="fw-bold">
+            {editingProject ? 'Editar Proyecto' : 'Nuevo Proyecto'}
+          </Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body>
           <Form>
@@ -814,14 +1070,193 @@ const Projects = () => {
             </Form.Group>
 
             <div className="d-flex justify-content-end gap-2 mt-4">
-              <Button variant="outline-secondary" onClick={() => setShowOffcanvas(false)}>
+              <Button variant="outline-secondary" onClick={handleCloseOffcanvas}>
                 Cancelar
               </Button>
               <Button variant="primary" className="shadow-sm" onClick={handleCreateProject}>
-                Crear Proyecto
+                {editingProject ? 'Actualizar Proyecto' : 'Crear Proyecto'}
               </Button>
             </div>
           </Form>
+        </Offcanvas.Body>
+      </Offcanvas>
+
+      {/* Panel de detalles del proyecto */}
+      <Offcanvas show={showDetails} onHide={() => setShowDetails(false)} placement="end">
+        <Offcanvas.Header closeButton>
+          <Offcanvas.Title>
+            Detalles del Proyecto
+          </Offcanvas.Title>
+        </Offcanvas.Header>
+        <Offcanvas.Body>
+          {selectedTask && (
+            <>
+              <div className="d-flex justify-content-between align-items-start mb-2">
+                <h5>{selectedTask.name}</h5>
+                <Badge
+                  bg={
+                    Number(selectedTask.progress) === 100 ? 'success' :
+                      Number(selectedTask.progress) > 0 ? 'primary' : 'secondary'
+                  }
+                >
+                  {Number(selectedTask.progress) === 100 ? 'Completado' :
+                    Number(selectedTask.progress) > 0 ? 'En Progreso' : 'Pendiente'}
+                </Badge>
+              </div>
+
+              <Nav variant="tabs" className="mb-3" activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'detalles')}>
+                <Nav.Item>
+                  <Nav.Link eventKey="detalles">Detalles</Nav.Link>
+                </Nav.Item>
+                <Nav.Item>
+                  <Nav.Link eventKey="usuarios">Usuarios</Nav.Link>
+                </Nav.Item>
+              </Nav>
+
+              <Tab.Content>
+                <Tab.Pane active={activeTab === 'detalles'}>
+                  <p><strong>Inicio:</strong> {selectedTask.start instanceof Date ? selectedTask.start.toLocaleDateString() : 'Fecha inválida'}</p>
+                  <p><strong>Fin:</strong> {selectedTask.end instanceof Date ? selectedTask.end.toLocaleDateString() : 'Fecha inválida'}</p>
+                  <p><strong>Progreso:</strong> {selectedTask.progress || 0}%</p>
+                  <ProgressBar now={selectedTask.progress || 0} label={`${selectedTask.progress || 0}%`} className="mb-3" />
+                  <p><strong>ID:</strong> {selectedTask.id}</p>
+                  <p><strong>Tipo:</strong> Proyecto</p>
+
+                  {/* Información adicional del proyecto original */}
+                  {selectedTask.originalProject && (
+                    <>
+                      <p><strong>Estado:</strong> 
+                        <Badge bg={getEstadoBadgeVariant(selectedTask.originalProject.estado)} className="ms-2">
+                          {selectedTask.originalProject.estado}
+                        </Badge>
+                        {/* Indicador si ya fue convertido a hito */}
+                        {yaFueConvertidoAHito(selectedTask.originalProject.id) && (
+                          <Badge bg="success" className="ms-2">
+                            <i className="bi bi-star-fill me-1"></i>
+                            Ya es hito
+                          </Badge>
+                        )}
+                      </p>
+                      {selectedTask.originalProject.descripcion && (
+                        <div className="mb-3">
+                          <strong>Descripción:</strong>
+                          <p className="text-muted mt-1">{selectedTask.originalProject.descripcion}</p>
+                        </div>
+                      )}
+                      <p><strong>Tareas:</strong> {selectedTask.originalProject.tareas_completadas || 0} / {selectedTask.originalProject.total_tareas || 0}</p>
+                    </>
+                  )}
+
+                  {/* Botones para editar y convertir */}
+                  <div className="mt-4 d-flex gap-2 flex-wrap">
+                    <Button 
+                      variant="outline-primary" 
+                      onClick={() => {
+                        setShowDetails(false);
+                        // Buscar el proyecto original para editar
+                        const projectToEdit = proyectos.find(p => `project-${p.id}` === selectedTask.id);
+                        if (projectToEdit) {
+                          handleEditProject(projectToEdit);
+                        }
+                      }}
+                    >
+                      <i className="bi bi-pencil me-2"></i>
+                      Editar Proyecto
+                    </Button>
+
+                    {/* BOTONES DE CONVERSIÓN EN PANEL DE DETALLES CON TOOLTIPS CORREGIDOS */}
+                    {selectedTask.originalProject && (
+                      yaFueConvertidoAHito(selectedTask.originalProject.id) ? (
+                        // Ya convertido - tooltip corregido
+                        <OverlayTrigger
+                          placement="top"
+                          overlay={
+                            <Tooltip id={`tooltip-panel-convertido-${selectedTask.originalProject.id}`}>
+                              <div className="text-center">
+                                <i className="bi bi-check-circle me-1"></i>
+                                <strong>Ya convertido a hito</strong>
+                                <br />
+                                <small>Este proyecto fue exitosamente convertido</small>
+                              </div>
+                            </Tooltip>
+                          }
+                        >
+                          <span className="d-inline-block">
+                            <Button
+                              variant="success"
+                              disabled
+                              style={{ opacity: 0.9, cursor: 'default', pointerEvents: 'none' }}
+                            >
+                              <i className="bi bi-star-fill me-2"></i>
+                              Ya es Hito
+                            </Button>
+                          </span>
+                        </OverlayTrigger>
+                      ) : puedeConvertirseAHito(selectedTask.originalProject) ? (
+                        // Puede convertirse - mantener ConvertToHito normal
+                        <ConvertToHito
+                          projectId={selectedTask.originalProject.id}
+                          projectName={selectedTask.originalProject.nombre}
+                          onConversionComplete={() => {
+                            handleConversionComplete();
+                            setShowDetails(false);
+                            verificarHitosExistentes();
+                          }}
+                          buttonVariant="warning"
+                          showText={true}
+                        />
+                      ) : (
+                        // No puede convertirse - tooltip corregido
+                        <OverlayTrigger
+                          placement="top"
+                          overlay={
+                            <Tooltip id={`tooltip-panel-no-convertible-${selectedTask.originalProject.id}`}>
+                              <div className="text-center">
+                                <i className="bi bi-exclamation-triangle me-1"></i>
+                                <strong>No disponible para conversión</strong>
+                                <br />
+                                <small>
+                                  {selectedTask.originalProject.estado !== 'completado' && selectedTask.originalProject.estado !== 'finalizado'
+                                    ? 'El proyecto debe estar completado'
+                                    : selectedTask.originalProject.total_tareas && selectedTask.originalProject.total_tareas > 0 &&
+                                      selectedTask.originalProject.tareas_completadas !== selectedTask.originalProject.total_tareas
+                                      ? 'Todas las tareas deben estar completadas'
+                                      : 'Este proyecto no es elegible para conversión'
+                                  }
+                                </small>
+                              </div>
+                            </Tooltip>
+                          }
+                        >
+                          <span className="d-inline-block">
+                            <Button
+                              variant="outline-secondary"
+                              disabled
+                              style={{ opacity: 0.6, cursor: 'not-allowed', pointerEvents: 'none' }}
+                            >
+                              <i className="bi bi-star me-2"></i>
+                              No Disponible
+                            </Button>
+                          </span>
+                        </OverlayTrigger>
+                      )
+                    )}
+                  </div>
+                </Tab.Pane>
+                
+                <Tab.Pane active={activeTab === 'usuarios'}>
+                  {/* Sección de usuarios */}
+                  {selectedTask?.originalProject && (
+                    <UserAssignment
+                      itemId={selectedTask.originalProject.id.toString()}
+                      itemType="project"
+                      onUsersUpdated={() => handleUpdateProjectUsers(selectedTask.originalProject.id)}
+                    />
+                  )}
+                </Tab.Pane>
+              </Tab.Content>
+            </>
+          )}
         </Offcanvas.Body>
       </Offcanvas>
     </div>

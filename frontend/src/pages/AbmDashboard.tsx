@@ -32,7 +32,7 @@ const AbmDashboard = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [year, setYear] = useState<number | ''>('');
+  const [year, setYear] = useState<number | ''>(new Date().getFullYear());
   const [month, setMonth] = useState<number | ''>('');
 
   const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed);
