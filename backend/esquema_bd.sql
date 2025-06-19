@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 05-06-2025 a las 21:04:54
+-- Tiempo de generación: 19-06-2025 a las 22:41:36
 -- Versión del servidor: 10.4.25-MariaDB
 -- Versión de PHP: 8.2.0
 
@@ -61,6 +61,32 @@ CREATE TABLE `abm_social` (
   `unique_key` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `announcements`
+--
+
+CREATE TABLE `announcements` (
+  `id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL COMMENT 'Título del anuncio',
+  `content` text NOT NULL COMMENT 'Contenido/descripción del anuncio',
+  `type` enum('info','warning','success','danger') NOT NULL DEFAULT 'info' COMMENT 'Tipo de anuncio para estilos',
+  `icon` varchar(100) DEFAULT 'bi bi-info-circle' COMMENT 'Icono Bootstrap a mostrar',
+  `priority` int(11) DEFAULT 0 COMMENT 'Prioridad para ordenamiento (mayor = más prioritario)',
+  `active` tinyint(1) DEFAULT 1 COMMENT 'Indica si el anuncio está activo',
+  `start_date` datetime DEFAULT NULL COMMENT 'Fecha de inicio de vigencia (NULL = inmediato)',
+  `end_date` datetime DEFAULT NULL COMMENT 'Fecha de fin de vigencia (NULL = sin fin)',
+  `action_text` varchar(100) DEFAULT NULL COMMENT 'Texto del botón de acción',
+  `action_url` varchar(255) DEFAULT NULL COMMENT 'URL o ruta del botón de acción',
+  `target_audience` enum('all','admin','user','editor') DEFAULT 'all' COMMENT 'Audiencia objetivo',
+  `views_count` int(11) DEFAULT 0 COMMENT 'Contador de visualizaciones',
+  `clicks_count` int(11) DEFAULT 0 COMMENT 'Contador de clics en botones de acción',
+  `created_by` int(11) NOT NULL COMMENT 'ID del usuario que creó el anuncio',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Sistema de gestión de anuncios dinámicos';
 
 -- --------------------------------------------------------
 
@@ -529,6 +555,23 @@ CREATE TABLE `liquidaciones_guardia` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `logs`
+--
+
+CREATE TABLE `logs` (
+  `id` int(11) NOT NULL,
+  `level` enum('info','warning','error','debug') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'info',
+  `action` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Logs del sistema para diagnósticos';
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `notificaciones`
 --
 
@@ -813,6 +856,51 @@ CREATE TABLE `usuario_rol` (
 -- --------------------------------------------------------
 
 --
+-- Estructura Stand-in para la vista `v_announcements_active`
+-- (Véase abajo para la vista actual)
+--
+CREATE TABLE `v_announcements_active` (
+`id` int(11)
+,`title` varchar(255)
+,`content` text
+,`type` enum('info','warning','success','danger')
+,`icon` varchar(100)
+,`priority` int(11)
+,`active` tinyint(1)
+,`start_date` datetime
+,`end_date` datetime
+,`action_text` varchar(100)
+,`action_url` varchar(255)
+,`target_audience` enum('all','admin','user','editor')
+,`views_count` int(11)
+,`clicks_count` int(11)
+,`created_by` int(11)
+,`created_at` timestamp
+,`updated_at` timestamp
+,`created_by_name` varchar(100)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura Stand-in para la vista `v_announcements_stats`
+-- (Véase abajo para la vista actual)
+--
+CREATE TABLE `v_announcements_stats` (
+`total_announcements` bigint(21)
+,`active_announcements` decimal(22,0)
+,`inactive_announcements` decimal(22,0)
+,`scheduled_announcements` decimal(22,0)
+,`expired_announcements` decimal(22,0)
+,`total_views` decimal(32,0)
+,`total_clicks` decimal(32,0)
+,`avg_views_per_announcement` decimal(14,4)
+,`last_created_at` timestamp
+);
+
+-- --------------------------------------------------------
+
+--
 -- Estructura Stand-in para la vista `v_proximos_eventos`
 -- (Véase abajo para la vista actual)
 --
@@ -857,6 +945,24 @@ CREATE TABLE `v_tareas_pendientes` (
 -- --------------------------------------------------------
 
 --
+-- Estructura para la vista `v_announcements_active`
+--
+DROP TABLE IF EXISTS `v_announcements_active`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_announcements_active`  AS SELECT `a`.`id` AS `id`, `a`.`title` AS `title`, `a`.`content` AS `content`, `a`.`type` AS `type`, `a`.`icon` AS `icon`, `a`.`priority` AS `priority`, `a`.`active` AS `active`, `a`.`start_date` AS `start_date`, `a`.`end_date` AS `end_date`, `a`.`action_text` AS `action_text`, `a`.`action_url` AS `action_url`, `a`.`target_audience` AS `target_audience`, `a`.`views_count` AS `views_count`, `a`.`clicks_count` AS `clicks_count`, `a`.`created_by` AS `created_by`, `a`.`created_at` AS `created_at`, `a`.`updated_at` AS `updated_at`, `u`.`nombre` AS `created_by_name` FROM (`announcements` `a` left join `usuarios` `u` on(`a`.`created_by` = `u`.`id`)) WHERE `a`.`active` = 1 AND (`a`.`start_date` is null OR `a`.`start_date` <= current_timestamp()) AND (`a`.`end_date` is null OR `a`.`end_date` >= current_timestamp()) ORDER BY `a`.`priority` DESC, `a`.`created_at` AS `DESCdesc` ASC  ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura para la vista `v_announcements_stats`
+--
+DROP TABLE IF EXISTS `v_announcements_stats`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_announcements_stats`  AS SELECT count(0) AS `total_announcements`, sum(case when `announcements`.`active` = 1 then 1 else 0 end) AS `active_announcements`, sum(case when `announcements`.`active` = 0 then 1 else 0 end) AS `inactive_announcements`, sum(case when `announcements`.`start_date` > current_timestamp() then 1 else 0 end) AS `scheduled_announcements`, sum(case when `announcements`.`end_date` < current_timestamp() and `announcements`.`end_date` is not null then 1 else 0 end) AS `expired_announcements`, sum(`announcements`.`views_count`) AS `total_views`, sum(`announcements`.`clicks_count`) AS `total_clicks`, coalesce(avg(`announcements`.`views_count`),0) AS `avg_views_per_announcement`, max(`announcements`.`created_at`) AS `last_created_at` FROM `announcements``announcements`  ;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura para la vista `v_proximos_eventos`
 --
 DROP TABLE IF EXISTS `v_proximos_eventos`;
@@ -889,6 +995,18 @@ ALTER TABLE `abm_pic`
 ALTER TABLE `abm_social`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `unique_key` (`unique_key`);
+
+--
+-- Indices de la tabla `announcements`
+--
+ALTER TABLE `announcements`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_active_priority` (`active`,`priority`),
+  ADD KEY `idx_dates_active` (`start_date`,`end_date`,`active`),
+  ADD KEY `idx_target_audience` (`target_audience`,`active`),
+  ADD KEY `idx_created_by` (`created_by`),
+  ADD KEY `idx_priority_order` (`priority`,`created_at`),
+  ADD KEY `idx_date_range_active` (`start_date`,`end_date`,`active`);
 
 --
 -- Indices de la tabla `bitacora`
@@ -1110,6 +1228,15 @@ ALTER TABLE `liquidaciones_guardia`
   ADD KEY `idx_estado` (`estado`);
 
 --
+-- Indices de la tabla `logs`
+--
+ALTER TABLE `logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_level` (`level`),
+  ADD KEY `idx_created_at` (`created_at`),
+  ADD KEY `idx_user_id` (`user_id`);
+
+--
 -- Indices de la tabla `notificaciones`
 --
 ALTER TABLE `notificaciones`
@@ -1248,6 +1375,12 @@ ALTER TABLE `abm_pic`
 -- AUTO_INCREMENT de la tabla `abm_social`
 --
 ALTER TABLE `abm_social`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `announcements`
+--
+ALTER TABLE `announcements`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -1401,6 +1534,12 @@ ALTER TABLE `liquidaciones_guardia`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `logs`
+--
+ALTER TABLE `logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `notificaciones`
 --
 ALTER TABLE `notificaciones`
@@ -1499,6 +1638,12 @@ ALTER TABLE `usuario_rol`
 --
 -- Restricciones para tablas volcadas
 --
+
+--
+-- Filtros para la tabla `announcements`
+--
+ALTER TABLE `announcements`
+  ADD CONSTRAINT `fk_announcements_created_by` FOREIGN KEY (`created_by`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `comentarios`
@@ -1609,6 +1754,12 @@ ALTER TABLE `liquidaciones_detalle`
   ADD CONSTRAINT `fk_liquidaciones_detalle_guardia` FOREIGN KEY (`id_guardia`) REFERENCES `guardias` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_liquidaciones_detalle_incidente` FOREIGN KEY (`id_incidente`) REFERENCES `incidentes_guardia` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_liquidaciones_detalle_liquidacion` FOREIGN KEY (`id_liquidacion`) REFERENCES `liquidaciones_guardia` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `logs`
+--
+ALTER TABLE `logs`
+  ADD CONSTRAINT `fk_logs_user` FOREIGN KEY (`user_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL;
 
 --
 -- Filtros para la tabla `proyectos`

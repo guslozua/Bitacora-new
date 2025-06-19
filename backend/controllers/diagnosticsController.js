@@ -253,7 +253,7 @@ class DiagnosticsController {
         }
     }
 
-    // 🚀 MÉTODO TESTINTERNALAPIS - VERSIÓN ÚNICA Y CORREGIDA
+    // 🚀 MÉTODO TESTINTERNALAPIS - VERSIÓN ÚNICA Y CORREGIDA CON ANUNCIOS
     static async testInternalAPIs(req, res) {
         try {
             const baseURL = process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 5000}/api`;
@@ -287,8 +287,10 @@ class DiagnosticsController {
                 { endpoint: '/guardias', description: '👮 Gestión de guardias', category: 'important' },
                 { endpoint: '/bitacora', description: '📝 Registro de bitácora', category: 'important' },
                 { endpoint: '/hitos', description: '🎯 Gestión de hitos', category: 'important' },
-                // 🔧 CORREGIDO:
-                { endpoint: '/notificaciones/usuario/1', description: '🔔 Notificaciones (usuario 1)', category: 'important' }
+                { endpoint: '/notificaciones/usuario/1', description: '🔔 Notificaciones (usuario 1)', category: 'important' },
+                // 🆕 AGREGADO: APIs de anuncios
+                { endpoint: '/announcements/active', description: '📢 Anuncios activos', category: 'important' },
+                { endpoint: '/announcements/health', description: '📢 Estado del módulo de anuncios', category: 'important' }
             ];
 
             // 🟢 APIs OPCIONALES (monitorear si es necesario)
@@ -297,12 +299,14 @@ class DiagnosticsController {
                 { endpoint: '/enlaces', description: '🔗 Enlaces útiles', category: 'optional' },
                 { endpoint: '/tarifas', description: '💰 Gestión de tarifas', category: 'optional' },
                 { endpoint: '/tarifas/vigente?fecha=2025-05-15', description: '💰 Tarifa vigente (ej: 2024)', category: 'optional' },
-                // 🆕 AGREGADAS:
                 { endpoint: '/contactos/equipos', description: '👥 Contactos - Equipos', category: 'optional' },
                 { endpoint: '/contactos/integrantes', description: '👥 Contactos - Integrantes', category: 'optional' },
                 { endpoint: '/contactos/sistemas', description: '👥 Contactos - Sistemas', category: 'optional' },
                 { endpoint: '/placas/list', description: '🏷️ Lista de placas', category: 'optional' },
-                { endpoint: '/placas/stats', description: '🏷️ Estadísticas de placas', category: 'optional' }
+                { endpoint: '/placas/stats', description: '🏷️ Estadísticas de placas', category: 'optional' },
+                // 🆕 AGREGADO: APIs adicionales de anuncios
+                { endpoint: '/announcements/stats', description: '📢 Estadísticas de anuncios', category: 'optional' },
+                { endpoint: '/announcements/expiring', description: '📢 Anuncios próximos a expirar', category: 'optional' }
             ];
 
             // 🔧 APIs ADMINISTRATIVAS (solo admin)
@@ -311,11 +315,11 @@ class DiagnosticsController {
                 { endpoint: '/informes/incidentes', description: '📈 Informes de incidentes', category: 'admin' },
                 { endpoint: '/informes/guardias', description: '📈 Informes de guardias', category: 'admin' },
                 { endpoint: '/informes/liquidaciones', description: '📈 Informes de liquidaciones', category: 'admin' },
-                //{ endpoint: '/itracker/equipos', description: '📊 iTracker - Equipos', category: 'admin' },
-                //{ endpoint: '/itracker/integrantes', description: '📊 iTracker - Integrantes', category: 'admin' },
-                //{ endpoint: '/itracker/sistemas', description: '📊 iTracker - Sistemas', category: 'admin' }
                 { endpoint: '/itracker/stats', description: '📊 iTracker - Estadísticas', category: 'admin' },
-                { endpoint: '/itracker/list', description: '📊 iTracker - Lista de registros', category: 'admin' }
+                { endpoint: '/itracker/list', description: '📊 iTracker - Lista de registros', category: 'admin' },
+                // 🆕 AGREGADO: APIs administrativas de anuncios
+                { endpoint: '/announcements', description: '📢 Gestión completa de anuncios', category: 'admin' },
+                { endpoint: '/announcements?page=1&limit=5', description: '📢 Lista paginada de anuncios', category: 'admin' }
             ];
 
             // Seleccionar endpoints según nivel
@@ -897,7 +901,7 @@ class DiagnosticsController {
     }
 
     // Método helper para generar recomendaciones
-    static getRecommendations(stats, testLevel) {  // 🔧 AGREGAR testLevel como parámetro
+    static getRecommendations(stats, testLevel) {
         const recommendations = [];
 
         // 🔧 CORREGIR: Solo evaluar categorías que fueron realmente probadas
@@ -917,7 +921,7 @@ class DiagnosticsController {
                 recommendations.push({
                     level: 'warning',
                     message: `APIs importantes con problemas: ${100 - stats.important.successRate}% de fallos`,
-                    action: 'Revisar APIs de eventos, guardias y notificaciones'
+                    action: 'Revisar APIs de eventos, guardias, notificaciones y anuncios'
                 });
             }
         }
@@ -928,7 +932,7 @@ class DiagnosticsController {
                 recommendations.push({
                     level: 'info',
                     message: `APIs opcionales con problemas: ${100 - stats.optional.successRate}% de fallos`,
-                    action: 'Revisar APIs de contactos, placas y glosario'
+                    action: 'Revisar APIs de contactos, placas, glosario y estadísticas de anuncios'
                 });
             }
         }
@@ -939,7 +943,7 @@ class DiagnosticsController {
                 recommendations.push({
                     level: 'info',
                     message: `APIs administrativas con problemas: ${100 - stats.admin.successRate}% de fallos`,
-                    action: 'Revisar APIs de incidentes, informes e iTracker'
+                    action: 'Revisar APIs de incidentes, informes, iTracker y gestión de anuncios'
                 });
             }
         }
@@ -956,6 +960,16 @@ class DiagnosticsController {
             }
         }
 
+        // 🆕 AGREGAR: Verificar específicamente las APIs de anuncios
+        const announcementTests = testLevel !== 'basic' ? 
+            ['announcements/active', 'announcements/health', 'announcements/stats', 'announcements/search', 'announcements'] 
+            : [];
+        
+        if (testLevel !== 'basic' && announcementTests.length > 0) {
+            // Esta lógica se puede expandir para dar recomendaciones específicas sobre anuncios
+            console.log('🔍 Verificando APIs de anuncios en las recomendaciones...');
+        }
+
         // 🆕 AGREGAR: Recomendaciones específicas por nivel
         if (recommendations.length === 0) {
             if (testLevel === 'basic') {
@@ -968,13 +982,13 @@ class DiagnosticsController {
                 recommendations.push({
                     level: 'success',
                     message: 'APIs críticas e importantes funcionan correctamente',
-                    action: 'Sistema de producción en óptimas condiciones'
+                    action: 'Sistema de producción en óptimas condiciones. Anuncios operativos.'
                 });
             } else {
                 recommendations.push({
                     level: 'success',
                     message: 'Todas las APIs funcionan correctamente',
-                    action: 'Sistema completo en óptimas condiciones'
+                    action: 'Sistema completo en óptimas condiciones, incluyendo módulo de anuncios'
                 });
             }
         }

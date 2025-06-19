@@ -25,6 +25,7 @@ import Glosario from './pages/Glosario';
 import Enlaces from './pages/Enlaces';
 import ContactosPage from './pages/ContactosPage';
 import Error404 from './pages/Error404';
+import DashboardTest from './pages/DashboardTest';
 
 // Importaciones para el calendario
 import CalendarPage from './pages/CalendarPage';
@@ -33,6 +34,9 @@ import EventPage from './pages/EventPage';
 
 // 🚀 NUEVA PÁGINA UNIFICADA DE GESTIÓN DE GUARDIAS
 import GestionGuardiasPage from './pages/GestionGuardiasPage';
+
+// 📢 NUEVA PÁGINA DE ADMINISTRACIÓN DE ANUNCIOS
+import AnnouncementsAdminPage from './pages/AnnouncementsAdminPage';
 
 // Para que todas las paginas inicien con el scroll al inicio
 import ScrollToTop from './components/ScrollToTop';
@@ -152,6 +156,7 @@ const App: React.FC = () => {
             <Route path="/glosario" element={<ProtectedRoute element={<Glosario />} />} />
             <Route path="/links" element={<ProtectedRoute element={<Enlaces />} />} />
             <Route path="/contactos" element={<ProtectedRoute element={<ContactosPage />} />} />
+            <Route path="/dashboard-test" element={<DashboardTest />} />
             
             {/* 🔔 NUEVA RUTA PARA NOTIFICACIONES */}
             <Route 
@@ -172,6 +177,12 @@ const App: React.FC = () => {
             <Route 
               path="/admin/gestion-guardias" 
               element={<ProtectedRoute element={<GestionGuardiasPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+            />
+            
+            {/* 📢 NUEVA RUTA PARA ADMINISTRACIÓN DE ANUNCIOS */}
+            <Route 
+              path="/admin/announcements" 
+              element={<ProtectedRoute element={<AnnouncementsAdminPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
             />
             
             {/* 🔄 RUTAS DE COMPATIBILIDAD (REDIRECCIONES) */}

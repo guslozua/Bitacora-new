@@ -28,6 +28,8 @@ const informesRoutes = require('./routes/informes.routes');
 const tarifasRoutes = require('./routes/tarifas.routes');
 const contactosRoutes = require('./routes/contactosRoutes');
 const diagnosticsRoutes = require('./routes/diagnosticsRoutes'); //sistema de diagnósticos
+const announcementsRoutes = require('./routes/announcementsRoutes'); // Sistema completo de gestión de anuncios dinámicos
+
 
 // 🔔 AGREGAR IMPORT DE HITOS
 const hitosRoutes = require('./routes/hitos');
@@ -89,6 +91,8 @@ app.use('/api/informes', informesRoutes);
 app.use('/api/tarifas', tarifasRoutes);
 app.use('/api/contactos', contactosRoutes);
 app.use('/api/diagnostics', diagnosticsRoutes); // Ruta del sistema de diagnósticos
+app.use('/api/announcements', announcementsRoutes); // Ruta del sistema de anuncios dinámicos
+
 
 // 🔔 RUTA DE HITOS
 app.use('/api/hitos', hitosRoutes);

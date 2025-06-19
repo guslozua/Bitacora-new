@@ -1,0 +1,453 @@
+/* src/styles/announcements.css */
+
+/* ========================================
+   ESTILOS ORIGINALES (MANTENIDOS)
+   ======================================== */
+
+.announcement-carousel .carousel-control-prev,
+.announcement-carousel .carousel-control-next {
+  width: 5%;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.announcement-carousel .carousel-control-prev:hover,
+.announcement-carousel .carousel-control-next:hover {
+  opacity: 1;
+}
+
+.announcement-carousel .carousel-indicators {
+  display: none;
+}
+
+.announcement-carousel .carousel-control-prev-icon,
+.announcement-carousel .carousel-control-next-icon {
+  background-color: rgba(0,0,0,0.5);
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+}
+
+.announcement-carousel .carousel-item {
+  transition: transform 0.6s ease-in-out;
+}
+
+/* ========================================
+   NUEVOS ESTILOS JUMBOTRON
+   ======================================== */
+
+/* Animaciones suaves mejoradas para el carrusel */
+.carousel-item {
+  transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Animaciones de entrada escalonadas para los elementos */
+.carousel-item.active h1 {
+  animation: slideInUp 0.8s ease-out 0.2s both;
+}
+
+.carousel-item.active p {
+  animation: slideInUp 0.8s ease-out 0.4s both;
+}
+
+.carousel-item.active .btn {
+  animation: slideInUp 0.8s ease-out 0.6s both;
+}
+
+.carousel-item.active .badge {
+  animation: slideInUp 0.8s ease-out 0.1s both;
+}
+
+.carousel-item.active .rounded-circle {
+  animation: zoomIn 0.8s ease-out 0.3s both;
+}
+
+/* Keyframes para animaciones */
+@keyframes slideInUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Efectos hover mejorados para los botones */
+.btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+}
+
+/* Efecto glassmorphism para elementos */
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Botones de navegación personalizados */
+.carousel-nav-btn {
+  width: 50px;
+  height: 50px;
+  background-color: transparent !important;
+  border: none !important;
+  backdrop-filter: blur(5px);
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: none;
+}
+
+.carousel-nav-btn:hover {
+  background-color: rgba(255,255,255,0.15) !important;
+  transform: translateY(-3px) scale(1.1);
+  box-shadow: 
+    0 8px 25px rgba(0,0,0,0.3),
+    0 0 0 1px rgba(255,255,255,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+  backdrop-filter: blur(15px);
+}
+
+.carousel-nav-btn i {
+  color: rgba(255,255,255,0.8) !important;
+  transition: all 0.3s ease;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.carousel-nav-btn:hover i {
+  color: white !important;
+  transform: scale(1.2);
+  text-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+/* Efecto de resplandor sutil en focus para accesibilidad */
+.carousel-nav-btn:focus {
+  outline: none;
+  box-shadow: 
+    0 0 0 2px rgba(255,255,255,0.3),
+    0 8px 25px rgba(0,0,0,0.2);
+}
+
+/* Indicadores personalizados mejorados */
+.carousel-custom-indicators {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.carousel-indicator-btn {
+  height: 4px;
+  border-radius: 2px;
+  border: none;
+  background-color: rgba(255,255,255,0.4);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  cursor: pointer;
+}
+
+.carousel-indicator-btn.active {
+  width: 40px;
+  background-color: rgba(255,255,255,0.9);
+}
+
+.carousel-indicator-btn:not(.active) {
+  width: 12px;
+}
+
+.carousel-indicator-btn:hover {
+  background-color: rgba(255,255,255,0.7);
+  transform: scale(1.1);
+}
+
+/* Badge de progreso personalizado */
+.carousel-progress-badge {
+  background-color: rgba(255,255,255,0.2) !important;
+  color: white !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.3);
+  font-size: 0.8rem;
+}
+
+/* Mejoras de texto y legibilidad */
+.carousel-title {
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  font-weight: 700;
+}
+
+.carousel-content {
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  line-height: 1.6;
+}
+
+.carousel-author {
+  color: rgba(255,255,255,0.8);
+  font-size: 0.9rem;
+}
+
+/* Iconos grandes con efecto glassmorphism */
+.carousel-icon-container {
+  width: 80px;
+  height: 80px;
+  background-color: rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255,255,255,0.3);
+  transition: all 0.3s ease;
+}
+
+.carousel-icon-container:hover {
+  transform: scale(1.05);
+  background-color: rgba(255,255,255,0.25);
+}
+
+/* Botones de acción con glassmorphism */
+.carousel-action-btn {
+  background-color: rgba(255,255,255,0.2) !important;
+  border: 2px solid rgba(255,255,255,0.4) !important;
+  color: white !important;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease !important;
+  font-weight: 600;
+}
+
+.carousel-action-btn:hover {
+  background-color: rgba(255,255,255,0.3) !important;
+  border-color: rgba(255,255,255,0.6) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2) !important;
+}
+
+/* Overlay decorativo con patrón */
+.carousel-pattern-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.3;
+}
+
+/* ========================================
+   RESPONSIVIDAD Y ACCESIBILIDAD
+   ======================================== */
+
+/* Mejoras de accesibilidad para usuarios con preferencias de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  .carousel-item,
+  .carousel-item.active h1,
+  .carousel-item.active p,
+  .carousel-item.active .btn,
+  .carousel-item.active .badge,
+  .carousel-item.active .rounded-circle {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  .carousel-nav-btn:hover,
+  .carousel-indicator-btn:hover,
+  .carousel-icon-container:hover,
+  .carousel-action-btn:hover {
+    transform: none !important;
+  }
+}
+
+/* Responsividad para tablets */
+@media (max-width: 992px) {
+  .carousel-item h1 {
+    font-size: 2.5rem !important;
+  }
+  
+  .carousel-item p {
+    font-size: 1.05rem !important;
+    padding: 0 2rem !important;
+  }
+  
+  .carousel-icon-container {
+    width: 70px;
+    height: 70px;
+  }
+}
+
+/* Responsividad para móviles */
+@media (max-width: 768px) {
+  .carousel-item h1 {
+    font-size: 1.8rem !important;
+  }
+  
+  .carousel-item p {
+    font-size: 0.95rem !important;
+    padding: 0 1rem !important;
+  }
+  
+  .carousel-icon-container {
+    width: 50px;
+    height: 50px;
+  }
+  
+  /* Ocultar flechas de navegación en móviles para mejor UX táctil */
+  .position-absolute.start-0,
+  .position-absolute.end-0 {
+    display: none !important;
+  }
+  
+  /* Hacer los indicadores más grandes en móvil */
+  .carousel-indicator-btn {
+    height: 6px;
+  }
+  
+  .carousel-indicator-btn.active {
+    width: 30px;
+  }
+  
+  .carousel-indicator-btn:not(.active) {
+    width: 10px;
+  }
+  
+  /* Ajustar altura mínima en móvil */
+  .carousel-item {
+    min-height: 200px !important;
+  }
+}
+
+/* Responsividad para pantallas muy pequeñas */
+@media (max-width: 576px) {
+  .carousel-item h1 {
+    font-size: 1.75rem !important;
+  }
+  
+  .carousel-item p {
+    font-size: 0.95rem !important;
+  }
+  
+  .carousel-icon-container {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .carousel-action-btn {
+    font-size: 0.9rem !important;
+    padding: 0.5rem 1rem !important;
+  }
+}
+
+/* ========================================
+   MEJORAS ADICIONALES
+   ======================================== */
+
+/* Efecto de parallax sutil (opcional, puede deshabilitarse) */
+.carousel-parallax {
+  background-attachment: fixed;
+}
+
+/* Gradiente animado de fondo (para casos especiales) */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animated-gradient {
+  background-size: 200% 200%;
+  animation: gradientShift 8s ease infinite;
+}
+
+/* Mejoras para el modo oscuro */
+.themed-card.dark-mode .carousel-item {
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Estado de loading con skeleton */
+.carousel-loading {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  min-height: 220px;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Sombras personalizadas mejoradas */
+.shadow-custom {
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.shadow-lg-custom {
+  box-shadow: 
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05),
+    0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Estados de focus para accesibilidad */
+.carousel-nav-btn:focus,
+.carousel-indicator-btn:focus,
+.carousel-action-btn:focus {
+  outline: none;
+}
+
+.carousel-nav-btn:focus {
+  box-shadow: 
+    0 0 0 2px rgba(255,255,255,0.3),
+    0 8px 25px rgba(0,0,0,0.2);
+}
+
+.carousel-indicator-btn:focus,
+.carousel-action-btn:focus {
+  outline: 2px solid rgba(255,255,255,0.8);
+  outline-offset: 2px;
+}
+
+/* Efecto de aparición suave para los botones de navegación */
+.carousel-nav-btn {
+  opacity: 0.6;
+}
+
+.carousel-nav-btn:hover {
+  opacity: 1;
+}
+
+/* Animación suave de entrada cuando se carga el carrusel */
+.position-absolute.start-0 .carousel-nav-btn,
+.position-absolute.end-0 .carousel-nav-btn {
+  animation: fadeInNav 1s ease-out 0.5s both;
+}
+
+@keyframes fadeInNav {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+}
+
+/* Transiciones globales suaves para todos los elementos del carrusel */
+.carousel-item * {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Mejora de performance */
+.carousel-item {
+  will-change: transform;
+}
+
+.carousel-nav-btn,
+.carousel-indicator-btn,
+.carousel-action-btn {
+  will-change: transform, background-color;
+}

@@ -962,6 +962,57 @@ const AdminPanel: React.FC = () => {
                     <Button
                       variant="light"
                       className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0 position-relative"
+                      onClick={() => navigate('/admin/announcements')}
+                      style={{
+                        borderLeft: '4px solid #ff6b35',
+                        backgroundColor: isDarkMode ? '#495057' : '#f8f9fa',
+                        color: themeColors.textPrimary
+                      }}
+                    >
+                      <div
+                        className="rounded-circle d-flex align-items-center justify-content-center mb-3"
+                        style={{
+                          backgroundColor: '#ff6b3520',
+                          width: '3.5rem',
+                          height: '3.5rem',
+                          padding: 0
+                        }}>
+                        <i className="bi bi-megaphone-fill fs-3" style={{ color: '#ff6b35' }}></i>
+                      </div>
+                      <span className="fw-medium" style={{ color: '000' }}>Gestión de Anuncios</span>
+                      <Badge
+                        className="mt-2"
+                        style={{
+                          backgroundColor: '#ff6b35',
+                          color: 'white',
+                          fontSize: '0.7rem'
+                        }}
+                      >
+                        <i className="bi bi-broadcast me-1"></i>
+                        Sistema Dinámico
+                      </Badge>
+                      <div className="position-absolute top-0 end-0 m-2">
+                        <Badge
+                          className="rounded-pill"
+                          style={{
+                            backgroundColor: '#20c997',
+                            color: 'white'
+                          }}
+                        >
+                          <i className="bi bi-check-circle-fill"></i>
+                        </Badge>
+                      </div>
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
+              
+              <Col md={4} className="mb-3">
+                <Card className="h-100 border-0 shadow-sm">
+                  <Card.Body className="p-0">
+                    <Button
+                      variant="light"
+                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0 position-relative"
                       onClick={() => navigate('/admin/diagnostics')}
                       style={{
                         borderLeft: '4px solid #28a745',

@@ -1,4 +1,4 @@
-import apiClient from './api';
+import api from './api';
 
 export interface HealthCheck {
     status: 'healthy' | 'warning' | 'unhealthy';
@@ -38,8 +38,8 @@ export interface APITest {
     responseTime: string;
     dataCount?: string | number;
     error?: string;
-    category?: string; // 
-    health?: string;   // 
+    category?: string;
+    health?: string;
 }
 
 export interface APITestResult {
@@ -48,15 +48,15 @@ export interface APITestResult {
     totalTested: number;
     successCount: number;
     timestamp: string;
-    testLevel?: string;     // 🆕 AGREGADO
-    stats?: any;            // 🆕 AGREGADO
-    summary?: {             // 🆕 AGREGADO
+    testLevel?: string;
+    stats?: any;
+    summary?: {
         critical?: any;
         important?: any;
         optional?: any;
         admin?: any;
     };
-    recommendations?: Array<{ // 🆕 AGREGADO
+    recommendations?: Array<{
         level: string;
         message: string;
         action: string;
@@ -151,12 +151,64 @@ export interface DatabasePerformanceResult {
     timestamp: string;
 }
 
+// 🔧 FUNCIÓN HELPER PARA OBTENER HEADERS CON AUTH
+const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.warn('No se encontró token de autenticación');
+        return {};
+    }
+    
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    };
+};
+
+// 🔧 FUNCIÓN HELPER PARA VERIFICAR AUTH
+const checkAuthStatus = () => {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
+        console.error('❌ Usuario no autenticado');
+        throw new Error('Usuario no autenticado. Por favor, inicie sesión nuevamente.');
+    }
+    
+    try {
+        const userData = JSON.parse(user);
+        console.log('✅ Usuario autenticado:', userData.nombre, '- Roles:', userData.roles);
+        return userData;
+    } catch (e) {
+        console.error('❌ Error parseando datos de usuario');
+        throw new Error('Error en datos de autenticación');
+    }
+};
+
 class DiagnosticsService {
     async getHealthCheck(): Promise<HealthCheck> {
         try {
-            const response = await apiClient.get('/diagnostics/health');
+            // 🔧 VERIFICAR AUTH ANTES DE LA PETICIÓN
+            checkAuthStatus();
+            
+            console.log('🔍 Iniciando health check...');
+            const response = await api.get('/diagnostics/health', {
+                headers: getAuthHeaders()
+            });
+            
+            console.log('✅ Health check exitoso:', response.data);
             return response.data;
         } catch (error: any) {
+            console.error('❌ Error en health check:', error);
+            
+            // Si es un error 401, el usuario debe volver a loguearse
+            if (error.response?.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+                throw new Error('Sesión expirada. Redirigiendo al login...');
+            }
+            
             // Devolver un estado de error si falla el health check
             return {
                 status: 'unhealthy',
@@ -166,16 +218,32 @@ class DiagnosticsService {
                 version: 'unknown',
                 database: 'disconnected',
                 memory: { used: 0, total: 0 },
-                warnings: ['No se pudo conectar al servidor']
+                warnings: ['No se pudo conectar al servidor: ' + (error.message || 'Error desconocido')]
             };
         }
     }
 
     async testDatabaseConnection(): Promise<DatabaseTest> {
         try {
-            const response = await apiClient.get('/diagnostics/database/connection');
+            checkAuthStatus();
+            
+            console.log('🔍 Iniciando test de base de datos...');
+            const response = await api.get('/diagnostics/database/connection', {
+                headers: getAuthHeaders()
+            });
+            
+            console.log('✅ Test de base de datos exitoso:', response.data);
             return response.data;
         } catch (error: any) {
+            console.error('❌ Error en test de base de datos:', error);
+            
+            if (error.response?.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+                throw new Error('Sesión expirada');
+            }
+            
             return {
                 success: false,
                 status: 'error',
@@ -190,9 +258,24 @@ class DiagnosticsService {
 
     async testDatabasePerformance(): Promise<DatabasePerformanceResult> {
         try {
-            const response = await apiClient.get('/diagnostics/database/performance');
+            checkAuthStatus();
+            
+            console.log('🔍 Iniciando test de rendimiento...');
+            const response = await api.get('/diagnostics/database/performance', {
+                headers: getAuthHeaders()
+            });
+            
+            console.log('✅ Test de rendimiento exitoso:', response.data);
             return response.data;
         } catch (error: any) {
+            console.error('❌ Error en test de rendimiento:', error);
+            
+            if (error.response?.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+            }
+            
             return {
                 success: false,
                 performanceTests: [],
@@ -203,9 +286,24 @@ class DiagnosticsService {
 
     async testInternalAPIs(level: string = 'basic'): Promise<APITestResult> {
         try {
-            const response = await apiClient.get(`/diagnostics/apis/internal?level=${level}`);
+            checkAuthStatus();
+            
+            console.log(`🔍 Iniciando test de APIs internas - Nivel: ${level}...`);
+            const response = await api.get(`/diagnostics/apis/internal?level=${level}`, {
+                headers: getAuthHeaders()
+            });
+            
+            console.log('✅ Test de APIs exitoso:', response.data);
             return response.data;
         } catch (error: any) {
+            console.error('❌ Error en test de APIs:', error);
+            
+            if (error.response?.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+            }
+            
             return {
                 success: false,
                 apiTests: [],
@@ -222,18 +320,48 @@ class DiagnosticsService {
 
     async getSystemInfo(): Promise<{ systemInfo: SystemInfo }> {
         try {
-            const response = await apiClient.get('/diagnostics/system/info');
+            checkAuthStatus();
+            
+            console.log('🔍 Obteniendo información del sistema...');
+            const response = await api.get('/diagnostics/system/info', {
+                headers: getAuthHeaders()
+            });
+            
+            console.log('✅ Información del sistema obtenida:', response.data);
             return response.data;
         } catch (error: any) {
+            console.error('❌ Error obteniendo información del sistema:', error);
+            
+            if (error.response?.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+            }
+            
             throw new Error(`Error obteniendo información del sistema: ${error.message}`);
         }
     }
 
     async testExternalServices(): Promise<ExternalServicesResult> {
         try {
-            const response = await apiClient.get('/diagnostics/services/external');
+            checkAuthStatus();
+            
+            console.log('🔍 Probando servicios externos...');
+            const response = await api.get('/diagnostics/services/external', {
+                headers: getAuthHeaders()
+            });
+            
+            console.log('✅ Test de servicios externos exitoso:', response.data);
             return response.data;
         } catch (error: any) {
+            console.error('❌ Error en servicios externos:', error);
+            
+            if (error.response?.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+            }
+            
             return {
                 success: false,
                 externalServices: [],
@@ -244,9 +372,24 @@ class DiagnosticsService {
 
     async testFileSystem(): Promise<FileSystemResult> {
         try {
-            const response = await apiClient.get('/diagnostics/filesystem');
+            checkAuthStatus();
+            
+            console.log('🔍 Probando sistema de archivos...');
+            const response = await api.get('/diagnostics/filesystem', {
+                headers: getAuthHeaders()
+            });
+            
+            console.log('✅ Test de sistema de archivos exitoso:', response.data);
             return response.data;
         } catch (error: any) {
+            console.error('❌ Error en sistema de archivos:', error);
+            
+            if (error.response?.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+            }
+            
             return {
                 success: false,
                 fileSystemTests: [],
@@ -257,9 +400,24 @@ class DiagnosticsService {
 
     async getLogs(lines = 50, level = 'all'): Promise<LogsResult> {
         try {
-            const response = await apiClient.get(`/diagnostics/logs?lines=${lines}&level=${level}`);
+            checkAuthStatus();
+            
+            console.log(`🔍 Obteniendo logs - Lines: ${lines}, Level: ${level}...`);
+            const response = await api.get(`/diagnostics/logs?lines=${lines}&level=${level}`, {
+                headers: getAuthHeaders()
+            });
+            
+            console.log('✅ Logs obtenidos exitosamente:', response.data);
             return response.data;
         } catch (error: any) {
+            console.error('❌ Error obteniendo logs:', error);
+            
+            if (error.response?.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+            }
+            
             return {
                 success: false,
                 logs: [],
@@ -278,12 +436,21 @@ class DiagnosticsService {
         systemInfo: SystemInfo;
     }> {
         try {
+            console.log('🚀 Ejecutando todas las pruebas de diagnóstico...');
+            
             const [healthCheck, databaseTest, apiTests, systemInfoResponse] = await Promise.allSettled([
                 this.getHealthCheck(),
                 this.testDatabaseConnection(),
                 this.testInternalAPIs(),
                 this.getSystemInfo()
             ]);
+
+            console.log('📊 Resultados de todas las pruebas:', {
+                healthCheck: healthCheck.status,
+                databaseTest: databaseTest.status,
+                apiTests: apiTests.status,
+                systemInfo: systemInfoResponse.status
+            });
 
             return {
                 healthCheck: healthCheck.status === 'fulfilled' ? healthCheck.value : {
@@ -330,6 +497,7 @@ class DiagnosticsService {
                 }
             };
         } catch (error: any) {
+            console.error('💥 Error ejecutando todas las pruebas:', error);
             throw new Error(`Error ejecutando todas las pruebas: ${error.message}`);
         }
     }

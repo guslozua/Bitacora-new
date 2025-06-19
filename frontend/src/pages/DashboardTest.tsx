@@ -1,5 +1,6 @@
+// src/pages/DashboardTest.tsx
 import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Card, Button, ListGroup, Spinner, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, ListGroup, Spinner, Alert, Badge } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -11,26 +12,29 @@ import {
   ResponsiveContainer,
   Cell,
   CartesianGrid,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
 } from 'recharts';
 
 import GanttChart from '../components/GanttChart';
 import Sidebar from '../components/Sidebar';
 import ThemedFooter from '../components/ThemedFooter';
 import ThemedLogo from '../components/ThemedLogo';
-import ThemeToggleButton from '../components/ThemeToggleButton'; // 🔥 Toggle elegante
-import RefreshIconButton from '../components/RefreshIconButton'; // 🔥 NUEVO: Ícono de refresh
+import ThemeToggleButton from '../components/ThemeToggleButton';
+import RefreshIconButton from '../components/RefreshIconButton';
 import MiniCalendar from '../components/MiniCalendar/MiniCalendar';
-import StatsCard from '../components/StatsCard'; // 🔥 NUEVO: Importar StatsCard
-import AnnouncementsCarousel from '../components/AnnouncementsCarousel/AnnouncementsCarousel'; // 🔥 NUEVO: Importar carrusel de anuncios
 import { fetchEvents } from '../services/EventService';
 import { Event } from '../models/Event';
 import CampanillaNot from '../components/notificaciones/CampanillaNot';
 import { useTheme } from '../context/ThemeContext';
+import StatsCard from '../components/StatsCard'; // 🔥 NUEVO componente
 
 // Importamos funciones del servicio de autenticación
 import { getUserName, logout, getToken } from '../services/authService';
 
-const Dashboard = () => {
+const DashboardTest = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
 
@@ -39,7 +43,7 @@ const Dashboard = () => {
   const [proyectos, setProyectos] = useState<number | null>(null);
   const [actividadReciente, setActividadReciente] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); // 🔥 NUEVO: Estado para el ícono de refresh
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [showDataInfo, setShowDataInfo] = useState(false);
@@ -49,18 +53,34 @@ const Dashboard = () => {
   const [calendarEvents, setCalendarEvents] = useState<Event[]>([]);
   const [calendarLoading, setCalendarLoading] = useState(true);
 
-  // Obtenemos el token usando el servicio de autenticación
-  const token = getToken();
+  // 🔥 NUEVO: Estados para datos adicionales del dashboard
+  const [statsHistory, setStatsHistory] = useState<any[]>([]);
+  const [tasksByStatus, setTasksByStatus] = useState<any[]>([]);
 
-  // Nombre a mostrar en el saludo (valor inicial desde el servicio de autenticación)
+  const token = getToken();
   const [nombreUsuario, setNombreUsuario] = useState<string>(getUserName());
 
-  useEffect(() => {
-    // Log para depuración
-    console.log("Estado actual de nombreUsuario:", nombreUsuario);
-  }, [nombreUsuario]);
+  // 🔥 NUEVO: Función para generar datos de ejemplo para gráficos adicionales
+  const generateMockData = () => {
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
+    const baseUsers = usuarios || 10; // Valor por defecto si usuarios es null
+    const history = months.map(month => ({
+      mes: month,
+      proyectos: Math.floor(Math.random() * 20) + 5,
+      tareas: Math.floor(Math.random() * 50) + 10,
+      usuarios: Math.floor(Math.random() * 10) + baseUsers,
+    }));
+    setStatsHistory(history);
 
-  // Cargar eventos del calendario
+    const statusData = [
+      { nombre: 'Pendientes', valor: Math.floor(Math.random() * 20) + 5, color: '#ffc107' },
+      { nombre: 'En Progreso', valor: Math.floor(Math.random() * 15) + 3, color: '#0d6efd' },
+      { nombre: 'Completadas', valor: Math.floor(Math.random() * 25) + 10, color: '#198754' },
+      { nombre: 'Canceladas', valor: Math.floor(Math.random() * 5) + 1, color: '#dc3545' },
+    ];
+    setTasksByStatus(statusData);
+  };
+
   useEffect(() => {
     const loadCalendarEvents = async () => {
       try {
@@ -77,23 +97,14 @@ const Dashboard = () => {
     loadCalendarEvents();
   }, []);
 
-  // Manejar clic en fecha del calendario
   const handleDateClick = (date: Date) => {
     navigate(`/calendar?date=${date.toISOString()}`);
   };
 
-  // Manejar clic en evento del calendario
   const handleEventClick = (event: Event) => {
     navigate(`/calendar/event/${event.id}`);
   };
 
-  const chartData = [
-    { nombre: 'Usuarios', cantidad: usuarios ?? 0 },
-    { nombre: 'Tareas', cantidad: tareas ?? 0 },
-    { nombre: 'Proyectos', cantidad: proyectos ?? 0 },
-  ];
-
-  // Nueva función para obtener el perfil del usuario con mejor manejo de errores
   const fetchUserProfile = async () => {
     if (!token) {
       console.log("No hay token, saltando fetchUserProfile");
@@ -117,9 +128,7 @@ const Dashboard = () => {
         const userData = response.data.data;
         if (userData.nombre) {
           console.log("Actualizando nombre de usuario a:", userData.nombre);
-          // Actualizar estado con el nombre del usuario
           setNombreUsuario(userData.nombre);
-          // También guardar toda la información del perfil
           setProfileInfo(userData);
         } else {
           console.warn("La respuesta no contiene el campo 'nombre':", userData);
@@ -135,15 +144,12 @@ const Dashboard = () => {
     }
   };
 
-  // Función para contar usuarios utilizando una API alternativa
   const fetchUserCount = async (config: any) => {
     try {
       console.log("Intentando obtener conteo de usuarios con ruta principal...");
-      // Primero intentar con la ruta protegida regular
       const usersResponse = await axios.get('http://localhost:5000/api/users', config);
       console.log("Respuesta exitosa de /api/users:", usersResponse.data);
 
-      // Verificar si la respuesta tiene el formato esperado
       if (usersResponse.data && usersResponse.data.success && Array.isArray(usersResponse.data.data)) {
         return {
           success: true,
@@ -169,11 +175,8 @@ const Dashboard = () => {
       }
     } catch (error: any) {
       console.log("Error con ruta principal:", error.response?.status || error.message);
-
-      // Si hay error, intentar con API de conteo
       try {
         console.log("Intentando obtener conteo con ruta alternativa...");
-        // Intenta obtener solo el conteo (si existe esta ruta)
         const countResponse = await axios.get('http://localhost:5000/api/users/count', config);
         console.log("Respuesta exitosa de /api/users/count:", countResponse.data);
         return {
@@ -183,10 +186,7 @@ const Dashboard = () => {
           method: "count_api"
         };
       } catch (secondError: any) {
-        // Si tampoco funciona, mostrar mensaje de error detallado
         console.error("Error también con ruta alternativa:", secondError.response || secondError);
-
-        // Usar valor predeterminado
         console.warn("Usando valor predeterminado para conteo de usuarios");
         return {
           success: false,
@@ -200,7 +200,6 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    // Cargar el perfil del usuario
     console.log("Iniciando carga de perfil de usuario y datos del dashboard");
     fetchUserProfile();
 
@@ -214,7 +213,6 @@ const Dashboard = () => {
           },
         };
 
-        // Función para obtener datos de forma segura
         const fetchSafely = async (url: string, label: string) => {
           try {
             const response = await axios.get(url, config);
@@ -226,17 +224,14 @@ const Dashboard = () => {
           }
         };
 
-        // Obtener datos de tareas y proyectos
         const [tasksRes, projectsRes] = await Promise.all([
           fetchSafely('http://localhost:5000/api/tasks', 'tareas'),
           fetchSafely('http://localhost:5000/api/projects', 'proyectos'),
         ]);
 
-        // Obtener conteo de usuarios con método especial
         const usersRes = await fetchUserCount(config);
         console.log("Resultado final de conteo de usuarios:", usersRes);
 
-        // Guardar las respuestas para inspección
         setApiResponses({
           users: usersRes,
           tasks: tasksRes.data,
@@ -244,12 +239,10 @@ const Dashboard = () => {
           profile: profileInfo
         });
 
-        // Procesar datos de usuarios
         let userCount = usersRes.count || 0;
         console.log("Estableciendo conteo de usuarios:", userCount);
         setUsuarios(userCount);
 
-        // Procesar datos de tareas de forma robusta
         let taskCount = 0;
         let taskData: any[] = [];
         if (tasksRes.data) {
@@ -266,7 +259,6 @@ const Dashboard = () => {
         }
         setTareas(taskCount);
 
-        // Procesar datos de proyectos de forma robusta
         let projectCount = 0;
         let projectData: any[] = [];
         if (projectsRes.data) {
@@ -283,10 +275,8 @@ const Dashboard = () => {
         }
         setProyectos(projectCount);
 
-        // Construir actividad reciente
         const actividad: string[] = [];
 
-        // Añadir proyectos recientes
         const proyectosRecientes = projectData.slice(-3).reverse();
         proyectosRecientes.forEach((p: any) => {
           if (p && p.nombre) {
@@ -294,18 +284,15 @@ const Dashboard = () => {
           }
         });
 
-        // Añadir tareas recientes
         const tareasRecientes = taskData.slice(-3).reverse();
         tareasRecientes.forEach((t: any) => {
           if (t && t.titulo) {
             actividad.push(`📝 Nueva tarea: ${t.titulo}`);
           } else if (t && t.nombre) {
-            // Alternativa si se usa nombre en lugar de titulo
             actividad.push(`📝 Nueva tarea: ${t.nombre}`);
           }
         });
 
-        // Añadir eventos recientes del calendario
         const eventosRecientes = calendarEvents.slice(-3).reverse();
         eventosRecientes.forEach((e: Event) => {
           if (e && e.title) {
@@ -314,16 +301,13 @@ const Dashboard = () => {
           }
         });
 
-        // Si no hay actividad, mostrar mensaje por defecto
         if (actividad.length === 0 && (projectCount > 0 || taskCount > 0)) {
           actividad.push('No se pudieron cargar detalles de actividad reciente');
-          // Había datos pero no pudimos extraer actividad específica
           console.warn('No se pudieron extraer detalles de actividad reciente');
         }
 
         setActividadReciente(actividad);
 
-        // Si no hay datos en general
         if (userCount === 0 && taskCount === 0 && projectCount === 0) {
           setError('No se encontraron datos para mostrar. Puede ser un problema de permisos o conexión.');
         }
@@ -333,13 +317,14 @@ const Dashboard = () => {
         setError(`Error cargando datos: ${error.message || 'Error desconocido'}`);
       } finally {
         setLoading(false);
+        // 🔥 MOVIDO: Generar datos adicionales después de cargar los datos reales
+        generateMockData();
       }
     };
 
     fetchData();
   }, [token, calendarEvents]);
 
-  // Función para obtener la clase básica según el tipo de evento
   const getBadgeClassForEventType = (type: string): string => {
     switch (type) {
       case 'holiday':
@@ -349,33 +334,31 @@ const Dashboard = () => {
       case 'event':
         return 'bg-success';
       default:
-        return 'text-white'; // Los colores personalizados se aplicarán con el estilo
+        return 'text-white';
     }
   };
 
-  // Función para obtener el estilo según el tipo de evento
   const getStyleForEventType = (type: string): React.CSSProperties => {
     switch (type) {
       case 'holiday':
       case 'task':
       case 'event':
-        return {}; // No se necesita estilo adicional para estos que usan clases de Bootstrap
+        return {};
       case 'birthday':
-        return { backgroundColor: '#ff9800' }; // Naranja para cumpleaños
+        return { backgroundColor: '#ff9800' };
       case 'dayoff':
-        return { backgroundColor: '#4caf50' }; // Verde claro para días a favor
+        return { backgroundColor: '#4caf50' };
       case 'gconect':
-        return { backgroundColor: '#00bcd4' }; // Azul celeste para G. Conectividad
+        return { backgroundColor: '#00bcd4' };
       case 'vacation':
-        return { backgroundColor: '#9e9e9e' }; // Gris para Vacaciones
+        return { backgroundColor: '#9e9e9e' };
       case 'guardia':
-        return { backgroundColor: '#9c27b0' }; // Púrpura para Guardia
+        return { backgroundColor: '#9c27b0' };
       default:
-        return { backgroundColor: '#6c757d' }; // Gris oscuro para tipos desconocidos
+        return { backgroundColor: '#6c757d' };
     }
   };
 
-  // Función para obtener el texto del tipo de evento
   const getEventTypeText = (type: string): string => {
     switch (type) {
       case 'holiday':
@@ -399,7 +382,6 @@ const Dashboard = () => {
     }
   };
 
-  // Usar la función de logout del servicio de autenticación
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -413,12 +395,10 @@ const Dashboard = () => {
     setShowDataInfo(!showDataInfo);
   };
 
-  // 🔥 ACTUALIZADA: Función para forzar recarga de datos con animación
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchUserProfile();
     
-    // Simular un pequeño retraso para que se vea la animación
     setTimeout(() => {
       window.location.reload();
     }, 1000);
@@ -439,26 +419,31 @@ const Dashboard = () => {
 
       <div style={contentStyle}>
         <Container className="py-4 px-4">
-          {/* 🔥 ACTUALIZADO: Header con nuevo toggle y refresh icon */}
+          {/* 🔥 MEJORADO: Header con badge de "versión de prueba" */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div className="d-flex align-items-center gap-3">
-              {/* <ThemedLogo width="50px" height="50px" className="me-2" />*/}
               <h2 className="mb-0 fw-bold">Bienvenido, {nombreUsuario}</h2>
+              <Badge bg="info" className="fs-6">Versión de Prueba</Badge>
               <CampanillaNot
                 userId={profileInfo?.id || 3}
                 refreshInterval={30000}
               />
             </div>
             <div className="d-flex gap-3 align-items-center">
-              {/* 🔥 NUEVO: Toggle elegante */}
               <ThemeToggleButton size="md" />
-              
-              {/* 🔥 NUEVO: Ícono de refresh */}
               <RefreshIconButton 
                 onClick={handleRefresh}
                 loading={refreshing}
                 size="md"
               />
+              <Button 
+                variant="outline-danger" 
+                size="sm"
+                onClick={() => navigate('/dashboard')}
+              >
+                <i className="bi bi-arrow-left me-2"></i>
+                Volver al Original
+              </Button>
             </div>
           </div>
 
@@ -509,7 +494,7 @@ const Dashboard = () => {
             </div>
           ) : (
             <>
-              {/* 🔥 1. SECCIÓN: 4 StatsCards */}
+              {/* 🔥 NUEVO: Cards usando el componente StatsCard */}
               <Row className="g-4 mb-4">
                 <Col md={3}>
                   <StatsCard
@@ -530,7 +515,7 @@ const Dashboard = () => {
                     icon="bi bi-list-task"
                     color="warning"
                     loading={loading}
-                    onClick={() => navigate('/projects')}
+                    onClick={() => navigate('/tasks')}
                     subtitle="Requieren atención"
                     trend={{ value: 3, isPositive: false }}
                   />
@@ -557,12 +542,93 @@ const Dashboard = () => {
                     loading={calendarLoading}
                     onClick={() => navigate('/calendar')}
                     subtitle="Programados"
-                    trend={{ value: 8, isPositive: true }}
                   />
                 </Col>
               </Row>
 
-              {/* 🔥 2. SECCIÓN: Actividad Reciente | Calendario */}
+              {/* 🔥 NUEVO: Sección de gráficos mejorada */}
+              <Row className="g-4 mb-4">
+                <Col md={8}>
+                  <Card className="shadow-sm h-100 border-0 themed-card">
+                    <Card.Body>
+                      <div className="d-flex justify-content-between align-items-center mb-3">
+                        <h5 className="fw-bold mb-0">Tendencia de los últimos 6 meses</h5>
+                        <div className="d-flex gap-2">
+                          <Button variant="outline-secondary" size="sm">
+                            <i className="bi bi-download me-1"></i>
+                            Exportar
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={statsHistory}>
+                          <CartesianGrid 
+                            strokeDasharray="3 3" 
+                            stroke={isDarkMode ? "#495057" : "#f0f0f0"} 
+                          />
+                          <XAxis 
+                            dataKey="mes"
+                            tick={{ fill: isDarkMode ? '#ffffff' : '#212529' }}
+                          />
+                          <YAxis 
+                            tick={{ fill: isDarkMode ? '#ffffff' : '#212529' }}
+                          />
+                          <Tooltip 
+                            contentStyle={{
+                              backgroundColor: isDarkMode ? '#343a40' : '#ffffff',
+                              border: `1px solid ${isDarkMode ? '#495057' : '#dee2e6'}`,
+                              color: isDarkMode ? '#ffffff' : '#212529',
+                              borderRadius: '8px'
+                            }}
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="proyectos" 
+                            stroke="#667eea" 
+                            strokeWidth={3}
+                            name="Proyectos"
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="tareas" 
+                            stroke="#764ba2" 
+                            strokeWidth={3}
+                            name="Tareas"
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </Card.Body>
+                  </Card>
+                </Col>
+
+                <Col md={4}>
+                  <Card className="shadow-sm h-100 border-0 themed-card">
+                    <Card.Body>
+                      <h5 className="fw-bold mb-3">Estado de Tareas</h5>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={tasksByStatus}
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={80}
+                            dataKey="valor"
+                            label={({ nombre, valor }) => `${nombre}: ${valor}`}
+                          >
+                            {tasksByStatus.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+
+              {/* Segunda fila de contenido */}
               <Row className="g-4 mb-4">
                 <Col md={6}>
                   <Card className="shadow-sm h-100 border-0 themed-card">
@@ -578,15 +644,7 @@ const Dashboard = () => {
                         </Button>
                       </div>
                       <ListGroup variant="flush">
-                        {loading ? (
-                          Array.from({ length: 3 }).map((_, idx) => (
-                            <ListGroup.Item key={idx} className="themed-bg-secondary">
-                              <div className="placeholder-glow">
-                                <span className="placeholder col-8"></span>
-                              </div>
-                            </ListGroup.Item>
-                          ))
-                        ) : actividadReciente.length === 0 ? (
+                        {actividadReciente.length === 0 ? (
                           <ListGroup.Item className="themed-bg-secondary text-center py-4">
                             <i className="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
                             <span className="text-muted">No hay actividad reciente</span>
@@ -649,61 +707,51 @@ const Dashboard = () => {
                 </Col>
               </Row>
 
-              {/* 🔥 3. SECCIÓN: Anuncios (Carrusel) - MOVIDA AQUÍ */}
+              {/* 🔥 NUEVA: Sección de acciones rápidas y próximos eventos */}
               <Row className="g-4 mb-4">
-                <Col md={12}>
-                  <AnnouncementsCarousel />
-                </Col>
-              </Row>
-
-              {/* 🔥 4. SECCIÓN: Reportes Rápidos | Próximos Eventos */}
-              <Row className="g-4 mb-4">
-                <Col md={6}>
+                <Col md={4}>
                   <Card className="shadow-sm h-100 border-0 themed-card">
                     <Card.Body>
-                      <h5 className="fw-bold mb-3">Reportes Rápidos</h5>
-                      <ResponsiveContainer width="100%" height={200}>
-                        <BarChart
-                          layout="vertical"
-                          data={chartData}
-                          margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-                          barCategoryGap={20}
+                      <h5 className="fw-bold mb-3">Acciones Rápidas</h5>
+                      <div className="d-grid gap-2">
+                        <Button 
+                          variant="primary" 
+                          className="d-flex align-items-center justify-content-start"
+                          onClick={() => navigate('/projects/new')}
                         >
-                          <CartesianGrid 
-                            strokeDasharray="3 3" 
-                            stroke={isDarkMode ? "#495057" : "#f0f0f0"} 
-                          />
-                          <Tooltip 
-                            contentStyle={{
-                              backgroundColor: isDarkMode ? '#343a40' : '#ffffff',
-                              border: `1px solid ${isDarkMode ? '#495057' : '#dee2e6'}`,
-                              color: isDarkMode ? '#ffffff' : '#212529'
-                            }}
-                          />
-                          <XAxis type="number" hide />
-                          <YAxis
-                            dataKey="nombre"
-                            type="category"
-                            width={100}
-                            tick={{ 
-                              fontWeight: 'bold',
-                              fill: isDarkMode ? '#ffffff' : '#212529'
-                            }}
-                            axisLine={false}
-                            tickLine={false}
-                          />
-                          <Bar dataKey="cantidad">
-                            <Cell fill="#FA8072" />
-                            <Cell fill="#7B8EFA" />
-                            <Cell fill="#ff0080" />
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
+                          <i className="bi bi-plus-circle me-2"></i>
+                          Nuevo Proyecto
+                        </Button>
+                        <Button 
+                          variant="outline-primary" 
+                          className="d-flex align-items-center justify-content-start"
+                          onClick={() => navigate('/tasks/new')}
+                        >
+                          <i className="bi bi-check2-square me-2"></i>
+                          Nueva Tarea
+                        </Button>
+                        <Button 
+                          variant="outline-secondary" 
+                          className="d-flex align-items-center justify-content-start"
+                          onClick={() => navigate('/calendar/new')}
+                        >
+                          <i className="bi bi-calendar-plus me-2"></i>
+                          Agendar Evento
+                        </Button>
+                        <Button 
+                          variant="outline-info" 
+                          className="d-flex align-items-center justify-content-start"
+                          onClick={() => navigate('/reports')}
+                        >
+                          <i className="bi bi-graph-up me-2"></i>
+                          Ver Reportes
+                        </Button>
+                      </div>
                     </Card.Body>
                   </Card>
                 </Col>
 
-                <Col md={6}>
+                <Col md={8}>
                   <Card className="shadow-sm h-100 border-0 themed-card">
                     <Card.Body>
                       <h5 className="fw-bold mb-3">Próximos Eventos</h5>
@@ -762,54 +810,13 @@ const Dashboard = () => {
                 </Col>
               </Row>
 
-              {/* 🔥 5. SECCIÓN: Acciones Rápidas | Resumen del Sistema */}
+              {/* 🔥 MEJORADO: Resumen de métricas con barras horizontales */}
               <Row className="g-4 mb-4">
-                <Col md={4}>
-                  <Card className="shadow-sm h-100 border-0 themed-card">
-                    <Card.Body>
-                      <h5 className="fw-bold mb-3">Acciones Rápidas</h5>
-                      <div className="d-grid gap-2">
-                        <Button 
-                          variant="primary" 
-                          className="d-flex align-items-center justify-content-start"
-                          onClick={() => navigate('/projects/new')}
-                        >
-                          <i className="bi bi-plus-circle me-2"></i>
-                          Nuevo Proyecto
-                        </Button>
-                        <Button 
-                          variant="outline-primary" 
-                          className="d-flex align-items-center justify-content-start"
-                          onClick={() => navigate('/tasks/new')}
-                        >
-                          <i className="bi bi-check2-square me-2"></i>
-                          Nueva Tarea
-                        </Button>
-                        <Button 
-                          variant="outline-secondary" 
-                          className="d-flex align-items-center justify-content-start"
-                          onClick={() => navigate('/calendar/new')}
-                        >
-                          <i className="bi bi-calendar-plus me-2"></i>
-                          Agendar Evento
-                        </Button>
-                        <Button 
-                          variant="outline-info" 
-                          className="d-flex align-items-center justify-content-start"
-                          onClick={() => navigate('/reports')}
-                        >
-                          <i className="bi bi-graph-up me-2"></i>
-                          Ver Reportes
-                        </Button>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </Col>
-                <Col md={8}>
-                  <Card className="shadow-sm h-100 border-0 themed-card">
+                <Col md={12}>
+                  <Card className="shadow-sm border-0 themed-card">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center mb-3">
-                        <h5 className="fw-bold mb-0">Resumen del Sistema</h5>
+                        <h5 className="fw-bold mb-0">Resumen General del Sistema</h5>
                         <div className="d-flex gap-2">
                           <Button variant="outline-secondary" size="sm">
                             <i className="bi bi-download me-1"></i>
@@ -822,73 +829,62 @@ const Dashboard = () => {
                         </div>
                       </div>
                       
-                      {/* Información de sistema en formato de tabla */}
-                      <div className="row g-3">
-                        <div className="col-md-6">
-                          <div className="border rounded p-3 h-100">
-                            <div className="d-flex align-items-center mb-2">
-                              <i className="bi bi-diagram-3 text-primary me-2"></i>
-                              <strong>Gestión de Proyectos</strong>
-                            </div>
-                            <p className="text-muted mb-2 small">
-                              Total de proyectos activos en el sistema
-                            </p>
-                            <h3 className="text-primary mb-0" style={{fontFamily: 'monospace'}}>
-                              {proyectos?.toLocaleString() ?? 0}
-                            </h3>
-                          </div>
-                        </div>
-                        <div className="col-md-6">
-                          <div className="border rounded p-3 h-100">
-                            <div className="d-flex align-items-center mb-2">
-                              <i className="bi bi-list-task text-warning me-2"></i>
-                              <strong>Tareas Pendientes</strong>
-                            </div>
-                            <p className="text-muted mb-2 small">
-                              Tareas que requieren atención
-                            </p>
-                            <h3 className="text-warning mb-0" style={{fontFamily: 'monospace'}}>
-                              {tareas?.toLocaleString() ?? 0}
-                            </h3>
-                          </div>
-                        </div>
-                        <div className="col-md-6">
-                          <div className="border rounded p-3 h-100">
-                            <div className="d-flex align-items-center mb-2">
-                              <i className="bi bi-people text-success me-2"></i>
-                              <strong>Usuarios del Sistema</strong>
-                            </div>
-                            <p className="text-muted mb-2 small">
-                              Usuarios registrados y activos
-                            </p>
-                            <h3 className="text-success mb-0" style={{fontFamily: 'monospace'}}>
-                              {usuarios?.toLocaleString() ?? 0}
-                            </h3>
-                          </div>
-                        </div>
-                        <div className="col-md-6">
-                          <div className="border rounded p-3 h-100">
-                            <div className="d-flex align-items-center mb-2">
-                              <i className="bi bi-calendar-event text-info me-2"></i>
-                              <strong>Eventos de Hoy</strong>
-                            </div>
-                            <p className="text-muted mb-2 small">
-                              Eventos programados para hoy
-                            </p>
-                            <h3 className="text-info mb-0" style={{fontFamily: 'monospace'}}>
-                              {calendarEvents.filter(e => 
-                                new Date(e.start).toDateString() === new Date().toDateString()
-                              ).length.toLocaleString()}
-                            </h3>
-                          </div>
-                        </div>
-                      </div>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <BarChart
+                          layout="vertical"
+                          data={[
+                            { nombre: 'Usuarios', cantidad: usuarios ?? 0, color: '#198754' },
+                            { nombre: 'Tareas', cantidad: tareas ?? 0, color: '#ffc107' },
+                            { nombre: 'Proyectos', cantidad: proyectos ?? 0, color: '#0d6efd' },
+                            { nombre: 'Eventos', cantidad: calendarEvents.length, color: '#6f42c1' }
+                          ]}
+                          margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                          barCategoryGap={20}
+                        >
+                          <CartesianGrid 
+                            strokeDasharray="3 3" 
+                            stroke={isDarkMode ? "#495057" : "#f0f0f0"} 
+                          />
+                          <Tooltip 
+                            contentStyle={{
+                              backgroundColor: isDarkMode ? '#343a40' : '#ffffff',
+                              border: `1px solid ${isDarkMode ? '#495057' : '#dee2e6'}`,
+                              color: isDarkMode ? '#ffffff' : '#212529',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                            }}
+                            formatter={(value, name) => [`${value} elementos`, name]}
+                          />
+                          <XAxis type="number" hide />
+                          <YAxis
+                            dataKey="nombre"
+                            type="category"
+                            width={100}
+                            tick={{ 
+                              fontWeight: 'bold',
+                              fill: isDarkMode ? '#ffffff' : '#212529'
+                            }}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <Bar dataKey="cantidad" radius={[0, 4, 4, 0]}>
+                            {[
+                              { nombre: 'Usuarios', cantidad: usuarios ?? 0, color: '#198754' },
+                              { nombre: 'Tareas', cantidad: tareas ?? 0, color: '#ffc107' },
+                              { nombre: 'Proyectos', cantidad: proyectos ?? 0, color: '#0d6efd' },
+                              { nombre: 'Eventos', cantidad: calendarEvents.length, color: '#6f42c1' }
+                            ].map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
                     </Card.Body>
                   </Card>
                 </Col>
               </Row>
 
-              {/* 🔥 6. SECCIÓN: Cronograma de Proyectos (Gantt) */}
+              {/* Gráfico Gantt original */}
               <Card className="shadow-sm mb-4 border-0 themed-card">
                 <Card.Body>
                   <div className="d-flex justify-content-between align-items-center mb-3">
@@ -904,15 +900,63 @@ const Dashboard = () => {
                   <GanttChart />
                 </Card.Body>
               </Card>
+
+              {/* 🔥 NUEVA: Comparación de mejoras */}
+              <Alert variant="info" className="mb-4">
+                <Alert.Heading className="d-flex align-items-center">
+                  <i className="bi bi-lightbulb me-2"></i>
+                  Mejoras en esta versión de prueba
+                </Alert.Heading>
+                <Row className="mt-3">
+                  <Col md={6}>
+                    <h6>✨ Nuevas características:</h6>
+                    <ul className="mb-0">
+                      <li>Cards estadísticas con efectos hover</li>
+                      <li>Gráfico de tendencias temporal</li>
+                      <li>Gráfico circular de estado de tareas</li>
+                      <li>Sección de acciones rápidas</li>
+                      <li>Skeleton loaders durante carga</li>
+                    </ul>
+                  </Col>
+                  <Col md={6}>
+                    <h6>🚀 Mejoras de UX:</h6>
+                    <ul className="mb-0">
+                      <li>Formato numérico con separadores</li>
+                      <li>Indicadores de tendencia</li>
+                      <li>Timestamps en actividad reciente</li>
+                      <li>Mejor organización visual</li>
+                      <li>Tooltips mejorados en gráficos</li>
+                    </ul>
+                  </Col>
+                </Row>
+                <hr />
+                <div className="d-flex justify-content-end gap-2">
+                  <Button 
+                    variant="success" 
+                    size="sm"
+                    onClick={() => alert('¡Genial! Podemos implementar estas mejoras en tu dashboard original.')}
+                  >
+                    <i className="bi bi-check-circle me-1"></i>
+                    Me gusta, implementar
+                  </Button>
+                  <Button 
+                    variant="outline-secondary" 
+                    size="sm"
+                    onClick={() => navigate('/dashboard')}
+                  >
+                    <i className="bi bi-arrow-left me-1"></i>
+                    Volver al original
+                  </Button>
+                </div>
+              </Alert>
             </>
           )}
         </Container>
 
-        {/* 🔥 CAMBIO: Footer temático que cambia según el tema */}
         <ThemedFooter />
       </div>
     </div>
   );
 };
 
-export default Dashboard;
+export default DashboardTest;

@@ -739,34 +739,61 @@ const DiagnosticsPanel: React.FC = () => {
                                 <div className="d-flex justify-content-between align-items-center mb-4">
                                     <h6 className="mb-0">Pruebas de APIs Internas</h6>
                                     <div className="d-flex gap-2">
-                                        <Button
-                                            variant={currentAPILevel === 'basic' ? 'primary' : 'outline-primary'}
-                                            size="sm"
-                                            onClick={handleBasicTest}
-                                            disabled={loading}
-                                        >
-                                            {loading && currentAPILevel === 'basic' ? <Spinner size="sm" className="me-1" /> : '🔴'}
-                                            Críticas (4)
-                                        </Button>
-                                        <Button
-                                            variant={currentAPILevel === 'full' ? 'warning' : 'outline-warning'}
-                                            size="sm"
-                                            onClick={handleFullTest}
-                                            disabled={loading}
-                                        >
-                                            {loading && currentAPILevel === 'full' ? <Spinner size="sm" className="me-1" /> : '🟡'}
-                                            Producción (9)
-                                        </Button>
-                                        <Button
-                                            variant={currentAPILevel === 'complete' ? 'success' : 'outline-success'}
-                                            size="sm"
-                                            onClick={handleCompleteTest}
-                                            disabled={loading}
-                                        >
-                                            {loading && currentAPILevel === 'complete' ? <Spinner size="sm" className="me-1" /> : '🚀'}
-                                            Completas (15+)
-                                        </Button>
+                                        {(() => {
+                                            // 🆕 FUNCIÓN PARA CALCULAR CONTADORES DINÁMICOS
+                                            const getTestLevelCounts = () => {
+                                                if (!apiTests || !apiTests.apiTests) {
+                                                    return { critical: 4, production: 11, complete: '15+' };
+                                                }
 
+                                                // Contar por categorías reales
+                                                const criticalCount = apiTests.apiTests.filter(test => test.category === 'critical').length;
+                                                const importantCount = apiTests.apiTests.filter(test => test.category === 'important').length;
+                                                const totalBasicLevel = criticalCount;
+                                                const totalFullLevel = criticalCount + importantCount;
+                                                const totalCompleteLevel = apiTests.totalTested;
+
+                                                return {
+                                                    critical: totalBasicLevel,
+                                                    production: totalFullLevel,
+                                                    complete: totalCompleteLevel >= 15 ? `${totalCompleteLevel}+` : totalCompleteLevel.toString()
+                                                };
+                                            };
+
+                                            const levelCounts = getTestLevelCounts();
+
+                                            return (
+                                                <>
+                                                    <Button
+                                                        variant={currentAPILevel === 'basic' ? 'primary' : 'outline-primary'}
+                                                        size="sm"
+                                                        onClick={handleBasicTest}
+                                                        disabled={loading}
+                                                    >
+                                                        {loading && currentAPILevel === 'basic' ? <Spinner size="sm" className="me-1" /> : '🔴'}
+                                                        Críticas ({levelCounts.critical})
+                                                    </Button>
+                                                    <Button
+                                                        variant={currentAPILevel === 'full' ? 'warning' : 'outline-warning'}
+                                                        size="sm"
+                                                        onClick={handleFullTest}
+                                                        disabled={loading}
+                                                    >
+                                                        {loading && currentAPILevel === 'full' ? <Spinner size="sm" className="me-1" /> : '🟡'}
+                                                        Producción ({levelCounts.production})
+                                                    </Button>
+                                                    <Button
+                                                        variant={currentAPILevel === 'complete' ? 'success' : 'outline-success'}
+                                                        size="sm"
+                                                        onClick={handleCompleteTest}
+                                                        disabled={loading}
+                                                    >
+                                                        {loading && currentAPILevel === 'complete' ? <Spinner size="sm" className="me-1" /> : '🚀'}
+                                                        Completas ({levelCounts.complete})
+                                                    </Button>
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
 
