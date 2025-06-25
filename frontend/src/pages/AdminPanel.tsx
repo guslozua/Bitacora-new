@@ -753,7 +753,7 @@ const AdminPanel: React.FC = () => {
         </Card>
 
         {/* 🆕 NUEVA SECCIÓN: Configuración de KPIs del Dashboard */}
-        <KpiAdminSection />
+        <KpiAdminSection isDarkMode={isDarkMode} />
 
         <Card 
           className="mb-4 border-0 shadow-sm"

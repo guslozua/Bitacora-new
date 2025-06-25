@@ -1,80 +1,42 @@
-// frontend/src/components/KpiAdminSection.tsx
 import React, { useState } from 'react';
-import { Card, Row, Col, Form, Button, Badge, Alert } from 'react-bootstrap';
-import { useDashboardKpiVisibility, KpiConfig } from '../services/DashboardKpiVisibilityContext';
-import { useTheme } from '../context/ThemeContext';
+import { Card, Row, Col, Button, Badge } from 'react-bootstrap';
+import { useDashboardKpiVisibility } from '../services/DashboardKpiVisibilityContext';
 import Swal from 'sweetalert2';
 
-const KpiAdminSection: React.FC = () => {
-  const { isDarkMode } = useTheme();
-  const { kpiConfigs, setKpiConfigs, toggleKpiVisibility, resetToDefaults } = useDashboardKpiVisibility();
-  const [isDirty, setIsDirty] = useState(false);
+interface KpiAdminSectionProps {
+  isDarkMode: boolean;
+}
 
-  const getThemeColors = () => {
-    if (isDarkMode) {
-      return {
-        cardBackground: '#343a40',
-        textPrimary: '#ffffff',
-        textSecondary: '#adb5bd',
-        textMuted: '#6c757d',
-        border: '#495057',
-      };
+const KpiAdminSection: React.FC<KpiAdminSectionProps> = ({ isDarkMode }) => {
+  const { kpiConfigs, toggleKpiVisibility, resetToDefaults } = useDashboardKpiVisibility();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleToggleKpi = async (kpiId: string) => {
+    setIsLoading(true);
+    try {
+      await toggleKpiVisibility(kpiId);
+    } finally {
+      setIsLoading(false);
     }
-    return {
-      cardBackground: '#ffffff',
-      textPrimary: '#212529',
-      textSecondary: '#495057',
-      textMuted: '#6c757d',
-      border: '#dee2e6',
-    };
   };
 
-  const themeColors = getThemeColors();
-
-  // Toggle visibilidad y marcar como dirty
-  const handleToggleVisibility = (id: string) => {
-    toggleKpiVisibility(id);
-    setIsDirty(true);
-  };
-
-  // Guardar cambios
-  const handleSaveChanges = () => {
-    setIsDirty(false);
+  const handleResetDefaults = () => {
     Swal.fire({
-      title: '¡Configuración guardada!',
-      text: 'Los cambios en los KPIs del dashboard se aplicarán inmediatamente',
-      icon: 'success',
-      iconColor: '#339fff',
-      timer: 1500,
-      showConfirmButton: false,
-      background: isDarkMode ? '#343a40' : '#ffffff',
-      color: isDarkMode ? '#ffffff' : '#212529'
-    });
-  };
-
-  // Resetear a configuración por defecto
-  const handleReset = () => {
-    Swal.fire({
-      title: '¿Resetear configuración?',
-      text: 'Esto restaurará la configuración por defecto de los KPIs',
+      title: '¿Restaurar configuración por defecto?',
+      text: 'Esto activará los KPIs predeterminados y desactivará los demás.',
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'Sí, resetear',
+      confirmButtonText: 'Sí, restaurar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#d33',
+      confirmButtonColor: '#0d6efd',
       background: isDarkMode ? '#343a40' : '#ffffff',
       color: isDarkMode ? '#ffffff' : '#212529'
     }).then((result) => {
       if (result.isConfirmed) {
         resetToDefaults();
-        // 🔥 NUEVO: Limpiar cache de KPIs también
-        if (typeof window !== 'undefined' && (window as any).kpiService) {
-          (window as any).kpiService.clearCache();
-        }
-        setIsDirty(false);
         Swal.fire({
-          title: '¡Configuración reseteada!',
-          text: 'Se ha restaurado la configuración por defecto y limpiado el cache',
+          title: '¡Restaurado!',
+          text: 'La configuración ha sido restaurada a los valores por defecto.',
           icon: 'success',
           timer: 1500,
           showConfirmButton: false,
@@ -85,42 +47,37 @@ const KpiAdminSection: React.FC = () => {
     });
   };
 
-  // 🆕 NUEVO: Función para limpiar cache de KPIs
   const handleClearCache = () => {
     Swal.fire({
       title: '¿Limpiar cache de KPIs?',
-      text: 'Esto forzará la recarga de todos los datos de KPIs',
-      icon: 'question',
+      text: 'Esto eliminará toda la configuración guardada y recargará la página.',
+      icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, limpiar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#0d6efd',
+      confirmButtonColor: '#dc3545',
       background: isDarkMode ? '#343a40' : '#ffffff',
       color: isDarkMode ? '#ffffff' : '#212529'
     }).then((result) => {
       if (result.isConfirmed) {
         // Limpiar cache del servicio KPI
-        try {
-          const { kpiService } = require('../services/kpiService');
-          kpiService.clearCache();
-          
-          Swal.fire({
-            title: '¡Cache limpiado!',
-            text: 'Los KPIs se recargarán con datos frescos',
-            icon: 'success',
-            timer: 1500,
-            showConfirmButton: false,
-            background: isDarkMode ? '#343a40' : '#ffffff',
-            color: isDarkMode ? '#ffffff' : '#212529'
-          });
-          
-          // Recargar la página para aplicar cambios
-          setTimeout(() => {
-            window.location.reload();
-          }, 1600);
-        } catch (error) {
-          console.error('Error limpiando cache:', error);
-        }
+        localStorage.removeItem('dashboardKpiConfigs');
+        localStorage.removeItem('dashboardKpiData');
+        
+        Swal.fire({
+          title: '¡Cache limpiado!',
+          text: 'La página se recargará automáticamente.',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false,
+          background: isDarkMode ? '#343a40' : '#ffffff',
+          color: isDarkMode ? '#ffffff' : '#212529'
+        });
+        
+        // Recargar la página para aplicar cambios
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       }
     });
   };
@@ -130,204 +87,266 @@ const KpiAdminSection: React.FC = () => {
   const visibleKpis = kpiConfigs.filter(kpi => kpi.visible).length;
   const hiddenKpis = totalKpis - visibleKpis;
 
+  // Organizar KPIs en filas de 4 como en el Dashboard
+  const organizeKpisInRows = () => {
+    const sortedKpis = [...kpiConfigs].sort((a, b) => a.order - b.order);
+    const rows = [];
+    for (let i = 0; i < sortedKpis.length; i += 4) {
+      rows.push(sortedKpis.slice(i, i + 4));
+    }
+    return rows;
+  };
+
+  const kpiRows = organizeKpisInRows();
+
+  // Función para generar valores simulados realistas
+  const getSimulatedValue = (kpiId: string): string => {
+    const simulatedValues: { [key: string]: string } = {
+      'proyectos_activos': '28',
+      'tareas_pendientes': '147',
+      'usuarios_activos': '89',
+      'eventos_hoy': '5',
+      'altas_pic': '1,247',
+      'altas_social': '892',
+      'tabulaciones': '156',
+      'placas': '73',
+      'itracker': '324',
+      'incidentes_guardias': '12',
+      'hitos_totales': '45',
+      'eventos_mes': '28'
+    };
+    return simulatedValues[kpiId] || Math.floor(Math.random() * 100 + 10).toString();
+  };
+
+  // Mapeo de colores Bootstrap según el tipo del KPI
+  const getBootstrapVariant = (color: string) => {
+    const colorMap: { [key: string]: string } = {
+      'primary': 'primary',
+      'success': 'success', 
+      'warning': 'warning',
+      'danger': 'danger',
+      'info': 'info'
+    };
+    return colorMap[color] || 'primary';
+  };
+
   return (
-    <Card 
-      className="mb-4 border-0 shadow-sm"
-      style={{ backgroundColor: themeColors.cardBackground }}
-    >
-      <Card.Header 
-        className="py-3"
-        style={{ backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }}
-      >
-        <div className="d-flex justify-content-between align-items-center">
-          <div>
-            <h5 className="fw-bold mb-0" style={{ color: themeColors.textPrimary }}>
-              <i className="bi bi-speedometer2 me-2 text-primary"></i>
-              KPIs del Dashboard Principal
-            </h5>
-            <small style={{ color: themeColors.textMuted }}>
-              Configura qué indicadores se muestran en el dashboard
-            </small>
-          </div>
-          <div className="d-flex gap-2">
-            {isDirty && (
-              <Button variant="success" size="sm" onClick={handleSaveChanges}>
-                <i className="bi bi-check-circle me-1"></i>
-                Guardar cambios
-              </Button>
-            )}
-            <Button variant="outline-info" size="sm" onClick={handleClearCache}>
-              <i className="bi bi-arrow-clockwise me-1"></i>
-              Limpiar Cache
-            </Button>
-            <Button variant="outline-secondary" size="sm" onClick={handleReset}>
-              <i className="bi bi-arrow-clockwise me-1"></i>
-              Resetear
-            </Button>
-          </div>
+    <Card className={`mb-4 border-0 shadow-sm ${isDarkMode ? 'bg-dark text-light' : ''}`}>
+      <Card.Header className={`d-flex justify-content-between align-items-center py-3 ${isDarkMode ? 'bg-secondary' : 'bg-light'}`}>
+        <h5 className="mb-0 fw-bold">
+          <i className="bi bi-bar-chart-line me-2 text-primary"></i>
+          KPIs del Dashboard Principal
+        </h5>
+        <div className="d-flex gap-2">
+          <Button
+            variant="outline-warning"
+            size="sm"
+            onClick={handleClearCache}
+            disabled={isLoading}
+            title="Limpiar cache"
+          >
+            <i className="bi bi-trash"></i>
+          </Button>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={handleResetDefaults}
+            disabled={isLoading}
+            title="Restaurar configuración"
+          >
+            <i className="bi bi-arrow-clockwise"></i>
+          </Button>
         </div>
       </Card.Header>
       
       <Card.Body>
-        {/* Estadísticas */}
-        <Row className="g-3 mb-4">
+        {/* Estadísticas de configuración */}
+        <Row className="mb-4">
           <Col md={4}>
-            <div className="text-center p-3 rounded" style={{ backgroundColor: isDarkMode ? '#495057' : '#f8f9fa' }}>
+            <div className="text-center p-3">
               <div 
-                className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                className="d-inline-flex align-items-center justify-content-center rounded-circle mb-2"
                 style={{
-                  backgroundColor: '#3498db20',
                   width: '3.5rem',
-                  height: '3.5rem'
+                  height: '3.5rem',
+                  backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                  color: '#0d6efd'
                 }}
               >
-                <i className="bi bi-speedometer fs-3" style={{ color: '#3498db' }}></i>
+                <i className="bi bi-bar-chart-fill" style={{ fontSize: '1.5rem' }}></i>
               </div>
-              <h2 className="fw-bold mb-1" style={{ color: themeColors.textPrimary }}>
-                {totalKpis}
-              </h2>
-              <small style={{ color: themeColors.textMuted }}>Total KPIs</small>
+              <h2 className="fw-bold mb-1">{totalKpis}</h2>
+              <small className="text-muted">Total KPIs</small>
             </div>
           </Col>
           <Col md={4}>
-            <div className="text-center p-3 rounded" style={{ backgroundColor: isDarkMode ? '#495057' : '#f8f9fa' }}>
+            <div className="text-center p-3">
               <div 
-                className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                className="d-inline-flex align-items-center justify-content-center rounded-circle mb-2"
                 style={{
-                  backgroundColor: '#19875420',
                   width: '3.5rem',
-                  height: '3.5rem'
+                  height: '3.5rem',
+                  backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                  color: '#198754'
                 }}
               >
-                <i className="bi bi-eye fs-3" style={{ color: '#198754' }}></i>
+                <i className="bi bi-eye-fill" style={{ fontSize: '1.5rem' }}></i>
               </div>
-              <h2 className="fw-bold mb-1" style={{ color: themeColors.textPrimary }}>
-                {visibleKpis}
-              </h2>
-              <small style={{ color: themeColors.textMuted }}>Visibles</small>
+              <h2 className="fw-bold mb-1">{visibleKpis}</h2>
+              <small className="text-muted">Visibles</small>
             </div>
           </Col>
           <Col md={4}>
-            <div className="text-center p-3 rounded" style={{ backgroundColor: isDarkMode ? '#495057' : '#f8f9fa' }}>
+            <div className="text-center p-3">
               <div 
-                className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                className="d-inline-flex align-items-center justify-content-center rounded-circle mb-2"
                 style={{
-                  backgroundColor: '#ffc10720',
                   width: '3.5rem',
-                  height: '3.5rem'
+                  height: '3.5rem',
+                  backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                  color: '#ffc107'
                 }}
               >
-                <i className="bi bi-eye-slash fs-3" style={{ color: '#ffc107' }}></i>
+                <i className="bi bi-eye-slash-fill" style={{ fontSize: '1.5rem' }}></i>
               </div>
-              <h2 className="fw-bold mb-1" style={{ color: themeColors.textPrimary }}>
-                {hiddenKpis}
-              </h2>
-              <small style={{ color: themeColors.textMuted }}>Ocultos</small>
+              <h2 className="fw-bold mb-1">{hiddenKpis}</h2>
+              <small className="text-muted">Ocultos</small>
             </div>
           </Col>
         </Row>
 
-        {isDirty && (
-          <Alert variant="info" className="mb-4">
-            <i className="bi bi-info-circle me-2"></i>
-            <strong>Cambios pendientes:</strong> Hay modificaciones sin guardar. 
-            Los cambios se aplicarán cuando presiones "Guardar cambios".
-          </Alert>
-        )}
+        {/* Vista previa de KPIs como se ven en el Dashboard */}
+        <div className="mb-3">
+          <h6 className="text-muted mb-3">
+            <i className="bi bi-layout-three-columns me-2"></i>
+            Vista previa del Dashboard (haz clic en los KPIs para activar/desactivar)
+          </h6>
+          
+          {kpiRows.map((row, rowIndex) => (
+            <Row key={rowIndex} className="g-3 mb-3">
+              {row.map((kpi) => (
+                <Col lg={3} md={6} key={kpi.id}>
+                  <Card 
+                    className={`h-100 shadow-sm border-0 position-relative ${!kpi.visible ? 'opacity-50' : ''}`}
+                    style={{ 
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      backgroundColor: isDarkMode ? '#343a40' : '#ffffff'
+                    }}
+                    onClick={() => handleToggleKpi(kpi.id)}
+                  >
+                    {/* Badge de estado en la esquina superior derecha */}
+                    <div className="position-absolute top-0 end-0 m-2">
+                      <Badge 
+                        bg={kpi.visible ? 'success' : 'secondary'}
+                        className="rounded-pill"
+                      >
+                        <i 
+                          className={`bi ${kpi.visible ? 'bi-eye-fill' : 'bi-eye-slash-fill'}`}
+                          style={{ fontSize: '0.7rem' }}
+                        ></i>
+                      </Badge>
+                    </div>
 
-        {/* Grid de KPIs */}
-        <Row>
-          {kpiConfigs
-            .sort((a, b) => a.order - b.order)
-            .map((config) => (
-            <Col xs={12} md={6} lg={4} key={config.id} className="mb-3">
-              <Card 
-                className={`border h-100 ${config.visible ? 'border-primary' : ''}`}
-                style={{ 
-                  backgroundColor: themeColors.cardBackground, 
-                  borderColor: config.visible ? '#0d6efd' : themeColors.border,
-                  borderWidth: config.visible ? '2px' : '1px'
-                }}
-              >
-                <Card.Body className="p-3">
-                  <div className="d-flex justify-content-between align-items-start mb-3">
-                    <div className="d-flex align-items-center flex-grow-1">
-                      <div
-                        className="rounded-circle me-3 d-flex align-items-center justify-content-center"
+                    <Card.Body className="p-3">
+                      <div className="d-flex justify-content-between align-items-start">
+                        <div className="flex-grow-1">
+                          <div className="d-flex align-items-center mb-2">
+                            <div 
+                              className={`rounded-circle me-3 d-flex align-items-center justify-content-center bg-${getBootstrapVariant(kpi.color)} bg-opacity-10`}
+                              style={{
+                                width: '2.5rem',
+                                height: '2.5rem',
+                                minWidth: '2.5rem'
+                              }}
+                            >
+                              <i 
+                                className={`bi ${kpi.icon} text-${getBootstrapVariant(kpi.color)}`}
+                                style={{ fontSize: '1.1rem' }}
+                              ></i>
+                            </div>
+                            <div className="flex-grow-1">
+                              <h6 className="mb-0 fw-bold" style={{ fontSize: '0.9rem' }}>
+                                {kpi.label}
+                              </h6>
+                              <small className="text-muted">
+                                Orden: {kpi.order}
+                              </small>
+                            </div>
+                          </div>
+                          
+                          {/* Simulación del valor del KPI */}
+                          <div className="mt-2">
+                            <h4 className="fw-bold mb-1 text-primary">
+                              {kpi.visible ? getSimulatedValue(kpi.id) : '(oculto)'}
+                            </h4>
+                            <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>
+                              {kpi.description}
+                            </small>
+                          </div>
+
+                          {/* Información del endpoint */}
+                          <div className="mt-2 pt-2 border-top border-opacity-25">
+                            <small className="text-muted">
+                              <i className="bi bi-link-45deg me-1"></i>
+                              <code style={{ fontSize: '0.7rem' }}>{kpi.endpoint}</code>
+                            </small>
+                          </div>
+                        </div>
+                      </div>
+                    </Card.Body>
+
+                    {/* Overlay para KPIs ocultos */}
+                    {!kpi.visible && (
+                      <div 
+                        className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
                         style={{
-                          backgroundColor: `var(--bs-${config.color})`,
-                          opacity: config.visible ? 1 : 0.3,
-                          width: '2.5rem',
-                          height: '2.5rem',
-                          minWidth: '2.5rem'
+                          backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                          borderRadius: '0.375rem'
                         }}
                       >
-                        <i
-                          className={`${config.icon} text-white`}
-                          style={{ fontSize: '1rem' }}
-                        ></i>
+                        <div className="text-center">
+                          <i className="bi bi-eye-slash display-6 text-secondary mb-2"></i>
+                          <p className="small text-muted mb-0">Click para activar</p>
+                        </div>
                       </div>
-                      <div className="flex-grow-1">
-                        <h6 
-                          className="mb-1 fw-medium" 
-                          style={{ 
-                            color: config.visible ? themeColors.textPrimary : themeColors.textMuted 
-                          }}
-                        >
-                          {config.label}
-                        </h6>
-                        <small style={{ color: themeColors.textMuted }}>
-                          {config.description}
-                        </small>
-                      </div>
-                    </div>
-                    <Form.Check
-                      type="switch"
-                      id={`kpi-switch-${config.id}`}
-                      checked={config.visible}
-                      onChange={() => handleToggleVisibility(config.id)}
-                      className="ms-2"
-                    />
-                  </div>
-                  
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div className="d-flex gap-1">
-                      <Badge 
-                        bg={config.color} 
-                        style={{ opacity: config.visible ? 1 : 0.5 }}
-                      >
-                        {config.color}
-                      </Badge>
-                      <Badge 
-                        bg="secondary" 
-                        style={{ opacity: config.visible ? 1 : 0.5 }}
-                      >
-                        #{config.order}
-                      </Badge>
-                    </div>
-                    <small style={{ color: themeColors.textMuted }}>
-                      <i className="bi bi-link-45deg me-1"></i>
-                      {config.endpoint}
-                    </small>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
+                    )}
+                  </Card>
+                </Col>
+              ))}
+              
+              {/* Rellenar celdas vacías si la fila no tiene 4 elementos */}
+              {row.length < 4 && Array.from({ length: 4 - row.length }).map((_, emptyIndex) => (
+                <Col lg={3} md={6} key={`empty-${rowIndex}-${emptyIndex}`}>
+                  <div style={{ height: '1px' }}></div>
+                </Col>
+              ))}
+            </Row>
           ))}
-        </Row>
+        </div>
 
         {/* Información adicional */}
-        <div className="mt-4 p-3 rounded" style={{ backgroundColor: isDarkMode ? '#495057' : '#f8f9fa' }}>
-          <h6 style={{ color: themeColors.textPrimary }}>
-            <i className="bi bi-info-circle me-2"></i>
-            Información sobre KPIs
-          </h6>
-          <ul className="mb-0 small" style={{ color: themeColors.textMuted }}>
-            <li>Los KPIs se actualizan automáticamente cada 5 minutos</li>
-            <li>Los datos se filtran por año actual para mayor relevancia</li>
-            <li>Puedes hacer clic en los KPIs del dashboard para navegar a las secciones correspondientes</li>
-            <li>Los cambios se guardan en el navegador y persisten entre sesiones</li>
-          </ul>
+        <div className="mt-4 p-3 rounded" style={{ 
+          backgroundColor: isDarkMode ? '#495057' : '#f8f9fa',
+          fontSize: '0.875rem' 
+        }}>
+          <div className="row">
+            <div className="col-md-6">
+              <strong>💡 Consejos:</strong>
+              <ul className="mb-0 mt-2" style={{ fontSize: '0.8rem' }}>
+                <li>Haz clic en cualquier KPI para activar/desactivar</li>
+                <li>Los KPIs se muestran como aparecerán en el Dashboard</li>
+                <li>Máximo 4 KPIs por fila, organizados por orden</li>
+              </ul>
+            </div>
+            <div className="col-md-6">
+              <strong>🔧 Funciones:</strong>
+              <ul className="mb-0 mt-2" style={{ fontSize: '0.8rem' }}>
+                <li><i className="bi bi-arrow-clockwise me-1"></i>Restaurar configuración por defecto</li>
+                <li><i className="bi bi-trash me-1"></i>Limpiar cache y recargar página</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </Card.Body>
     </Card>

@@ -111,6 +111,9 @@ const KpiRow: React.FC<KpiRowProps> = ({
       case 'tabulaciones':
         window.location.href = '/tabulacionesdash';
         break;
+      case 'incidentes_guardias':
+        window.location.href = '/admin/gestion-guardias?tab=informes';
+        break;
       case 'hitos_totales':
       case 'hitos_completados': // compatibilidad
         window.location.href = '/hitos';

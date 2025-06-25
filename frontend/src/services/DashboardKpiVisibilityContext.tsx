@@ -61,7 +61,7 @@ const defaultKpiConfigs: KpiConfig[] = [
     label: 'Eventos Hoy',
     icon: 'bi bi-calendar-event',
     color: 'info',
-    visible: true, // 🟢 REACTIVADO: endpoint correcto encontrado
+    visible: true,
     endpoint: '/api/eventos',
     dataKey: 'eventos_hoy',
     description: 'Eventos programados para hoy',
@@ -128,7 +128,7 @@ const defaultKpiConfigs: KpiConfig[] = [
     label: 'Incidentes en Guardias',
     icon: 'bi bi-shield-exclamation',
     color: 'warning',
-    visible: true, // 🟢 REACTIVADO: endpoint correcto encontrado
+    visible: true,
     endpoint: '/api/informes/incidentes',
     dataKey: 'total_incidentes',
     description: 'Total de incidentes registrados en guardias',
