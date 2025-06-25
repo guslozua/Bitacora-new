@@ -22,4 +22,6 @@ router.post('/guardias/resumen', incidentesController.getResumenIncidentesGuardi
 // Rutas de estadísticas y reportes
 router.get('/estadisticas/estados', incidentesController.getEstadisticasEstados);
 
+router.get('/stats', incidentesController.getIncidentesStats);
+
 module.exports = router;

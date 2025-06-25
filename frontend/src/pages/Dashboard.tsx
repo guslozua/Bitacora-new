@@ -26,6 +26,8 @@ import { fetchEvents } from '../services/EventService';
 import { Event } from '../models/Event';
 import CampanillaNot from '../components/notificaciones/CampanillaNot';
 import { useTheme } from '../context/ThemeContext';
+import KpiRow from '../components/KpiRow';
+import { useDashboardKpiVisibility } from '../services/DashboardKpiVisibilityContext';
 
 // Importamos funciones del servicio de autenticación
 import { getUserName, logout, getToken } from '../services/authService';
@@ -48,9 +50,13 @@ const Dashboard = () => {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [calendarEvents, setCalendarEvents] = useState<Event[]>([]);
   const [calendarLoading, setCalendarLoading] = useState(true);
+  const [kpiRefreshTrigger, setKpiRefreshTrigger] = useState(0);
 
   // Obtenemos el token usando el servicio de autenticación
   const token = getToken();
+
+  // Hook para KPIs
+  const { getVisibleKpis } = useDashboardKpiVisibility();
 
   // Nombre a mostrar en el saludo (valor inicial desde el servicio de autenticación)
   const [nombreUsuario, setNombreUsuario] = useState<string>(getUserName());
@@ -418,6 +424,9 @@ const Dashboard = () => {
     setRefreshing(true);
     await fetchUserProfile();
     
+    // Trigger refresh de KPIs
+    setKpiRefreshTrigger(prev => prev + 1);
+    
     // Simular un pequeño retraso para que se vea la animación
     setTimeout(() => {
       window.location.reload();
@@ -509,58 +518,15 @@ const Dashboard = () => {
             </div>
           ) : (
             <>
-              {/* 🔥 1. SECCIÓN: 4 StatsCards */}
-              <Row className="g-4 mb-4">
-                <Col md={3}>
-                  <StatsCard
-                    title="Proyectos Activos"
-                    value={proyectos}
-                    icon="bi bi-diagram-3-fill"
-                    color="primary"
-                    loading={loading}
-                    onClick={() => navigate('/projects')}
-                    subtitle="Total de proyectos"
-                    trend={{ value: 12, isPositive: true }}
-                  />
-                </Col>
-                <Col md={3}>
-                  <StatsCard
-                    title="Tareas Pendientes"
-                    value={tareas}
-                    icon="bi bi-list-task"
-                    color="warning"
-                    loading={loading}
-                    onClick={() => navigate('/projects')}
-                    subtitle="Requieren atención"
-                    trend={{ value: 3, isPositive: false }}
-                  />
-                </Col>
-                <Col md={3}>
-                  <StatsCard
-                    title="Usuarios Activos"
-                    value={usuarios}
-                    icon="bi bi-people-fill"
-                    color="success"
-                    loading={loading}
-                    onClick={() => navigate('/admin/users')}
-                    subtitle="En el sistema"
-                  />
-                </Col>
-                <Col md={3}>
-                  <StatsCard
-                    title="Eventos Hoy"
-                    value={calendarEvents.filter(e => 
-                      new Date(e.start).toDateString() === new Date().toDateString()
-                    ).length}
-                    icon="bi bi-calendar-event"
-                    color="info"
-                    loading={calendarLoading}
-                    onClick={() => navigate('/calendar')}
-                    subtitle="Programados"
-                    trend={{ value: 8, isPositive: true }}
-                  />
-                </Col>
-              </Row>
+              {/* 🔥 SECCIÓN Única: TODOS LOS KPIS CONFIGURABLES */}
+              <div className="mb-4">
+                <KpiRow 
+                  title="Indicadores del Sistema"
+                  subtitle="Métricas clave y estadísticas del sistema"
+                  refreshTrigger={kpiRefreshTrigger}
+                  onRefreshComplete={() => console.log('KPIs refreshed')}
+                />
+              </div>
 
               {/* 🔥 2. SECCIÓN: Actividad Reciente | Calendario */}
               <Row className="g-4 mb-4">

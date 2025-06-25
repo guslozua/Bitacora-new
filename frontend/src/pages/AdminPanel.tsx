@@ -7,6 +7,8 @@ import ThemedFooter from '../components/ThemedFooter';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import AbmUploadModal from '../components/AbmUploadModal';
+import KpiAdminSection from '../components/KpiAdminSection';
+
 
 interface SidebarVisibility {
   [key: string]: boolean;
@@ -749,6 +751,9 @@ const AdminPanel: React.FC = () => {
             </Row>
           </Card.Body>
         </Card>
+
+        {/* 🆕 NUEVA SECCIÓN: Configuración de KPIs del Dashboard */}
+        <KpiAdminSection />
 
         <Card 
           className="mb-4 border-0 shadow-sm"
