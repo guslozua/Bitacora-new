@@ -303,7 +303,7 @@ const AdminPanel: React.FC = () => {
 
   const toggleDashboardSection = (id: string): void => {
     toggleSectionVisibility(id);
-    setIsDirty(true);
+    // No marcamos isDirty porque los cambios del Dashboard se aplican inmediatamente
   };
 
   const resetDashboardSections = (): void => {
@@ -722,12 +722,253 @@ const AdminPanel: React.FC = () => {
             </div>
           </Card.Header>
           <Card.Body>
-            <div className="mb-3">
-              <p className="text-muted small mb-3">
-                <i className="bi bi-info-circle me-2"></i>
-                Controla qué secciones se muestran en el Dashboard principal. Los cambios se aplican inmediatamente.
-              </p>
-            </div>
+            <Row>
+              <Col md={4}>
+                <div className="pb-2 d-flex align-items-center">
+                  <h6 className="fw-bold mb-0" style={{ color: themeColors.textPrimary }}>
+                    <i className="bi bi-eye me-2 text-primary"></i>
+                    Vista previa del Dashboard
+                  </h6>
+                </div>
+                <Card className="border-0 shadow-sm">
+                  <Card.Body className="p-2">
+                    <div 
+                      className="dashboard-preview" 
+                      style={{ 
+                        backgroundColor: isDarkMode ? '#212529' : '#f8f9fa',
+                        borderRadius: '6px', 
+                        overflow: 'hidden',
+                        height: '280px',
+                        fontSize: '0.65rem'
+                      }}
+                    >
+                      {/* Header compacto */}
+                      <div 
+                        className="preview-header px-2 py-1 mb-1" 
+                        style={{ 
+                          backgroundColor: isDarkMode ? '#343a40' : '#ffffff',
+                          borderRadius: '3px'
+                        }}
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <div className="d-flex align-items-center">
+                            <div 
+                              className="me-1" 
+                              style={{ 
+                                width: '8px', 
+                                height: '8px', 
+                                backgroundColor: '#0d6efd', 
+                                borderRadius: '1px' 
+                              }}
+                            ></div>
+                            <span style={{ color: isDarkMode ? '#ffffff' : '#212529', fontSize: '0.6rem' }}>Dashboard</span>
+                          </div>
+                          <div className="d-flex gap-1">
+                            <div style={{ width: '4px', height: '4px', backgroundColor: '#28a745', borderRadius: '50%' }}></div>
+                            <div style={{ width: '4px', height: '4px', backgroundColor: '#17a2b8', borderRadius: '50%' }}></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* KPIs compactos */}
+                      <div 
+                        className="preview-kpis px-2 py-1 mb-1" 
+                        style={{ 
+                          backgroundColor: isDarkMode ? '#343a40' : '#ffffff',
+                          borderRadius: '3px'
+                        }}
+                      >
+                        <div className="d-flex justify-content-between">
+                          {[1,2,3,4].map(i => (
+                            <div 
+                              key={i}
+                              className="text-center"
+                              style={{ width: '23%' }}
+                            >
+                              <div 
+                                style={{ 
+                                  height: '8px', 
+                                  backgroundColor: ['#0d6efd', '#28a745', '#ffc107', '#dc3545'][i-1], 
+                                  borderRadius: '1px',
+                                  marginBottom: '1px'
+                                }}
+                              ></div>
+                              <div style={{ color: '#6c757d', fontSize: '0.5rem' }}>KPI</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Secciones dinámicas compactas */}
+                      <div className="sections-container" style={{ height: '180px', overflowY: 'hidden' }}>
+                        {sections.map((section, index) => {
+                          const sectionConfigs = {
+                            'actividad-reciente': { height: '22px', bg: '#e3f2fd', icon: '📅', cols: 1 },
+                            'calendario': { height: '22px', bg: '#f3e5f5', icon: '🗺', cols: 1 },
+                            'anuncios': { height: '12px', bg: '#fff3e0', icon: '📢', cols: 2 },
+                            'reportes-rapidos': { height: '20px', bg: '#e8f5e8', icon: '📊', cols: 1 },
+                            'proximos-eventos': { height: '20px', bg: '#fce4ec', icon: '📅', cols: 1 },
+                            'acciones-rapidas': { height: '18px', bg: '#e1f5fe', icon: '⚡', cols: 1 },
+                            'resumen-sistema': { height: '25px', bg: '#f9fbe7', icon: '📊', cols: 1 },
+                            'cronograma-proyectos': { height: '20px', bg: '#fff8e1', icon: '📈', cols: 2 }
+                          };
+
+                          const config = sectionConfigs[section.id as keyof typeof sectionConfigs] || 
+                            { height: '18px', bg: '#f5f5f5', icon: '📊', cols: 1 };
+
+                          // Agrupar secciones que van en la misma fila
+                          const isNewRow = index === 0 || 
+                            (section.id === 'anuncios') ||
+                            (section.id === 'reportes-rapidos') ||
+                            (section.id === 'acciones-rapidas') ||
+                            (section.id === 'cronograma-proyectos');
+
+                          const isInPair = ['actividad-reciente', 'calendario', 'reportes-rapidos', 'proximos-eventos'].includes(section.id);
+
+                          return (
+                            <div
+                              key={section.id}
+                              className={`preview-section mb-1 ${isInPair ? 'd-inline-block' : 'd-block'}`}
+                              style={{
+                                width: isInPair ? '49%' : '100%',
+                                marginRight: isInPair && ['actividad-reciente', 'reportes-rapidos'].includes(section.id) ? '2%' : '0',
+                                backgroundColor: section.visible ? (isDarkMode ? '#343a40' : '#ffffff') : 'transparent',
+                                borderRadius: '3px',
+                                opacity: section.visible ? 1 : 0.4,
+                                transition: 'all 0.2s ease',
+                                border: section.visible ? 'none' : '1px dashed #6c757d',
+                                padding: '2px'
+                              }}
+                            >
+                              {section.visible ? (
+                                <div className="d-flex align-items-center">
+                                  <div 
+                                    style={{
+                                      width: '12px',
+                                      height: config.height,
+                                      backgroundColor: isDarkMode ? '#495057' : config.bg,
+                                      borderRadius: '2px',
+                                      marginRight: '4px',
+                                      flexShrink: 0
+                                    }}
+                                  ></div>
+                                  <div className="flex-grow-1">
+                                    <div style={{ fontSize: '0.5rem', color: '#6c757d', lineHeight: '1.1' }}>
+                                      {config.icon} {section.label.split(' ')[0]}
+                                      {section.label.split(' ').length > 1 && (
+                                        <div style={{ fontSize: '0.45rem' }}>
+                                          {section.label.split(' ').slice(1).join(' ')}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-center py-1">
+                                  <div style={{ fontSize: '0.45rem', color: '#6c757d' }}>
+                                    🙈 {section.label.split(' ')[0]}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Footer compacto */}
+                      <div 
+                        className="preview-footer px-2 py-1 mt-1" 
+                        style={{ 
+                          backgroundColor: isDarkMode ? '#343a40' : '#ffffff',
+                          borderRadius: '3px',
+                          fontSize: '0.5rem',
+                          textAlign: 'center'
+                        }}
+                      >
+                        <span style={{ color: '#6c757d' }}>Footer</span>
+                      </div>
+                    </div>
+
+                    <div className="text-center mt-2">
+                      <div className="d-flex justify-content-center align-items-center gap-2 mb-2">
+                        <div className="d-flex align-items-center">
+                          <div 
+                            style={{ 
+                              width: '8px', 
+                              height: '8px', 
+                              backgroundColor: '#28a745', 
+                              borderRadius: '50%',
+                              marginRight: '4px' 
+                            }}
+                          ></div>
+                          <small style={{ color: themeColors.textMuted, fontSize: '0.65rem' }}>
+                            {sections.filter(s => s.visible).length} activas
+                          </small>
+                        </div>
+                        <div className="d-flex align-items-center">
+                          <div 
+                            style={{ 
+                              width: '8px', 
+                              height: '8px', 
+                              backgroundColor: '#dc3545', 
+                              borderRadius: '50%',
+                              marginRight: '4px' 
+                            }}
+                          ></div>
+                          <small style={{ color: themeColors.textMuted, fontSize: '0.65rem' }}>
+                            {sections.filter(s => !s.visible).length} ocultas
+                          </small>
+                        </div>
+                      </div>
+                      <div 
+                        className="text-center px-2 py-1"
+                        style={{
+                          backgroundColor: isDarkMode ? 'rgba(40, 167, 69, 0.1)' : 'rgba(40, 167, 69, 0.1)',
+                          border: '1px solid rgba(40, 167, 69, 0.2)',
+                          borderRadius: '4px'
+                        }}
+                      >
+                        <small style={{ color: isDarkMode ? '#ffffff' : '#212529', fontSize: '0.6rem' }}>
+                          <i className="bi bi-lightning-charge me-1 text-success"></i>
+                          Cambios aplicados inmediatamente
+                        </small>
+                      </div>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>
+
+              <Col md={8}>
+                <div className="pb-2 d-flex align-items-center">
+                  <h6 className="fw-bold mb-0" style={{ color: themeColors.textPrimary }}>
+                    <i className="bi bi-toggles me-2 text-primary"></i>
+                    Control de secciones
+                  </h6>
+                </div>
+                
+                {/* Nota informativa sobre guardar cambios */}
+                <div 
+                  className="alert mb-3"
+                  style={{
+                    backgroundColor: isDarkMode ? 'rgba(13, 110, 253, 0.1)' : 'rgba(13, 110, 253, 0.1)',
+                    border: '1px solid rgba(13, 110, 253, 0.2)',
+                    borderRadius: '6px',
+                    padding: '8px 12px'
+                  }}
+                >
+                  <div className="d-flex align-items-center">
+                    <i className="bi bi-info-circle me-2 text-primary"></i>
+                    <small style={{ color: isDarkMode ? '#ffffff' : '#212529', fontSize: '0.8rem' }}>
+                      <strong>Importante:</strong> Los cambios en las secciones del Dashboard se aplican inmediatamente. 
+                      {isDirty && (
+                        <span className="text-warning">
+                          <i className="bi bi-exclamation-triangle me-1"></i>
+                          Hay cambios pendientes en el sidebar que requieren guardar.
+                        </span>
+                      )}
+                    </small>
+                  </div>
+                </div>
             <Row>
               {sections.map((section) => (
                 <Col xs={12} md={6} lg={4} key={section.id} className="mb-3">
@@ -774,6 +1015,8 @@ const AdminPanel: React.FC = () => {
                   </Card>
                 </Col>
               ))}
+            </Row>
+              </Col>
             </Row>
           </Card.Body>
         </Card>
@@ -943,45 +1186,6 @@ const AdminPanel: React.FC = () => {
                           <i className="bi bi-check-circle-fill"></i>
                         </Badge>
                       </div>
-                    </Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-
-              <Col md={4} className="mb-3">
-                <Card className="h-100 border-0 shadow-sm">
-                  <Card.Body className="p-0">
-                    <Button
-                      variant="light"
-                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0 position-relative"
-                      onClick={() => navigate('/admin/codigos')}
-                      style={{
-                        backgroundColor: isDarkMode ? '#495057' : '#f8f9fa',
-                        color: themeColors.textPrimary
-                      }}
-                    >
-                      <div
-                        className="rounded-circle d-flex align-items-center justify-content-center mb-3"
-                        style={{
-                          backgroundColor: '#8e44ad20',
-                          width: '3.5rem',
-                          height: '3.5rem',
-                          padding: 0
-                        }}>
-                        <i className="bi bi-upc-scan fs-3" style={{ color: '#8e44ad' }}></i>
-                      </div>
-                      <span className="fw-medium">Códigos Guardias</span>
-                      <Badge
-                        className="mt-2"
-                        style={{
-                          backgroundColor: '#ffc107',
-                          color: '#000',
-                          fontSize: '0.7rem'
-                        }}
-                      >
-                        <i className="bi bi-exclamation-triangle me-1"></i>
-                        Versión Anterior
-                      </Badge>
                     </Button>
                   </Card.Body>
                 </Card>
