@@ -344,8 +344,21 @@ const AnnouncementsList: React.FC<AnnouncementsListProps> = ({
           Mostrando {filteredAnnouncements.length} de {announcements.length} anuncios
         </span>
         <div>
-          <Badge bg="success" className="me-1">{announcements.filter(a => a.active).length} Activos</Badge>
-          <Badge bg="secondary">{announcements.filter(a => !a.active).length} Inactivos</Badge>
+          <Badge bg="success" className="me-1">
+            {announcements.filter(a => {
+              const status = announcementsService.getStatusText(a);
+              return status.text === 'Activo';
+            }).length} Activos
+          </Badge>
+          <Badge bg="secondary" className="me-1">
+            {announcements.filter(a => !a.active).length} Inactivos
+          </Badge>
+          <Badge bg="danger">
+            {announcements.filter(a => {
+              const status = announcementsService.getStatusText(a);
+              return status.text === 'Expirado';
+            }).length} Expirados
+          </Badge>
         </div>
       </div>
 
@@ -575,11 +588,21 @@ const AnnouncementsList: React.FC<AnnouncementsListProps> = ({
               <div className="d-flex align-items-center justify-content-md-end">
                 <span className="me-3">
                   <i className="bi bi-check-circle-fill text-success me-1"></i>
-                  {filteredAnnouncements.filter(a => a.active).length} activos
+                  {announcements.filter(a => {
+                    const status = announcementsService.getStatusText(a);
+                    return status.text === 'Activo';
+                  }).length} activos
+                </span>
+                <span className="me-3">
+                  <i className="bi bi-pause-circle-fill text-secondary me-1"></i>
+                  {announcements.filter(a => !a.active).length} inactivos
                 </span>
                 <span>
-                  <i className="bi bi-pause-circle-fill text-secondary me-1"></i>
-                  {filteredAnnouncements.filter(a => !a.active).length} inactivos
+                  <i className="bi bi-x-circle-fill text-danger me-1"></i>
+                  {announcements.filter(a => {
+                    const status = announcementsService.getStatusText(a);
+                    return status.text === 'Expirado';
+                  }).length} expirados
                 </span>
               </div>
             </div>

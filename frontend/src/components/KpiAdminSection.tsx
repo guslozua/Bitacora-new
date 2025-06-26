@@ -329,16 +329,24 @@ const KpiAdminSection: React.FC<KpiAdminSectionProps> = ({ isDarkMode }) => {
                       }
                     }}
                   >
-                    {/* Indicador de drag */}
-                    <div className="position-absolute top-0 start-0 m-2">
+                    {/* Indicador de drag más sutil */}
+                    <div className="position-absolute top-0 start-0 m-1">
                       <div 
                         className="d-flex align-items-center justify-content-center rounded"
                         style={{
-                          width: '1.5rem',
-                          height: '1.5rem',
-                          backgroundColor: 'rgba(108, 117, 125, 0.2)',
-                          fontSize: '0.7rem',
-                          color: '#6c757d'
+                          width: '1rem',
+                          height: '1rem',
+                          backgroundColor: 'rgba(108, 117, 125, 0.15)',
+                          fontSize: '0.6rem',
+                          color: '#6c757d',
+                          opacity: draggedKpi ? 0.8 : 0.4,
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.target as HTMLElement).style.opacity = '0.8';
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.target as HTMLElement).style.opacity = draggedKpi ? '0.8' : '0.4';
                         }}
                       >
                         <i className="bi bi-grip-vertical"></i>
@@ -346,20 +354,24 @@ const KpiAdminSection: React.FC<KpiAdminSectionProps> = ({ isDarkMode }) => {
                     </div>
 
                     {/* Badge de estado en la esquina superior derecha */}
-                    <div className="position-absolute top-0 end-0 m-2">
+                    <div className="position-absolute top-0 end-0 m-1">
                       <Badge 
                         bg={kpi.visible ? 'success' : 'secondary'}
                         className="rounded-pill"
+                        style={{
+                          fontSize: '0.65rem',
+                          padding: '0.25rem 0.4rem'
+                        }}
                       >
                         <i 
                           className={`bi ${kpi.visible ? 'bi-eye-fill' : 'bi-eye-slash-fill'}`}
-                          style={{ fontSize: '0.7rem' }}
+                          style={{ fontSize: '0.65rem' }}
                         ></i>
                       </Badge>
                     </div>
 
-                    <Card.Body className="p-3 pt-4">
-                      <div className="d-flex justify-content-between align-items-start">
+                    <Card.Body className="p-3 pt-3">
+                      <div className="d-flex justify-content-between align-items-start mt-1">
                         <div className="flex-grow-1">
                           <div className="d-flex align-items-center mb-2">
                             <div 

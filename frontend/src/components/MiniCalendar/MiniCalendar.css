@@ -1,105 +1,89 @@
-/* MiniCalendar.css - Versión con fondo CSS (sin imagen) */
+/* MiniCalendar.css - Versión compacta optimizada */
 .mini-calendar-container {
   width: 100%;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
   overflow: hidden;
 }
 
-/* Contenedor estilizado como un calendario */
+/* Contenedor del calendario sin elementos decorativos extra */
 .calendar-with-bg {
   width: 100%;
   position: relative;
-  padding-top: 0; /* Eliminamos el padding-top */
-  background-color: #f9f9f9;
-  border-radius: 8px;
+  background-color: var(--bs-card-bg, #ffffff);
+  border-radius: 6px;
+  overflow: hidden;
 }
 
-/* Parte superior roja del calendario */
+/* Header del calendario con fondo rojo */
 .calendar-with-bg::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 55px;
+  height: 45px;
   background-color: #ff5252;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
   z-index: 0;
-}
-
-/* "Anillos" del calendario */
-.calendar-with-bg::after {
-  content: '';
-  position: absolute;
-  top: -5px;
-  left: 0;
-  right: 0;
-  height: 10px;
-  background-image: 
-    radial-gradient(circle at 25% 0, #9e9e9e 0, #9e9e9e 5px, transparent 5px),
-    radial-gradient(circle at 75% 0, #9e9e9e 0, #9e9e9e 5px, transparent 5px);
-  background-size: 100% 10px;
-  background-repeat: no-repeat;
-  z-index: 1;
 }
 
 .calendar {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 0.75;
   z-index: 2;
 }
 
 .calendar .header {
-  margin: 0 10px 10px 10px;
-  padding: 8px 10px;
-  background-color: transparent; /* Hacemos el fondo transparente */
+  margin: 0;
+  padding: 8px 15px;
+  background-color: transparent;
   position: relative;
   z-index: 3;
-  display: flex;  /* Usar flexbox para alinear elementos */
-  justify-content: space-between; /* Distribuir elementos */
-  align-items: center; /* Centrar verticalmente */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 45px;
 }
 
 .calendar .month-name {
   font-weight: bold;
-  font-size: 1.1rem;
+  font-size: 1rem;
   text-transform: uppercase;
-  flex-grow: 1; /* Hacer que ocupe todo el espacio disponible */
-  text-align: center; /* Centrar el texto */
-  color: white; /* Texto en blanco para contrastar con el fondo rojo */
+  flex-grow: 1;
+  text-align: center;
+  color: white;
+  margin: 0;
 }
 
 .calendar .days {
-  margin-bottom: 5px;
-  border-bottom: 1px solid #e9ecef;
-  padding-bottom: 5px;
+  margin: 0;
+  border-bottom: 1px solid var(--bs-border-color, #e9ecef);
+  padding: 8px 0 5px 0;
   display: flex;
   justify-content: space-around;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: var(--bs-card-bg, #ffffff);
   position: relative;
   z-index: 3;
 }
 
 .calendar .day-name {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   text-align: center;
-  color: #000000; /* Cambiado a negro para mayor énfasis */
+  color: var(--bs-secondary-color, #6c757d);
   padding: 2px;
   flex: 1;
   width: 100%;
-  font-weight: bold; /* Mantener negrita para los días de la semana */
+  font-weight: 600;
 }
 
-/* Mejorar la estructura del cuerpo del calendario */
+/* Cuerpo del calendario más compacto */
 .calendar .body {
   display: flex;
   flex-direction: column;
-  background-color: rgba(255, 255, 255, 0.85);
-  border-radius: 5px;
-  padding: 5px 0;
+  background-color: var(--bs-card-bg, #ffffff);
+  padding: 5px 8px 8px 8px;
   position: relative;
   z-index: 3;
 }
@@ -107,8 +91,8 @@
 .calendar .body .row {
   display: flex;
   justify-content: space-around;
-  height: 34px;
-  margin-bottom: 2px;
+  height: 32px;
+  margin-bottom: 1px;
 }
 
 .calendar .body .row .col {
@@ -121,24 +105,24 @@
 
 .calendar .cell {
   position: relative;
-  height: 30px;
-  width: 30px;
+  height: 28px;
+  width: 28px;
   border-radius: 50%;
   font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .calendar .cell:hover {
-  background-color: rgba(248, 249, 250, 0.8);
+  background-color: var(--bs-secondary-bg, rgba(248, 249, 250, 0.8));
   border-radius: 50%;
 }
 
 .calendar .disabled {
-  color: #adb5bd;
+  color: var(--bs-secondary-color, #adb5bd);
 }
 
 /* Día seleccionado */
@@ -149,8 +133,8 @@
 .calendar .cell.selected .number {
   background-color: #ff5252;
   color: white;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -159,32 +143,28 @@
 
 .calendar .today {
   font-weight: bold;
+  background-color: rgba(255, 82, 82, 0.1);
 }
 
 .calendar .today.selected .number {
   border: none;
 }
 
-/* Eliminar la negrita para los números con eventos */
-.calendar .has-events .number {
-  font-weight: normal; /* Cambiado de bold a normal */
-}
-
 /* Indicador de eventos */
 .calendar .event-indicator {
   position: absolute;
-  bottom: -3px;
+  bottom: 2px;
   left: 0;
   right: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 6px;
+  height: 4px;
 }
 
 .calendar .dot {
-  height: 5px;
-  width: 5px;
+  height: 4px;
+  width: 4px;
   border-radius: 50%;
   display: inline-block;
 }
@@ -192,97 +172,84 @@
 .calendar .event-count {
   font-size: 0.6rem;
   margin-left: 2px;
-  color: #6c757d;
+  color: var(--bs-secondary-color, #6c757d);
 }
 
+/* Sección de próximos eventos más compacta */
 .upcoming-events {
-  margin-top: 10px;
-  padding: 10px;
-  background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: var(--bs-body-bg, #f8f9fa);
+  border-radius: 6px;
+  border: 1px solid var(--bs-border-color, #dee2e6);
 }
 
 .upcoming-events h6 {
-  margin-bottom: 8px;
-  color: #495057;
-  font-size: 0.95rem;
+  margin-bottom: 6px;
+  color: var(--bs-body-color, #495057);
+  font-size: 0.9rem;
   font-weight: 600;
 }
 
 .upcoming-event {
-  padding: 8px;
+  padding: 6px 8px;
   border-radius: 4px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
+  background-color: var(--bs-card-bg, white);
+  border: 1px solid var(--bs-border-color-translucent, rgba(0,0,0,0.1));
 }
 
 .upcoming-event:hover {
-  background-color: #f8f9fa;
+  background-color: var(--bs-secondary-bg, #e9ecef);
 }
 
 .upcoming-event .event-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  margin-right: 8px;
+  margin-right: 6px;
   display: inline-block;
 }
 
 .upcoming-event .event-title {
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  color: var(--bs-body-color, #212529);
 }
 
 .upcoming-event .event-date {
-  font-size: 0.8rem;
-  color: #6c757d;
-  margin-left: 16px;
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color, #6c757d);
+  margin-left: 12px;
 }
 
-/* Estilos para botones de navegación */
+/* Botones de navegación */
 .calendar .nav-button {
   background: transparent;
   border: none;
   color: white;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   cursor: pointer;
   z-index: 4;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
 }
 
 .calendar .nav-button:hover {
-  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
 }
 
 /* Estilos responsivos */
 @media (max-width: 992px) {
-  .calendar .cell {
-    height: 28px;
-    width: 28px;
-  }
-  
-  .calendar .cell.selected .number {
-    width: 22px;
-    height: 22px;
-  }
-}
-
-@media (max-width: 768px) {
-  .calendar {
-    aspect-ratio: auto;
-  }
-  
-  .calendar .body .row {
-    height: 30px;
-  }
-  
   .calendar .cell {
     height: 26px;
     width: 26px;
@@ -291,6 +258,22 @@
   .calendar .cell.selected .number {
     width: 20px;
     height: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .calendar .body .row {
+    height: 28px;
+  }
+  
+  .calendar .cell {
+    height: 24px;
+    width: 24px;
+  }
+  
+  .calendar .cell.selected .number {
+    width: 18px;
+    height: 18px;
   }
 }
 
@@ -304,18 +287,18 @@
   }
   
   .calendar .body .row {
-    height: 28px;
+    height: 26px;
   }
   
   .calendar .cell {
-    height: 24px;
-    width: 24px;
+    height: 22px;
+    width: 22px;
     font-size: 0.7rem;
   }
   
   .calendar .cell.selected .number {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
   
   .upcoming-event .event-title {
