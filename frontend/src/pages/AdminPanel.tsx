@@ -7,17 +7,12 @@ import ThemedFooter from '../components/ThemedFooter';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import AbmUploadModal from '../components/AbmUploadModal';
+import { useDashboardSectionVisibility } from '../services/DashboardSectionVisibilityContext';
 import KpiAdminSection from '../components/KpiAdminSection';
 
 
 interface SidebarVisibility {
   [key: string]: boolean;
-}
-
-interface DashboardItem {
-  id: string;
-  label: string;
-  visible: boolean;
 }
 
 interface SidebarItemMeta {
@@ -42,6 +37,9 @@ const AdminPanel: React.FC = () => {
     visibility: SidebarVisibility;
     setVisibility: (visibility: SidebarVisibility) => void;
   };
+
+  // Usar el contexto de secciones del Dashboard
+  const { sections, toggleSectionVisibility, resetToDefaults: resetSectionsToDefaults } = useDashboardSectionVisibility();
 
   const getThemeColors = () => {
     if (isDarkMode) {
@@ -96,12 +94,6 @@ const AdminPanel: React.FC = () => {
   ]);
 
   const [loadingStats, setLoadingStats] = useState<boolean>(true);
-
-  const [dashboardItems, setDashboardItems] = useState<DashboardItem[]>([
-    { id: 'resumenProyectos', label: 'Resumen de Proyectos', visible: true },
-    { id: 'tareasPendientes', label: 'Tareas Pendientes', visible: true },
-    { id: 'ultimasCargas', label: 'Últimos archivos cargados', visible: true },
-  ]);
 
   const sidebarItemsMeta: SidebarItemMeta[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'bi-clipboard-data-fill', color: '#3498db' },
@@ -309,11 +301,23 @@ const AdminPanel: React.FC = () => {
     setIsDirty(false);
   };
 
-  const toggleDashboardItem = (id: string): void => {
-    setDashboardItems(items =>
-      items.map(item => item.id === id ? { ...item, visible: !item.visible } : item)
-    );
+  const toggleDashboardSection = (id: string): void => {
+    toggleSectionVisibility(id);
     setIsDirty(true);
+  };
+
+  const resetDashboardSections = (): void => {
+    resetSectionsToDefaults();
+    Swal.fire({
+      title: '¡Secciones restauradas!',
+      text: 'Las secciones del Dashboard han sido restauradas a su configuración por defecto.',
+      icon: 'success',
+      iconColor: '#339fff',
+      timer: 1500,
+      showConfirmButton: false,
+      background: isDarkMode ? '#343a40' : '#ffffff',
+      color: isDarkMode ? '#ffffff' : '#212529'
+    });
   };
   const handleItrackerUpload = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -701,15 +705,32 @@ const AdminPanel: React.FC = () => {
             className="py-3"
             style={{ backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }}
           >
-            <h5 className="fw-bold mb-0" style={{ color: themeColors.textPrimary }}>
-              <i className="bi bi-grid-1x2 me-2 text-success"></i>
-              Contenido del Dashboard Principal
-            </h5>
+            <div className="d-flex justify-content-between align-items-center">
+              <h5 className="fw-bold mb-0" style={{ color: themeColors.textPrimary }}>
+                <i className="bi bi-grid-1x2 me-2 text-success"></i>
+                Contenido del Dashboard Principal
+              </h5>
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={resetDashboardSections}
+                title="Restaurar configuración por defecto"
+              >
+                <i className="bi bi-arrow-clockwise me-1"></i>
+                Restaurar
+              </Button>
+            </div>
           </Card.Header>
           <Card.Body>
+            <div className="mb-3">
+              <p className="text-muted small mb-3">
+                <i className="bi bi-info-circle me-2"></i>
+                Controla qué secciones se muestran en el Dashboard principal. Los cambios se aplican inmediatamente.
+              </p>
+            </div>
             <Row>
-              {dashboardItems.map((item, index) => (
-                <Col xs={12} md={6} lg={4} key={item.id} className="mb-3">
+              {sections.map((section) => (
+                <Col xs={12} md={6} lg={4} key={section.id} className="mb-3">
                   <Card 
                     className="border shadow-sm h-100"
                     style={{ backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }}
@@ -725,22 +746,27 @@ const AdminPanel: React.FC = () => {
                               padding: 0
                             }}>
                             <i 
-                              className="bi bi-window-dock" 
+                              className={`bi ${section.icon}`}
                               style={{ 
                                 fontSize: '1.2rem',
                                 color: themeColors.textSecondary
                               }}
                             ></i>
                           </div>
-                          <span className="fw-medium" style={{ color: themeColors.textPrimary }}>
-                            {item.label}
-                          </span>
+                          <div className="flex-grow-1">
+                            <span className="fw-medium d-block" style={{ color: themeColors.textPrimary }}>
+                              {section.label}
+                            </span>
+                            <small className="text-muted">
+                              {section.description}
+                            </small>
+                          </div>
                         </div>
                         <Form.Check
                           type="switch"
-                          id={`switch-dash-${item.id}`}
-                          checked={item.visible}
-                          onChange={() => toggleDashboardItem(item.id)}
+                          id={`switch-dash-${section.id}`}
+                          checked={section.visible}
+                          onChange={() => toggleDashboardSection(section.id)}
                           className="fs-4"
                         />
                       </div>

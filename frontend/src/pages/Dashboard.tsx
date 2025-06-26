@@ -28,6 +28,7 @@ import CampanillaNot from '../components/notificaciones/CampanillaNot';
 import { useTheme } from '../context/ThemeContext';
 import KpiRow from '../components/KpiRow';
 import { useDashboardKpiVisibility } from '../services/DashboardKpiVisibilityContext';
+import { useDashboardSectionVisibility } from '../services/DashboardSectionVisibilityContext';
 
 // Importamos funciones del servicio de autenticación
 import { getUserName, logout, getToken } from '../services/authService';
@@ -57,6 +58,9 @@ const Dashboard = () => {
 
   // Hook para KPIs
   const { getVisibleKpis } = useDashboardKpiVisibility();
+
+  // Hook para secciones del Dashboard
+  const { isSectionVisible } = useDashboardSectionVisibility();
 
   // Nombre a mostrar en el saludo (valor inicial desde el servicio de autenticación)
   const [nombreUsuario, setNombreUsuario] = useState<string>(getUserName());
@@ -529,8 +533,10 @@ const Dashboard = () => {
               </div>
 
               {/* 🔥 2. SECCIÓN: Actividad Reciente | Calendario */}
-              <Row className="g-4 mb-4">
-                <Col md={6}>
+              {(isSectionVisible('actividad-reciente') || isSectionVisible('calendario')) && (
+                <Row className="g-4 mb-4">
+                  {isSectionVisible('actividad-reciente') && (
+                    <Col md={6}>
                   <Card className="shadow-sm h-100 border-0 themed-card">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center mb-3">
@@ -583,7 +589,9 @@ const Dashboard = () => {
                     </Card.Body>
                   </Card>
                 </Col>
+                  )}
 
+                {isSectionVisible('calendario') && (
                 <Col md={6}>
                   <Card className="shadow-sm h-100 border-0 themed-card">
                     <Card.Body>
@@ -613,17 +621,23 @@ const Dashboard = () => {
                     </Card.Body>
                   </Card>
                 </Col>
+                )}
               </Row>
+              )}
 
               {/* 🔥 3. SECCIÓN: Anuncios (Carrusel) - MOVIDA AQUÍ */}
+              {isSectionVisible('anuncios') && (
               <Row className="g-4 mb-4">
                 <Col md={12}>
                   <AnnouncementsCarousel />
                 </Col>
               </Row>
+              )}
 
               {/* 🔥 4. SECCIÓN: Reportes Rápidos | Próximos Eventos */}
+              {(isSectionVisible('reportes-rapidos') || isSectionVisible('proximos-eventos')) && (
               <Row className="g-4 mb-4">
+                {isSectionVisible('reportes-rapidos') && (
                 <Col md={6}>
                   <Card className="shadow-sm h-100 border-0 themed-card">
                     <Card.Body>
@@ -668,7 +682,9 @@ const Dashboard = () => {
                     </Card.Body>
                   </Card>
                 </Col>
+                )}
 
+                {isSectionVisible('proximos-eventos') && (
                 <Col md={6}>
                   <Card className="shadow-sm h-100 border-0 themed-card">
                     <Card.Body>
@@ -726,10 +742,14 @@ const Dashboard = () => {
                     </Card.Body>
                   </Card>
                 </Col>
+                )}
               </Row>
+              )}
 
               {/* 🔥 5. SECCIÓN: Acciones Rápidas | Resumen del Sistema */}
+              {(isSectionVisible('acciones-rapidas') || isSectionVisible('resumen-sistema')) && (
               <Row className="g-4 mb-4">
+                {isSectionVisible('acciones-rapidas') && (
                 <Col md={4}>
                   <Card className="shadow-sm h-100 border-0 themed-card">
                     <Card.Body>
@@ -771,6 +791,8 @@ const Dashboard = () => {
                     </Card.Body>
                   </Card>
                 </Col>
+                )}
+                {isSectionVisible('resumen-sistema') && (
                 <Col md={8}>
                   <Card className="shadow-sm h-100 border-0 themed-card">
                     <Card.Body>
@@ -852,9 +874,12 @@ const Dashboard = () => {
                     </Card.Body>
                   </Card>
                 </Col>
+                )}
               </Row>
+              )}
 
               {/* 🔥 6. SECCIÓN: Cronograma de Proyectos (Gantt) */}
+              {isSectionVisible('cronograma-proyectos') && (
               <Card className="shadow-sm mb-4 border-0 themed-card">
                 <Card.Body>
                   <div className="d-flex justify-content-between align-items-center mb-3">
@@ -870,6 +895,7 @@ const Dashboard = () => {
                   <GanttChart />
                 </Card.Body>
               </Card>
+              )}
             </>
           )}
         </Container>

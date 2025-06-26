@@ -5,7 +5,8 @@ import './App.css';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { SidebarVisibilityProvider } from './services/SidebarVisibilityContext';
 import { ThemeProvider } from './context/ThemeContext'; // 🔥 NUEVO IMPORT
-import { DashboardKpiVisibilityProvider } from './services/DashboardKpiVisibilityContext'; // 🆕 NUEVO IMPORT PARA KPIs
+import { DashboardKpiVisibilityProvider } from './services/DashboardKpiVisibilityContext';
+import { DashboardSectionVisibilityProvider } from './services/DashboardSectionVisibilityContext'; // 🆕 NUEVO IMPORT PARA KPIs
 import { initializeAuth, isAuthenticated } from './services/authService';
 
 // Páginas
@@ -132,8 +133,9 @@ const App: React.FC = () => {
   return (
     <ThemeProvider> {/* 🔥 WRAPPER DEL THEME PROVIDER */}
       <DashboardKpiVisibilityProvider> {/* 🆕 NUEVO PROVIDER PARA KPIs DEL DASHBOARD */}
-        <Router>
-          <SidebarVisibilityProvider>
+        <DashboardSectionVisibilityProvider> {/* 🆕 NUEVO PROVIDER PARA SECCIONES DEL DASHBOARD */}
+          <Router>
+            <SidebarVisibilityProvider>
             <ScrollToTop />
             <Routes>
               {/* Rutas públicas */}
@@ -228,8 +230,9 @@ const App: React.FC = () => {
               {/* Ruta para errores */}
               <Route path="*" element={<Error404 />} />
             </Routes>
-          </SidebarVisibilityProvider>
-        </Router>
+            </SidebarVisibilityProvider>
+          </Router>
+        </DashboardSectionVisibilityProvider> {/* 🆕 CIERRE DEL NUEVO PROVIDER */}
       </DashboardKpiVisibilityProvider> {/* 🆕 CIERRE DEL NUEVO PROVIDER */}
     </ThemeProvider>
   );
