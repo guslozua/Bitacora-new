@@ -8,8 +8,10 @@ interface KpiAdminSectionProps {
 }
 
 const KpiAdminSection: React.FC<KpiAdminSectionProps> = ({ isDarkMode }) => {
-  const { kpiConfigs, toggleKpiVisibility, resetToDefaults } = useDashboardKpiVisibility();
+  const { kpiConfigs, toggleKpiVisibility, resetToDefaults, setKpiConfigs } = useDashboardKpiVisibility();
   const [isLoading, setIsLoading] = useState(false);
+  const [draggedKpi, setDraggedKpi] = useState<string | null>(null);
+  const [dragOverKpi, setDragOverKpi] = useState<string | null>(null);
 
   const handleToggleKpi = async (kpiId: string) => {
     setIsLoading(true);
@@ -79,6 +81,80 @@ const KpiAdminSection: React.FC<KpiAdminSectionProps> = ({ isDarkMode }) => {
           window.location.reload();
         }, 1500);
       }
+    });
+  };
+
+  // 🎯 FUNCIONES DE DRAG AND DROP
+  const handleDragStart = (e: React.DragEvent, kpiId: string) => {
+    setDraggedKpi(kpiId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', kpiId);
+    
+    // Agregar clase visual al elemento arrastrado
+    (e.target as HTMLElement).style.opacity = '0.5';
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setDraggedKpi(null);
+    setDragOverKpi(null);
+    (e.target as HTMLElement).style.opacity = '1';
+  };
+
+  const handleDragOver = (e: React.DragEvent, kpiId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverKpi(kpiId);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverKpi(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetKpiId: string) => {
+    e.preventDefault();
+    const sourceKpiId = draggedKpi;
+    
+    if (!sourceKpiId || sourceKpiId === targetKpiId) {
+      setDraggedKpi(null);
+      setDragOverKpi(null);
+      return;
+    }
+
+    // Encontrar los índices de los KPIs
+    const sourceIndex = kpiConfigs.findIndex(kpi => kpi.id === sourceKpiId);
+    const targetIndex = kpiConfigs.findIndex(kpi => kpi.id === targetKpiId);
+    
+    if (sourceIndex === -1 || targetIndex === -1) return;
+
+    // Crear nueva configuración con orden actualizado
+    const newConfigs = [...kpiConfigs];
+    const sourceKpi = newConfigs[sourceIndex];
+    const targetKpi = newConfigs[targetIndex];
+
+    // Intercambiar órdenes
+    const tempOrder = sourceKpi.order;
+    sourceKpi.order = targetKpi.order;
+    targetKpi.order = tempOrder;
+
+    // Reordenar array por orden
+    newConfigs.sort((a, b) => a.order - b.order);
+
+    // Actualizar configuración
+    setKpiConfigs(newConfigs);
+    
+    // Limpiar estados de drag
+    setDraggedKpi(null);
+    setDragOverKpi(null);
+
+    // Mostrar confirmación
+    Swal.fire({
+      title: '¡Orden actualizado!',
+      text: `"${sourceKpi.label}" se movió al orden ${targetKpi.order}`,
+      icon: 'success',
+      timer: 1500,
+      showConfirmButton: false,
+      background: isDarkMode ? '#343a40' : '#ffffff',
+      color: isDarkMode ? '#ffffff' : '#212529'
     });
   };
 
@@ -219,7 +295,11 @@ const KpiAdminSection: React.FC<KpiAdminSectionProps> = ({ isDarkMode }) => {
         <div className="mb-3">
           <h6 className="text-muted mb-3">
             <i className="bi bi-layout-three-columns me-2"></i>
-            Vista previa del Dashboard (haz clic en los KPIs para activar/desactivar)
+            Vista previa del Dashboard 
+            <Badge bg="info" className="ms-2">
+              <i className="bi bi-arrows-move me-1"></i>
+              Arrastra para reordenar
+            </Badge>
           </h6>
           
           {kpiRows.map((row, rowIndex) => (
@@ -227,14 +307,44 @@ const KpiAdminSection: React.FC<KpiAdminSectionProps> = ({ isDarkMode }) => {
               {row.map((kpi) => (
                 <Col lg={3} md={6} key={kpi.id}>
                   <Card 
-                    className={`h-100 shadow-sm border-0 position-relative ${!kpi.visible ? 'opacity-50' : ''}`}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, kpi.id)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={(e) => handleDragOver(e, kpi.id)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, kpi.id)}
+                    className={`h-100 shadow-sm border-0 position-relative ${!kpi.visible ? 'opacity-50' : ''} ${
+                      dragOverKpi === kpi.id ? 'border-primary border-2' : ''
+                    } ${draggedKpi === kpi.id ? 'shadow-lg' : ''}`}
                     style={{ 
-                      cursor: 'pointer',
+                      cursor: draggedKpi ? 'grabbing' : 'grab',
                       transition: 'all 0.2s ease',
-                      backgroundColor: isDarkMode ? '#343a40' : '#ffffff'
+                      backgroundColor: isDarkMode ? '#343a40' : '#ffffff',
+                      transform: draggedKpi === kpi.id ? 'rotate(3deg) scale(1.02)' : 'none'
                     }}
-                    onClick={() => handleToggleKpi(kpi.id)}
+                    onClick={(e) => {
+                      // Solo hacer toggle si no estamos arrastrando
+                      if (!draggedKpi) {
+                        handleToggleKpi(kpi.id);
+                      }
+                    }}
                   >
+                    {/* Indicador de drag */}
+                    <div className="position-absolute top-0 start-0 m-2">
+                      <div 
+                        className="d-flex align-items-center justify-content-center rounded"
+                        style={{
+                          width: '1.5rem',
+                          height: '1.5rem',
+                          backgroundColor: 'rgba(108, 117, 125, 0.2)',
+                          fontSize: '0.7rem',
+                          color: '#6c757d'
+                        }}
+                      >
+                        <i className="bi bi-grip-vertical"></i>
+                      </div>
+                    </div>
+
                     {/* Badge de estado en la esquina superior derecha */}
                     <div className="position-absolute top-0 end-0 m-2">
                       <Badge 
@@ -248,7 +358,7 @@ const KpiAdminSection: React.FC<KpiAdminSectionProps> = ({ isDarkMode }) => {
                       </Badge>
                     </div>
 
-                    <Card.Body className="p-3">
+                    <Card.Body className="p-3 pt-4">
                       <div className="d-flex justify-content-between align-items-start">
                         <div className="flex-grow-1">
                           <div className="d-flex align-items-center mb-2">
@@ -297,7 +407,7 @@ const KpiAdminSection: React.FC<KpiAdminSectionProps> = ({ isDarkMode }) => {
                     </Card.Body>
 
                     {/* Overlay para KPIs ocultos */}
-                    {!kpi.visible && (
+                    {!kpi.visible && !draggedKpi && (
                       <div 
                         className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
                         style={{
@@ -308,6 +418,23 @@ const KpiAdminSection: React.FC<KpiAdminSectionProps> = ({ isDarkMode }) => {
                         <div className="text-center">
                           <i className="bi bi-eye-slash display-6 text-secondary mb-2"></i>
                           <p className="small text-muted mb-0">Click para activar</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Overlay de drag */}
+                    {dragOverKpi === kpi.id && draggedKpi !== kpi.id && (
+                      <div 
+                        className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                        style={{
+                          backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                          borderRadius: '0.375rem',
+                          border: '2px dashed #0d6efd'
+                        }}
+                      >
+                        <div className="text-center">
+                          <i className="bi bi-arrow-down-circle display-6 text-primary mb-2"></i>
+                          <p className="small text-primary mb-0">Soltar aquí</p>
                         </div>
                       </div>
                     )}
@@ -334,9 +461,9 @@ const KpiAdminSection: React.FC<KpiAdminSectionProps> = ({ isDarkMode }) => {
             <div className="col-md-6">
               <strong>💡 Consejos:</strong>
               <ul className="mb-0 mt-2" style={{ fontSize: '0.8rem' }}>
-                <li>Haz clic en cualquier KPI para activar/desactivar</li>
-                <li>Los KPIs se muestran como aparecerán en el Dashboard</li>
-                <li>Máximo 4 KPIs por fila, organizados por orden</li>
+                <li><i className="bi bi-arrows-move me-1"></i>Arrastra las tarjetas para reordenar</li>
+                <li><i className="bi bi-mouse me-1"></i>Haz clic para activar/desactivar</li>
+                <li><i className="bi bi-grid me-1"></i>Máximo 4 KPIs por fila</li>
               </ul>
             </div>
             <div className="col-md-6">
