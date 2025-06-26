@@ -107,7 +107,7 @@ const AnnouncementsCarousel: React.FC = () => {
   // Estado de carga
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '220px' }}>
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '320px' }}>
         <div className="text-center">
           <Spinner animation="border" variant="primary" />
           <p className="mt-3 text-muted">Cargando anuncios...</p>
@@ -136,8 +136,8 @@ const AnnouncementsCarousel: React.FC = () => {
   // No hay anuncios activos
   if (announcements.length === 0) {
     return (
-      <div className="text-center py-5" style={{ minHeight: '220px' }}>
-        <div className="text-muted">
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '320px' }}>
+        <div className="text-center text-muted">
           <i className="bi bi-megaphone fs-1 d-block mb-3"></i>
           <h5>No hay anuncios disponibles</h5>
           <p>No existen anuncios activos en este momento.</p>
@@ -155,17 +155,15 @@ const AnnouncementsCarousel: React.FC = () => {
         indicators={false}
         controls={false}
         className="rounded-4 overflow-hidden shadow-lg"
-        style={{ minHeight: '220px' }}
+        style={{ height: '320px' }} // Altura aumentada para mejor espaciado
       >
         {announcements.map((announcement) => (
           <Carousel.Item key={announcement.id}>
             <div 
-              className="position-relative"
+              className="position-relative d-flex align-items-center"
               style={{ 
                 background: getGradientColors(announcement.type),
-                minHeight: '220px',
-                display: 'flex',
-                alignItems: 'center'
+                height: '320px' // Altura actualizada
               }}
             >
               {/* Overlay decorativo */}
@@ -178,102 +176,116 @@ const AnnouncementsCarousel: React.FC = () => {
               />
 
               <div className="container position-relative">
-                <div className="row">
-                  <div className="col-lg-8 mx-auto text-center">
-                    {/* Badge con número de anuncio */}
-                    <Badge 
-                      className="mb-3 px-3 py-2 rounded-pill"
+                <div className="row h-100">
+                  <div className="col-lg-8 mx-auto d-flex flex-column justify-content-center text-center py-3">
+                    {/* Badge con número de anuncio - versión sutil */}
+                    <div 
+                      className="mb-2 px-3 py-1 rounded-pill d-inline-block align-self-center"
                       style={{ 
-                        backgroundColor: 'rgba(255,255,255,0.2)',
-                        color: 'white',
-                        fontSize: '0.8rem'
+                        backgroundColor: 'rgba(0,0,0,0.1)',
+                        color: 'rgba(255,255,255,0.8)',
+                        fontSize: '0.75rem',
+                        backdropFilter: 'blur(5px)',
+                        border: '1px solid rgba(255,255,255,0.15)'
                       }}
                     >
                       {index + 1} de {announcements.length} • {announcementsService.formatDate(announcement.created_at)}
-                    </Badge>
+                    </div>
 
-                    {/* Icono grande */}
-                    <div className="mb-4">
+                    {/* Icono más compacto */}
+                    <div className="mb-3">
                       <div 
                         className="mx-auto rounded-circle d-flex align-items-center justify-content-center"
                         style={{
-                          width: '80px',
-                          height: '80px',
+                          width: '60px',
+                          height: '60px',
                           backgroundColor: 'rgba(255,255,255,0.2)',
                           backdropFilter: 'blur(10px)',
                           border: '2px solid rgba(255,255,255,0.3)'
                         }}
                       >
-                        <i className={`${announcement.icon} fs-1`} style={{ color: 'white' }}></i>
+                        <i className={`${announcement.icon} fs-2`} style={{ color: 'white' }}></i>
                       </div>
                     </div>
 
-                    {/* Título principal */}
+                    {/* Título optimizado */}
                     <h1 
-                      className="display-6 fw-bold mb-4"
+                      className="h3 fw-bold mb-3"
                       style={{ 
                         color: getTextColor(),
-                        textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                        textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                        lineHeight: '1.2',
+                        overflow: 'hidden',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical'
                       }}
                     >
                       {announcement.title}
                     </h1>
 
-                    {/* Contenido */}
+                    {/* Contenido con límite de líneas */}
                     <p 
-                      className="lead mb-4 px-md-5"
+                      className="mb-3"
                       style={{ 
                         color: 'rgba(255,255,255,0.9)',
-                        fontSize: '1.1rem',
-                        lineHeight: '1.6'
+                        fontSize: '1rem',
+                        lineHeight: '1.4',
+                        overflow: 'hidden',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical'
                       }}
                     >
                       {announcement.content}
                     </p>
 
-                    {/* Botón de acción */}
-                    {announcement.action_text && (
-                      <div className="mb-3">
-                        <Button
-                          size="lg"
-                          className="px-4 py-2 fw-bold"
-                          style={{
-                            backgroundColor: 'rgba(255,255,255,0.2)',
-                            border: '2px solid rgba(255,255,255,0.4)',
-                            color: 'white',
-                            backdropFilter: 'blur(10px)',
-                            transition: 'all 0.3s ease'
-                          }}
-                          onClick={() => handleActionClick(announcement)}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)';
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
-                            e.currentTarget.style.transform = 'translateY(0)';
-                          }}
-                        >
-                          {announcement.action_text}
-                          <i className="bi bi-arrow-right ms-2"></i>
-                        </Button>
-                      </div>
-                    )}
+                    {/* Sección inferior con botón y autor */}
+                    <div className="mt-auto">
+                      {/* Botón de acción más compacto */}
+                      {announcement.action_text && (
+                        <div className="mb-3">
+                          <Button
+                            className="px-4 py-2 fw-bold"
+                            style={{
+                              backgroundColor: 'rgba(255,255,255,0.2)',
+                              border: '2px solid rgba(255,255,255,0.4)',
+                              color: 'white',
+                              backdropFilter: 'blur(10px)',
+                              transition: 'all 0.3s ease',
+                              fontSize: '0.9rem'
+                            }}
+                            onClick={() => handleActionClick(announcement)}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)';
+                              e.currentTarget.style.transform = 'translateY(-2px)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+                              e.currentTarget.style.transform = 'translateY(0)';
+                            }}
+                          >
+                            {announcement.action_text}
+                            <i className="bi bi-arrow-right ms-2"></i>
+                          </Button>
+                        </div>
+                      )}
 
-                    {/* Autor */}
-                    {announcement.created_by_name && (
-                      <div className="mt-4">
-                        <small 
-                          style={{ 
-                            color: 'rgba(255,255,255,0.8)',
-                            fontSize: '0.9rem'
-                          }}
-                        >
-                          <i className="bi bi-person-circle me-2"></i>
-                          Publicado por {announcement.created_by_name}
-                        </small>
-                      </div>
-                    )}
+                      {/* Autor con separación inferior */}
+                      {announcement.created_by_name && (
+                        <div className="mt-1 mb-3">
+                          <small 
+                            style={{ 
+                              color: 'rgba(255,255,255,0.7)',
+                              fontSize: '0.8rem'
+                            }}
+                          >
+                            <i className="bi bi-person-circle me-1"></i>
+                            Publicado por {announcement.created_by_name}
+                          </small>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -320,7 +332,7 @@ const AnnouncementsCarousel: React.FC = () => {
           </div>
 
           {/* Indicadores personalizados mejorados */}
-          <div className="position-absolute bottom-0 start-50 translate-middle-x mb-4">
+          <div className="position-absolute bottom-0 start-50 translate-middle-x mb-2">
             <div className="d-flex gap-2">
               {announcements.map((_, idx) => (
                 <button
