@@ -33,6 +33,37 @@ import { useDashboardSectionVisibility } from '../services/DashboardSectionVisib
 // Importamos funciones del servicio de autenticación
 import { getUserName, logout, getToken } from '../services/authService';
 
+// Función para calcular tiempo relativo en español
+const getTimeAgo = (date: Date): string => {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  console.log('🕒 getTimeAgo - Ahora:', now, 'Fecha actividad:', date, 'Diferencia ms:', diffMs, 'Diferencia segundos:', diffSeconds);
+  
+  // Si la fecha es futura o muy reciente (menos de 5 segundos)
+  if (diffMs < 5000) {
+    return 'Ahora';
+  } else if (diffSeconds < 60) {
+    return `Hace ${diffSeconds} segundos`;
+  } else if (diffMinutes < 60) {
+    return diffMinutes === 1 ? 'Hace 1 minuto' : `Hace ${diffMinutes} minutos`;
+  } else if (diffHours < 24) {
+    return diffHours === 1 ? 'Hace 1 hora' : `Hace ${diffHours} horas`;
+  } else if (diffDays < 30) {
+    return diffDays === 1 ? 'Hace 1 día' : `Hace ${diffDays} días`;
+  } else {
+    return date.toLocaleDateString('es-AR', {
+      day: 'numeric',
+      month: 'short',
+      year: diffDays > 365 ? 'numeric' : undefined
+    });
+  }
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
@@ -40,7 +71,7 @@ const Dashboard = () => {
   const [usuarios, setUsuarios] = useState<number | null>(null);
   const [tareas, setTareas] = useState<number | null>(null);
   const [proyectos, setProyectos] = useState<number | null>(null);
-  const [actividadReciente, setActividadReciente] = useState<string[]>([]);
+  const [actividadReciente, setActividadReciente] = useState<Array<{texto: string, fecha: Date, tiempoRelativo: string}>>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false); // 🔥 NUEVO: Estado para el ícono de refresh
   const [error, setError] = useState<string | null>(null);
@@ -293,45 +324,105 @@ const Dashboard = () => {
         }
         setProyectos(projectCount);
 
-        // Construir actividad reciente
-        const actividad: string[] = [];
+        // Construir actividad reciente con timestamps reales
+        const actividad: Array<{texto: string, fecha: Date}> = [];
 
-        // Añadir proyectos recientes
+        // Añadir proyectos recientes con sus fechas reales
         const proyectosRecientes = projectData.slice(-3).reverse();
+        console.log('🔍 Estructura completa de un proyecto:', JSON.stringify(proyectosRecientes[0], null, 2));
         proyectosRecientes.forEach((p: any) => {
           if (p && p.nombre) {
-            actividad.push(`📁 Nuevo proyecto creado: ${p.nombre}`);
+            // Usar fecha_inicio como fecha de creación del proyecto
+            const fechaCreacion = p.fecha_inicio || new Date();
+            console.log('📁 Proyecto:', p.nombre, 'Fecha inicio real:', fechaCreacion);
+            actividad.push({
+              texto: `📁 Nuevo proyecto creado: ${p.nombre}`,
+              fecha: new Date(fechaCreacion)
+            });
           }
         });
 
-        // Añadir tareas recientes
+        // Añadir tareas recientes con sus fechas reales
         const tareasRecientes = taskData.slice(-3).reverse();
+        console.log('🔍 Estructura completa de una tarea:', JSON.stringify(tareasRecientes[0], null, 2));
         tareasRecientes.forEach((t: any) => {
           if (t && t.titulo) {
-            actividad.push(`📝 Nueva tarea: ${t.titulo}`);
+            // Usar fecha_inicio como fecha de creación de la tarea
+            const fechaCreacion = t.fecha_inicio || new Date();
+            console.log('📝 Tarea:', t.titulo, 'Fecha inicio real:', fechaCreacion);
+            actividad.push({
+              texto: `📝 Nueva tarea: ${t.titulo}`,
+              fecha: new Date(fechaCreacion)
+            });
           } else if (t && t.nombre) {
             // Alternativa si se usa nombre en lugar de titulo
-            actividad.push(`📝 Nueva tarea: ${t.nombre}`);
+            const fechaCreacion = t.fecha_inicio || new Date();
+            console.log('📝 Tarea:', t.nombre, 'Fecha inicio real:', fechaCreacion);
+            actividad.push({
+              texto: `📝 Nueva tarea: ${t.nombre}`,
+              fecha: new Date(fechaCreacion)
+            });
           }
         });
 
-        // Añadir eventos recientes del calendario
-        const eventosRecientes = calendarEvents.slice(-3).reverse();
+        // Añadir eventos recientes del calendario con sus fechas (solo eventos de trabajo real)
+        const eventosRecientes = calendarEvents
+          .filter(e => {
+            // Filtrar solo eventos que representen actividad real del sistema
+            // Excluir feriados, cumpleaños, guardias, conectividad, vacaciones y eventos futuros
+            const esFeriado = e.type === 'holiday' || e.title.toLowerCase().includes('feriado');
+            const esCumple = e.type === 'birthday' || e.title.toLowerCase().includes('cumple');
+            const esGuardia = e.type === 'guardia' || e.title.toLowerCase().includes('guardia');
+            const esConectividad = e.type === 'gconect' || e.title.toLowerCase().includes('conectividad');
+            const esVacaciones = e.type === 'vacation' || e.title.toLowerCase().includes('vacacion');
+            const esFuturo = new Date(e.start) > new Date();
+            
+            console.log(`📅 Evaluando evento: ${e.title}, Tipo: ${e.type}, Es feriado: ${esFeriado}, Es cumpleaños: ${esCumple}, Es guardia: ${esGuardia}, Es conectividad: ${esConectividad}, Es vacaciones: ${esVacaciones}, Es futuro: ${esFuturo}`);
+            
+            // Solo incluir eventos que NO sean ninguno de los tipos excluidos
+            return !esFeriado && !esCumple && !esGuardia && !esConectividad && !esVacaciones && !esFuturo;
+          })
+          .slice(-3).reverse();
+          
         eventosRecientes.forEach((e: Event) => {
           if (e && e.title) {
-            const tipoEvento = e.type === 'holiday' ? '🏖️ Feriado' : (e.type === 'task' ? '📝 Tarea' : '📅 Evento');
-            actividad.push(`${tipoEvento}: ${e.title}`);
+            const tipoEvento = e.type === 'task' ? '📝 Tarea' : '📅 Evento';
+            const fechaEvento = e.start ? new Date(e.start) : new Date();
+            console.log('📅 Evento válido:', e.title, 'Fecha real:', fechaEvento);
+            actividad.push({
+              texto: `${tipoEvento}: ${e.title}`,
+              fecha: fechaEvento
+            });
           }
         });
 
+        // Ordenar por fecha (más reciente primero) y convertir a formato string con timestamp
+        const actividadOrdenada = actividad
+          .sort((a, b) => b.fecha.getTime() - a.fecha.getTime())
+          .map(item => {
+            const tiempoRelativo = getTimeAgo(item.fecha);
+            console.log('⚙️ Calculando tiempo para:', item.texto, 'Fecha:', item.fecha, 'Resultado:', tiempoRelativo);
+            return {
+              texto: item.texto,
+              fecha: item.fecha,
+              tiempoRelativo: tiempoRelativo
+            };
+          });
+
+        console.log('📋 Actividad final ordenada:', actividadOrdenada);
+
         // Si no hay actividad, mostrar mensaje por defecto
-        if (actividad.length === 0 && (projectCount > 0 || taskCount > 0)) {
-          actividad.push('No se pudieron cargar detalles de actividad reciente');
+        if (actividadOrdenada.length === 0 && (projectCount > 0 || taskCount > 0)) {
+          actividadOrdenada.push({
+            texto: 'No se pudieron cargar detalles de actividad reciente',
+            fecha: new Date(),
+            tiempoRelativo: 'Ahora'
+          });
           // Había datos pero no pudimos extraer actividad específica
           console.warn('No se pudieron extraer detalles de actividad reciente');
         }
 
-        setActividadReciente(actividad);
+        setActividadReciente(actividadOrdenada);
 
         // Si no hay datos en general
         if (userCount === 0 && taskCount === 0 && projectCount === 0) {
@@ -575,12 +666,12 @@ const Dashboard = () => {
                                   className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
                                   style={{ width: '2rem', height: '2rem' }}
                                 >
-                                  <i className={`${item.includes('proyecto') ? 'bi bi-folder' : 'bi bi-check-circle'} text-primary`}></i>
+                                  <i className={`${item.texto.includes('proyecto') ? 'bi bi-folder' : 'bi bi-check-circle'} text-primary`}></i>
                                 </div>
                               </div>
                               <div className="flex-grow-1">
-                                <div className="fw-medium">{item}</div>
-                                <small className="text-muted">Hace {Math.floor(Math.random() * 60)} minutos</small>
+                                <div className="fw-medium">{item.texto}</div>
+                                <small className="text-muted">{item.tiempoRelativo}</small>
                               </div>
                             </ListGroup.Item>
                           ))
