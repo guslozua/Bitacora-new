@@ -175,8 +175,6 @@ const Incidente = {
   // Encontrar un incidente por ID
   findByPk: async (id) => {
     try {
-      console.log('🔍 MODELO: Buscando incidente por ID:', id);
-      
       // Consulta principal para obtener el incidente
       const query = `
         SELECT i.*,
@@ -190,15 +188,8 @@ const Incidente = {
       const [rows] = await pool.query(query, [id]);
       
       if (rows.length === 0) {
-        console.log('❌ MODELO: Incidente no encontrado con ID:', id);
         return null;
       }
-      
-      console.log('✅ MODELO: Incidente encontrado:', {
-        id: rows[0].id,
-        inicio: rows[0].inicio,
-        fin: rows[0].fin
-      });
       
       // Obtener códigos aplicados en una consulta separada
       const [codigos] = await pool.query(`
@@ -209,7 +200,6 @@ const Incidente = {
       `, [id]);
       
       rows[0].codigos_aplicados = codigos;
-      console.log('✅ MODELO: Códigos cargados:', codigos.length);
       
       return Incidente.attachMethods(rows[0]);
     } catch (error) {
@@ -218,19 +208,11 @@ const Incidente = {
     }
   },
   
-  // ✨ CREAR UN NUEVO INCIDENTE - CORREGIDO PARA UNDEFINED
+  // ✅ CREAR UN NUEVO INCIDENTE - LOGS LIMPIOS
   create: async (data) => {
     const connection = await pool.getConnection();
     
     try {
-      console.log('📝 MODELO: Iniciando creación de incidente:', {
-        id_guardia: data.id_guardia,
-        inicio: data.inicio,
-        fin: data.fin,
-        descripcion: data.descripcion?.substring(0, 50),
-        codigos_count: data.codigos?.length || 0
-      });
-      
       const { 
         id_guardia, 
         inicio, 
@@ -246,19 +228,8 @@ const Incidente = {
       const usuarioRegistro = id_usuario_registro === undefined ? null : id_usuario_registro;
       const observacionesLimpias = observaciones === undefined ? null : observaciones;
       
-      console.log('📝 MODELO: Parámetros limpiados:', {
-        id_guardia,
-        inicio,
-        fin,
-        descripcion: descripcion?.substring(0, 30),
-        estado,
-        usuarioRegistro,
-        observacionesLimpias
-      });
-      
       // Iniciar transacción
       await connection.beginTransaction();
-      console.log('🔄 TRANSACCIÓN INICIADA');
       
       // ✨ INSERTAR INCIDENTE CON PARÁMETROS LIMPIOS
       const [resultIncidente] = await connection.execute(
@@ -266,24 +237,49 @@ const Incidente = {
         [id_guardia, inicio, fin, descripcion, estado, usuarioRegistro, observacionesLimpias]
       );
       
-      const incidenteId = resultIncidente.insertId;
-      console.log('✅ INCIDENTE INSERTADO CON ID:', incidenteId);
+      let incidenteId = resultIncidente.insertId;
+      
+      // ✨ MANEJO ESPECIAL SI insertId ES 0
+      if (!incidenteId || incidenteId === 0) {
+        // Buscar el último incidente insertado para esta guardia
+        const [ultimoIncidente] = await connection.execute(
+          'SELECT id FROM incidentes_guardia WHERE id_guardia = ? AND descripcion = ? ORDER BY created_at DESC LIMIT 1',
+          [id_guardia, descripcion]
+        );
+        
+        if (ultimoIncidente.length > 0) {
+          incidenteId = ultimoIncidente[0].id;
+        } else {
+          throw new Error('No se pudo recuperar el ID del incidente insertado');
+        }
+      }
+      
+      // ✨ PREPARAR CÓDIGOS APLICADOS ANTES DEL COMMIT
+      let codigosAplicados = [];
       
       // Si hay códigos aplicados, insertarlos
       if (codigos && Array.isArray(codigos) && codigos.length > 0) {
-        console.log('🔄 INSERTANDO CÓDIGOS:', codigos.length);
-        
         for (const codigo of codigos) {
           try {
             // ✨ LIMPIAR UNDEFINED EN CÓDIGOS TAMBIÉN
             const importeLimpio = codigo.importe === undefined ? null : codigo.importe;
             const observacionLimpia = codigo.observacion === undefined ? null : codigo.observacion;
             
-            await connection.execute(
+            const [resultCodigo] = await connection.execute(
               'INSERT INTO incidentes_codigos (id_incidente, id_codigo, minutos, importe, observacion) VALUES (?, ?, ?, ?, ?)',
               [incidenteId, codigo.id_codigo, codigo.minutos, importeLimpio, observacionLimpia]
             );
-            console.log(`✅ CÓDIGO INSERTADO: ${codigo.id_codigo} - ${codigo.minutos} min`);
+            
+            // ✨ AGREGAR A LA LISTA DE CÓDIGOS APLICADOS CON DATOS CONOCIDOS
+            codigosAplicados.push({
+              id: resultCodigo.insertId,
+              id_codigo: codigo.id_codigo,
+              codigo: codigo.codigo || null,
+              descripcion: codigo.descripcion || null,
+              minutos: codigo.minutos,
+              importe: importeLimpio
+            });
+            
           } catch (errorCodigo) {
             console.error('❌ Error al insertar código:', errorCodigo);
             // No fallar toda la transacción por un código
@@ -291,29 +287,50 @@ const Incidente = {
         }
       }
       
+      // ✨ OBTENER DATOS DE GUARDIA USANDO LA CONEXIÓN DE LA TRANSACCIÓN
+      const [guardiaData] = await connection.execute(
+        'SELECT fecha, usuario FROM guardias WHERE id = ?',
+        [id_guardia]
+      );
+      
+      const fechaGuardia = guardiaData[0]?.fecha || null;
+      const usuarioGuardia = guardiaData[0]?.usuario || null;
+      
+      // ✨ CALCULAR DURACIÓN EN MINUTOS
+      const inicioDate = new Date(inicio);
+      const finDate = new Date(fin);
+      const duracionMinutos = Math.floor((finDate.getTime() - inicioDate.getTime()) / (1000 * 60));
+      
+      // ✨ PREPARAR RESPUESTA FINAL CON DATOS DISPONIBLES (ANTES DEL COMMIT)
+      const incidenteRespuesta = {
+        id: incidenteId,
+        id_guardia: id_guardia,
+        inicio: inicio,
+        fin: fin,
+        descripcion: descripcion,
+        observaciones: observacionesLimpias,
+        estado: estado,
+        duracion_minutos: duracionMinutos,
+        codigos_aplicados: codigosAplicados,
+        fecha_guardia: fechaGuardia,
+        usuario_guardia: usuarioGuardia,
+        id_usuario_registro: usuarioRegistro,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
       // Confirmar transacción
       await connection.commit();
-      console.log('✅ TRANSACCIÓN CONFIRMADA');
       
-      // ✨ BUSCAR Y DEVOLVER EL INCIDENTE CREADO
-      const incidenteCreado = await Incidente.findByPk(incidenteId);
+      // ✨ AGREGAR MÉTODOS AL OBJETO RESPUESTA
+      const incidenteConMetodos = Incidente.attachMethods(incidenteRespuesta);
       
-      if (!incidenteCreado) {
-        throw new Error(`No se pudo recuperar el incidente creado con ID: ${incidenteId}`);
-      }
-      
-      console.log('✅ INCIDENTE RECUPERADO EXITOSAMENTE:', {
-        id: incidenteCreado.id,
-        códigos: incidenteCreado.codigos_aplicados?.length || 0
-      });
-      
-      return incidenteCreado;
+      return incidenteConMetodos;
       
     } catch (error) {
       // Revertir transacción en caso de error
       try {
         await connection.rollback();
-        console.log('🔄 TRANSACCIÓN REVERTIDA');
       } catch (rollbackError) {
         console.error('❌ Error al revertir transacción:', rollbackError);
       }
@@ -323,7 +340,6 @@ const Incidente = {
     } finally {
       // Liberar conexión
       connection.release();
-      console.log('🔄 CONEXIÓN LIBERADA');
     }
   },
   
@@ -432,20 +448,37 @@ const Incidente = {
     }
   },
   
-  // Eliminar un incidente
+  // ✅ ELIMINAR UN INCIDENTE - LOGS LIMPIOS
   destroy: async (id) => {
     try {
-      console.log('🗑️ MODELO: Eliminando incidente ID:', id);
+      // ✨ VALIDAR ID ANTES DE LA QUERY
+      if (id === undefined || id === null || id === 'undefined' || id === 'null') {
+        throw new Error(`ID inválido para eliminar: ${id}`);
+      }
+      
+      // ✨ CONVERTIR A NÚMERO SI ES STRING
+      const idNumerico = typeof id === 'string' ? parseInt(id, 10) : id;
+      
+      if (isNaN(idNumerico)) {
+        throw new Error(`ID no es un número válido: ${id}`);
+      }
+      
+      const query = 'DELETE FROM incidentes_guardia WHERE id = ?';
+      const params = [id];
       
       // Las relaciones tienen ON DELETE CASCADE
-      const [result] = await pool.query('DELETE FROM incidentes_guardia WHERE id = ?', [id]);
+      const [result] = await pool.query(query, params);
       
       const success = result.affectedRows > 0;
-      console.log(success ? '✅ MODELO: Incidente eliminado' : '❌ MODELO: No se pudo eliminar');
+      
+      if (!success) {
+        console.error('❌ MODELO: No se eliminó ningún incidente con ID:', id);
+      }
       
       return success;
     } catch (error) {
       console.error('❌ MODELO: Error al eliminar incidente:', error);
+      console.error('❌ MODELO: ID que causó el error:', id);
       throw error;
     }
   },

@@ -53,30 +53,14 @@ const formatearFechaParaMySQL = (fecha) => {
   }
 };
 
-// Función helper para registrar cambio de estado en el historial - CORREGIDA
+// Función helper para registrar cambio de estado en el historial
 const registrarCambioEstado = async (idIncidente, estadoAnterior, estadoNuevo, idUsuario, observaciones = null) => {
   try {
-    console.log('📋 REGISTRANDO CAMBIO DE ESTADO:', {
-      idIncidente,
-      estadoAnterior,
-      estadoNuevo,
-      idUsuario,
-      observaciones
-    });
-
     // ✨ CONVERTIR UNDEFINED A NULL PARA MYSQL2
     const estadoAnteriorLimpio = estadoAnterior === undefined ? null : estadoAnterior;
     const estadoNuevoLimpio = estadoNuevo === undefined ? null : estadoNuevo;
     const idUsuarioLimpio = idUsuario === undefined ? null : idUsuario;
     const observacionesLimpias = observaciones === undefined ? null : observaciones;
-
-    console.log('📋 PARÁMETROS LIMPIADOS:', {
-      idIncidente,
-      estadoAnteriorLimpio,
-      estadoNuevoLimpio,
-      idUsuarioLimpio,
-      observacionesLimpias
-    });
 
     const query = `
       INSERT INTO incidentes_estado_historico 
@@ -92,15 +76,10 @@ const registrarCambioEstado = async (idIncidente, estadoAnterior, estadoNuevo, i
       observacionesLimpias
     ]);
 
-    console.log('✅ HISTORIAL REGISTRADO EXITOSAMENTE:', {
-      insertId: result.insertId,
-      affectedRows: result.affectedRows
-    });
-
     return result;
   } catch (error) {
     console.error('❌ ERROR AL REGISTRAR CAMBIO DE ESTADO:', error);
-    console.error('❌ PARÁMETROS QUE CAUSARON EL ERROR:', {
+    console.error('❌ PARÁMETROS:', {
       idIncidente,
       estadoAnterior,
       estadoNuevo,
@@ -251,22 +230,13 @@ exports.getIncidenteById = async (req, res) => {
   }
 };
 
-// ✨ CREAR UN NUEVO INCIDENTE - CORREGIDO PARA MYSQL DIRECTO
+// ✅ CREAR UN NUEVO INCIDENTE - LOGS LIMPIOS
 exports.createIncidente = async (req, res) => {
   try {
-    console.log('🚀 CREAR INCIDENTE - Body recibido:', req.body);
-
     const {
       id_guardia, inicio, fin, descripcion,
       observaciones, codigos
     } = req.body;
-
-    console.log('🚀 FECHAS RECIBIDAS:', {
-      inicio: inicio,
-      fin: fin,
-      inicio_type: typeof inicio,
-      fin_type: typeof fin
-    });
 
     // Verificar que la guardia existe
     const guardia = await Guardia.findByPk(id_guardia);
@@ -280,11 +250,6 @@ exports.createIncidente = async (req, res) => {
     // ✨ PARSEAR FECHAS DE MANERA SEGURA
     const inicioParseado = parsearFechaSafe(inicio);
     const finParseado = parsearFechaSafe(fin);
-
-    console.log('🚀 FECHAS PARSEADAS:', {
-      inicioParseado: inicioParseado,
-      finParseado: finParseado
-    });
 
     // Verificar que las fechas son válidas
     if (finParseado <= inicioParseado) {
@@ -313,38 +278,27 @@ exports.createIncidente = async (req, res) => {
     const inicioMySQL = formatearFechaParaMySQL(inicioParseado);
     const finMySQL = formatearFechaParaMySQL(finParseado);
 
-    console.log('🚀 FECHAS PARA MySQL:', {
-      inicioMySQL: inicioMySQL,
-      finMySQL: finMySQL
-    });
-
     // ✨ PREPARAR CÓDIGOS ANTES DE CREAR EL INCIDENTE
     let codigosParaInsertar = [];
 
     if (codigos && Array.isArray(codigos) && codigos.length > 0) {
-      console.log('🔄 USANDO CÓDIGOS PROPORCIONADOS:', codigos);
       codigosParaInsertar = codigos;
     } else {
-      console.log('🔍 BUSCANDO CÓDIGOS APLICABLES...');
-
       try {
         const horaInicio = inicioParseado.toTimeString().substring(0, 8);
         const horaFin = finParseado.toTimeString().substring(0, 8);
 
         // ✨ OBTENER MODALIDAD DE CONVENIO DEL BODY (viene del frontend)
         const modalidadConvenio = req.body.modalidad_convenio || 'FC';
-        console.log('🏢 MODALIDAD DE CONVENIO:', modalidadConvenio);
 
         const codigosAplicables = await Codigo.findApplicable(
           guardiaDate,
           horaInicio,
           horaFin,
-          modalidadConvenio  // ✨ PASAR MODALIDAD DE CONVENIO
+          modalidadConvenio
         );
 
         const duracionMinutos = Math.floor((finParseado - inicioParseado) / (1000 * 60));
-
-        console.log(`🔍 CÓDIGOS APLICABLES ENCONTRADOS: ${codigosAplicables.length} para modalidad ${modalidadConvenio}`);
 
         codigosParaInsertar = codigosAplicables.map(codigo => ({
           id_codigo: codigo.id,
@@ -357,39 +311,42 @@ exports.createIncidente = async (req, res) => {
       }
     }
 
-    // ✨ PREPARAR DATOS DEL INCIDENTE - CORREGIDO PARA UNDEFINED
+    // ✨ PREPARAR DATOS DEL INCIDENTE
     const incidenteData = {
       id_guardia,
       inicio: inicioMySQL,
       fin: finMySQL,
       descripcion,
-      id_usuario_registro: req.user?.id || null, // ✨ CONVERTIR UNDEFINED A NULL
-      observaciones: observaciones || null,      // ✨ CONVERTIR UNDEFINED A NULL
+      id_usuario_registro: req.user?.id || null,
+      observaciones: observaciones || null,
       estado: 'registrado',
       codigos: codigosParaInsertar
     };
-
-    console.log('🚀 DATOS DEL INCIDENTE A CREAR:', {
-      ...incidenteData,
-      codigos: `${codigosParaInsertar.length} códigos`
-    });
 
     // ✨ CREAR EL INCIDENTE USANDO EL MODELO PERSONALIZADO
     let nuevoIncidente;
     try {
       nuevoIncidente = await Incidente.create(incidenteData);
-      console.log('✅ INCIDENTE CREADO EXITOSAMENTE:', {
-        id: nuevoIncidente?.id,
-        tipo: typeof nuevoIncidente,
-        propiedades: nuevoIncidente ? Object.keys(nuevoIncidente) : 'undefined'
-      });
 
-      if (!nuevoIncidente || !nuevoIncidente.id) {
-        throw new Error('El modelo no devolvió un incidente válido');
+      // ✨ VALIDACIÓN MEJORADA DEL INCIDENTE CREADO
+      if (!nuevoIncidente) {
+        throw new Error('El modelo no devolvió un incidente');
+      }
+      
+      if (!nuevoIncidente.id && nuevoIncidente.id !== 0) {
+        throw new Error('El incidente no tiene un ID válido');
+      }
+      
+      // Si el ID es 0, verificar que sea un número válido
+      if (nuevoIncidente.id === 0) {
+        // En algunos casos, 0 puede ser un ID válido, especialmente en desarrollo
+        if (!nuevoIncidente.descripcion) {
+          throw new Error('El incidente creado está vacío');
+        }
       }
 
     } catch (errorCreacion) {
-      console.error('❌ ERROR EN INCIDENTE.CREATE:', errorCreacion);
+      console.error('❌ ERROR AL CREAR INCIDENTE:', errorCreacion);
       console.error('❌ STACK TRACE:', errorCreacion.stack);
 
       return res.status(500).json({
@@ -408,35 +365,10 @@ exports.createIncidente = async (req, res) => {
         req.user?.id,
         'Incidente creado'
       );
-      console.log('✅ HISTORIAL DE ESTADO REGISTRADO');
     } catch (errorHistorial) {
       console.error('❌ Error al registrar historial:', errorHistorial);
       // No fallar la creación por esto
     }
-
-    // ✨ NOTIFICAR A SUPERVISORES (ASYNC, NO BLOQUEAR RESPUESTA)
-    setImmediate(async () => {
-      try {
-        const supervisores = await obtenerSupervisores();
-        for (const supervisor of supervisores) {
-          await enviarNotificacion({
-            id_usuario: supervisor.id,
-            tipo: 'nuevo_incidente',
-            titulo: 'Nuevo Incidente Registrado',
-            mensaje: `Se ha registrado un nuevo incidente: ${descripcion.substring(0, 50)}...`,
-            datos_adicionales: {
-              id_incidente: nuevoIncidente.id,
-              id_guardia: id_guardia,
-              usuario_guardia: guardia.usuario
-            }
-          });
-        }
-        console.log('✅ NOTIFICACIONES ENVIADAS A SUPERVISORES');
-      } catch (errorNotificacion) {
-        console.error('❌ Error al enviar notificaciones:', errorNotificacion);
-        // No afecta la creación del incidente
-      }
-    });
 
     // ✨ PREPARAR RESPUESTA FINAL SEGURA
     const incidenteRespuesta = {
@@ -454,10 +386,27 @@ exports.createIncidente = async (req, res) => {
       created_at: nuevoIncidente.created_at,
       updated_at: nuevoIncidente.updated_at
     };
-
-    console.log('✅ RESPUESTA FINAL PREPARADA:', {
-      id: incidenteRespuesta.id,
-      codigos_count: incidenteRespuesta.codigos_aplicados.length
+    
+    // ✨ NOTIFICAR A SUPERVISORES (ASYNC, NO BLOQUEAR RESPUESTA)
+    setImmediate(async () => {
+      try {
+        const supervisores = await obtenerSupervisores();
+        for (const supervisor of supervisores) {
+          await enviarNotificacion({
+            id_usuario: supervisor.id,
+            tipo: 'nuevo_incidente',
+            titulo: 'Nuevo Incidente Registrado',
+            mensaje: `Se ha registrado un nuevo incidente: ${descripcion.substring(0, 50)}...`,
+            datos_adicionales: {
+              id_incidente: nuevoIncidente.id,
+              id_guardia: id_guardia,
+              usuario_guardia: guardia.usuario
+            }
+          });
+        }
+      } catch (errorNotificacion) {
+        console.error('❌ Error al enviar notificaciones:', errorNotificacion);
+      }
     });
 
     res.status(201).json({
@@ -468,17 +417,12 @@ exports.createIncidente = async (req, res) => {
 
   } catch (error) {
     console.error('❌ ERROR GENERAL AL CREAR INCIDENTE:', error);
-    console.error('❌ STACK TRACE COMPLETO:', error.stack);
+    console.error('❌ STACK TRACE:', error.stack);
 
-    // ✨ RESPUESTA DE ERROR MÁS DETALLADA
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor al crear incidente',
-      error: error.message,
-      details: process.env.NODE_ENV === 'development' ? {
-        stack: error.stack,
-        timestamp: new Date().toISOString()
-      } : undefined
+      error: error.message
     });
   }
 };
@@ -635,10 +579,20 @@ exports.updateIncidente = async (req, res) => {
   }
 };
 
-// Eliminar un incidente
+// ✅ ELIMINAR UN INCIDENTE - LOGS LIMPIOS
 exports.deleteIncidente = async (req, res) => {
   try {
-    const incidente = await Incidente.findByPk(req.params.id);
+    const incidenteId = req.params.id;
+    
+    // Validar que el ID sea válido
+    if (!incidenteId || incidenteId === 'undefined' || incidenteId === 'null') {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de incidente no válido'
+      });
+    }
+    
+    const incidente = await Incidente.findByPk(incidenteId);
 
     if (!incidente) {
       return res.status(404).json({
@@ -655,14 +609,17 @@ exports.deleteIncidente = async (req, res) => {
       });
     }
 
-    await incidente.destroy();
+    const resultadoEliminacion = await incidente.destroy();
 
     res.status(200).json({
       success: true,
       message: 'Incidente eliminado correctamente'
     });
+
   } catch (error) {
-    console.error('Error al eliminar incidente:', error);
+    console.error('❌ ERROR AL ELIMINAR INCIDENTE:', error);
+    console.error('❌ Stack trace:', error.stack);
+    
     res.status(500).json({
       success: false,
       message: 'Error al eliminar incidente',
