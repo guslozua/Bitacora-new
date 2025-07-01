@@ -17,6 +17,9 @@ type DashboardSectionVisibilityContextType = {
   getVisibleSections: () => DashboardSection[];
   resetToDefaults: () => void;
   isSectionVisible: (id: string) => boolean;
+  reorderSections: (dragIndex: number, hoverIndex: number) => void;
+  moveSectionToPosition: (sectionId: string, newOrder: number) => void;
+  getSectionsInOrder: () => DashboardSection[];
 };
 
 const defaultSections: DashboardSection[] = [
@@ -149,6 +152,52 @@ export const DashboardSectionVisibilityProvider = ({ children }: { children: Rea
     setSections(defaultSections);
   };
 
+  // Reordenar secciones por drag & drop
+  const reorderSections = (dragIndex: number, hoverIndex: number) => {
+    const newSections = [...sections];
+    const draggedSection = newSections[dragIndex];
+    
+    // Remover el elemento arrastrado
+    newSections.splice(dragIndex, 1);
+    // Insertarlo en la nueva posición
+    newSections.splice(hoverIndex, 0, draggedSection);
+    
+    // Actualizar los números de orden
+    const reorderedSections = newSections.map((section, index) => ({
+      ...section,
+      order: index + 1
+    }));
+    
+    setSections(reorderedSections);
+  };
+
+  // Mover una sección a una posición específica
+  const moveSectionToPosition = (sectionId: string, newOrder: number) => {
+    const currentSections = [...sections];
+    const sectionToMove = currentSections.find(s => s.id === sectionId);
+    
+    if (!sectionToMove) return;
+    
+    // Remover la sección de su posición actual
+    const filteredSections = currentSections.filter(s => s.id !== sectionId);
+    
+    // Insertar en la nueva posición
+    filteredSections.splice(newOrder - 1, 0, sectionToMove);
+    
+    // Actualizar todos los números de orden
+    const reorderedSections = filteredSections.map((section, index) => ({
+      ...section,
+      order: index + 1
+    }));
+    
+    setSections(reorderedSections);
+  };
+
+  // Obtener secciones ordenadas
+  const getSectionsInOrder = () => {
+    return [...sections].sort((a, b) => a.order - b.order);
+  };
+
   return (
     <DashboardSectionVisibilityContext.Provider 
       value={{ 
@@ -157,7 +206,10 @@ export const DashboardSectionVisibilityProvider = ({ children }: { children: Rea
         toggleSectionVisibility, 
         getVisibleSections, 
         resetToDefaults,
-        isSectionVisible
+        isSectionVisible,
+        reorderSections,
+        moveSectionToPosition,
+        getSectionsInOrder
       }}
     >
       {children}
