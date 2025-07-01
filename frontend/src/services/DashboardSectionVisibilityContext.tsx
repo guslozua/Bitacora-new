@@ -24,12 +24,20 @@ type DashboardSectionVisibilityContextType = {
 
 const defaultSections: DashboardSection[] = [
   {
+    id: 'kpis-sistema',
+    label: 'KPIs del Sistema',
+    description: 'Indicadores clave y métricas del sistema',
+    visible: true,
+    icon: 'bi-speedometer2',
+    order: 1
+  },
+  {
     id: 'actividad-reciente',
     label: 'Actividad Reciente',
     description: 'Últimas acciones y cambios en el sistema',
     visible: true,
     icon: 'bi-clock-history',
-    order: 1
+    order: 2
   },
   {
     id: 'calendario',
@@ -37,7 +45,7 @@ const defaultSections: DashboardSection[] = [
     description: 'Mini calendario con eventos próximos',
     visible: true,
     icon: 'bi-calendar-event',
-    order: 2
+    order: 3
   },
   {
     id: 'anuncios',
@@ -45,7 +53,7 @@ const defaultSections: DashboardSection[] = [
     description: 'Carrusel de anuncios y noticias importantes',
     visible: true,
     icon: 'bi-megaphone',
-    order: 3
+    order: 4
   },
   {
     id: 'reportes-rapidos',
@@ -53,7 +61,7 @@ const defaultSections: DashboardSection[] = [
     description: 'Gráfico con estadísticas del sistema',
     visible: true,
     icon: 'bi-bar-chart-fill',
-    order: 4
+    order: 5
   },
   {
     id: 'proximos-eventos',
@@ -61,7 +69,7 @@ const defaultSections: DashboardSection[] = [
     description: 'Lista de eventos programados',
     visible: true,
     icon: 'bi-calendar-check',
-    order: 5
+    order: 6
   },
   {
     id: 'acciones-rapidas',
@@ -69,7 +77,7 @@ const defaultSections: DashboardSection[] = [
     description: 'Botones para crear proyectos, tareas y eventos',
     visible: true,
     icon: 'bi-lightning-charge',
-    order: 6
+    order: 7
   },
   {
     id: 'resumen-sistema',
@@ -77,7 +85,7 @@ const defaultSections: DashboardSection[] = [
     description: 'Estadísticas generales y métricas del sistema',
     visible: true,
     icon: 'bi-pie-chart-fill',
-    order: 7
+    order: 8
   },
   {
     id: 'cronograma-proyectos',
@@ -85,7 +93,7 @@ const defaultSections: DashboardSection[] = [
     description: 'Vista Gantt con el cronograma de proyectos',
     visible: true,
     icon: 'bi-diagram-3-fill',
-    order: 8
+    order: 9
   }
 ];
 
@@ -106,6 +114,16 @@ export const DashboardSectionVisibilityProvider = ({ children }: { children: Rea
     if (savedSections) {
       try {
         const parsed = JSON.parse(savedSections);
+        
+        // Verificar si existe la nueva sección de KPIs
+        const hasKpisSection = parsed.some((section: DashboardSection) => section.id === 'kpis-sistema');
+        
+        if (!hasKpisSection) {
+          // Si no tiene la sección de KPIs, resetear a configuración por defecto
+          console.log('Migrando configuración del dashboard para incluir KPIs del Sistema');
+          localStorage.setItem('dashboardSections', JSON.stringify(defaultSections));
+          return defaultSections;
+        }
         
         // Migrar configuración si hay secciones nuevas en defaultSections
         const migratedSections = defaultSections.map(defaultSection => {

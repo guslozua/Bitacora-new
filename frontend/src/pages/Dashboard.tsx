@@ -483,6 +483,18 @@ const Dashboard = () => {
   // FUNCIÓN AUXILIAR: Renderizar componente de sección individual
   const renderSectionComponent = (sectionId: string): JSX.Element | null => {
     switch (sectionId) {
+      case 'kpis-sistema':
+        return (
+          <div className="mb-4">
+            <KpiRow 
+              title="Indicadores del Sistema"
+              subtitle="Métricas clave y estadísticas del sistema"
+              refreshTrigger={kpiRefreshTrigger}
+              onRefreshComplete={() => console.log('KPIs refreshed')}
+            />
+          </div>
+        );
+
       case 'actividad-reciente':
         return (
           <Card className="shadow-sm h-100 border-0 themed-card">
@@ -776,7 +788,7 @@ const Dashboard = () => {
       if (!sectionComponent) return;
 
       // Determinar si la sección ocupa toda la fila o la mitad
-      const isFullWidth = ['anuncios', 'cronograma-proyectos'].includes(section.id);
+      const isFullWidth = ['kpis-sistema', 'anuncios', 'cronograma-proyectos'].includes(section.id);
       
       if (isFullWidth) {
         // Si hay elementos en la fila actual, cerrarla primero
@@ -914,16 +926,6 @@ const Dashboard = () => {
             </div>
           ) : (
             <>
-              {/* Sección de KPIs */}
-              <div className="mb-4">
-                <KpiRow 
-                  title="Indicadores del Sistema"
-                  subtitle="Métricas clave y estadísticas del sistema"
-                  refreshTrigger={kpiRefreshTrigger}
-                  onRefreshComplete={() => console.log('KPIs refreshed')}
-                />
-              </div>
-
               {/* Renderizado dinámico de secciones según orden configurado */}
               {renderSectionsByOrder()}
             </>

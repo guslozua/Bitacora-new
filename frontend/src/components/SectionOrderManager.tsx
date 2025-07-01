@@ -160,7 +160,7 @@ const DashboardPreview: React.FC<DashboardPreviewProps> = ({ sections, isDarkMod
 
   // Simular el layout del dashboard
   const renderMiniSection = (section: DashboardSection, index: number) => {
-    const isFullWidth = ['anuncios', 'cronograma-proyectos'].includes(section.id);
+    const isFullWidth = ['kpis-sistema', 'anuncios', 'cronograma-proyectos'].includes(section.id);
     
     return (
       <div
@@ -209,26 +209,9 @@ const DashboardPreview: React.FC<DashboardPreviewProps> = ({ sections, isDarkMod
       </Card.Header>
       <Card.Body className="p-3">
         <div className="mb-2">
-          <small className="text-primary fw-medium">
-            <i className="bi bi-grid-3x3-gap me-1"></i>
-            KPIs del Sistema
-          </small>
-          <div 
-            className="p-2 rounded mb-2"
-            style={{ 
-              backgroundColor: themeColors.miniCardBg,
-              border: `1px dashed ${themeColors.border}`,
-              fontSize: '0.7rem'
-            }}
-          >
-            <span style={{ color: themeColors.textPrimary }}>Indicadores | Métricas | Estadísticas</span>
-          </div>
-        </div>
-
-        <div className="mb-2">
           <small className="text-success fw-medium">
             <i className="bi bi-layout-wtf me-1"></i>
-            Secciones Dinámicas ({visibleSections.length} visibles)
+            Secciones del Dashboard ({visibleSections.length} visibles)
           </small>
         </div>
 
