@@ -242,31 +242,46 @@ const AnnouncementsCarousel: React.FC = () => {
 
                     {/* Sección inferior con botón y autor */}
                     <div className="mt-auto">
-                      {/* Botón de acción más compacto */}
+                      {/* Botón de acción con estilo consistente entre temas */}
                       {announcement.action_text && (
                         <div className="mb-3">
                           <Button
                             className="px-4 py-2 fw-bold"
+                            variant=""
                             style={{
-                              backgroundColor: 'rgba(255,255,255,0.2)',
-                              border: '2px solid rgba(255,255,255,0.4)',
-                              color: 'white',
+                              backgroundColor: 'transparent !important',
+                              border: '2px solid rgba(255,255,255,0.4) !important',
+                              color: 'white !important',
                               backdropFilter: 'blur(10px)',
-                              transition: 'all 0.3s ease',
+                              transition: 'all 0.3s ease !important',
                               fontSize: '0.9rem'
                             }}
                             onClick={() => handleActionClick(announcement)}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)';
+                              e.currentTarget.style.setProperty('background-color', 'rgba(255,255,255,0.1)', 'important');
+                              e.currentTarget.style.setProperty('color', 'white', 'important');
                               e.currentTarget.style.transform = 'translateY(-2px)';
+                              e.currentTarget.style.setProperty('border-color', 'rgba(255,255,255,0.6)', 'important');
+                              // Asegurar que el icono también sea blanco
+                              const icon = e.currentTarget.querySelector('i');
+                              if (icon) {
+                                (icon as HTMLElement).style.setProperty('color', 'white', 'important');
+                              }
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+                              e.currentTarget.style.setProperty('background-color', 'transparent', 'important');
+                              e.currentTarget.style.setProperty('color', 'white', 'important');
                               e.currentTarget.style.transform = 'translateY(0)';
+                              e.currentTarget.style.setProperty('border-color', 'rgba(255,255,255,0.4)', 'important');
+                              // Asegurar que el icono también sea blanco
+                              const icon = e.currentTarget.querySelector('i');
+                              if (icon) {
+                                (icon as HTMLElement).style.setProperty('color', 'white', 'important');
+                              }
                             }}
                           >
                             {announcement.action_text}
-                            <i className="bi bi-arrow-right ms-2"></i>
+                            <i className="bi bi-arrow-right ms-2" style={{ color: 'white !important' }}></i>
                           </Button>
                         </div>
                       )}
