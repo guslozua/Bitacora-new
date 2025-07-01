@@ -84,7 +84,12 @@ const agregarTermino = async (req, res) => {
       return res.status(400).json({ message: 'El término y la definición son obligatorios' });
     }
     
-    const id = await GlosarioModel.agregarTermino(termino, definicion, categoria_id, creado_por);
+    // Validar que el término no esté vacío o solo contenga espacios
+    if (!termino.trim()) {
+      return res.status(400).json({ message: 'El término no puede estar vacío' });
+    }
+    
+    const id = await GlosarioModel.agregarTermino(termino.trim(), definicion, categoria_id, creado_por);
     
     res.status(201).json({ 
       message: 'Término agregado correctamente', 
@@ -92,6 +97,17 @@ const agregarTermino = async (req, res) => {
     });
   } catch (error) {
     console.error('Error en agregarTermino:', error);
+    
+    // Manejar error de término duplicado
+    if (error.message.includes('ya existe')) {
+      return res.status(409).json({ message: error.message });
+    }
+    
+    // Manejar error de ID inválido
+    if (error.message.includes('ID inválido')) {
+      return res.status(500).json({ message: 'Error interno: No se pudo generar un identificador válido' });
+    }
+    
     res.status(500).json({ message: 'Error al agregar término' });
   }
 };
@@ -162,6 +178,8 @@ const getTerminosByCategoria = async (req, res) => {
   }
 };
 
+
+
 module.exports = {
   getAllTerminos,
   getTerminoById,
@@ -172,5 +190,5 @@ module.exports = {
   actualizarTermino,
   eliminarTermino,
   getAllCategorias,
-  getTerminosByCategoria
+  getTerminosByCategoria,
 };

@@ -109,8 +109,9 @@ const Glosario = () => {
       const res = await axios.get('http://localhost:5000/api/glosario');
       
       // Asegurarse de que todas las entradas tengan la información de color
+      let terminosConCategorias = res.data;
       if (categorias.length > 0) {
-        const terminosConColorCategoria = res.data.map((term: TerminoGlosario) => {
+        terminosConCategorias = res.data.map((term: TerminoGlosario) => {
           if (term.categoria_id) {
             const categoriaEncontrada = categorias.find(cat => cat.id === term.categoria_id);
             if (categoriaEncontrada) {
@@ -123,17 +124,15 @@ const Glosario = () => {
           }
           return term;
         });
-        
-        // ✨ APLICAR ORDENAMIENTO CON NUMÉRICOS AL FINAL
-        const terminosOrdenados = ordenarTerminos(terminosConColorCategoria);
-        setTerminos(terminosOrdenados);
-        setTerminosFiltrados(terminosOrdenados);
-      } else {
-        // ✨ APLICAR ORDENAMIENTO CON NUMÉRICOS AL FINAL
-        const terminosOrdenados = ordenarTerminos(res.data);
-        setTerminos(terminosOrdenados);
-        setTerminosFiltrados(terminosOrdenados);
       }
+      
+      // Ordenar términos
+      const terminosOrdenados = ordenarTerminos(terminosConCategorias);
+      setTerminos(terminosOrdenados);
+      
+      // Aplicar filtros actuales
+      const terminosFiltrados = aplicarFiltros(terminosOrdenados, letraActiva, categoriaActiva, searchTerm);
+      setTerminosFiltrados(terminosFiltrados);
       
       setLoading(false);
     } catch (err) {
@@ -156,12 +155,14 @@ const Glosario = () => {
   // Función para filtrar por letra
   const filtrarPorLetra = (letra: string) => {
     if (letra === letraActiva) {
-      // Si la letra ya está activa, desactivarla y mostrar términos según categoría activa
+      // Si la letra ya está activa, desactivarla
       setLetraActiva('');
-      applyFilters('', categoriaActiva);
+      const terminosFiltrados = aplicarFiltros(terminos, '', categoriaActiva, searchTerm);
+      setTerminosFiltrados(terminosFiltrados);
     } else {
       setLetraActiva(letra);
-      applyFilters(letra, categoriaActiva);
+      const terminosFiltrados = aplicarFiltros(terminos, letra, categoriaActiva, searchTerm);
+      setTerminosFiltrados(terminosFiltrados);
     }
   };
 
@@ -170,57 +171,72 @@ const Glosario = () => {
     if (categoriaId === categoriaActiva) {
       // Si la categoría ya está activa, desactivarla
       setCategoriaActiva(null);
-      applyFilters(letraActiva, null);
+      const terminosFiltrados = aplicarFiltros(terminos, letraActiva, null, searchTerm);
+      setTerminosFiltrados(terminosFiltrados);
     } else {
       setCategoriaActiva(categoriaId);
-      applyFilters(letraActiva, categoriaId);
+      const terminosFiltrados = aplicarFiltros(terminos, letraActiva, categoriaId, searchTerm);
+      setTerminosFiltrados(terminosFiltrados);
     }
   };
 
-  // ✨ FUNCIÓN MEJORADA QUE APLICA TODOS LOS FILTROS Y MANTIENE EL ORDENAMIENTO
-  const applyFilters = (letra: string, categoriaId: number | null, sourceTerminos = terminos) => {
-    let filtered = [...sourceTerminos];
+  // Función simplificada para aplicar todos los filtros
+  const aplicarFiltros = (todosTerminos: TerminoGlosario[], letra: string, categoriaId: number | null, busqueda: string) => {
+    let resultado = [...todosTerminos];
     
-    // Filtrar por letra
-    if (letra) {
+    // 1. Filtrar registros válidos
+    resultado = resultado.filter(term => term.id && term.id > 0 && term.termino && term.termino.trim());
+    
+    // 2. Filtrar por letra si existe
+    if (letra && letra.trim()) {
       if (letra === '#') {
-        filtered = filtered.filter(term => comienzaConNumero(term.termino));
+        resultado = resultado.filter(term => /^[0-9]/.test(term.termino.trim()));
       } else {
-        filtered = filtered.filter(term => term.termino.toUpperCase().startsWith(letra));
+        resultado = resultado.filter(term => {
+          const terminoLimpio = term.termino.trim().toUpperCase();
+          const letraLimpia = letra.toUpperCase();
+          return terminoLimpio.startsWith(letraLimpia);
+        });
       }
     }
     
-    // Filtrar por categoría
+    // 3. Filtrar por categoría si existe
     if (categoriaId !== null) {
-      filtered = filtered.filter(term => term.categoria_id === categoriaId);
+      resultado = resultado.filter(term => term.categoria_id === categoriaId);
     }
     
-    // Filtrar por término de búsqueda
-    if (searchTerm) {
-      filtered = filtered.filter(term => 
-        term.termino.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        term.definicion.toLowerCase().includes(searchTerm.toLowerCase())
+    // 4. Filtrar por búsqueda si existe
+    if (busqueda && busqueda.trim()) {
+      const busquedaLimpia = busqueda.toLowerCase().trim();
+      resultado = resultado.filter(term => 
+        term.termino.toLowerCase().includes(busquedaLimpia) ||
+        term.definicion.toLowerCase().includes(busquedaLimpia)
       );
     }
     
-    // ✨ APLICAR ORDENAMIENTO DESPUÉS DEL FILTRADO
-    const filteredOrdenados = ordenarTerminos(filtered);
-    setTerminosFiltrados(filteredOrdenados);
+    // 5. Ordenar resultado final
+    return ordenarTerminos(resultado);
   };
+
+
 
   // Función para filtrar por término de búsqueda
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
     
-    // Aplicar todos los filtros
-    applyFilters(letraActiva, categoriaActiva);
+    // Aplicar todos los filtros con el nuevo término de búsqueda
+    const terminosFiltrados = aplicarFiltros(terminos, letraActiva, categoriaActiva, value);
+    setTerminosFiltrados(terminosFiltrados);
   };
 
-  // Actualizar filtros cuando cambia searchTerm
+  // Actualizar filtros cuando cambien los términos base
   useEffect(() => {
-    applyFilters(letraActiva, categoriaActiva);
-  }, [searchTerm, terminos]);
+    if (terminos.length > 0) {
+      const terminosFiltrados = aplicarFiltros(terminos, letraActiva, categoriaActiva, searchTerm);
+      setTerminosFiltrados(terminosFiltrados);
+    }
+  }, [terminos]);
 
   // Manejar cambio en formulario de término
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -256,7 +272,7 @@ const Glosario = () => {
   // Función para guardar un término (nuevo o actualizado)
   const handleSaveTermino = async () => {
     // Validación de campos obligatorios
-    if (!formTermino.termino || !formTermino.definicion) {
+    if (!formTermino.termino?.trim() || !formTermino.definicion?.trim()) {
       Swal.fire({
         title: 'Error',
         text: 'El término y la definición son obligatorios',
@@ -271,8 +287,8 @@ const Glosario = () => {
       const usuario = JSON.parse(localStorage.getItem('user') || '{}');
       
       const payload = {
-        termino: formTermino.termino,
-        definicion: formTermino.definicion,
+        termino: formTermino.termino.trim(),
+        definicion: formTermino.definicion.trim(),
         categoria_id: formTermino.categoria_id ? parseInt(formTermino.categoria_id) : null
       };
       
@@ -313,13 +329,23 @@ const Glosario = () => {
       
       // Recargar los términos
       fetchTerminos();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving term:', err);
+      
+      let errorMessage = selectedTermino 
+        ? 'Error al actualizar el término' 
+        : 'Error al agregar el término al glosario';
+      
+      // Manejar errores específicos del backend
+      if (err.response?.status === 409) {
+        errorMessage = err.response.data.message || 'El término ya existe en el glosario';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
       Swal.fire({
         title: 'Error',
-        text: selectedTermino 
-          ? 'Error al actualizar el término' 
-          : 'Error al agregar el término al glosario',
+        text: errorMessage,
         icon: 'error',
         confirmButtonText: 'Aceptar'
       });
@@ -365,7 +391,7 @@ const Glosario = () => {
     });
   };
 
-  // Función para mostrar el conteo de términos por categoría
+
   const getTerminosPorCategoria = () => {
     const categoriaCount: { [key: number]: number } = {};
     terminosFiltrados.forEach(term => {
@@ -408,12 +434,18 @@ const Glosario = () => {
           // ✨ APLICAR ORDENAMIENTO CON NUMÉRICOS AL FINAL
           const terminosOrdenados = ordenarTerminos(terminosConCategorias);
           setTerminos(terminosOrdenados);
-          setTerminosFiltrados(terminosOrdenados);
+          
+          // Aplicar filtros iniciales (mostrar todos)
+          const terminosFiltrados = aplicarFiltros(terminosOrdenados, '', null, '');
+        setTerminosFiltrados(terminosFiltrados);
         } else {
           // ✨ APLICAR ORDENAMIENTO CON NUMÉRICOS AL FINAL
           const terminosOrdenados = ordenarTerminos(res.data);
           setTerminos(terminosOrdenados);
-          setTerminosFiltrados(terminosOrdenados);
+          
+          // Aplicar filtros iniciales (mostrar todos)
+          const terminosFiltrados = aplicarFiltros(terminosOrdenados, '', null, '');
+          setTerminosFiltrados(terminosFiltrados);
         }
         
         setLoading(false);
@@ -449,7 +481,8 @@ const Glosario = () => {
       setTerminos(terminosOrdenados);
       
       // También actualizar los filtrados manteniendo los filtros actuales
-      applyFilters(letraActiva, categoriaActiva, terminosOrdenados);
+      const terminosFiltrados = aplicarFiltros(terminosOrdenados, letraActiva, categoriaActiva, searchTerm);
+      setTerminosFiltrados(terminosFiltrados);
     }
   }, [categorias]);
 

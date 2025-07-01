@@ -23,6 +23,8 @@ router.get('/categorias', glosarioController.getAllCategorias);
 // Obtener términos por categoría
 router.get('/categoria/:categoriaId', glosarioController.getTerminosByCategoria);
 
+
+
 // Agregar un nuevo término (protegido por autenticación)
 router.post('/', authMiddleware, glosarioController.agregarTermino);
 

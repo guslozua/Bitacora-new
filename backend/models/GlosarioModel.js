@@ -88,10 +88,26 @@ const buscarTerminos = async (busqueda) => {
 // Agregar un nuevo término
 const agregarTermino = async (termino, definicion, categoria_id, creado_por) => {
   try {
+    // Verificar si el término ya existe (prevenir duplicados)
+    const [existingRows] = await db.query(
+      'SELECT id FROM glosario WHERE LOWER(TRIM(termino)) = LOWER(TRIM(?))',
+      [termino]
+    );
+    
+    if (existingRows.length > 0) {
+      throw new Error(`El término "${termino}" ya existe en el glosario`);
+    }
+    
     const [result] = await db.query(
       'INSERT INTO glosario (termino, definicion, categoria_id, creado_por) VALUES (?, ?, ?, ?)',
       [termino, definicion, categoria_id, creado_por]
     );
+    
+    // Verificar que el ID generado sea válido
+    if (!result.insertId || result.insertId <= 0) {
+      throw new Error('Error: Se generó un ID inválido para el término');
+    }
+    
     return result.insertId;
   } catch (error) {
     console.error('Error al agregar término:', error);
@@ -152,6 +168,8 @@ const getTerminosByCategoria = async (categoriaId) => {
   }
 };
 
+
+
 module.exports = {
   getAllTerminos,
   getTerminoById,
@@ -162,5 +180,5 @@ module.exports = {
   actualizarTermino,
   eliminarTermino,
   getAllCategorias,
-  getTerminosByCategoria
+  getTerminosByCategoria,
 };
