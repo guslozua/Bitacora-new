@@ -32,13 +32,19 @@ export const SidebarVisibilityProvider = ({ children }: { children: ReactNode })
       hitos: true,
       itracker: true,
       tabulaciones: true,
+      sessionanalysis: true,
+      aternity: true,
       incidencias: true,
+      contactos: true,
       stats: true,
       admin: true,
       reports: true,
       calendar: true,
       messages: true,
       notifications: true,
+      links: true,
+      glosario: true,
+      placas: true,
     };
   });
   

@@ -96,6 +96,7 @@ const AdminPanel: React.FC = () => {
 
   const [loadingStats, setLoadingStats] = useState<boolean>(true);
 
+  // 🆕 ACTUALIZADO: Array completo de elementos del sidebar incluyendo monitoreo aternity y análisis de sesiones
   const sidebarItemsMeta: SidebarItemMeta[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'bi-clipboard-data-fill', color: '#3498db' },
     { id: 'proyectos', label: 'Proyectos', icon: 'bi-diagram-3-fill', color: '#2ecc71' },
@@ -104,6 +105,8 @@ const AdminPanel: React.FC = () => {
     { id: 'usuarios', label: 'ABM Usuarios', icon: 'bi-people-fill', color: '#e74c3c' },
     { id: 'itracker', label: 'iTracker', icon: 'bi-circle', color: '#3498db' },
     { id: 'tabulaciones', label: 'Tabulaciones', icon: 'bi-table', color: '#2ecc71' },
+    { id: 'sessionanalysis', label: 'Análisis de Sesiones', icon: 'bi-graph-up-arrow', color: '#ff6b6b' },
+    { id: 'aternity', label: 'Monitoreo Aternity', icon: 'bi-speedometer2', color: '#17a2b8' },
     { id: 'contactos', label: 'Agenda de Contactos', icon: 'bi-telephone-fill', color: '#c30b4e' },
     { id: 'calendar', label: 'Calendario', icon: 'bi-calendar-date', color: '#3498db' },
     { id: 'messages', label: 'Mensajes', icon: 'bi-chat-dots-fill', color: '#2ecc71' },
@@ -115,6 +118,7 @@ const AdminPanel: React.FC = () => {
     { id: 'reports', label: 'Informes', icon: 'bi-file-earmark-text', color: '#1abc9c' },
     { id: 'admin', label: 'Configuración', icon: 'bi-gear-fill', color: '#9b59b6' },
   ];
+
   // 🎯 FUNCIÓN NUEVA: Cargar estadísticas reales del sistema
   const fetchAdminStats = async (): Promise<void> => {
     try {
@@ -432,6 +436,7 @@ const AdminPanel: React.FC = () => {
     // 🔄 Refrescar estadísticas después de subir archivo ABM
     fetchAdminStats();
   };
+
   return (
     <div
       className="d-flex flex-column"
@@ -576,7 +581,7 @@ const AdminPanel: React.FC = () => {
                       style={{ 
                         backgroundColor: themeColors.sidebarBg,
                         borderRadius: '8px', 
-                        overflow: 'hidden' 
+                        overflow: 'hidden'
                       }}
                     >
                       <div 
@@ -1015,6 +1020,8 @@ const AdminPanel: React.FC = () => {
             </Row>
           </Card.Body>
         </Card>
+        
+        {/* MODALES */}
         <Modal
           show={showItrackerModal}
           onHide={resetItrackerModal}

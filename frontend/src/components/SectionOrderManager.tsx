@@ -165,36 +165,41 @@ const DashboardPreview: React.FC<DashboardPreviewProps> = ({ sections, isDarkMod
     return (
       <div
         key={section.id}
-        className={`mb-1 p-2 rounded d-flex align-items-center justify-content-between ${isFullWidth ? 'col-12' : 'col-6'}`}
-        style={{
-          backgroundColor: section.visible ? themeColors.miniCardBg : themeColors.disabledBg,
-          border: `1px solid ${themeColors.border}`,
-          opacity: section.visible ? 1 : 0.5,
-          fontSize: '0.75rem',
-          minHeight: '30px'
-        }}
+        className={isFullWidth ? 'col-12' : 'col-6'}
+        style={{ paddingBottom: '4px' }}
       >
-        <div className="d-flex align-items-center">
-          <i 
-            className={`bi ${section.icon} me-2`}
-            style={{ 
-              fontSize: '0.8rem',
-              color: section.visible ? themeColors.textPrimary : '#6c757d'
-            }}
-          ></i>
-          <span style={{ 
-            color: section.visible ? themeColors.textPrimary : '#6c757d',
-            fontWeight: section.visible ? '500' : '400'
-          }}>
-            {section.label}
-          </span>
-        </div>
-        <Badge 
-          bg={section.visible ? 'success' : 'secondary'} 
-          style={{ fontSize: '0.6rem' }}
+        <div
+          className="p-2 rounded d-flex align-items-center justify-content-between"
+          style={{
+            backgroundColor: section.visible ? themeColors.miniCardBg : themeColors.disabledBg,
+            border: `1px solid ${themeColors.border}`,
+            opacity: section.visible ? 1 : 0.5,
+            fontSize: '0.7rem',
+            minHeight: '30px'
+          }}
         >
-          {index + 1}
-        </Badge>
+          <div className="d-flex align-items-center">
+            <i 
+              className={`bi ${section.icon} me-2`}
+              style={{ 
+                fontSize: '0.8rem',
+                color: section.visible ? themeColors.textPrimary : '#6c757d'
+              }}
+            ></i>
+            <span style={{ 
+              color: section.visible ? themeColors.textPrimary : '#6c757d',
+              fontWeight: section.visible ? '500' : '400'
+            }}>
+              {section.label}
+            </span>
+          </div>
+          <Badge 
+            bg={section.visible ? 'success' : 'secondary'} 
+            style={{ fontSize: '0.6rem' }}
+          >
+            {index + 1}
+          </Badge>
+        </div>
       </div>
     );
   };
@@ -215,7 +220,14 @@ const DashboardPreview: React.FC<DashboardPreviewProps> = ({ sections, isDarkMod
           </small>
         </div>
 
-        <div className="row g-1" style={{ fontSize: '0.75rem' }}>
+        <div 
+          className="row g-2" 
+          style={{ 
+            fontSize: '0.75rem', 
+            maxHeight: '320px', 
+            overflowY: 'auto'
+          }}
+        >
           {visibleSections.map((section, index) => renderMiniSection(section, index))}
         </div>
 
@@ -333,7 +345,10 @@ const SectionOrderManager: React.FC<SectionOrderManagerProps> = ({ isDarkMode })
   return (
     <Card 
       className="mb-4 border-0 shadow-sm"
-      style={{ backgroundColor: themeColors.cardBackground }}
+      style={{ 
+        backgroundColor: themeColors.cardBackground,
+        minHeight: '650px'
+      }}
     >
       <Card.Header 
         className="py-3"

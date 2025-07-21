@@ -182,6 +182,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     { id: 'usuarios', icon: 'bi-people-fill', label: 'ABM Usuarios', route: '/abmdashboard' },
     { id: 'itracker', icon: 'bi-circle', label: 'iTracker', route: '/itrackerdash' },
     { id: 'tabulaciones', icon: 'bi-table', label: 'Tabulaciones', route: '/tabulacionesdash' },
+    { id: 'sessionanalysis', icon: 'bi-graph-up-arrow', label: 'Análisis de Sesiones', route: '/session-analysis' },
+    { id: 'aternity', icon: 'bi-speedometer2', label: 'Monitoreo Aternity', route: '/aternity' },
     //{ id: 'incidencias', icon: 'bi-shield-exclamation', label: 'Inc. en Guardia', route: '/incidencias' },
     { id: 'contactos', icon: 'bi-telephone-fill', label: 'Agenda de Contactos', route: '/contactos' }, // ✅ AGREGADO
     { id: 'calendar', icon: 'bi-calendar-date', label: 'Calendario', route: '/calendar' },

@@ -28,6 +28,8 @@ import Enlaces from './pages/Enlaces';
 import ContactosPage from './pages/ContactosPage';
 import Error404 from './pages/Error404';
 import DashboardTest from './pages/DashboardTest';
+import SessionAnalysisDashboard from './pages/SessionAnalysisDashboard'; // 📊 ANÁLISIS DE SESIONES
+import AternityPage from './pages/AternityPage'; // 📈 MONITOREO ATERNITY
 
 // Importaciones para el calendario
 import CalendarPage from './pages/CalendarPage';
@@ -225,6 +227,18 @@ const App: React.FC = () => {
               <Route 
                 path="/admin/diagnostics" 
                 element={<ProtectedRoute element={<DiagnosticsPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+              />
+              
+              {/* 📊 NUEVA RUTA PARA ANÁLISIS DE SESIONES */}
+              <Route 
+                path="/session-analysis" 
+                element={<ProtectedRoute element={<SessionAnalysisDashboard />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+              />
+              
+              {/* 📈 NUEVA RUTA PARA MONITOREO ATERNITY */}
+              <Route 
+                path="/aternity" 
+                element={<ProtectedRoute element={<AternityPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
               />
               
               {/* Ruta para errores */}
