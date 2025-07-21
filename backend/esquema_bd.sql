@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 19-06-2025 a las 22:41:36
+-- Tiempo de generación: 21-07-2025 a las 19:09:33
 -- Versión del servidor: 10.4.25-MariaDB
 -- Versión de PHP: 8.2.0
 
@@ -488,6 +488,28 @@ CREATE TABLE `integrantes` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `ip_ranges_call_centers`
+--
+
+CREATE TABLE `ip_ranges_call_centers` (
+  `id` int(11) NOT NULL,
+  `nombre_call_center` varchar(100) NOT NULL,
+  `ip_inicio` varchar(50) DEFAULT '',
+  `ip_fin` varchar(50) DEFAULT '',
+  `segmento_ip` varchar(100) DEFAULT NULL,
+  `segmento_numero` int(11) DEFAULT 1,
+  `localidad` varchar(100) DEFAULT NULL,
+  `domicilio` varchar(255) DEFAULT NULL,
+  `tipo_contrato` enum('PROPIO','TERCERO') DEFAULT NULL,
+  `descripcion` text DEFAULT NULL,
+  `activo` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Configuración de rangos IP para call centers';
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `itracker_data`
 --
 
@@ -568,6 +590,33 @@ CREATE TABLE `logs` (
   `user_agent` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Logs del sistema para diagnósticos';
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `metricas_sesiones_historicas`
+--
+
+CREATE TABLE `metricas_sesiones_historicas` (
+  `id` int(11) NOT NULL,
+  `fecha_corte` date NOT NULL,
+  `total_sesiones` int(11) DEFAULT 0,
+  `total_sesiones_activas` int(11) DEFAULT 0,
+  `total_vm_pic` int(11) DEFAULT 0,
+  `total_vm_pic_activas` int(11) DEFAULT 0,
+  `total_home` int(11) DEFAULT 0,
+  `total_call_center` int(11) DEFAULT 0,
+  `total_home_activas` int(11) DEFAULT 0,
+  `total_call_center_activas` int(11) DEFAULT 0,
+  `porcentaje_home` decimal(5,2) DEFAULT 0.00,
+  `porcentaje_call_center` decimal(5,2) DEFAULT 0.00,
+  `usuarios_unicos` int(11) DEFAULT 0,
+  `versiones_receiver` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Distribución de versiones' CHECK (json_valid(`versiones_receiver`)),
+  `detalle_call_centers` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Detalle por call center' CHECK (json_valid(`detalle_call_centers`)),
+  `archivo_origen` varchar(255) DEFAULT NULL,
+  `observaciones` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Métricas históricas agregadas por fecha';
 
 -- --------------------------------------------------------
 
@@ -693,6 +742,57 @@ CREATE TABLE `rol_permiso` (
   `id_rol` int(11) NOT NULL,
   `id_permiso` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `sesiones_data`
+--
+
+CREATE TABLE `sesiones_data` (
+  `id` int(11) NOT NULL,
+  `usuario_asociado` varchar(255) DEFAULT NULL,
+  `estado_sesion` varchar(50) DEFAULT NULL,
+  `hora_inicio_sesion` datetime DEFAULT NULL,
+  `anonimo` varchar(10) DEFAULT NULL,
+  `nombre_punto_final` varchar(255) DEFAULT NULL,
+  `ip_punto_final` varchar(15) DEFAULT NULL,
+  `version_receiver` varchar(50) DEFAULT NULL,
+  `nombre_maquina` varchar(255) DEFAULT NULL,
+  `direccion_ip` varchar(15) DEFAULT NULL,
+  `tiempo_inactividad` varchar(20) DEFAULT NULL,
+  `campo_adicional` float DEFAULT NULL,
+  `es_vm_pic` tinyint(1) DEFAULT 0 COMMENT 'Indica si la máquina sigue el patrón VMxxxPICxxxx',
+  `ubicacion_tipo` enum('home','call_center','desconocido') DEFAULT 'desconocido',
+  `call_center_asignado` varchar(100) DEFAULT NULL,
+  `segmento_ip` varchar(50) DEFAULT NULL,
+  `localidad_call_center` varchar(100) DEFAULT NULL,
+  `domicilio_call_center` varchar(255) DEFAULT NULL,
+  `tipo_contrato` enum('PROPIO','TERCERO') DEFAULT NULL,
+  `fecha_procesamiento` date NOT NULL,
+  `archivo_origen` varchar(255) DEFAULT NULL,
+  `unique_key` varchar(255) DEFAULT NULL COMMENT 'Clave única para evitar duplicados',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Datos procesados de sesiones de usuarios';
+
+--
+-- Disparadores `sesiones_data`
+--
+DELIMITER $$
+CREATE TRIGGER `tr_sesiones_data_unique_key` BEFORE INSERT ON `sesiones_data` FOR EACH ROW BEGIN
+  IF NEW.unique_key IS NULL THEN
+    SET NEW.unique_key = MD5(CONCAT(
+      COALESCE(NEW.usuario_asociado, ''),
+      COALESCE(NEW.nombre_maquina, ''),
+      COALESCE(NEW.ip_punto_final, ''),
+      COALESCE(NEW.hora_inicio_sesion, ''),
+      COALESCE(NEW.direccion_ip, '')
+    ));
+  END IF;
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -894,53 +994,74 @@ CREATE TABLE `v_announcements_stats` (
 ,`expired_announcements` decimal(22,0)
 ,`total_views` decimal(32,0)
 ,`total_clicks` decimal(32,0)
-,`avg_views_per_announcement` decimal(14,4)
+,`avg_views_per_announcement` decimal(35,2)
 ,`last_created_at` timestamp
 );
 
 -- --------------------------------------------------------
 
 --
--- Estructura Stand-in para la vista `v_proximos_eventos`
+-- Estructura de tabla para la tabla `v_proximos_eventos`
+--
+
+CREATE TABLE `v_proximos_eventos` (
+  `id` int(11) DEFAULT NULL,
+  `title` varchar(255) DEFAULT NULL,
+  `start` datetime DEFAULT NULL,
+  `end` datetime DEFAULT NULL,
+  `allDay` tinyint(1) DEFAULT NULL,
+  `type` enum('event','task','holiday','guardia','birthday','dayoff','gconect','vacation') DEFAULT NULL,
+  `color` varchar(50) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `completed` tinyint(1) DEFAULT NULL,
+  `createdBy` int(11) DEFAULT NULL,
+  `createdAt` datetime DEFAULT NULL,
+  `updatedAt` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura Stand-in para la vista `v_sesiones_stats_actual`
 -- (Véase abajo para la vista actual)
 --
-CREATE TABLE `v_proximos_eventos` (
-`id` int(11)
-,`title` varchar(255)
-,`start` datetime
-,`end` datetime
-,`allDay` tinyint(1)
-,`type` enum('event','task','holiday','guardia','birthday','dayoff','gconect','vacation')
-,`color` varchar(50)
-,`description` text
-,`location` varchar(255)
-,`completed` tinyint(1)
-,`createdBy` int(11)
-,`createdAt` datetime
-,`updatedAt` datetime
+CREATE TABLE `v_sesiones_stats_actual` (
+`total_sesiones` bigint(21)
+,`sesiones_activas` bigint(21)
+,`total_vm_pic` bigint(21)
+,`vm_pic_activas` bigint(21)
+,`total_home` bigint(21)
+,`total_call_center` bigint(21)
+,`home_activas` bigint(21)
+,`call_center_activas` bigint(21)
+,`porcentaje_home` decimal(26,2)
+,`porcentaje_call_center` decimal(26,2)
+,`usuarios_unicos` bigint(21)
+,`ultima_actualizacion` date
 );
 
 -- --------------------------------------------------------
 
 --
--- Estructura Stand-in para la vista `v_tareas_pendientes`
--- (Véase abajo para la vista actual)
+-- Estructura de tabla para la tabla `v_tareas_pendientes`
 --
+
 CREATE TABLE `v_tareas_pendientes` (
-`id` int(11)
-,`title` varchar(255)
-,`start` datetime
-,`end` datetime
-,`allDay` tinyint(1)
-,`type` enum('event','task','holiday','guardia','birthday','dayoff','gconect','vacation')
-,`color` varchar(50)
-,`description` text
-,`location` varchar(255)
-,`completed` tinyint(1)
-,`createdBy` int(11)
-,`createdAt` datetime
-,`updatedAt` datetime
-);
+  `id` int(11) DEFAULT NULL,
+  `title` varchar(255) DEFAULT NULL,
+  `start` datetime DEFAULT NULL,
+  `end` datetime DEFAULT NULL,
+  `allDay` tinyint(1) DEFAULT NULL,
+  `type` enum('event','task','holiday','guardia','birthday','dayoff','gconect','vacation') DEFAULT NULL,
+  `color` varchar(50) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `completed` tinyint(1) DEFAULT NULL,
+  `createdBy` int(11) DEFAULT NULL,
+  `createdAt` datetime DEFAULT NULL,
+  `updatedAt` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -958,549 +1079,77 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `v_announcements_stats`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_announcements_stats`  AS SELECT count(0) AS `total_announcements`, sum(case when `announcements`.`active` = 1 then 1 else 0 end) AS `active_announcements`, sum(case when `announcements`.`active` = 0 then 1 else 0 end) AS `inactive_announcements`, sum(case when `announcements`.`start_date` > current_timestamp() then 1 else 0 end) AS `scheduled_announcements`, sum(case when `announcements`.`end_date` < current_timestamp() and `announcements`.`end_date` is not null then 1 else 0 end) AS `expired_announcements`, sum(`announcements`.`views_count`) AS `total_views`, sum(`announcements`.`clicks_count`) AS `total_clicks`, coalesce(avg(`announcements`.`views_count`),0) AS `avg_views_per_announcement`, max(`announcements`.`created_at`) AS `last_created_at` FROM `announcements``announcements`  ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_announcements_stats`  AS SELECT count(0) AS `total_announcements`, sum(case when `announcements`.`active` = 1 and (`announcements`.`start_date` is null or `announcements`.`start_date` <= current_timestamp()) and (`announcements`.`end_date` is null or `announcements`.`end_date` >= current_timestamp()) then 1 else 0 end) AS `active_announcements`, sum(case when `announcements`.`active` = 0 then 1 else 0 end) AS `inactive_announcements`, sum(case when `announcements`.`active` = 1 and `announcements`.`start_date` is not null and `announcements`.`start_date` > current_timestamp() then 1 else 0 end) AS `scheduled_announcements`, sum(case when `announcements`.`active` = 1 and `announcements`.`end_date` is not null and `announcements`.`end_date` < current_timestamp() then 1 else 0 end) AS `expired_announcements`, coalesce(sum(`announcements`.`views_count`),0) AS `total_views`, coalesce(sum(`announcements`.`clicks_count`),0) AS `total_clicks`, CASE WHEN count(0) > 0 THEN round(coalesce(sum(`announcements`.`views_count`),0) / count(0),2) ELSE 0 END AS `avg_views_per_announcement`, max(`announcements`.`created_at`) AS `last_created_at` FROM `announcements``announcements`  ;
 
 -- --------------------------------------------------------
 
 --
--- Estructura para la vista `v_proximos_eventos`
+-- Estructura para la vista `v_sesiones_stats_actual`
 --
-DROP TABLE IF EXISTS `v_proximos_eventos`;
+DROP TABLE IF EXISTS `v_sesiones_stats_actual`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_proximos_eventos`  AS SELECT `eventos`.`id` AS `id`, `eventos`.`title` AS `title`, `eventos`.`start` AS `start`, `eventos`.`end` AS `end`, `eventos`.`allDay` AS `allDay`, `eventos`.`type` AS `type`, `eventos`.`color` AS `color`, `eventos`.`description` AS `description`, `eventos`.`location` AS `location`, `eventos`.`completed` AS `completed`, `eventos`.`createdBy` AS `createdBy`, `eventos`.`createdAt` AS `createdAt`, `eventos`.`updatedAt` AS `updatedAt` FROM `eventos` WHERE `eventos`.`start` >= curdate() AND `eventos`.`start` <= curdate() + interval 7 day ORDER BY `eventos`.`start` ASC  ;
-
--- --------------------------------------------------------
-
---
--- Estructura para la vista `v_tareas_pendientes`
---
-DROP TABLE IF EXISTS `v_tareas_pendientes`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_tareas_pendientes`  AS SELECT `eventos`.`id` AS `id`, `eventos`.`title` AS `title`, `eventos`.`start` AS `start`, `eventos`.`end` AS `end`, `eventos`.`allDay` AS `allDay`, `eventos`.`type` AS `type`, `eventos`.`color` AS `color`, `eventos`.`description` AS `description`, `eventos`.`location` AS `location`, `eventos`.`completed` AS `completed`, `eventos`.`createdBy` AS `createdBy`, `eventos`.`createdAt` AS `createdAt`, `eventos`.`updatedAt` AS `updatedAt` FROM `eventos` WHERE `eventos`.`type` = 'task' AND `eventos`.`completed` = 0 ORDER BY `eventos`.`start` ASC  ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_sesiones_stats_actual`  AS SELECT count(0) AS `total_sesiones`, count(case when `sesiones_data`.`estado_sesion` = 'Active' then 1 end) AS `sesiones_activas`, count(0) AS `total_vm_pic`, count(case when `sesiones_data`.`estado_sesion` = 'Active' then 1 end) AS `vm_pic_activas`, count(case when `sesiones_data`.`ubicacion_tipo` = 'home' then 1 end) AS `total_home`, count(case when `sesiones_data`.`ubicacion_tipo` = 'call_center' then 1 end) AS `total_call_center`, count(case when `sesiones_data`.`ubicacion_tipo` = 'home' and `sesiones_data`.`estado_sesion` = 'Active' then 1 end) AS `home_activas`, count(case when `sesiones_data`.`ubicacion_tipo` = 'call_center' and `sesiones_data`.`estado_sesion` = 'Active' then 1 end) AS `call_center_activas`, round(count(case when `sesiones_data`.`ubicacion_tipo` = 'home' then 1 end) * 100.0 / count(0),2) AS `porcentaje_home`, round(count(case when `sesiones_data`.`ubicacion_tipo` = 'call_center' then 1 end) * 100.0 / count(0),2) AS `porcentaje_call_center`, count(distinct case when `sesiones_data`.`usuario_asociado` is not null and `sesiones_data`.`usuario_asociado` <> '' then `sesiones_data`.`usuario_asociado` end) AS `usuarios_unicos`, cast(max(`sesiones_data`.`created_at`) as date) AS `ultima_actualizacion` FROM `sesiones_data` WHERE `sesiones_data`.`es_vm_pic` = 11  ;
 
 --
 -- Índices para tablas volcadas
 --
 
 --
--- Indices de la tabla `abm_pic`
---
-ALTER TABLE `abm_pic`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_key` (`unique_key`);
-
---
--- Indices de la tabla `abm_social`
---
-ALTER TABLE `abm_social`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_key` (`unique_key`);
-
---
--- Indices de la tabla `announcements`
---
-ALTER TABLE `announcements`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_active_priority` (`active`,`priority`),
-  ADD KEY `idx_dates_active` (`start_date`,`end_date`,`active`),
-  ADD KEY `idx_target_audience` (`target_audience`,`active`),
-  ADD KEY `idx_created_by` (`created_by`),
-  ADD KEY `idx_priority_order` (`priority`,`created_at`),
-  ADD KEY `idx_date_range_active` (`start_date`,`end_date`,`active`);
-
---
--- Indices de la tabla `bitacora`
---
-ALTER TABLE `bitacora`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `codigos_facturacion`
---
-ALTER TABLE `codigos_facturacion`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_codigo` (`codigo`),
-  ADD KEY `idx_tipo` (`tipo`),
-  ADD KEY `idx_estado_vigencia` (`estado`,`fecha_vigencia_desde`,`fecha_vigencia_hasta`),
-  ADD KEY `idx_modalidad_convenio` (`modalidad_convenio`,`estado`),
-  ADD KEY `idx_modalidad_convenio_estado` (`modalidad_convenio`,`estado`),
-  ADD KEY `idx_modalidad_tipo_estado` (`modalidad_convenio`,`tipo`,`estado`);
-
---
--- Indices de la tabla `comentarios`
---
-ALTER TABLE `comentarios`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `id_usuario` (`id_usuario`),
-  ADD KEY `id_tarea` (`id_tarea`);
-
---
--- Indices de la tabla `enlaces`
---
-ALTER TABLE `enlaces`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_titulo` (`titulo`),
-  ADD KEY `idx_categoria_id` (`categoria_id`);
-
---
--- Indices de la tabla `enlaces_categorias`
---
-ALTER TABLE `enlaces_categorias`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `nombre` (`nombre`);
-
---
--- Indices de la tabla `enlaces_urls`
---
-ALTER TABLE `enlaces_urls`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_enlace_id` (`enlace_id`);
-
---
--- Indices de la tabla `equipos_integrantes`
---
-ALTER TABLE `equipos_integrantes`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_equipo_integrante` (`equipo_id`,`integrante_id`),
-  ADD KEY `idx_equipo_id` (`equipo_id`),
-  ADD KEY `idx_integrante_id` (`integrante_id`),
-  ADD KEY `idx_responsable` (`es_responsable_principal`),
-  ADD KEY `idx_integrantes_equipo_disponibilidad` (`equipo_id`,`integrante_id`) COMMENT 'Búsqueda rápida de integrantes por equipo';
-
---
--- Indices de la tabla `equipos_sistemas`
---
-ALTER TABLE `equipos_sistemas`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_equipo_sistema` (`equipo_id`,`sistema_id`),
-  ADD KEY `idx_equipo_id` (`equipo_id`),
-  ADD KEY `idx_sistema_id` (`sistema_id`),
-  ADD KEY `idx_responsable` (`es_responsable_principal`),
-  ADD KEY `idx_sistemas_equipo_responsabilidad` (`sistema_id`,`es_responsable_principal`) COMMENT 'Búsqueda rápida de equipos responsables por sistema';
-
---
--- Indices de la tabla `equipos_tecnicos`
---
-ALTER TABLE `equipos_tecnicos`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_nombre_equipo` (`nombre`),
-  ADD KEY `idx_estado` (`estado`),
-  ADD KEY `idx_orden` (`orden_visualizacion`);
-
---
--- Indices de la tabla `eventos`
---
-ALTER TABLE `eventos`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_type` (`type`),
-  ADD KEY `idx_date_range` (`start`,`end`),
-  ADD KEY `idx_createdBy` (`createdBy`),
-  ADD KEY `idx_eventos_completed` (`completed`),
-  ADD KEY `idx_eventos_upcoming` (`start`);
-ALTER TABLE `eventos` ADD FULLTEXT KEY `idx_search` (`title`,`description`,`location`);
-
---
--- Indices de la tabla `flujos_escalamiento`
---
-ALTER TABLE `flujos_escalamiento`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_sistema_id` (`sistema_id`),
-  ADD KEY `idx_equipo_primario` (`equipo_primario_id`),
-  ADD KEY `idx_equipo_escalamiento` (`equipo_escalamiento_id`),
-  ADD KEY `idx_escalamiento_activo` (`sistema_id`,`activo`) COMMENT 'Búsqueda rápida de flujos de escalamiento activos';
-
---
 -- Indices de la tabla `glosario`
 --
 ALTER TABLE `glosario`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_termino` (`termino`),
-  ADD KEY `idx_categoria_id` (`categoria_id`);
-
---
--- Indices de la tabla `glosario_categorias`
---
-ALTER TABLE `glosario_categorias`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `nombre` (`nombre`);
+  ADD UNIQUE KEY `unique_termino` (`termino`),
+  ADD KEY `idx_categoria` (`categoria_id`);
 
 --
 -- Indices de la tabla `guardias`
 --
 ALTER TABLE `guardias`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_fecha_usuario` (`fecha`,`usuario`),
-  ADD KEY `idx_fecha` (`fecha`);
-
---
--- Indices de la tabla `historial_incidentes_contactos`
---
-ALTER TABLE `historial_incidentes_contactos`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_sistema_fecha` (`sistema_id`,`fecha_incidente`),
-  ADD KEY `idx_equipo_contactado` (`equipo_contactado_id`),
-  ADD KEY `idx_integrante_contactado` (`integrante_contactado_id`),
-  ADD KEY `idx_created_by` (`created_by`);
-
---
--- Indices de la tabla `hitos`
---
-ALTER TABLE `hitos`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_hitos_proyecto` (`id_proyecto_origen`),
-  ADD KEY `idx_hitos_fechas` (`fecha_inicio`,`fecha_fin`);
-
---
--- Indices de la tabla `hito_tareas`
---
-ALTER TABLE `hito_tareas`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `id_tarea_origen` (`id_tarea_origen`),
-  ADD KEY `idx_hito_tareas_hito` (`id_hito`);
-
---
--- Indices de la tabla `hito_usuarios`
---
-ALTER TABLE `hito_usuarios`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_hito_usuario` (`id_hito`,`id_usuario`),
-  ADD KEY `idx_hito_usuarios_hito` (`id_hito`),
-  ADD KEY `idx_hito_usuarios_usuario` (`id_usuario`);
-
---
--- Indices de la tabla `incidentes_codigos`
---
-ALTER TABLE `incidentes_codigos`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_incidente_codigo` (`id_incidente`,`id_codigo`),
-  ADD KEY `idx_id_incidente` (`id_incidente`),
-  ADD KEY `idx_id_codigo` (`id_codigo`),
-  ADD KEY `idx_tarifa_calculo` (`id_tarifa_calculo`);
-
---
--- Indices de la tabla `incidentes_estado_historico`
---
-ALTER TABLE `incidentes_estado_historico`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `id_incidente` (`id_incidente`);
+  ADD UNIQUE KEY `unique_fecha_usuario` (`fecha`,`usuario`);
 
 --
 -- Indices de la tabla `incidentes_guardia`
 --
 ALTER TABLE `incidentes_guardia`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_id_guardia` (`id_guardia`),
-  ADD KEY `idx_inicio_fin` (`inicio`,`fin`),
-  ADD KEY `idx_estado` (`estado`);
-
---
--- Indices de la tabla `integrantes`
---
-ALTER TABLE `integrantes`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_nombre_apellido` (`nombre`,`apellido`),
-  ADD KEY `idx_disponibilidad` (`disponibilidad`),
-  ADD KEY `idx_coordinador` (`es_coordinador`);
-
---
--- Indices de la tabla `itracker_data`
---
-ALTER TABLE `itracker_data`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `ticket_id` (`ticket_id`);
-
---
--- Indices de la tabla `liquidaciones_detalle`
---
-ALTER TABLE `liquidaciones_detalle`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_id_liquidacion` (`id_liquidacion`),
-  ADD KEY `idx_id_incidente` (`id_incidente`),
-  ADD KEY `idx_id_guardia` (`id_guardia`),
-  ADD KEY `idx_usuario_fecha` (`usuario`,`fecha`);
-
---
--- Indices de la tabla `liquidaciones_guardia`
---
-ALTER TABLE `liquidaciones_guardia`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_periodo` (`periodo`),
-  ADD KEY `idx_estado` (`estado`);
-
---
--- Indices de la tabla `logs`
---
-ALTER TABLE `logs`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_level` (`level`),
-  ADD KEY `idx_created_at` (`created_at`),
-  ADD KEY `idx_user_id` (`user_id`);
-
---
--- Indices de la tabla `notificaciones`
---
-ALTER TABLE `notificaciones`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indices de la tabla `permisos`
+-- Indices de la tabla `ip_ranges_call_centers`
 --
-ALTER TABLE `permisos`
+ALTER TABLE `ip_ranges_call_centers`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `nombre` (`nombre`);
+  ADD KEY `idx_ip_ranges` (`ip_inicio`,`ip_fin`);
 
 --
--- Indices de la tabla `placas`
+-- Indices de la tabla `metricas_sesiones_historicas`
 --
-ALTER TABLE `placas`
+ALTER TABLE `metricas_sesiones_historicas`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `numero_placa` (`numero_placa`);
+  ADD UNIQUE KEY `unique_fecha_corte` (`fecha_corte`),
+  ADD KEY `idx_fecha_corte` (`fecha_corte`);
 
 --
--- Indices de la tabla `proyectos`
+-- Indices de la tabla `sesiones_data`
 --
-ALTER TABLE `proyectos`
+ALTER TABLE `sesiones_data`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `id_usuario_responsable` (`id_usuario_responsable`);
-
---
--- Indices de la tabla `proyecto_usuarios`
---
-ALTER TABLE `proyecto_usuarios`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_proyecto_usuario` (`id_proyecto`,`id_usuario`),
-  ADD KEY `id_usuario` (`id_usuario`);
-
---
--- Indices de la tabla `reportes`
---
-ALTER TABLE `reportes`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `id_usuario` (`id_usuario`);
-
---
--- Indices de la tabla `roles`
---
-ALTER TABLE `roles`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `nombre` (`nombre`);
-
---
--- Indices de la tabla `rol_permiso`
---
-ALTER TABLE `rol_permiso`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `id_rol` (`id_rol`,`id_permiso`),
-  ADD KEY `id_permiso` (`id_permiso`);
-
---
--- Indices de la tabla `sistemas_monitoreados`
---
-ALTER TABLE `sistemas_monitoreados`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uk_nombre_sistema` (`nombre`),
-  ADD KEY `idx_criticidad` (`criticidad`),
-  ADD KEY `idx_estado` (`estado`),
-  ADD KEY `idx_categoria` (`categoria`);
-
---
--- Indices de la tabla `subtareas`
---
-ALTER TABLE `subtareas`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `id_tarea` (`id_tarea`);
-
---
--- Indices de la tabla `subtarea_usuarios`
---
-ALTER TABLE `subtarea_usuarios`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_subtarea_usuario` (`id_subtarea`,`id_usuario`),
-  ADD KEY `id_usuario` (`id_usuario`);
-
---
--- Indices de la tabla `tabulaciones_data`
---
-ALTER TABLE `tabulaciones_data`
-  ADD PRIMARY KEY (`tarea_id`);
-
---
--- Indices de la tabla `tareas`
---
-ALTER TABLE `tareas`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `id_proyecto` (`id_proyecto`),
-  ADD KEY `id_usuario_asignado` (`id_usuario_asignado`);
-
---
--- Indices de la tabla `tarea_usuarios`
---
-ALTER TABLE `tarea_usuarios`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_tarea_usuario` (`id_tarea`,`id_usuario`),
-  ADD KEY `id_usuario` (`id_usuario`);
-
---
--- Indices de la tabla `tarifas`
---
-ALTER TABLE `tarifas`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `usuarios`
---
-ALTER TABLE `usuarios`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`);
-
---
--- Indices de la tabla `usuario_rol`
---
-ALTER TABLE `usuario_rol`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `id_usuario` (`id_usuario`,`id_rol`),
-  ADD KEY `id_rol` (`id_rol`);
+  ADD UNIQUE KEY `unique_session_key` (`unique_key`),
+  ADD KEY `idx_fecha_procesamiento` (`fecha_procesamiento`),
+  ADD KEY `idx_estado_sesion` (`estado_sesion`),
+  ADD KEY `idx_es_vm_pic` (`es_vm_pic`),
+  ADD KEY `idx_ubicacion_tipo` (`ubicacion_tipo`),
+  ADD KEY `idx_ip_punto_final` (`ip_punto_final`),
+  ADD KEY `idx_usuario_asociado` (`usuario_asociado`);
 
 --
 -- AUTO_INCREMENT de las tablas volcadas
 --
 
 --
--- AUTO_INCREMENT de la tabla `abm_pic`
---
-ALTER TABLE `abm_pic`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `abm_social`
---
-ALTER TABLE `abm_social`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `announcements`
---
-ALTER TABLE `announcements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `bitacora`
---
-ALTER TABLE `bitacora`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `codigos_facturacion`
---
-ALTER TABLE `codigos_facturacion`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `comentarios`
---
-ALTER TABLE `comentarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `enlaces`
---
-ALTER TABLE `enlaces`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `enlaces_categorias`
---
-ALTER TABLE `enlaces_categorias`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `enlaces_urls`
---
-ALTER TABLE `enlaces_urls`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `equipos_integrantes`
---
-ALTER TABLE `equipos_integrantes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `equipos_sistemas`
---
-ALTER TABLE `equipos_sistemas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `equipos_tecnicos`
---
-ALTER TABLE `equipos_tecnicos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `eventos`
---
-ALTER TABLE `eventos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `flujos_escalamiento`
---
-ALTER TABLE `flujos_escalamiento`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT de la tabla `glosario`
 --
 ALTER TABLE `glosario`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `glosario_categorias`
---
-ALTER TABLE `glosario_categorias`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `guardias`
---
-ALTER TABLE `guardias`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `historial_incidentes_contactos`
---
-ALTER TABLE `historial_incidentes_contactos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `hitos`
---
-ALTER TABLE `hitos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `hito_tareas`
---
-ALTER TABLE `hito_tareas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `hito_usuarios`
---
-ALTER TABLE `hito_usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `incidentes_codigos`
---
-ALTER TABLE `incidentes_codigos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `incidentes_estado_historico`
---
-ALTER TABLE `incidentes_estado_historico`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -1510,316 +1159,22 @@ ALTER TABLE `incidentes_guardia`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT de la tabla `integrantes`
+-- AUTO_INCREMENT de la tabla `ip_ranges_call_centers`
 --
-ALTER TABLE `integrantes`
+ALTER TABLE `ip_ranges_call_centers`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT de la tabla `itracker_data`
+-- AUTO_INCREMENT de la tabla `metricas_sesiones_historicas`
 --
-ALTER TABLE `itracker_data`
+ALTER TABLE `metricas_sesiones_historicas`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT de la tabla `liquidaciones_detalle`
+-- AUTO_INCREMENT de la tabla `sesiones_data`
 --
-ALTER TABLE `liquidaciones_detalle`
+ALTER TABLE `sesiones_data`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `liquidaciones_guardia`
---
-ALTER TABLE `liquidaciones_guardia`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `logs`
---
-ALTER TABLE `logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `notificaciones`
---
-ALTER TABLE `notificaciones`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `permisos`
---
-ALTER TABLE `permisos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `placas`
---
-ALTER TABLE `placas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `proyectos`
---
-ALTER TABLE `proyectos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `proyecto_usuarios`
---
-ALTER TABLE `proyecto_usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `reportes`
---
-ALTER TABLE `reportes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `roles`
---
-ALTER TABLE `roles`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `rol_permiso`
---
-ALTER TABLE `rol_permiso`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `sistemas_monitoreados`
---
-ALTER TABLE `sistemas_monitoreados`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `subtareas`
---
-ALTER TABLE `subtareas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `subtarea_usuarios`
---
-ALTER TABLE `subtarea_usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `tareas`
---
-ALTER TABLE `tareas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `tarea_usuarios`
---
-ALTER TABLE `tarea_usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `tarifas`
---
-ALTER TABLE `tarifas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `usuarios`
---
-ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `usuario_rol`
---
-ALTER TABLE `usuario_rol`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- Restricciones para tablas volcadas
---
-
---
--- Filtros para la tabla `announcements`
---
-ALTER TABLE `announcements`
-  ADD CONSTRAINT `fk_announcements_created_by` FOREIGN KEY (`created_by`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `comentarios`
---
-ALTER TABLE `comentarios`
-  ADD CONSTRAINT `comentarios_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `comentarios_ibfk_2` FOREIGN KEY (`id_tarea`) REFERENCES `tareas` (`id`) ON DELETE CASCADE;
-
---
--- Filtros para la tabla `enlaces`
---
-ALTER TABLE `enlaces`
-  ADD CONSTRAINT `fk_enlaces_categoria` FOREIGN KEY (`categoria_id`) REFERENCES `enlaces_categorias` (`id`) ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `enlaces_urls`
---
-ALTER TABLE `enlaces_urls`
-  ADD CONSTRAINT `fk_enlaces_urls_enlace` FOREIGN KEY (`enlace_id`) REFERENCES `enlaces` (`id`) ON DELETE CASCADE;
-
---
--- Filtros para la tabla `equipos_integrantes`
---
-ALTER TABLE `equipos_integrantes`
-  ADD CONSTRAINT `fk_equipos_integrantes_equipo` FOREIGN KEY (`equipo_id`) REFERENCES `equipos_tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_equipos_integrantes_integrante` FOREIGN KEY (`integrante_id`) REFERENCES `integrantes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `equipos_sistemas`
---
-ALTER TABLE `equipos_sistemas`
-  ADD CONSTRAINT `fk_equipos_sistemas_equipo` FOREIGN KEY (`equipo_id`) REFERENCES `equipos_tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_equipos_sistemas_sistema` FOREIGN KEY (`sistema_id`) REFERENCES `sistemas_monitoreados` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `eventos`
---
-ALTER TABLE `eventos`
-  ADD CONSTRAINT `fk_eventos_createdBy` FOREIGN KEY (`createdBy`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `flujos_escalamiento`
---
-ALTER TABLE `flujos_escalamiento`
-  ADD CONSTRAINT `fk_flujos_equipo_escalamiento` FOREIGN KEY (`equipo_escalamiento_id`) REFERENCES `equipos_tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_flujos_equipo_primario` FOREIGN KEY (`equipo_primario_id`) REFERENCES `equipos_tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_flujos_sistema` FOREIGN KEY (`sistema_id`) REFERENCES `sistemas_monitoreados` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `glosario`
---
-ALTER TABLE `glosario`
-  ADD CONSTRAINT `fk_glosario_categoria` FOREIGN KEY (`categoria_id`) REFERENCES `glosario_categorias` (`id`) ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `historial_incidentes_contactos`
---
-ALTER TABLE `historial_incidentes_contactos`
-  ADD CONSTRAINT `fk_historial_created_by` FOREIGN KEY (`created_by`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_historial_equipo` FOREIGN KEY (`equipo_contactado_id`) REFERENCES `equipos_tecnicos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_historial_integrante` FOREIGN KEY (`integrante_contactado_id`) REFERENCES `integrantes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_historial_sistema` FOREIGN KEY (`sistema_id`) REFERENCES `sistemas_monitoreados` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `hitos`
---
-ALTER TABLE `hitos`
-  ADD CONSTRAINT `hitos_ibfk_1` FOREIGN KEY (`id_proyecto_origen`) REFERENCES `proyectos` (`id`) ON DELETE SET NULL;
-
---
--- Filtros para la tabla `hito_tareas`
---
-ALTER TABLE `hito_tareas`
-  ADD CONSTRAINT `hito_tareas_ibfk_1` FOREIGN KEY (`id_hito`) REFERENCES `hitos` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `hito_tareas_ibfk_2` FOREIGN KEY (`id_tarea_origen`) REFERENCES `tareas` (`id`) ON DELETE SET NULL;
-
---
--- Filtros para la tabla `hito_usuarios`
---
-ALTER TABLE `hito_usuarios`
-  ADD CONSTRAINT `hito_usuarios_ibfk_1` FOREIGN KEY (`id_hito`) REFERENCES `hitos` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `hito_usuarios_ibfk_2` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
-
---
--- Filtros para la tabla `incidentes_codigos`
---
-ALTER TABLE `incidentes_codigos`
-  ADD CONSTRAINT `fk_codigo_tarifa` FOREIGN KEY (`id_tarifa_calculo`) REFERENCES `tarifas` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_incidente_codigos_codigo` FOREIGN KEY (`id_codigo`) REFERENCES `codigos_facturacion` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_incidente_codigos_incidente` FOREIGN KEY (`id_incidente`) REFERENCES `incidentes_guardia` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `incidentes_estado_historico`
---
-ALTER TABLE `incidentes_estado_historico`
-  ADD CONSTRAINT `incidentes_estado_historico_ibfk_1` FOREIGN KEY (`id_incidente`) REFERENCES `incidentes_guardia` (`id`) ON DELETE CASCADE;
-
---
--- Filtros para la tabla `incidentes_guardia`
---
-ALTER TABLE `incidentes_guardia`
-  ADD CONSTRAINT `fk_incidente_guardia` FOREIGN KEY (`id_guardia`) REFERENCES `guardias` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `liquidaciones_detalle`
---
-ALTER TABLE `liquidaciones_detalle`
-  ADD CONSTRAINT `fk_liquidaciones_detalle_guardia` FOREIGN KEY (`id_guardia`) REFERENCES `guardias` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_liquidaciones_detalle_incidente` FOREIGN KEY (`id_incidente`) REFERENCES `incidentes_guardia` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_liquidaciones_detalle_liquidacion` FOREIGN KEY (`id_liquidacion`) REFERENCES `liquidaciones_guardia` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `logs`
---
-ALTER TABLE `logs`
-  ADD CONSTRAINT `fk_logs_user` FOREIGN KEY (`user_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL;
-
---
--- Filtros para la tabla `proyectos`
---
-ALTER TABLE `proyectos`
-  ADD CONSTRAINT `proyectos_ibfk_1` FOREIGN KEY (`id_usuario_responsable`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL;
-
---
--- Filtros para la tabla `proyecto_usuarios`
---
-ALTER TABLE `proyecto_usuarios`
-  ADD CONSTRAINT `proyecto_usuarios_ibfk_1` FOREIGN KEY (`id_proyecto`) REFERENCES `proyectos` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `proyecto_usuarios_ibfk_2` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
-
---
--- Filtros para la tabla `reportes`
---
-ALTER TABLE `reportes`
-  ADD CONSTRAINT `reportes_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
-
---
--- Filtros para la tabla `rol_permiso`
---
-ALTER TABLE `rol_permiso`
-  ADD CONSTRAINT `rol_permiso_ibfk_1` FOREIGN KEY (`id_rol`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `rol_permiso_ibfk_2` FOREIGN KEY (`id_permiso`) REFERENCES `permisos` (`id`) ON DELETE CASCADE;
-
---
--- Filtros para la tabla `subtareas`
---
-ALTER TABLE `subtareas`
-  ADD CONSTRAINT `subtareas_ibfk_1` FOREIGN KEY (`id_tarea`) REFERENCES `tareas` (`id`) ON DELETE CASCADE;
-
---
--- Filtros para la tabla `subtarea_usuarios`
---
-ALTER TABLE `subtarea_usuarios`
-  ADD CONSTRAINT `subtarea_usuarios_ibfk_1` FOREIGN KEY (`id_subtarea`) REFERENCES `subtareas` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `subtarea_usuarios_ibfk_2` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
-
---
--- Filtros para la tabla `tareas`
---
-ALTER TABLE `tareas`
-  ADD CONSTRAINT `tareas_ibfk_1` FOREIGN KEY (`id_proyecto`) REFERENCES `proyectos` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `tareas_ibfk_2` FOREIGN KEY (`id_usuario_asignado`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL;
-
---
--- Filtros para la tabla `tarea_usuarios`
---
-ALTER TABLE `tarea_usuarios`
-  ADD CONSTRAINT `tarea_usuarios_ibfk_1` FOREIGN KEY (`id_tarea`) REFERENCES `tareas` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `tarea_usuarios_ibfk_2` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
-
---
--- Filtros para la tabla `usuario_rol`
---
-ALTER TABLE `usuario_rol`
-  ADD CONSTRAINT `usuario_rol_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `usuario_rol_ibfk_2` FOREIGN KEY (`id_rol`) REFERENCES `roles` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
