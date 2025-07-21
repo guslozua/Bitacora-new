@@ -29,6 +29,8 @@ const tarifasRoutes = require('./routes/tarifas.routes');
 const contactosRoutes = require('./routes/contactosRoutes');
 const diagnosticsRoutes = require('./routes/diagnosticsRoutes'); //sistema de diagnósticos
 const announcementsRoutes = require('./routes/announcementsRoutes'); // Sistema completo de gestión de anuncios dinámicos
+const sessionAnalysisRoutes = require('./routes/sessionAnalysisRoutes'); // Análisis de sesiones
+const aternityRoutes = require('./routes/aternityRoutes'); // Integración con Aternity API
 
 
 // 🔔 AGREGAR IMPORT DE HITOS
@@ -45,12 +47,48 @@ const { logSystemEvent } = require('./utils/logEvento');
 
 // Inicializar Express
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// 🚀 RUTAS DE ATERNITY PRIMERO (antes que otros middlewares)
+// 🔍 MIDDLEWARE DE DEBUG GLOBAL
+app.use('/api/aternity*', (req, res, next) => {
+  console.log(`🔥 INTERCEPTOR GLOBAL: ${req.method} ${req.originalUrl}`);
+  console.log('🔥 Path:', req.path);
+  console.log('🔥 Headers:', req.headers.authorization ? 'Auth present' : 'No auth');
+  next();
+});
+
+app.use('/api/aternity', (req, res, next) => {
+  console.log(`🔍 ATERNITY ROUTE: ${req.method} ${req.path}`);
+  console.log('🔍 Headers:', req.headers.authorization ? 'Authorization present' : 'No authorization');
+  next();
+}, aternityRoutes);
+
+// 🆘 RUTA DE EMERGENCIA SIN MIDDLEWARE
+app.get('/api/aternity/test-connection-emergency', async (req, res) => {
+  console.log('🆘 RUTA DE EMERGENCIA ALCANZADA');
+  try {
+    const AternityController = require('./controllers/aternityController');
+    
+    // Simular usuario autenticado para el test
+    req.user = { id: 1, name: 'emergency-test' };
+    
+    await AternityController.testConnection(req, res);
+  } catch (error) {
+    console.error('❌ Error en ruta de emergencia:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message, 
+      stack: error.stack,
+      message: 'Error en ruta de emergencia'
+    });
+  }
+});
 
 // Asegurar que la carpeta uploads exista
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -92,6 +130,8 @@ app.use('/api/tarifas', tarifasRoutes);
 app.use('/api/contactos', contactosRoutes);
 app.use('/api/diagnostics', diagnosticsRoutes); // Ruta del sistema de diagnósticos
 app.use('/api/announcements', announcementsRoutes); // Ruta del sistema de anuncios dinámicos
+app.use('/api/session-analysis', sessionAnalysisRoutes); // Ruta del análisis de sesiones
+// app.use('/api/aternity', aternityRoutes); // MOVIDO ARRIBA
 
 
 // 🔔 RUTA DE HITOS
@@ -205,6 +245,18 @@ app.get('/api/test', (req, res) => {
     message: 'La API está funcionando correctamente',
     timestamp: new Date().toISOString()
   });
+});
+
+// 🔧 RUTA DE DEBUG TEMPORAL PARA ATERNITY
+app.get('/api/aternity-debug', async (req, res) => {
+  console.log('🔧 Ruta de debug de Aternity alcanzada');
+  try {
+    const AternityController = require('./controllers/aternityController');
+    await AternityController.testConnection(req, res);
+  } catch (error) {
+    console.error('❌ Error en debug:', error);
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
 });
 
 // 🆕 MIDDLEWARE GLOBAL DE LOGGING PARA ERRORES NO MANEJADOS
