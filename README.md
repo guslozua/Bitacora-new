@@ -24,14 +24,14 @@ Bitacora_01/
 cd backend
 npm install
 cp .env.example .env    # Configura tus variables de entorno
-npm start
+npm start               # Servidor en puerto 5000
 ```
 
 ### Frontend
 ```bash
 cd frontend
 npm install
-npm start
+npm start               # Aplicación en puerto 3000
 ```
 
 ## 🗄 Base de Datos

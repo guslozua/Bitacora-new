@@ -45,17 +45,25 @@ const AternityDashboard: React.FC = () => {
     matchMethods: {}
   });
 
+  // Helper function to get auth headers
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    console.log('🔑 Token found:', token ? 'Yes (length: ' + token.length + ')' : 'No');
+    return {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` })
+    };
+  };
+
   // Test connection usando el servidor dedicado
   const testConnection = async () => {
     setConnectionStatus('testing');
     setError(null);
     
     try {
-      const response = await fetch('http://localhost:5001/test-connection', {
+      const response = await fetch('http://localhost:5000/api/aternity/test-connection', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeaders()
       });
       
       if (response.ok) {
@@ -78,11 +86,9 @@ const AternityDashboard: React.FC = () => {
     setError(null);
     
     try {
-      const response = await fetch('http://localhost:5001/vm-pic-correlation', {
+      const response = await fetch('http://localhost:5000/api/aternity/vm-pic-correlation', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeaders()
       });
       
       if (response.ok) {
@@ -110,11 +116,9 @@ const AternityDashboard: React.FC = () => {
   // Cargar rendimiento por call center
   const loadPerformanceData = async () => {
     try {
-      const response = await fetch('http://localhost:5001/performance-by-call-center', {
+      const response = await fetch('http://localhost:5000/api/aternity/performance-by-call-center', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeaders()
       });
       
       if (response.ok) {

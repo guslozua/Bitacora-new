@@ -136,7 +136,12 @@ const App: React.FC = () => {
     <ThemeProvider> {/* 🔥 WRAPPER DEL THEME PROVIDER */}
       <DashboardKpiVisibilityProvider> {/* 🆕 NUEVO PROVIDER PARA KPIs DEL DASHBOARD */}
         <DashboardSectionVisibilityProvider> {/* 🆕 NUEVO PROVIDER PARA SECCIONES DEL DASHBOARD */}
-          <Router>
+          <Router
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true
+            }}
+          >
             <SidebarVisibilityProvider>
             <ScrollToTop />
             <Routes>

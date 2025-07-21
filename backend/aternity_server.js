@@ -1,4 +1,8 @@
-// Actualizar servidor dedicado con las rutas mejoradas
+// SERVIDOR ATERNITY SEPARADO DESHABILITADO
+// Este archivo se mantiene como referencia pero ya no se usa
+// Todas las rutas de Aternity ahora están integradas en server.js
+
+/*
 const express = require('express');
 const cors = require('cors');
 const AternityController = require('./controllers/aternityController');
@@ -78,3 +82,4 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+*/
