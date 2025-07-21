@@ -1,0 +1,21 @@
+#!/bin/bash
+# Script de limpieza final del proyecto Bitacora_01
+
+echo "🧹 Iniciando limpieza final del proyecto..."
+
+# Eliminar archivos temporales de testing
+echo "🗑️ Eliminando archivos temporales..."
+rm -f "C:\Users\guslo\Bitacora_01\backend\temp\mockTest.js"
+rm -f "C:\Users\guslo\Bitacora_01\backend\temp\testConnection_new.js"
+
+# Eliminar archivos de backup
+echo "🗑️ Eliminando archivos de backup..."
+rm -f "C:\Users\guslo\Bitacora_01\backend\routes\aternityRoutes_backup.js"
+rm -f "C:\Users\guslo\Bitacora_01\frontend\src\components\AternityDashboard_old.tsx"
+
+echo "✅ Limpieza completada!"
+echo "📋 Archivos eliminados:"
+echo "  - backend/temp/mockTest.js"
+echo "  - backend/temp/testConnection_new.js" 
+echo "  - backend/routes/aternityRoutes_backup.js"
+echo "  - frontend/src/components/AternityDashboard_old.tsx"
