@@ -27,7 +27,6 @@ import Glosario from './pages/Glosario';
 import Enlaces from './pages/Enlaces';
 import ContactosPage from './pages/ContactosPage';
 import Error404 from './pages/Error404';
-import DashboardTest from './pages/DashboardTest';
 import SessionAnalysisDashboard from './pages/SessionAnalysisDashboard'; // 📊 ANÁLISIS DE SESIONES
 import AternityPage from './pages/AternityPage'; // 📈 MONITOREO ATERNITY
 
@@ -167,7 +166,6 @@ const App: React.FC = () => {
               <Route path="/glosario" element={<ProtectedRoute element={<Glosario />} />} />
               <Route path="/links" element={<ProtectedRoute element={<Enlaces />} />} />
               <Route path="/contactos" element={<ProtectedRoute element={<ContactosPage />} />} />
-              <Route path="/dashboard-test" element={<DashboardTest />} />
               
               {/* 🔔 NUEVA RUTA PARA NOTIFICACIONES */}
               <Route 
