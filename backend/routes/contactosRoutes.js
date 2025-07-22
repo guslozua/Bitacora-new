@@ -4,7 +4,7 @@
 
 const express = require('express');
 const router = express.Router();
-const ContactosController = require('../controllers/contactosController');
+const ContactosController = require('../controllers/ContactosController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 // ===============================
