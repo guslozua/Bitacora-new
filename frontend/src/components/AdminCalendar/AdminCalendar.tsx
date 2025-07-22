@@ -373,8 +373,9 @@ const AdminCalendar: React.FC<AdminCalendarProps> = ({
               title: 'Eliminando...',
               text: 'Por favor espere',
               allowOutsideClick: false,
+              showConfirmButton: false,
               didOpen: () => {
-                Swal.showLoading();
+                Swal.showLoading(Swal.getConfirmButton());
               }
             });
 

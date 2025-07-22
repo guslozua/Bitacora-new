@@ -1,4 +1,4 @@
-// controllers/hitoController.js - VERSIÓN CON DEBUG MEJORADO
+// controllers/hitoController.js - VERSIÓN CORREGIDA Y MEJORADA
 const hitoModel = require('../models/HitoModel');
 const { validationResult } = require('express-validator');
 const PDFDocument = require('pdfkit');
@@ -71,7 +71,7 @@ exports.getHitoById = async (req, res) => {
   }
 };
 
-// Crear un nuevo hito
+// Crear un nuevo hito - VERSIÓN CORREGIDA
 exports.createHito = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -94,36 +94,89 @@ exports.createHito = async (req, res) => {
     
     const id_usuario = req.user?.id;
 
-    // Crear el hito
-    const result = await hitoModel.createHito({
+    console.log('🆕 Creando hito con datos:', {
       nombre,
       fecha_inicio,
       fecha_fin,
       descripcion,
       impacto,
+      id_proyecto_origen,
+      usuariosCount: usuarios.length,
+      id_usuario
+    });
+
+    // Validar datos básicos
+    if (!nombre || nombre.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'El nombre del hito es obligatorio'
+      });
+    }
+
+    // Crear el hito
+    const result = await hitoModel.createHito({
+      nombre: nombre.trim(),
+      fecha_inicio,
+      fecha_fin,
+      descripcion: descripcion?.trim(),
+      impacto: impacto?.trim(),
       id_proyecto_origen
     });
 
     const hitoId = result.insertId;
+    console.log('✅ Hito creado con ID:', hitoId);
+
+    // Validar que se creó correctamente
+    if (!hitoId || hitoId <= 0) {
+      throw new Error('Error al crear hito: no se generó un ID válido');
+    }
 
     // Asignar usuarios si se proporcionaron
-    if (usuarios.length > 0) {
+    if (usuarios && usuarios.length > 0) {
+      console.log('👥 Asignando usuarios al hito...');
+      
       for (const usuario of usuarios) {
-        await hitoModel.assignUserToHito(hitoId, usuario.id_usuario, usuario.rol || 'colaborador');
+        // Validar datos del usuario
+        if (!usuario.id_usuario || usuario.id_usuario <= 0) {
+          console.error('❌ Usuario inválido:', usuario);
+          continue; // Saltar usuario inválido pero continuar con los demás
+        }
+
+        try {
+          await hitoModel.assignUserToHito(
+            hitoId, 
+            usuario.id_usuario, 
+            usuario.rol || 'colaborador'
+          );
+          console.log(`✅ Usuario ${usuario.id_usuario} asignado correctamente`);
+        } catch (userError) {
+          console.error(`❌ Error al asignar usuario ${usuario.id_usuario}:`, userError.message);
+          // No fallar todo el proceso por un usuario problemático
+        }
       }
     }
 
     // Registrar evento
-    await logEvento({
-      tipo_evento: 'CREACIÓN',
-      descripcion: `Hito creado: ${nombre}`,
-      id_usuario,
-      id_hito: hitoId
-    });
+    try {
+      await logEvento({
+        tipo_evento: 'CREACIÓN',
+        descripcion: `Hito creado: ${nombre}`,
+        id_usuario,
+        id_hito: hitoId
+      });
+    } catch (logError) {
+      console.error('⚠️ Error al registrar evento:', logError.message);
+    }
 
     // Obtener el hito creado con toda su información
     const nuevoHito = await hitoModel.getHitoById(hitoId);
     const hitosUsuarios = await hitoModel.getHitoUsers(hitoId);
+
+    console.log('🎉 Hito creado exitosamente:', {
+      id: nuevoHito.id,
+      nombre: nuevoHito.nombre,
+      usuariosAsignados: hitosUsuarios.length
+    });
 
     res.status(201).json({
       success: true,
@@ -134,16 +187,22 @@ exports.createHito = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error al crear hito:', error);
+    console.error('❌ Error al crear hito:', {
+      message: error.message,
+      stack: error.stack,
+      sql: error.sql
+    });
+    
     res.status(500).json({
       success: false,
       message: 'Error al crear el hito',
-      error: error.message
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };
 
-// Actualizar un hito existente
+// Actualizar un hito existente - VERSIÓN CORREGIDA
 exports.updateHito = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -154,7 +213,7 @@ exports.updateHito = async (req, res) => {
   }
 
   try {
-    const hitoId = req.params.id;
+    const hitoId = parseInt(req.params.id);
     const { 
       nombre, 
       fecha_inicio, 
@@ -167,6 +226,14 @@ exports.updateHito = async (req, res) => {
     
     const id_usuario = req.user?.id;
 
+    // Validar ID del hito
+    if (!hitoId || hitoId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de hito inválido'
+      });
+    }
+
     // Verificar que el hito existe
     const hito = await hitoModel.getHitoById(hitoId);
     if (!hito) {
@@ -176,47 +243,78 @@ exports.updateHito = async (req, res) => {
       });
     }
 
+    console.log('📝 Actualizando hito:', {
+      hitoId,
+      nombre,
+      usuariosCount: usuarios?.length || 0
+    });
+
     // Actualizar el hito
     await hitoModel.updateHito(hitoId, {
-      nombre,
+      nombre: nombre?.trim(),
       fecha_inicio,
       fecha_fin,
-      descripcion,
-      impacto,
+      descripcion: descripcion?.trim(),
+      impacto: impacto?.trim(),
       id_proyecto_origen
     });
 
     // Actualizar usuarios si se proporcionaron
     if (usuarios && Array.isArray(usuarios)) {
+      console.log('👥 Actualizando usuarios del hito...');
+      
       // Obtener usuarios actuales
       const usuariosActuales = await hitoModel.getHitoUsers(hitoId);
       
       // Eliminar usuarios que ya no están en la lista
       for (const usuarioActual of usuariosActuales) {
-        const mantenerUsuario = usuarios.some(u => u.id_usuario === usuarioActual.id_usuario);
+        const mantenerUsuario = usuarios.some(u => 
+          parseInt(u.id_usuario) === parseInt(usuarioActual.id_usuario)
+        );
         if (!mantenerUsuario) {
-          await hitoModel.removeUserFromHito(hitoId, usuarioActual.id_usuario);
+          try {
+            await hitoModel.removeUserFromHito(hitoId, usuarioActual.id_usuario);
+            console.log(`👤 Usuario ${usuarioActual.id_usuario} eliminado`);
+          } catch (removeError) {
+            console.error(`❌ Error al eliminar usuario ${usuarioActual.id_usuario}:`, removeError.message);
+          }
         }
       }
       
       // Agregar o actualizar usuarios nuevos
       for (const usuario of usuarios) {
-        await hitoModel.assignUserToHito(hitoId, usuario.id_usuario, usuario.rol || 'colaborador');
+        if (!usuario.id_usuario || usuario.id_usuario <= 0) {
+          console.error('❌ Usuario inválido:', usuario);
+          continue;
+        }
+
+        try {
+          await hitoModel.assignUserToHito(hitoId, usuario.id_usuario, usuario.rol || 'colaborador');
+          console.log(`👤 Usuario ${usuario.id_usuario} asignado/actualizado`);
+        } catch (assignError) {
+          console.error(`❌ Error al asignar usuario ${usuario.id_usuario}:`, assignError.message);
+        }
       }
     }
 
     // Registrar evento
-    await logEvento({
-      tipo_evento: 'ACTUALIZACIÓN',
-      descripcion: `Hito actualizado: ${nombre || 'ID ' + hitoId}`,
-      id_usuario,
-      id_hito: hitoId
-    });
+    try {
+      await logEvento({
+        tipo_evento: 'ACTUALIZACIÓN',
+        descripcion: `Hito actualizado: ${nombre || hito.nombre}`,
+        id_usuario,
+        id_hito: hitoId
+      });
+    } catch (logError) {
+      console.error('⚠️ Error al registrar evento:', logError.message);
+    }
 
     // Obtener el hito actualizado con toda su información
     const hitoActualizado = await hitoModel.getHitoById(hitoId);
     const hitosUsuarios = await hitoModel.getHitoUsers(hitoId);
     const hitoTareas = await hitoModel.getHitoTasks(hitoId);
+
+    console.log('✅ Hito actualizado exitosamente');
 
     res.status(200).json({
       success: true,
@@ -228,7 +326,7 @@ exports.updateHito = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error al actualizar hito:', error);
+    console.error('❌ Error al actualizar hito:', error);
     res.status(500).json({
       success: false,
       message: 'Error al actualizar el hito',
@@ -256,11 +354,15 @@ exports.deleteHito = async (req, res) => {
     await hitoModel.deleteHito(hitoId);
 
     // Registrar evento
-    await logEvento({
-      tipo_evento: 'ELIMINACIÓN',
-      descripcion: `Hito eliminado: ${hito.nombre}`,
-      id_usuario
-    });
+    try {
+      await logEvento({
+        tipo_evento: 'ELIMINACIÓN',
+        descripcion: `Hito eliminado: ${hito.nombre}`,
+        id_usuario
+      });
+    } catch (logError) {
+      console.error('⚠️ Error al registrar evento:', logError.message);
+    }
 
     res.status(200).json({
       success: true,
@@ -376,9 +478,31 @@ exports.convertProjectToHito = async (req, res) => {
 // Gestionar usuarios de un hito
 exports.manageHitoUsers = async (req, res) => {
   try {
-    const hitoId = req.params.id;
+    const hitoId = parseInt(req.params.id);
     const { action, userId, rol } = req.body;
     const id_usuario = req.user?.id;
+
+    console.log('👥 Gestionando usuarios de hito:', {
+      hitoId,
+      action,
+      userId,
+      rol
+    });
+
+    // Validaciones
+    if (!hitoId || hitoId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de hito inválido'
+      });
+    }
+
+    if (!userId || userId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de usuario inválido'
+      });
+    }
 
     // Verificar que el hito existe
     const hito = await hitoModel.getHitoById(hitoId);
@@ -409,12 +533,16 @@ exports.manageHitoUsers = async (req, res) => {
     }
 
     // Registrar evento
-    await logEvento({
-      tipo_evento: action === 'add' ? 'ASIGNACIÓN' : 'DESASIGNACIÓN',
-      descripcion: `Usuario ${action === 'add' ? 'asignado a' : 'eliminado de'} hito: ${hito.nombre}`,
-      id_usuario,
-      id_hito: hitoId
-    });
+    try {
+      await logEvento({
+        tipo_evento: action === 'add' ? 'ASIGNACIÓN' : 'DESASIGNACIÓN',
+        descripcion: `Usuario ${action === 'add' ? 'asignado a' : 'eliminado de'} hito: ${hito.nombre}`,
+        id_usuario,
+        id_hito: hitoId
+      });
+    } catch (logError) {
+      console.error('⚠️ Error al registrar evento:', logError.message);
+    }
 
     // Obtener la lista actualizada de usuarios
     const usuarios = await hitoModel.getHitoUsers(hitoId);
@@ -425,7 +553,7 @@ exports.manageHitoUsers = async (req, res) => {
       data: usuarios
     });
   } catch (error) {
-    console.error('Error al gestionar usuarios del hito:', error);
+    console.error('❌ Error al gestionar usuarios del hito:', error);
     res.status(500).json({
       success: false,
       message: 'Error al gestionar usuarios del hito',
@@ -474,12 +602,16 @@ exports.manageHitoTasks = async (req, res) => {
     }
 
     // Registrar evento
-    await logEvento({
-      tipo_evento: action === 'add' ? 'CREACIÓN' : (action === 'update' ? 'ACTUALIZACIÓN' : 'ELIMINACIÓN'),
-      descripcion: `Tarea ${action === 'add' ? 'agregada a' : (action === 'update' ? 'actualizada en' : 'eliminada de')} hito: ${hito.nombre}`,
-      id_usuario,
-      id_hito: hitoId
-    });
+    try {
+      await logEvento({
+        tipo_evento: action === 'add' ? 'CREACIÓN' : (action === 'update' ? 'ACTUALIZACIÓN' : 'ELIMINACIÓN'),
+        descripcion: `Tarea ${action === 'add' ? 'agregada a' : (action === 'update' ? 'actualizada en' : 'eliminada de')} hito: ${hito.nombre}`,
+        id_usuario,
+        id_hito: hitoId
+      });
+    } catch (logError) {
+      console.error('⚠️ Error al registrar evento:', logError.message);
+    }
 
     // Obtener la lista actualizada de tareas
     const tareas = await hitoModel.getHitoTasks(hitoId);
@@ -500,6 +632,7 @@ exports.manageHitoTasks = async (req, res) => {
 };
 
 // 🎨 VERSIÓN MEJORADA: Exportar hito a PDF con logo y diseño profesional
+
 exports.exportHitoToPDF = async (req, res) => {
   try {
     const hitoId = req.params.id;
@@ -697,7 +830,6 @@ exports.exportHitoToPDF = async (req, res) => {
       
       // Cabecera de la tabla
       const rowHeight = 25;
-      const colWidth = (contentWidth - 20) / 3;
       
       // Fondo de cabecera
       doc.rect(margin, currentY, contentWidth, rowHeight)
@@ -744,7 +876,7 @@ exports.exportHitoToPDF = async (req, res) => {
     
     currentY += 20;
     
-    // Información general sin emojis
+    // Información general
     const infoGeneral = [
       `Fecha de inicio: ${hito.fecha_inicio ? new Date(hito.fecha_inicio).toLocaleDateString('es-ES') : 'No especificada'}`,
       `Fecha de finalización: ${hito.fecha_fin ? new Date(hito.fecha_fin).toLocaleDateString('es-ES') : 'No especificada'}`,
@@ -771,14 +903,14 @@ exports.exportHitoToPDF = async (req, res) => {
       currentY = margin;
     }
     
-    // Usuarios involucrados sin emojis
+    // Usuarios involucrados
     const usuariosData = usuarios.length > 0 
       ? [{ text: 'Usuario - Email - Rol' }, ...usuarios.map(u => `${u.nombre} - ${u.email} - ${u.rol.toUpperCase()}`)]
       : [];
     
     currentY = addStyledTable('USUARIOS INVOLUCRADOS', usuariosData, currentY);
     
-    // Tareas relacionadas sin emojis
+    // Tareas relacionadas
     if (tareas.length > 0) {
       currentY += 10;
       
@@ -846,12 +978,16 @@ exports.exportHitoToPDF = async (req, res) => {
     doc.end();
 
     // Registrar evento de exportación
-    await logEvento({
-      tipo_evento: 'EXPORTACIÓN',
-      descripcion: `Hito exportado a PDF: ${hito.nombre}`,
-      id_usuario: req.user?.id,
-      id_hito: hitoId
-    });
+    try {
+      await logEvento({
+        tipo_evento: 'EXPORTACIÓN',
+        descripcion: `Hito exportado a PDF: ${hito.nombre}`,
+        id_usuario: req.user?.id,
+        id_hito: hitoId
+      });
+    } catch (logError) {
+      console.error('⚠️ Error al registrar evento:', logError.message);
+    }
 
     // Esperar a que se complete la escritura del archivo
     stream.on('finish', () => {
