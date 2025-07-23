@@ -1,17 +1,27 @@
 // src/services/api.ts
 import axios from 'axios';
 
-// 🚀 DETECCIÓN AUTOMÁTICA DE ENTORNO
+// 🚀 DETECCIÓN AUTOMÁTICA DE ENTORNO MEJORADA
 const getApiUrl = () => {
-  // Si estamos en producción (dominio de Netlify/Railway)
-  if (window.location.hostname !== 'localhost') {
+  // Verificar si estamos en Railway production
+  if (window.location.hostname.includes('railway.app')) {
     return 'https://bitacora-new-production.up.railway.app/api';
   }
+  
   // Si estamos en desarrollo local
-  return process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+  }
+  
+  // Por defecto, usar Railway (para cualquier otro dominio)
+  return 'https://bitacora-new-production.up.railway.app/api';
 };
 
 const API_URL = getApiUrl();
+
+// 🔍 DEBUG - Mostrar qué URL se está usando
+console.log('🚀 API_URL detectada:', API_URL);
+console.log('🚀 Hostname actual:', window.location.hostname);
 
 const api = axios.create({
   baseURL: API_URL,
