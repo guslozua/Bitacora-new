@@ -1,7 +1,26 @@
 // src/services/authService.ts
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+// 🚀 USAR LA MISMA DETECCIÓN QUE api.ts
+const getApiUrl = () => {
+  // Verificar si estamos en Railway production
+  if (window.location.hostname.includes('railway.app')) {
+    return 'https://bitacora-new-production.up.railway.app/api';
+  }
+  
+  // Si estamos en desarrollo local
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+  }
+  
+  // Por defecto, usar Railway (para cualquier otro dominio)
+  return 'https://bitacora-new-production.up.railway.app/api';
+};
+
+const API_URL = getApiUrl();
+
+// 🔍 DEBUG - Mostrar qué URL usa authService
+console.log('🔐 AuthService API_URL:', API_URL);
 
 // Interfaz para los datos de usuario
 interface User {
