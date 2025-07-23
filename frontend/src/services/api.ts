@@ -22,6 +22,7 @@ const API_URL = getApiUrl();
 // 🔍 DEBUG - Mostrar qué URL se está usando
 console.log('🚀 API_URL detectada:', API_URL);
 console.log('🚀 Hostname actual:', window.location.hostname);
+console.log('🚀 Build timestamp:', new Date().toISOString());
 
 const api = axios.create({
   baseURL: API_URL,
