@@ -1,7 +1,17 @@
 // src/services/api.ts
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// 🚀 DETECCIÓN AUTOMÁTICA DE ENTORNO
+const getApiUrl = () => {
+  // Si estamos en producción (dominio de Netlify/Railway)
+  if (window.location.hostname !== 'localhost') {
+    return 'https://bitacora-new-production.up.railway.app/api';
+  }
+  // Si estamos en desarrollo local
+  return process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+};
+
+const API_URL = getApiUrl();
 
 const api = axios.create({
   baseURL: API_URL,
