@@ -8,10 +8,11 @@ import type {
   ConversionData,
   Usuario // 🔧 IMPORTAR: Usuario desde hitos.types.ts
 } from '../types/hitos.types';
+import { API_BASE_URL } from './apiConfig';
 
 // Configuración de axios consistente con el resto del proyecto
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

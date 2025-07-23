@@ -1,9 +1,11 @@
 // src/services/IncidenteService.ts
 import axios from 'axios';
 import { Incidente } from '../models/Event';
+import { API_BASE_URL } from './apiConfig';
 
 // Añadir la URL base
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+const API_URL = API_BASE_URL;
 
 // Servicio para operaciones con incidentes
 const IncidenteService = {

@@ -1,7 +1,8 @@
 // services/InformeService.ts
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL } from './apiConfig';
+const API_URL = API_BASE_URL;
 
 // Interfaz para los parámetros de filtro de informes de incidentes
 export interface InformeIncidentesParams {

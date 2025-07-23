@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { getToken } from './authService';
 import { ApiResponse } from './userService'; // Reusamos la interfaz
+import { API_BASE_URL } from './apiConfig';
 
 // Interfaz para roles
 export interface Role {
@@ -21,7 +22,7 @@ export interface Permiso {
   fecha_creacion?: Date | string;
 }
 
-const API_BASE_URL = 'http://localhost:5000/api';
+
 
 // Configuración con token de autenticación
 const getAuthConfig = () => {

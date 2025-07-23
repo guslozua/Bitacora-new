@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getToken } from './authService'; // Importamos getToken del servicio de autenticación
+import { API_BASE_URL } from './apiConfig';
 
 // Usar getToken en lugar de acceder directamente a localStorage
 const token = getToken();
@@ -65,8 +66,7 @@ export interface UserFormData {
 // Tipos de elementos a los que se pueden asignar usuarios
 export type ItemType = 'project' | 'task' | 'subtask';
 
-// Base URL para API
-const API_BASE_URL = 'http://localhost:5000/api';
+
 
 // Cache para usuarios asignados por tipo de elemento y ID
 interface AssignedUsersCache {

@@ -3,7 +3,8 @@ import axios from 'axios';
 import { Event } from '../models/Event';
 
 // URL base de la API
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL } from './apiConfig';
+const API_URL = API_BASE_URL;
 
 // Clase para manejar errores de la API
 class ApiError extends Error {

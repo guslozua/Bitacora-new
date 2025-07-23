@@ -1,8 +1,10 @@
 // src/services/TarifaService.ts - SERVICIO FRONTEND COMPLETO CON CÓDIGOS Y FECHAS CORREGIDAS
 import axios from 'axios';
+import { API_BASE_URL } from './apiConfig';
 
 // URL base de la API
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+const API_URL = API_BASE_URL;
 
 // ✅ INTERFACES CORREGIDAS - ID SIEMPRE PRESENTE EN TARIFAS EXISTENTES
 export interface Tarifa {

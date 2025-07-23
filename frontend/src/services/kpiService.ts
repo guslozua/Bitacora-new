@@ -2,7 +2,8 @@
 import axios from 'axios';
 import { KpiConfig } from './DashboardKpiVisibilityContext';
 
-const API_BASE_URL = 'http://localhost:5000';
+import { API_DOMAIN } from './apiConfig';
+const API_BASE_URL = API_DOMAIN;
 
 export interface KpiData {
   id: string;

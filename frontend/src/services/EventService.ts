@@ -6,7 +6,8 @@ import moment from 'moment';
 import GuardiaService, { convertirGuardiaAEvento } from './GuardiaService';
 
 // URL base de la API - Ajusta según la configuración de tu proyecto
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL } from './apiConfig';
+const API_URL = API_BASE_URL;
 
 // Definir interfaz para incidentes obtenidos de la API
 interface ApiIncidente {

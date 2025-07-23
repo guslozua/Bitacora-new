@@ -1,7 +1,8 @@
 // services/LiquidacionService.ts
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL } from './apiConfig';
+const API_URL = API_BASE_URL;
 
 export interface Liquidacion {
   id: number;

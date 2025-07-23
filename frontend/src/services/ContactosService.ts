@@ -5,7 +5,8 @@
 import axios from 'axios';
 import { Equipo, Integrante, Sistema, SimulacionRespuesta, ResultadoBusqueda, ContactoHistorial } from '../types/contactos';
 
-const API_BASE_URL = 'http://localhost:5000/api/contactos';
+import { API_BASE_URL } from './apiConfig';
+const CONTACTOS_API_URL = `${API_BASE_URL}/contactos`;
 
 class ContactosService {
   

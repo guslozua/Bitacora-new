@@ -1,5 +1,9 @@
 import axios from "axios";
 import { Task } from "gantt-task-react";
+import { API_BASE_URL } from './apiConfig';
+
+// URL base para todas las requests
+const API_URL = API_BASE_URL;
 
 // Interfaces para usuarios asignados
 interface UserResource {
@@ -86,9 +90,9 @@ export const fetchGanttData = async (): Promise<ExtendedTask[]> => {
 
   try {
     const [projectsRes, tasksRes, subtasksRes] = await Promise.all([
-      axios.get("http://localhost:5000/api/projects", config),
-      axios.get("http://localhost:5000/api/tasks", config),
-      axios.get("http://localhost:5000/api/subtasks", config),
+      axios.get("${API_URL}/projects", config),
+      axios.get("${API_URL}/tasks", config),
+      axios.get("${API_URL}/subtasks", config),
     ]);
 
     const projects: Proyecto[] = projectsRes.data.data || [];
@@ -113,7 +117,7 @@ export const fetchGanttData = async (): Promise<ExtendedTask[]> => {
       // Intentar obtener usuarios asignados al proyecto
       let projectUsers: UserResource[] = [];
       try {
-        const usersRes = await axios.get(`http://localhost:5000/api/projects/${project.id}/users`, config);
+        const usersRes = await axios.get(`${API_URL}/projects/${project.id}/users`, config);
         if (usersRes.data.success && usersRes.data.usuarios) {
           projectUsers = usersRes.data.usuarios;
         } else if (usersRes.data.data) {
@@ -155,7 +159,7 @@ export const fetchGanttData = async (): Promise<ExtendedTask[]> => {
         // Intentar obtener usuarios asignados a la tarea
         let taskUsers: UserResource[] = [];
         try {
-          const usersRes = await axios.get(`http://localhost:5000/api/tasks/${task.id}/users`, config);
+          const usersRes = await axios.get(`${API_URL}/tasks/${task.id}/users`, config);
           if (usersRes.data.success && usersRes.data.usuarios) {
             taskUsers = usersRes.data.usuarios;
           } else if (usersRes.data.data) {
@@ -196,7 +200,7 @@ export const fetchGanttData = async (): Promise<ExtendedTask[]> => {
           let subtaskUsers: UserResource[] = [];
           try {
             // MODIFICACIÓN: Usar la ruta directa a subtareas
-            const usersRes = await axios.get(`http://localhost:5000/api/subtasks/${sub.id}/users`, config);
+            const usersRes = await axios.get(`${API_URL}/subtasks/${sub.id}/users`, config);
             if (usersRes.data.success && usersRes.data.usuarios) {
               subtaskUsers = usersRes.data.usuarios;
             } else if (usersRes.data.data) {
@@ -266,19 +270,19 @@ export const updateElementProgress = async (
     let endpoint = '';
     
     if (itemId.includes('project-')) {
-      endpoint = `http://localhost:5000/api/projects/${numericId}/progress`;
+      endpoint = `${API_URL}/projects/${numericId}/progress`;
     } else if (itemId.includes('subtask-')) {
       // Para subtareas, extraer el ID de la tarea padre
       const parts = itemId.split('-parent-');
       if (parts.length > 1) {
         const taskId = parts[1];
         const subtaskId = getNumericId(parts[0]);
-        endpoint = `http://localhost:5000/api/tasks/${taskId}/subtasks/${subtaskId}/progress`;
+        endpoint = `${API_URL}/tasks/${taskId}/subtasks/${subtaskId}/progress`;
       } else {
         throw new Error('ID de subtarea inválido');
       }
     } else {
-      endpoint = `http://localhost:5000/api/tasks/${numericId}/progress`;
+      endpoint = `${API_URL}/tasks/${numericId}/progress`;
     }
     
     // Convertir el progreso al formato que espera tu API
