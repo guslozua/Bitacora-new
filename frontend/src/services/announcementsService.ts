@@ -97,10 +97,8 @@ class AnnouncementsService {
    * 🔐 OBTENER HEADERS CON TOKEN DE AUTENTICACIÓN
    */
   private getAuthHeaders() {
-    const token = localStorage.getItem('token');
-    return {
-      'x-auth-token': token || '',
-    };
+    // NO NECESARIO - api.ts ya agrega el token automáticamente
+    return {};
   }
 
   /**
