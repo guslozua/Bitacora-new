@@ -20,12 +20,24 @@ const NotificacionService = {
   // Obtener notificaciones de un usuario con mejor manejo de errores
   obtenerNotificaciones: async (idUsuario: number, soloNoLeidas: boolean = false): Promise<Notificacion[]> => {
     try {
-      const response = await axios.get(`${API_URL}/notificaciones/usuario/${idUsuario}`, {
-        params: { solo_no_leidas: soloNoLeidas }
-      });
+      console.log('🔔 Obteniendo notificaciones para usuario:', idUsuario, 'soloNoLeidas:', soloNoLeidas);
+      console.log('🌐 API_URL:', API_URL);
+      
+      const config = {
+        params: { solo_no_leidas: soloNoLeidas },
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      };
+      
+      const response = await axios.get(`${API_URL}/notificaciones/usuario/${idUsuario}`, config);
+      console.log('✅ Respuesta de notificaciones:', response.data);
       return response.data.data || [];
     } catch (error: any) {
-      console.error('Error al obtener notificaciones:', error);
+      console.error('❌ Error al obtener notificaciones:', error);
+      console.error('❌ Status:', error.response?.status);
+      console.error('❌ Response:', error.response?.data);
       
       // Si es 404, devolver array vacío en lugar de lanzar error
       if (error.response?.status === 404) {
@@ -42,10 +54,22 @@ const NotificacionService = {
   // Obtener contador de notificaciones no leídas con mejor manejo de errores
   obtenerContadorNoLeidas: async (idUsuario: number): Promise<number> => {
     try {
-      const response = await axios.get(`${API_URL}/notificaciones/usuario/${idUsuario}/contador`);
+      console.log('🔢 Obteniendo contador para usuario:', idUsuario);
+      
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      };
+      
+      const response = await axios.get(`${API_URL}/notificaciones/usuario/${idUsuario}/contador`, config);
+      console.log('✅ Respuesta contador:', response.data);
       return response.data.data?.total || 0;
     } catch (error: any) {
-      console.error('Error al obtener contador:', error);
+      console.error('❌ Error al obtener contador:', error);
+      console.error('❌ Status:', error.response?.status);
+      console.error('❌ Response:', error.response?.data);
       
       // Si es 404, devolver 0 en lugar de lanzar error
       if (error.response?.status === 404) {
