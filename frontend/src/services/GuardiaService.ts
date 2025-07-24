@@ -1,6 +1,6 @@
 // src/services/GuardiaService.ts - Versión actualizada
 import axios from 'axios';
-import { Event } from '../models/Event';
+import { Event, EventType } from '../models/Event';
 
 // URL base de la API
 import { API_BASE_URL } from './apiConfig';
@@ -37,16 +37,26 @@ export interface ImportResult {
 
 // Convertir formato de Guardia a Event para el calendario
 export const convertirGuardiaAEvento = (guardia: Guardia): Event => {
-  return {
+  console.log('🔄 Convirtiendo guardia a evento:', {
+    id: guardia.id,
+    fecha: guardia.fecha,
+    usuario: guardia.usuario,
+    fechaConvertida: new Date(guardia.fecha)
+  });
+  
+  const evento: Event = {
     id: `guardia-${guardia.id}`,
     title: `Guardia: ${guardia.usuario}`,
     start: new Date(guardia.fecha),
     end: new Date(guardia.fecha),
     allDay: true,
-    type: 'guardia',
+    type: 'guardia' as EventType,
     color: '#9c27b0', // Color para guardias
     description: guardia.notas || ''
   };
+  
+  console.log('✅ Evento generado:', evento);
+  return evento;
 };
 
 // Obtener todas las guardias

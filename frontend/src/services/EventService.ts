@@ -71,53 +71,102 @@ const getIncidenteStatusColor = (estado: string) => {
   }
 };
 
-// Nueva función para obtener todos los elementos del calendario (eventos + guardias + incidentes)
+// Nueva función para obtener todos los elementos del calendario (eventos + guardias + incidentes) - OPTIMIZADA
 export const fetchAllCalendarItems = async (): Promise<Event[]> => {
   try {
-    // Obtener eventos regulares
-    const events = await fetchEvents();
+    console.log('📅 Iniciando carga optimizada del calendario...');
     
-    // Obtener guardias y convertirlas al formato de eventos
-    const guardias = await GuardiaService.fetchGuardias();
-    const guardiasComoEventos = guardias.map(convertirGuardiaAEvento);
+    // Ejecutar peticiones en paralelo para mayor velocidad
+    const [eventsResponse, guardiasResponse] = await Promise.all([
+      fetchEvents().catch(error => {
+        console.warn('Error al cargar eventos regulares:', error);
+        return []; // Devolver array vacío si falla
+      }),
+      GuardiaService.fetchGuardias().catch(error => {
+        console.warn('Error al cargar guardias:', error);
+        return []; // Devolver array vacío si falla
+      })
+    ]);
     
-    // Obtener incidentes para todas las guardias
-    const incidentes: Event[] = [];
-    for (const guardia of guardias) {
-      try {
-        const guardiaId = guardia.id;
-        
-        const guardiaIncidentes = await axios.get(`${API_URL}/incidentes/guardia/${guardiaId}`);
-        
-        if (guardiaIncidentes.data.success && guardiaIncidentes.data.data) {
-          // Convertir incidentes a formato de eventos
-          guardiaIncidentes.data.data.forEach((incidente: ApiIncidente) => {
-            incidentes.push({
+    console.log('✅ Eventos regulares cargados:', eventsResponse.length);
+    console.log('✅ Guardias cargadas:', guardiasResponse.length);
+    
+    // DEBUG: Mostrar las primeras 3 guardias para verificar el formato
+    if (guardiasResponse.length > 0) {
+      console.log('🔍 DEBUG - Primeras 3 guardias RAW:', guardiasResponse.slice(0, 3));
+    }
+    
+    // Convertir guardias al formato de eventos
+    const guardiasComoEventos = guardiasResponse.map(convertirGuardiaAEvento);
+    
+    // DEBUG: Mostrar las primeras 3 guardias convertidas
+    if (guardiasComoEventos.length > 0) {
+      console.log('🔍 DEBUG - Primeras 3 guardias CONVERTIDAS:', guardiasComoEventos.slice(0, 3));
+    }
+    
+    // OPTIMIZACIÓN: Solo cargar incidentes si hay guardias y no son demasiadas
+    let incidentes: Event[] = [];
+    
+    if (guardiasResponse.length > 0 && guardiasResponse.length <= 50) {
+      console.log('📋 Cargando incidentes para', guardiasResponse.length, 'guardias...');
+      
+      // Cargar incidentes en lotes más pequeños para evitar sobrecarga
+      const incidentesPromises = guardiasResponse.map(async (guardia) => {
+        try {
+          const guardiaIncidentes = await axios.get(`${API_URL}/incidentes/guardia/${guardia.id}`, {
+            timeout: 5000 // Timeout de 5 segundos por petición
+          });
+          
+          if (guardiaIncidentes.data.success && guardiaIncidentes.data.data) {
+            return guardiaIncidentes.data.data.map((incidente: ApiIncidente) => ({
               id: `incidente-${incidente.id}`,
               title: `Incidente: ${incidente.descripcion.substring(0, 20)}${incidente.descripcion.length > 20 ? '...' : ''}`,
               start: new Date(incidente.inicio),
               end: new Date(incidente.fin),
               allDay: false,
-              type: 'guardia' as EventType, // Usar el mismo tipo para filtrado
+              type: 'guardia' as EventType,
               color: getIncidenteStatusColor(incidente.estado),
               description: incidente.descripcion,
               incidenteId: incidente.id,
               guardiaId: incidente.id_guardia,
               incidenteEstado: incidente.estado,
               isIncidente: true
-            });
-          });
+            }));
+          }
+          return [];
+        } catch (error) {
+          console.warn(`⚠️ Error al obtener incidentes para guardia ${guardia.id}:`, error);
+          return []; // Continuar aunque falle una guardia
         }
-      } catch (error) {
-        console.error(`Error al obtener incidentes para guardia ${guardia.id}:`, error);
-      }
+      });
+      
+      // Esperar a que terminen todas las peticiones de incidentes
+      const incidentesArrays = await Promise.all(incidentesPromises);
+      incidentes = incidentesArrays.flat();
+      
+      console.log('✅ Incidentes cargados:', incidentes.length);
+    } else if (guardiasResponse.length > 50) {
+      console.log('⚠️ Demasiadas guardias (', guardiasResponse.length, '), omitiendo incidentes para mejorar performance');
     }
     
-    // Combinar todos los items
-    return [...events, ...guardiasComoEventos, ...incidentes];
+    // Combinar todos los elementos
+    const allItems = [...eventsResponse, ...guardiasComoEventos, ...incidentes];
+    console.log('🎉 Calendario cargado completamente:', allItems.length, 'elementos');
+    
+    return allItems;
   } catch (error) {
-    console.error('Error al obtener todos los elementos del calendario:', error);
-    throw error;
+    console.error('❌ Error al obtener elementos del calendario:', error);
+    
+    // En caso de error, intentar devolver al menos las guardias
+    try {
+      const guardias = await GuardiaService.fetchGuardias();
+      const guardiasComoEventos = guardias.map(convertirGuardiaAEvento);
+      console.log('⚡ Devolviendo solo guardias como fallback:', guardiasComoEventos.length);
+      return guardiasComoEventos;
+    } catch (fallbackError) {
+      console.error('❌ Error en fallback:', fallbackError);
+      throw error;
+    }
   }
 };
 
