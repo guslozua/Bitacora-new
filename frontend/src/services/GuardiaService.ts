@@ -52,10 +52,24 @@ export const convertirGuardiaAEvento = (guardia: Guardia): Event => {
 // Obtener todas las guardias
 export const fetchGuardias = async (): Promise<Guardia[]> => {
   try {
-    const response = await axios.get(`${API_URL}/guardias`);
+    console.log('🛡️ Obteniendo guardias desde:', `${API_URL}/guardias`);
+    console.log('🌐 API_URL:', API_URL);
+    
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      }
+    };
+    
+    const response = await axios.get(`${API_URL}/guardias`, config);
+    console.log('✅ Respuesta de guardias:', response.data);
     return response.data.data;
   } catch (error) {
+    console.error('❌ Error al obtener guardias:', error);
     if (axios.isAxiosError(error) && error.response) {
+      console.error('❌ Status:', error.response.status);
+      console.error('❌ Response:', error.response.data);
       throw new ApiError(
         error.response.data.message || 'Error al obtener guardias',
         error.response.status
@@ -68,10 +82,23 @@ export const fetchGuardias = async (): Promise<Guardia[]> => {
 // Obtener una guardia por ID
 export const fetchGuardiaById = async (id: number): Promise<Guardia> => {
   try {
-    const response = await axios.get(`${API_URL}/guardias/${id}`);
+    console.log('🛡️ Obteniendo guardia por ID:', id);
+    
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      }
+    };
+    
+    const response = await axios.get(`${API_URL}/guardias/${id}`, config);
+    console.log('✅ Respuesta guardia por ID:', response.data);
     return response.data.data;
   } catch (error) {
+    console.error('❌ Error al obtener guardia por ID:', error);
     if (axios.isAxiosError(error) && error.response) {
+      console.error('❌ Status:', error.response.status);
+      console.error('❌ Response:', error.response.data);
       throw new ApiError(
         error.response.data.message || 'Error al obtener la guardia',
         error.response.status
