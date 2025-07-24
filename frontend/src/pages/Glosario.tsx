@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Container, Row, Col, Card, Form, InputGroup, Button, Badge, Alert, Modal, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/apiConfig';
 import Swal from 'sweetalert2';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
@@ -66,7 +67,7 @@ const Glosario = () => {
   const fetchCategorias = async () => {
     setLoadingCategorias(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/glosario/categorias');
+      const res = await axios.get(`${API_BASE_URL}/glosario/categorias`);
       setCategorias(res.data);
       setLoadingCategorias(false);
       return res.data;
@@ -106,7 +107,7 @@ const Glosario = () => {
   const fetchTerminos = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/glosario');
+      const res = await axios.get(`${API_BASE_URL}/glosario`);
       
       // Asegurarse de que todas las entradas tengan la información de color
       let terminosConCategorias = res.data;
@@ -294,7 +295,7 @@ const Glosario = () => {
       
       if (selectedTermino) {
         // Actualizar término existente
-        await axios.put(`http://localhost:5000/api/glosario/${selectedTermino.id}`, payload);
+        await axios.put(`${API_BASE_URL}/glosario/${selectedTermino.id}`, payload);
         
         Swal.fire({
           title: '¡Éxito!',
@@ -305,7 +306,7 @@ const Glosario = () => {
         });
       } else {
         // Crear nuevo término
-        await axios.post('http://localhost:5000/api/glosario', {
+        await axios.post(`${API_BASE_URL}/glosario`, {
           ...payload,
           creado_por: usuario.username || 'Usuario'
         });
@@ -366,7 +367,7 @@ const Glosario = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await axios.delete(`http://localhost:5000/api/glosario/${termino.id}`);
+          await axios.delete(`${API_BASE_URL}/glosario/${termino.id}`);
           
           Swal.fire({
             title: '¡Eliminado!',
@@ -409,7 +410,7 @@ const Glosario = () => {
         const categoriasData = await fetchCategorias();
         
         // Luego obtener términos y asignarles los colores de categoría
-        const res = await axios.get('http://localhost:5000/api/glosario');
+        const res = await axios.get(`${API_BASE_URL}/glosario`);
         
         if (categoriasData && categoriasData.length > 0) {
           const terminosConCategorias = res.data.map((termino: TerminoGlosario) => {

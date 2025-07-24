@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Table, Badge, Spinner, Button, Modal, Form } from 'react-bootstrap';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/apiConfig';
 import { Link } from 'react-router-dom';
 
 interface User {
@@ -56,7 +57,7 @@ const UserDetail: React.FC<UserDetailProps> = ({ userId, onBack }) => {
         };
         
         // 1. Obtener datos del usuario
-        const userResponse = await axios.get(`http://localhost:5000/api/usuarios/${userId}`, config);
+        const userResponse = await axios.get(`${API_BASE_URL}/usuarios/${userId}`, config);
         
         if (userResponse.data.success) {
           setUser(userResponse.data.usuario);
@@ -70,7 +71,7 @@ const UserDetail: React.FC<UserDetailProps> = ({ userId, onBack }) => {
           
           // 2. Obtener proyectos asignados
           const projectsResponse = await axios.get(
-            `http://localhost:5000/api/usuarios/${userId}/proyectos`, 
+            `${API_BASE_URL}/usuarios/${userId}/proyectos`, 
             config
           );
           
@@ -89,7 +90,7 @@ const UserDetail: React.FC<UserDetailProps> = ({ userId, onBack }) => {
           
           // 3. Obtener tareas asignadas
           const tasksResponse = await axios.get(
-            `http://localhost:5000/api/usuarios/${userId}/tareas`, 
+            `${API_BASE_URL}/usuarios/${userId}/tareas`, 
             config
           );
           
@@ -108,7 +109,7 @@ const UserDetail: React.FC<UserDetailProps> = ({ userId, onBack }) => {
           
           // 4. Obtener subtareas asignadas
           const subtasksResponse = await axios.get(
-            `http://localhost:5000/api/usuarios/${userId}/subtareas`, 
+            `${API_BASE_URL}/usuarios/${userId}/subtareas`, 
             config
           );
           
@@ -168,7 +169,7 @@ const UserDetail: React.FC<UserDetailProps> = ({ userId, onBack }) => {
       };
       
       const response = await axios.put(
-        `http://localhost:5000/api/usuarios/${userId}`,
+        `${API_BASE_URL}/usuarios/${userId}`,
         editForm,
         config
       );

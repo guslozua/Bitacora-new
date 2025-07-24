@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Container, Row, Col, Card, Spinner, Alert, Form, Badge } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/apiConfig';
 import Sidebar from '../components/Sidebar';
 import ThemedFooter from '../components/ThemedFooter'; // 🔥 CAMBIO: Footer temático
 import { useTheme } from '../context/ThemeContext'; // 🔥 AGREGAR IMPORT
@@ -334,7 +335,7 @@ const TabulacionesDash = () => {
     setLoading(true);
     try {
       const query = `year=${selectedYear}&month=${selectedMonth}`;
-      const res = await axios.get(`http://localhost:5000/api/tabulaciones/stats?${query}`);
+      const res = await axios.get(`${API_BASE_URL}/tabulaciones/stats?${query}`);
 
       // Almacenar datos crudos para procesamiento local
       let tareasParaAnalizar: any[] = [];

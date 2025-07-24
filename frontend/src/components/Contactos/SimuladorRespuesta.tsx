@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { Card, Form, Button, Alert, Spinner, Row, Col, Badge, ProgressBar } from 'react-bootstrap';
+import { API_BASE_URL } from '../../services/apiConfig';
 import { Sistema, SimulacionRespuesta } from '../../types/contactos';
 import ContactosService from '../../services/ContactosService';
 import Swal from 'sweetalert2';
@@ -63,7 +64,7 @@ const SimuladorRespuesta: React.FC<SimuladorRespuestaProps> = ({ sistemas }) => 
         errorMessage = 'Error interno del servidor. Verifique que el backend esté funcionando correctamente.';
       } else if (err.code === 'ECONNREFUSED' || err.message.includes('Network Error')) {
         errorTitle = 'Error de Conexión';
-        errorMessage = 'No se puede conectar con el servidor. Verifique que el backend esté ejecutándose en http://localhost:5000';
+        errorMessage = 'No se puede conectar con el servidor. Verifique que el backend esté funcionando correctamente.';
       }
       
       Swal.fire({

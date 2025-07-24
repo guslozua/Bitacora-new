@@ -22,7 +22,7 @@ import KanbanBoard from '../components/KanbanBoard';
 import { ButtonGroup } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
+import { API_BASE_URL } from '../services/apiConfig';
 import AdvancedGanttChart from '../components/AdvancedGanttChart';
 import ConvertToHito from '../components/Hitos/ConvertToHito';
 import UserAvatars from '../components/UserAvatars';
@@ -141,7 +141,7 @@ const Projects = () => {
       };
       
       // Obtener todos los hitos para verificar cuáles proyectos ya fueron convertidos
-      const hitosRes = await axios.get('http://localhost:5000/api/hitos', config);
+      const hitosRes = await axios.get(`${API_BASE_URL}/hitos`, config);
       
       if (hitosRes.data && hitosRes.data.data) {
         const proyectosConvertidos = hitosRes.data.data
@@ -206,10 +206,10 @@ const Projects = () => {
       };
 
       // Obtenemos datos de proyectos
-      const projectsRes = await axios.get('http://localhost:5000/api/projects', config);
+      const projectsRes = await axios.get(`${API_BASE_URL}/projects`, config);
 
       // Obtenemos datos de tareas
-      const tasksRes = await axios.get('http://localhost:5000/api/tasks', config);
+      const tasksRes = await axios.get(`${API_BASE_URL}/tasks`, config);
 
       // 🆕 OBTENER hitos existentes INMEDIATAMENTE
       const hitosExistentesActuales = await verificarHitosExistentes();
@@ -393,11 +393,11 @@ const Projects = () => {
 
       if (editingProject) {
         // Modo edición
-        response = await axios.put(`http://localhost:5000/api/projects/${editingProject.id}`, projectPayload, config);
+        response = await axios.put(`${API_BASE_URL}/projects/${editingProject.id}`, projectPayload, config);
         successMessage = '✅ Proyecto actualizado con éxito';
       } else {
         // Modo creación
-        response = await axios.post('http://localhost:5000/api/projects', projectPayload, config);
+        response = await axios.post(`${API_BASE_URL}/projects`, projectPayload, config);
         successMessage = '✅ Proyecto creado con éxito';
       }
 
@@ -505,7 +505,7 @@ const Projects = () => {
           },
         };
 
-        const response = await axios.delete(`http://localhost:5000/api/projects/${proyecto.id}`, config);
+        const response = await axios.delete(`${API_BASE_URL}/projects/${proyecto.id}`, config);
 
         if (response.data.success) {
           setMessage({

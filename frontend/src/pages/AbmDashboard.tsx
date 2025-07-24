@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Spinner, Alert, Form } from 'react-bootstrap
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/apiConfig';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid, Legend, PieChart, Pie, Cell,
@@ -58,7 +59,7 @@ const AbmDashboard = () => {
       if (month) query += `${year ? '&' : ''}month=${month}`;
       
       // Si no hay filtros seleccionados, query será solo '?'
-      const url = `http://localhost:5000/api/abm/stats${query !== '?' ? query : ''}`;
+      const url = `${API_BASE_URL}/abm/stats${query !== '?' ? query : ''}`;
       
       const res = await axios.get(url);
       setData(res.data);

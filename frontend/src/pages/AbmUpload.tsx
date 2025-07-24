@@ -3,6 +3,7 @@ import { Form, Button, Container, Alert, Spinner, Card, Row, Col } from 'react-b
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/apiConfig';
 
 const AbmUpload = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -41,7 +42,7 @@ const AbmUpload = () => {
       setError('');
       setMessage('');
 
-      const res = await axios.post(`http://localhost:5000/api/abm/${platform}/upload`, formData, {
+      const res = await axios.post(`${API_BASE_URL}/abm/${platform}/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 

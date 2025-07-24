@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Form, Button, Container, Alert, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
+import { API_BASE_URL } from '../services/apiConfig';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
 
@@ -38,7 +38,7 @@ const ItrackerUpload = () => {
 
       console.log("👉 Enviando archivo al backend...");
 
-      const res = await axios.post('http://localhost:5000/api/itracker/upload', formData, {
+      const res = await axios.post(`${API_BASE_URL}/itracker/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 

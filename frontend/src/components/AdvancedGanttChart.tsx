@@ -11,6 +11,7 @@ import ProgressCircle from './ProgressCircle';
 import UserAssignment from './UserAssignment';
 import UserAvatars from './UserAvatars';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/apiConfig';
 
 // Define los tipos para los estilos personalizados
 interface TaskStyles {
@@ -466,7 +467,7 @@ const AdvancedGanttChart = () => {
         id_proyecto: projectId, // Usar solo el ID numérico
       };
 
-      const response = await axios.post('http://localhost:5000/api/tasks', newTask, config);
+      const response = await axios.post(`${API_BASE_URL}/tasks`, newTask, config);
       if (response.data.success) {
         alert(`✅ Tarea creada con éxito con ID: ${response.data.id}`);
         setTaskForm({ titulo: '', descripcion: '', prioridad: 'media', fecha_inicio: '', fecha_vencimiento: '' });
@@ -521,7 +522,7 @@ const AdvancedGanttChart = () => {
         fecha_vencimiento: subtaskForm.fecha_vencimiento,
       };
 
-      const response = await axios.post(`http://localhost:5000/api/tasks/${taskId}/subtasks`, newSubtask, config);
+      const response = await axios.post(`${API_BASE_URL}/tasks/${taskId}/subtasks`, newSubtask, config);
       if (response.data.success) {
         alert(`✅ Subtarea creada con éxito con ID: ${response.data.id}`);
         setSubtaskForm({ titulo: '', descripcion: '', prioridad: 'media', fecha_inicio: '', fecha_vencimiento: '' });

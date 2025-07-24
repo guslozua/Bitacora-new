@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Container, Spinner, Alert, Row, Col, Card } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
+import { API_BASE_URL } from '../services/apiConfig';
 import Sidebar from '../components/Sidebar';
 import ThemedFooter from '../components/ThemedFooter'; // 🔥 CAMBIO: Footer temático
 import ItrackerTable from '../components/ItrackerTable'; // Importamos el componente de tabla
@@ -71,7 +71,7 @@ const ItrackerDash = () => {
       setLoading(true);
       try {
         const query = `year=${selectedYear}&month=${selectedMonth}`;
-        const res = await axios.get(`http://localhost:5000/api/itracker/stats?${query}`);
+        const res = await axios.get(`${API_BASE_URL}/itracker/stats?${query}`);
         setData(res.data);
         console.log('👉 Centros:', res.data.porCentro);
       } catch (err) {

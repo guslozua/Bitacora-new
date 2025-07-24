@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Form, Row, Col, Spinner, Alert, Button, Pagination, Offcanvas } from 'react-bootstrap';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/apiConfig';
 import Swal from 'sweetalert2';
 import PlacaFormModal from './PlacaFormModal';
 
@@ -103,7 +104,7 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
         month
       }).toString();
       
-      const res = await axios.get(`http://localhost:5000/api/placas/list?${query}`);
+      const res = await axios.get(`${API_BASE_URL}/placas/list?${query}`);
       setData(res.data);
       setError('');
     } catch (err) {
@@ -156,7 +157,7 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
   // Eliminar placa
   const deletePlaca = async (id: number) => {
     try {
-      await axios.delete(`http://localhost:5000/api/placas/${id}`);
+      await axios.delete(`${API_BASE_URL}/placas/${id}`);
       
       Swal.fire({
         icon: 'success',

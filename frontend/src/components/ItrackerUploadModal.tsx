@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/apiConfig';
 
 interface ItrackerUploadModalProps {
   show: boolean;
@@ -32,7 +33,7 @@ const ItrackerUploadModal = ({ show, onHide, onSuccess }: ItrackerUploadModalPro
 
       console.log("👉 Enviando archivo al backend...");
 
-      const res = await axios.post('http://localhost:5000/api/itracker/upload', formData, {
+      const res = await axios.post(`${API_BASE_URL}/itracker/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Container, Row, Col, Card, Form, InputGroup, Button, Badge, Alert, Modal, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/apiConfig';
 import Swal from 'sweetalert2';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
@@ -135,7 +136,7 @@ const Enlaces = () => {
   const fetchCategorias = async () => {
     setLoadingCategorias(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/enlaces/categorias');
+      const res = await axios.get(`${API_BASE_URL}/enlaces/categorias`);
       setCategorias(res.data);
       setLoadingCategorias(false);
       return res.data;
@@ -150,7 +151,7 @@ const Enlaces = () => {
   const fetchEnlaces = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/enlaces');
+      const res = await axios.get(`${API_BASE_URL}/enlaces`);
       
       // Asegurarse de que todas las entradas tengan la información de color
       if (categorias.length > 0) {
@@ -483,7 +484,7 @@ const Enlaces = () => {
       
       if (selectedEnlace) {
         // Actualizar enlace existente
-        await axios.put(`http://localhost:5000/api/enlaces/${selectedEnlace.id}`, payload);
+        await axios.put(`${API_BASE_URL}/enlaces/${selectedEnlace.id}`, payload);
         
         Swal.fire({
           title: '¡Éxito!',
@@ -494,7 +495,7 @@ const Enlaces = () => {
         });
       } else {
         // Crear nuevo enlace
-        await axios.post('http://localhost:5000/api/enlaces', {
+        await axios.post(`${API_BASE_URL}/enlaces`, {
           ...payload,
           creado_por: usuario.username || 'Usuario'
         });
@@ -552,7 +553,7 @@ const Enlaces = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await axios.delete(`http://localhost:5000/api/enlaces/${enlace.id}`);
+          await axios.delete(`${API_BASE_URL}/enlaces/${enlace.id}`);
           
           Swal.fire({
             title: '¡Eliminado!',
@@ -595,7 +596,7 @@ const Enlaces = () => {
         const categoriasData = await fetchCategorias();
         
         // Luego obtener enlaces y asignarles los colores de categoría
-        const res = await axios.get('http://localhost:5000/api/enlaces');
+        const res = await axios.get(`${API_BASE_URL}/enlaces`);
         
         if (categoriasData && categoriasData.length > 0) {
           const enlacesConCategorias = res.data.map((enlace: Enlace) => {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/apiConfig';
 import {
   LineChart,
   Line, 
@@ -85,7 +86,7 @@ const PlacasPorMesLineChart: React.FC<PlacasPorMesProps> = ({
           month
         }).toString();
         
-        const res = await axios.get<PlacaData[]>(`http://localhost:5000/api/placas/list?${query}`);
+        const res = await axios.get<PlacaData[]>(`${API_BASE_URL}/placas/list?${query}`);
         
         // Procesar los datos para agruparlos por mes y clase
         const placas = res.data;

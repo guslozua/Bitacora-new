@@ -10,6 +10,7 @@ import AbmUploadModal from '../components/AbmUploadModal';
 import { useDashboardSectionVisibility } from '../services/DashboardSectionVisibilityContext';
 import KpiAdminSection from '../components/KpiAdminSection';
 import SectionOrderManager from '../components/SectionOrderManager';
+import { API_BASE_URL } from '../services/apiConfig';
 
 
 interface SidebarVisibility {
@@ -143,12 +144,12 @@ const AdminPanel: React.FC = () => {
         itrackerRes,
         tabulacionesRes
       ] = await Promise.allSettled([
-        axios.get('http://localhost:5000/api/users', config),
-        axios.get('http://localhost:5000/api/projects', config),
-        axios.get('http://localhost:5000/api/hitos', config),
-        axios.get('http://localhost:5000/api/tasks', config),
-        axios.get('http://localhost:5000/api/itracker/stats', config).catch(() => ({ data: { count: 0 } })),
-        axios.get('http://localhost:5000/api/tabulaciones/stats', config).catch(() => ({ data: { count: 0 } }))
+        axios.get(`${API_BASE_URL}/users`, config),
+        axios.get(`${API_BASE_URL}/projects`, config),
+        axios.get(`${API_BASE_URL}/hitos`, config),
+        axios.get(`${API_BASE_URL}/tasks`, config),
+        axios.get(`${API_BASE_URL}/itracker/stats`, config).catch(() => ({ data: { count: 0 } })),
+        axios.get(`${API_BASE_URL}/tabulaciones/stats`, config).catch(() => ({ data: { count: 0 } }))
       ]);
 
       // 📊 PROCESAR DATOS Y CALCULAR ESTADÍSTICAS
@@ -324,7 +325,7 @@ const AdminPanel: React.FC = () => {
 
       console.log("👉 Enviando archivo al backend...");
 
-      const res = await axios.post('http://localhost:5000/api/itracker/upload', formData, {
+      const res = await axios.post(`${API_BASE_URL}/itracker/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -378,7 +379,7 @@ const AdminPanel: React.FC = () => {
       setUploadError('');
       setUploadMessage('');
 
-      const res = await axios.post('http://localhost:5000/api/tabulaciones/upload', formData, {
+      const res = await axios.post(`${API_BASE_URL}/tabulaciones/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 

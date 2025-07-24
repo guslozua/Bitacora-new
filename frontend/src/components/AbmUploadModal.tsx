@@ -2,6 +2,7 @@ import React, { useState, useRef, DragEvent } from 'react';
 import { Form, Button, Modal, Alert, Spinner, Row, Col } from 'react-bootstrap';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { API_BASE_URL } from '../services/apiConfig';
 
 interface AbmUploadModalProps {
   show: boolean;
@@ -28,7 +29,7 @@ const AbmUploadModal: React.FC<AbmUploadModalProps> = ({ show, onHide, onSuccess
       setUploading(true);
       setError('');
 
-      const res = await axios.post(`http://localhost:5000/api/abm/${platform}/upload`, formData, {
+      const res = await axios.post(`${API_BASE_URL}/abm/${platform}/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { Spinner, Button, Form, Row, Col, Offcanvas, ProgressBar, Tab, Nav, Badge } from 'react-bootstrap';
+import { API_BASE_URL } from '../services/apiConfig';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import UserAvatars from './UserAvatars';
 import UserAssignment from './UserAssignment';
@@ -241,7 +242,7 @@ const KanbanBoard: React.FC = () => {
         id_proyecto: selectedCard.metadata.entityId,
       };
 
-      const response = await axios.post('http://localhost:5000/api/tasks', newTask, config);
+      const response = await axios.post(`${API_BASE_URL}/tasks`, newTask, config);
       if (response.data.success) {
         alert(`✅ Tarea creada con éxito`);
         setTaskForm({ titulo: '', descripcion: '', prioridad: 'media', fecha_inicio: '', fecha_vencimiento: '' });
@@ -290,7 +291,7 @@ const KanbanBoard: React.FC = () => {
         fecha_vencimiento: subtaskForm.fecha_vencimiento,
       };
 
-      const response = await axios.post(`http://localhost:5000/api/tasks/${selectedCard.metadata.entityId}/subtasks`, newSubtask, config);
+      const response = await axios.post(`${API_BASE_URL}/tasks/${selectedCard.metadata.entityId}/subtasks`, newSubtask, config);
       if (response.data.success) {
         alert(`✅ Subtarea creada con éxito`);
         setSubtaskForm({ titulo: '', descripcion: '', prioridad: 'media', fecha_inicio: '', fecha_vencimiento: '' });
@@ -316,9 +317,9 @@ const KanbanBoard: React.FC = () => {
       const config = { headers: { 'x-auth-token': token || '' } };
 
       const [projectsRes, tasksRes, subtasksRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/projects', config),
-        axios.get('http://localhost:5000/api/tasks', config),
-        axios.get('http://localhost:5000/api/subtasks', config),
+        axios.get(`${API_BASE_URL}/projects`, config),
+        axios.get(`${API_BASE_URL}/tasks`, config),
+        axios.get(`${API_BASE_URL}/subtasks`, config),
       ]);
 
       const projects = projectsRes.data?.data || [];
@@ -531,11 +532,11 @@ const KanbanBoard: React.FC = () => {
       }
 
       if (type === 'project') {
-        apiUrl = `http://localhost:5000/api/projects/${numericId}`;
+        apiUrl = `${API_BASE_URL}/projects/${numericId}`;
       } else if (type === 'task') {
-        apiUrl = `http://localhost:5000/api/tasks/${numericId}`;
+        apiUrl = `${API_BASE_URL}/tasks/${numericId}`;
       } else if (type === 'subtask') {
-        apiUrl = `http://localhost:5000/api/subtasks/${numericId}`;
+        apiUrl = `${API_BASE_URL}/subtasks/${numericId}`;
       }
 
       const response = await axios.put(apiUrl, { estado: newStatus }, config);

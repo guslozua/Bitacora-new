@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Form, Row, Col, Spinner, Alert, Button, Pagination, Offcanvas } from 'react-bootstrap';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/apiConfig';
 
 const ItrackerTable = () => {
   const [sortBy, setSortBy] = useState('');
@@ -43,7 +44,7 @@ const ItrackerTable = () => {
     setLoading(true);
     try {
       const query = new URLSearchParams(filters as any).toString();
-      const res = await axios.get(`http://localhost:5000/api/itracker/list?${query}`);
+      const res = await axios.get(`${API_BASE_URL}/itracker/list?${query}`);
       setData(res.data);
       setError('');
     } catch (err) {

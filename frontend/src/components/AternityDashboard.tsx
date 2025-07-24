@@ -1,6 +1,7 @@
 // components/AternityDashboard_improved.tsx - VERSIÓN MEJORADA COMPLETA
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Table, Badge, Alert, ProgressBar, Container, Row, Col } from 'react-bootstrap';
+import { API_BASE_URL } from '../services/apiConfig';
 
 interface VMPICCorrelationData {
   vmPicData: {
@@ -61,7 +62,7 @@ const AternityDashboard: React.FC = () => {
     setError(null);
     
     try {
-      const response = await fetch('http://localhost:5000/api/aternity/test-connection', {
+      const response = await fetch(`${API_BASE_URL}/aternity/test-connection`, {
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -86,7 +87,7 @@ const AternityDashboard: React.FC = () => {
     setError(null);
     
     try {
-      const response = await fetch('http://localhost:5000/api/aternity/vm-pic-correlation', {
+      const response = await fetch(`${API_BASE_URL}/aternity/vm-pic-correlation`, {
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -116,7 +117,7 @@ const AternityDashboard: React.FC = () => {
   // Cargar rendimiento por call center
   const loadPerformanceData = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/aternity/performance-by-call-center', {
+      const response = await fetch(`${API_BASE_URL}/aternity/performance-by-call-center`, {
         method: 'GET',
         headers: getAuthHeaders()
       });

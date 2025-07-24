@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Container, Spinner, Alert, Row, Col, Card, Badge } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
+import { API_BASE_URL } from '../services/apiConfig';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
 import PlacasTable from '../components/PlacasTable';
@@ -91,7 +91,7 @@ const PlacasDash = () => {
       setLoading(true);
       try {
         const query = `year=${selectedYear}&month=${selectedMonth}`;
-        const res = await axios.get(`http://localhost:5000/api/placas/stats?${query}`);
+        const res = await axios.get(`${API_BASE_URL}/placas/stats?${query}`);
         setStats(res.data);
 
 

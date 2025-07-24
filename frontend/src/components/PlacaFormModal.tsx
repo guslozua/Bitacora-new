@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Spinner } from 'react-bootstrap';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/apiConfig';
 import Swal from 'sweetalert2';
 
 interface Placa {
@@ -220,7 +221,7 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
       
       if (placa?.id) {
         // Actualizar placa existente
-        await axios.put(`http://localhost:5000/api/placas/${placa.id}`, dataToSend);
+        await axios.put(`${API_BASE_URL}/placas/${placa.id}`, dataToSend);
         
         Swal.fire({
           icon: 'success',
@@ -231,8 +232,7 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
         });
       } else {
         // Crear nueva placa
-        await axios.post('http://localhost:5000/api/placas', dataToSend);
-        
+        await axios.post(`${API_BASE_URL}/placas`, dataToSend);
         Swal.fire({
           icon: 'success',
           title: 'Placa creada',

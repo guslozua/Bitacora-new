@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Badge, Spinner, ListGroup, ProgressBar } from 'react-bootstrap';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/apiConfig';
 import { fetchAllUsers } from '../services/userService';
 
 // Interfaces
@@ -57,7 +58,7 @@ const UserAssignmentSummary: React.FC<UserAssignmentSummaryProps> = ({ onUserCli
         for (const user of users) {
           // Obtener proyectos asignados
           const projectsResponse = await axios.get(
-            `http://localhost:5000/api/usuarios/${user.id}/proyectos`, 
+            `${API_BASE_URL}/usuarios/${user.id}/proyectos`, 
             config
           );
           
@@ -66,7 +67,7 @@ const UserAssignmentSummary: React.FC<UserAssignmentSummaryProps> = ({ onUserCli
           
           // Obtener tareas asignadas
           const tasksResponse = await axios.get(
-            `http://localhost:5000/api/usuarios/${user.id}/tareas`, 
+            `${API_BASE_URL}/usuarios/${user.id}/tareas`,
             config
           );
           
@@ -75,7 +76,7 @@ const UserAssignmentSummary: React.FC<UserAssignmentSummaryProps> = ({ onUserCli
           
           // Obtener subtareas asignadas
           const subtasksResponse = await axios.get(
-            `http://localhost:5000/api/usuarios/${user.id}/subtareas`, 
+            `${API_BASE_URL}/usuarios/${user.id}/subtareas`, 
             config
           );
           
