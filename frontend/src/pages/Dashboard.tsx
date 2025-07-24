@@ -152,7 +152,7 @@ const Dashboard = () => {
       };
 
       console.log("Obteniendo perfil de usuario...");
-      const response = await axios.get('${API_BASE_URL}/users/profile', config);
+      const response = await axios.get(`${API_BASE_URL}/users/profile`, config);
       console.log("Respuesta de perfil de usuario:", response.data);
 
       if (response.data && response.data.success && response.data.data) {
@@ -179,7 +179,7 @@ const Dashboard = () => {
   const fetchUserCount = async (config: any) => {
     try {
       console.log("Intentando obtener conteo de usuarios con ruta principal...");
-      const usersResponse = await axios.get('${API_BASE_URL}/users', config);
+      const usersResponse = await axios.get(`${API_BASE_URL}/users`, config);
       console.log("Respuesta exitosa de /api/users:", usersResponse.data);
 
       if (usersResponse.data && usersResponse.data.success && Array.isArray(usersResponse.data.data)) {
@@ -210,7 +210,7 @@ const Dashboard = () => {
 
       try {
         console.log("Intentando obtener conteo con ruta alternativa...");
-        const countResponse = await axios.get('${API_BASE_URL}/users/count', config);
+        const countResponse = await axios.get(`${API_BASE_URL}/users/count`, config);
         console.log("Respuesta exitosa de /api/users/count:", countResponse.data);
         return {
           success: true,
@@ -258,8 +258,8 @@ const Dashboard = () => {
         };
 
         const [tasksRes, projectsRes] = await Promise.all([
-          fetchSafely('${API_BASE_URL}/tasks', 'tareas'),
-          fetchSafely('${API_BASE_URL}/projects', 'proyectos'),
+          fetchSafely(`${API_BASE_URL}/tasks`, 'tareas'),
+          fetchSafely(`${API_BASE_URL}/projects`, 'proyectos'),
         ]);
 
         const usersRes = await fetchUserCount(config);

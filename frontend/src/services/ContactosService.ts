@@ -16,7 +16,7 @@ class ContactosService {
   
   static async fetchEquipos(): Promise<Equipo[]> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/equipos`);
+      const response = await axios.get(`${API_BASE_URL}/contactos/equipos`);
       return response.data.data;
     } catch (error) {
       console.error('Error al obtener equipos:', error);
@@ -26,7 +26,7 @@ class ContactosService {
 
   static async fetchEquipoById(id: number): Promise<Equipo> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/equipos/${id}`);
+      const response = await axios.get(`${API_BASE_URL}/contactos/equipos/${id}`);
       return response.data.data;
     } catch (error) {
       console.error('Error al obtener equipo:', error);
@@ -36,7 +36,7 @@ class ContactosService {
 
   static async createEquipo(equipoData: Partial<Equipo>): Promise<number> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/equipos`, equipoData, {
+      const response = await axios.post(`${API_BASE_URL}/contactos/equipos`, equipoData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -50,7 +50,7 @@ class ContactosService {
 
   static async updateEquipo(id: number, equipoData: Partial<Equipo>): Promise<void> {
     try {
-      await axios.put(`${API_BASE_URL}/equipos/${id}`, equipoData, {
+      await axios.put(`${API_BASE_URL}/contactos/equipos/${id}`, equipoData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -63,7 +63,7 @@ class ContactosService {
 
   static async deleteEquipo(id: number): Promise<void> {
     try {
-      await axios.delete(`${API_BASE_URL}/equipos/${id}`, {
+      await axios.delete(`${API_BASE_URL}/contactos/equipos/${id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -80,7 +80,7 @@ class ContactosService {
   
   static async fetchIntegrantes(): Promise<Integrante[]> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/integrantes`);
+      const response = await axios.get(`${API_BASE_URL}/contactos/integrantes`);
       return response.data.data;
     } catch (error) {
       console.error('Error al obtener integrantes:', error);
@@ -90,7 +90,7 @@ class ContactosService {
 
   static async createIntegrante(integranteData: Partial<Integrante>): Promise<number> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/integrantes`, integranteData, {
+      const response = await axios.post(`${API_BASE_URL}/contactos/integrantes`, integranteData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -104,7 +104,7 @@ class ContactosService {
 
   static async updateIntegrante(id: number, integranteData: Partial<Integrante>): Promise<void> {
     try {
-      await axios.put(`${API_BASE_URL}/integrantes/${id}`, integranteData, {
+      await axios.put(`${API_BASE_URL}/contactos/integrantes/${id}`, integranteData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -118,7 +118,7 @@ class ContactosService {
   // ✅ NUEVO: Eliminar integrante/contacto
   static async deleteIntegrante(id: number): Promise<void> {
     try {
-      await axios.delete(`${API_BASE_URL}/integrantes/${id}`, {
+      await axios.delete(`${API_BASE_URL}/contactos/integrantes/${id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -135,7 +135,7 @@ class ContactosService {
   
   static async fetchSistemas(): Promise<Sistema[]> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/sistemas`);
+      const response = await axios.get(`${API_BASE_URL}/contactos/sistemas`);
       return response.data.data;
     } catch (error) {
       console.error('Error al obtener sistemas:', error);
@@ -145,7 +145,7 @@ class ContactosService {
 
   static async createSistema(sistemaData: Partial<Sistema>): Promise<number> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/sistemas`, sistemaData, {
+      const response = await axios.post(`${API_BASE_URL}/contactos/sistemas`, sistemaData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -160,7 +160,7 @@ class ContactosService {
   // ✅ NUEVO: Actualizar sistema
   static async updateSistema(id: number, sistemaData: Partial<Sistema>): Promise<void> {
     try {
-      await axios.put(`${API_BASE_URL}/sistemas/${id}`, sistemaData, {
+      await axios.put(`${API_BASE_URL}/contactos/sistemas/${id}`, sistemaData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -174,7 +174,7 @@ class ContactosService {
   // ✅ NUEVO: Eliminar sistema
   static async deleteSistema(id: number): Promise<void> {
     try {
-      await axios.delete(`${API_BASE_URL}/sistemas/${id}`, {
+      await axios.delete(`${API_BASE_URL}/contactos/sistemas/${id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -192,7 +192,7 @@ class ContactosService {
   // ✅ NUEVO: Asignar integrantes a equipo
   static async asignarIntegrantes(equipoId: number, integranteIds: number[]): Promise<void> {
     try {
-      await axios.post(`${API_BASE_URL}/equipos/${equipoId}/integrantes`, {
+      await axios.post(`${API_BASE_URL}/contactos/equipos/${equipoId}/integrantes`, {
         integrante_ids: integranteIds
       }, {
         headers: {
@@ -208,7 +208,7 @@ class ContactosService {
   // ✅ NUEVO: Asignar sistemas a equipo
   static async asignarSistemas(equipoId: number, sistemaIds: number[]): Promise<void> {
     try {
-      await axios.post(`${API_BASE_URL}/equipos/${equipoId}/sistemas`, {
+      await axios.post(`${API_BASE_URL}/contactos/equipos/${equipoId}/sistemas`, {
         sistema_ids: sistemaIds
       }, {
         headers: {
@@ -224,7 +224,7 @@ class ContactosService {
   // ✅ NUEVO: Asignar equipos a sistema
   static async asignarEquiposASistema(sistemaId: number, equipoIds: number[]): Promise<void> {
     try {
-      await axios.post(`${API_BASE_URL}/sistemas/${sistemaId}/equipos`, {
+      await axios.post(`${API_BASE_URL}/contactos/sistemas/${sistemaId}/equipos`, {
         equipo_ids: equipoIds
       }, {
         headers: {
@@ -243,7 +243,7 @@ class ContactosService {
   
   static async simularRespuesta(sistemaId: number): Promise<{ flujo_escalamiento: any; simulacion: SimulacionRespuesta }> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/simulador/${sistemaId}`);
+      const response = await axios.get(`${API_BASE_URL}/contactos/simulador/${sistemaId}`);
       return response.data.data;
     } catch (error) {
       console.error('Error al simular respuesta:', error);
@@ -275,7 +275,7 @@ class ContactosService {
   
   static async registrarContacto(contactoData: Partial<ContactoHistorial>): Promise<number> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/historial`, contactoData, {
+      const response = await axios.post(`${API_BASE_URL}/contactos/historial`, contactoData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -293,7 +293,7 @@ class ContactosService {
       if (sistemaId) params.sistema_id = sistemaId;
       if (equipoId) params.equipo_id = equipoId;
       
-      const response = await axios.get(`${API_BASE_URL}/historial`, { params });
+      const response = await axios.get(`${API_BASE_URL}/contactos/historial`, { params });
       return response.data.data;
     } catch (error) {
       console.error('Error al obtener historial:', error);
