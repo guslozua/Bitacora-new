@@ -212,8 +212,18 @@ export const fetchEventById = async (id: string | number): Promise<Event> => {
     // Si el ID comienza con "guardia-", obtener de guardias
     if (idString.startsWith('guardia-')) {
       const guardiaId = parseInt(idString.replace('guardia-', ''));
-      const guardia = await GuardiaService.fetchGuardiaById(guardiaId);
-      return convertirGuardiaAEvento(guardia);
+      console.log(`🔍 Buscando guardia con ID: ${guardiaId}`);
+      
+      // NUEVO: Buscar en todas las guardias en lugar de fetchGuardiaById
+      const todasLasGuardias = await GuardiaService.fetchGuardias();
+      const guardiaEncontrada = todasLasGuardias.find(g => g.id === guardiaId);
+      
+      if (!guardiaEncontrada) {
+        throw new Error(`Guardia con ID ${guardiaId} no encontrada`);
+      }
+      
+      console.log(`✅ Guardia encontrada:`, guardiaEncontrada);
+      return convertirGuardiaAEvento(guardiaEncontrada);
     }
     
     // De lo contrario, obtener de eventos

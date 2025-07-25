@@ -40,15 +40,35 @@ export const convertirGuardiaAEvento = (guardia: Guardia): Event => {
   console.log('🔄 Convirtiendo guardia a evento:', {
     id: guardia.id,
     fecha: guardia.fecha,
-    usuario: guardia.usuario,
-    fechaConvertida: new Date(guardia.fecha)
+    usuario: guardia.usuario
   });
+  
+  // Detectar si estamos en Railway por hostname
+  const isRailway = window.location.hostname.includes('railway.app');
+  
+  let fechaConvertida: Date;
+  
+  if (isRailway) {
+    // 🔧 Fix específico para Railway: forzar UTC
+    const fechaOriginal = new Date(guardia.fecha);
+    fechaConvertida = new Date(
+      fechaOriginal.getUTCFullYear(),
+      fechaOriginal.getUTCMonth(), 
+      fechaOriginal.getUTCDate(),
+      0, 0, 0, 0 // Hora fija a medianoche
+    );
+    console.log(`🚂 Railway fix aplicado - Original: ${guardia.fecha}, Corregida: ${fechaConvertida}`);
+  } else {
+    // 🏠 Local: usar método original que ya funciona
+    fechaConvertida = new Date(guardia.fecha);
+    console.log(`🏠 Local - Fecha: ${fechaConvertida}`);
+  }
   
   const evento: Event = {
     id: `guardia-${guardia.id}`,
     title: `Guardia: ${guardia.usuario}`,
-    start: new Date(guardia.fecha),
-    end: new Date(guardia.fecha),
+    start: fechaConvertida,
+    end: fechaConvertida,
     allDay: true,
     type: 'guardia' as EventType,
     color: '#9c27b0', // Color para guardias
