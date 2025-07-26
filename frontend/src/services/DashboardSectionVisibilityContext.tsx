@@ -1,5 +1,9 @@
-// frontend/src/services/DashboardSectionVisibilityContext.tsx
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+// ============================================================================
+// ARCHIVO ACTUALIZADO: frontend/src/services/DashboardSectionVisibilityContext.tsx
+// Integración con API para configuraciones globales
+// ============================================================================
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+import AdminConfigService from './AdminConfigService';
 
 export interface DashboardSection {
   id: string;
@@ -12,7 +16,7 @@ export interface DashboardSection {
 
 type DashboardSectionVisibilityContextType = {
   sections: DashboardSection[];
-  setSections: (sections: DashboardSection[]) => void;
+  setSections: (sections: DashboardSection[], applyGlobally?: boolean) => Promise<void>;
   toggleSectionVisibility: (id: string) => void;
   getVisibleSections: () => DashboardSection[];
   resetToDefaults: () => void;
@@ -20,6 +24,10 @@ type DashboardSectionVisibilityContextType = {
   reorderSections: (dragIndex: number, hoverIndex: number) => void;
   moveSectionToPosition: (sectionId: string, newOrder: number) => void;
   getSectionsInOrder: () => DashboardSection[];
+  // 🆕 Nuevas propiedades para sincronización
+  isServerSynced: boolean;
+  lastUpdated: Date | null;
+  syncFromServer: () => Promise<void>;
 };
 
 const defaultSections: DashboardSection[] = [
@@ -108,42 +116,148 @@ export const useDashboardSectionVisibility = () => {
 };
 
 export const DashboardSectionVisibilityProvider = ({ children }: { children: ReactNode }) => {
-  // Cargar configuración desde localStorage o usar valores por defecto
-  const [sections, setSectionsState] = useState<DashboardSection[]>(() => {
-    const savedSections = localStorage.getItem('dashboardSections');
-    if (savedSections) {
-      try {
-        const parsed = JSON.parse(savedSections);
-        
-        // Verificar si existe la nueva sección de KPIs
-        const hasKpisSection = parsed.some((section: DashboardSection) => section.id === 'kpis-sistema');
-        
-        if (!hasKpisSection) {
-          // Si no tiene la sección de KPIs, resetear a configuración por defecto
-          console.log('Migrando configuración del dashboard para incluir KPIs del Sistema');
-          localStorage.setItem('dashboardSections', JSON.stringify(defaultSections));
-          return defaultSections;
+  // 🔄 Estados principales
+  const [sections, setSectionsState] = useState<DashboardSection[]>(defaultSections);
+  const [isServerSynced, setIsServerSynced] = useState<boolean>(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+
+  // 🔄 Función para cargar configuración desde el servidor o localStorage
+  const loadConfiguration = useCallback(async (): Promise<void> => {
+    try {
+      console.log('🔧 DashboardSections: Cargando configuración...');
+
+      // 1. Intentar cargar desde el servidor
+      const serverConfig = await AdminConfigService.getDashboardConfiguration(false);
+      
+      if (serverConfig && Array.isArray(serverConfig)) {
+        console.log('✅ DashboardSections: Configuración cargada desde servidor');
+        setSectionsState(serverConfig.sort((a, b) => a.order - b.order));
+        setIsServerSynced(true);
+        setLastUpdated(new Date());
+        return;
+      }
+
+      // 2. Fallback a localStorage
+      const savedSections = localStorage.getItem('dashboardSections');
+      if (savedSections) {
+        try {
+          const parsed = JSON.parse(savedSections);
+          
+          // ✅ NUEVA LÓGICA: Verificar que tenga TODAS las 9 secciones
+          const expectedSectionCount = 9;
+          const currentSectionCount = Array.isArray(parsed) ? parsed.length : 0;
+          
+          if (currentSectionCount < expectedSectionCount) {
+            console.log(`🔄 DashboardSections: Configuración incompleta (${currentSectionCount}/${expectedSectionCount}). Usando configuración completa.`);
+            localStorage.setItem('dashboardSections', JSON.stringify(defaultSections));
+            setSectionsState(defaultSections);
+          } else {
+            // Migrar configuración asegurando que todas las secciones estén presentes
+            const migratedSections = defaultSections.map(defaultSection => {
+              const saved = parsed.find((section: DashboardSection) => section.id === defaultSection.id);
+              return saved ? { ...defaultSection, ...saved } : defaultSection;
+            });
+            
+            // Verificar que tenemos todas las secciones después de la migración
+            if (migratedSections.length === expectedSectionCount) {
+              setSectionsState(migratedSections.sort((a, b) => a.order - b.order));
+              console.log(`✅ DashboardSections: Configuración migrada con ${migratedSections.length} secciones`);
+            } else {
+              console.log('🔄 DashboardSections: Migración incompleta, usando defaults');
+              setSectionsState(defaultSections);
+              localStorage.setItem('dashboardSections', JSON.stringify(defaultSections));
+            }
+          }
+          
+          setIsServerSynced(false);
+        } catch (error) {
+          console.error('❌ DashboardSections: Error parsing localStorage, using defaults');
+          setSectionsState(defaultSections);
+          setIsServerSynced(false);
         }
-        
-        // Migrar configuración si hay secciones nuevas en defaultSections
-        const migratedSections = defaultSections.map(defaultSection => {
-          const saved = parsed.find((section: DashboardSection) => section.id === defaultSection.id);
-          return saved ? { ...defaultSection, ...saved } : defaultSection;
-        });
-        
-        return migratedSections.sort((a, b) => a.order - b.order);
-      } catch (error) {
-        console.error('Error parsing saved dashboard sections:', error);
-        return defaultSections;
+      } else {
+        // 3. Usar configuración por defecto
+        console.log('🔧 DashboardSections: Usando configuración por defecto');
+        setSectionsState(defaultSections);
+        setIsServerSynced(false);
+      }
+    } catch (error) {
+      console.error('❌ DashboardSections: Error loading configuration:', error);
+      
+      // Fallback final a localStorage o defaults
+      const savedSections = localStorage.getItem('dashboardSections');
+      if (savedSections) {
+        try {
+          const parsed = JSON.parse(savedSections);
+          setSectionsState(parsed);
+          setIsServerSynced(false);
+        } catch {
+          setSectionsState(defaultSections);
+          setIsServerSynced(false);
+        }
+      } else {
+        setSectionsState(defaultSections);
+        setIsServerSynced(false);
       }
     }
-    return defaultSections;
-  });
+  }, []);
 
-  // Función para actualizar secciones y guardar en localStorage
-  const setSections = (sections: DashboardSection[]) => {
-    setSectionsState(sections);
-    localStorage.setItem('dashboardSections', JSON.stringify(sections));
+  // 🔄 Inicializar configuración al montar el componente
+  useEffect(() => {
+    if (!isInitialized) {
+      loadConfiguration().finally(() => {
+        setIsInitialized(true);
+      });
+    }
+  }, [isInitialized, loadConfiguration]);
+
+  // 🔄 Función para actualizar secciones y guardar (local y/o servidor)
+  const setSections = async (newSections: DashboardSection[], applyGlobally: boolean = false): Promise<void> => {
+    try {
+      // 1. Actualizar estado local
+      setSectionsState(newSections);
+      setLastUpdated(new Date());
+
+      // 2. Guardar en localStorage como backup
+      localStorage.setItem('dashboardSections', JSON.stringify(newSections));
+
+      // 3. Guardar en servidor
+      if (applyGlobally) {
+        console.log('🌐 DashboardSections: Guardando configuración globalmente');
+        const success = await AdminConfigService.saveDashboardConfiguration(newSections, true);
+        
+        if (success) {
+          setIsServerSynced(true);
+          console.log('✅ DashboardSections: Configuración global guardada exitosamente');
+        } else {
+          console.error('❌ DashboardSections: Error guardando configuración global');
+          setIsServerSynced(false);
+        }
+      } else {
+        // Guardar configuración personal
+        const success = await AdminConfigService.saveDashboardConfiguration(newSections, false);
+        
+        if (success) {
+          setIsServerSynced(true);
+          console.log('✅ DashboardSections: Configuración personal guardada exitosamente');
+        } else {
+          console.error('❌ DashboardSections: Error guardando configuración personal');
+          setIsServerSynced(false);
+        }
+      }
+    } catch (error) {
+      console.error('❌ DashboardSections: Error saving configuration:', error);
+      setIsServerSynced(false);
+      
+      // Solo actualizar localStorage si falla el servidor
+      localStorage.setItem('dashboardSections', JSON.stringify(newSections));
+    }
+  };
+
+  // 🔄 Función para sincronizar desde servidor
+  const syncFromServer = async (): Promise<void> => {
+    await loadConfiguration();
   };
 
   // Toggle visibilidad de una sección específica
@@ -151,7 +265,7 @@ export const DashboardSectionVisibilityProvider = ({ children }: { children: Rea
     const newSections = sections.map(section =>
       section.id === id ? { ...section, visible: !section.visible } : section
     );
-    setSections(newSections);
+    setSections(newSections, false); // Solo guardar localmente
   };
 
   // Obtener solo secciones visibles
@@ -167,7 +281,7 @@ export const DashboardSectionVisibilityProvider = ({ children }: { children: Rea
 
   // Resetear a configuración por defecto
   const resetToDefaults = () => {
-    setSections(defaultSections);
+    setSections(defaultSections, false);
   };
 
   // Reordenar secciones por drag & drop
@@ -186,7 +300,7 @@ export const DashboardSectionVisibilityProvider = ({ children }: { children: Rea
       order: index + 1
     }));
     
-    setSections(reorderedSections);
+    setSections(reorderedSections, false);
   };
 
   // Mover una sección a una posición específica
@@ -208,7 +322,7 @@ export const DashboardSectionVisibilityProvider = ({ children }: { children: Rea
       order: index + 1
     }));
     
-    setSections(reorderedSections);
+    setSections(reorderedSections, false);
   };
 
   // Obtener secciones ordenadas
@@ -227,7 +341,11 @@ export const DashboardSectionVisibilityProvider = ({ children }: { children: Rea
         isSectionVisible,
         reorderSections,
         moveSectionToPosition,
-        getSectionsInOrder
+        getSectionsInOrder,
+        // 🆕 Nuevas propiedades para sincronización
+        isServerSynced,
+        lastUpdated,
+        syncFromServer
       }}
     >
       {children}

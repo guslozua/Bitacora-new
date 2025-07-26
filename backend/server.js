@@ -31,6 +31,7 @@ const diagnosticsRoutes = require('./routes/diagnosticsRoutes'); //sistema de di
 const announcementsRoutes = require('./routes/announcementsRoutes'); // Sistema completo de gestión de anuncios dinámicos
 const sessionAnalysisRoutes = require('./routes/sessionAnalysisRoutes'); // Análisis de sesiones
 const aternityRoutes = require('./routes/aternityRoutes'); // Integración con Aternity API
+const adminConfigRoutes = require('./routes/adminConfigRoutes'); // Sistema de configuraciones administrativas globales
 
 
 // 🔔 AGREGAR IMPORT DE HITOS
@@ -132,6 +133,8 @@ app.use('/api/diagnostics', diagnosticsRoutes); // Ruta del sistema de diagnóst
 app.use('/api/announcements', announcementsRoutes); // Ruta del sistema de anuncios dinámicos
 app.use('/api/session-analysis', sessionAnalysisRoutes); // Ruta del análisis de sesiones
 // app.use('/api/aternity', aternityRoutes); // MOVIDO ARRIBA
+app.use('/api/admin/configurations', adminConfigRoutes); // Sistema de configuraciones administrativas globales
+app.use('/api/admin-config', adminConfigRoutes); // 🆕 Rutas simplificadas para el frontend
 
 
 // 🔔 RUTA DE HITOS

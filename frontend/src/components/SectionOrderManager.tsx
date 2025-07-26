@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Card, Form, Button, Row, Col, Badge } from 'react-bootstrap';
+import { Card, Form, Button, Row, Col, Badge, Spinner } from 'react-bootstrap';
 import { useDashboardSectionVisibility, DashboardSection } from '../services/DashboardSectionVisibilityContext';
 import { useTheme } from '../context/ThemeContext';
+import Swal from 'sweetalert2';
 
 interface DraggableSectionItemProps {
   section: DashboardSection;
@@ -267,13 +268,96 @@ const SectionOrderManager: React.FC<SectionOrderManagerProps> = ({ isDarkMode })
     getSectionsInOrder, 
     reorderSections, 
     toggleSectionVisibility, 
-    resetToDefaults 
+    resetToDefaults,
+    setSections,
+    // 🆕 Nuevas propiedades para sincronización
+    isServerSynced,
+    lastUpdated,
+    syncFromServer
   } = useDashboardSectionVisibility();
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [draggedOverIndex, setDraggedOverIndex] = useState<number | null>(null);
+  // 🆕 Estados para configuración global
+  const [isApplyingGlobally, setIsApplyingGlobally] = useState<boolean>(false);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   const sections = getSectionsInOrder();
+
+  // 🆕 Función para aplicar configuración globalmente
+  const handleApplyGlobally = async (): Promise<void> => {
+    try {
+      const result = await Swal.fire({
+        title: '¿Aplicar configuración globalmente?',
+        text: 'Esta configuración se aplicará para TODOS los usuarios del sistema.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, aplicar para todos',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#0d6efd',
+        background: isDarkMode ? '#343a40' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#212529'
+      });
+
+      if (result.isConfirmed) {
+        setIsApplyingGlobally(true);
+        await setSections(sections, true); // true = aplicar globalmente
+        
+        Swal.fire({
+          title: '¡Configuración aplicada!',
+          text: 'Las secciones del dashboard se han configurado para todos los usuarios.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+          background: isDarkMode ? '#343a40' : '#ffffff',
+          color: isDarkMode ? '#ffffff' : '#212529'
+        });
+      }
+    } catch (error) {
+      console.error('Error aplicando configuración globalmente:', error);
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo aplicar la configuración. Inténtalo nuevamente.',
+        icon: 'error',
+        confirmButtonText: 'Entendido',
+        background: isDarkMode ? '#343a40' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#212529'
+      });
+    } finally {
+      setIsApplyingGlobally(false);
+    }
+  };
+
+  // 🆕 Función para sincronizar desde servidor
+  const handleSyncFromServer = async (): Promise<void> => {
+    try {
+      setIsSyncing(true);
+      await syncFromServer();
+      
+      Swal.fire({
+        title: '¡Sincronizado!',
+        text: 'Configuración actualizada desde el servidor.',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+        background: isDarkMode ? '#343a40' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#212529'
+      });
+    } catch (error) {
+      console.error('Error sincronizando desde servidor:', error);
+      Swal.fire({
+        title: 'Error de sincronización',
+        text: 'No se pudo conectar con el servidor.',
+        icon: 'error',
+        timer: 2000,
+        showConfirmButton: false,
+        background: isDarkMode ? '#343a40' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#212529'
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIndex(index);
@@ -355,24 +439,84 @@ const SectionOrderManager: React.FC<SectionOrderManagerProps> = ({ isDarkMode })
         style={{ backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }}
       >
         <div className="d-flex justify-content-between align-items-center">
-          <div>
-            <h5 className="fw-bold mb-0" style={{ color: themeColors.textPrimary }}>
-              <i className="bi bi-arrows-move me-2 text-success"></i>
-              Orden y Visibilidad del Dashboard
-            </h5>
+          <div className="flex-grow-1">
+            <div className="d-flex align-items-center mb-1">
+              <h5 className="fw-bold mb-0 me-3" style={{ color: themeColors.textPrimary }}>
+                <i className="bi bi-arrows-move me-2 text-success"></i>
+                Orden y Visibilidad del Dashboard
+              </h5>
+              {/* 🆕 Indicador de estado de sincronización */}
+              <Badge 
+                bg={isServerSynced ? 'success' : 'warning'} 
+                className="me-2"
+                style={{ fontSize: '0.7rem' }}
+              >
+                <i className={`bi ${isServerSynced ? 'bi-cloud-check' : 'bi-cloud-slash'} me-1`}></i>
+                {isServerSynced ? 'Sincronizado' : 'Solo local'}
+              </Badge>
+              {lastUpdated && (
+                <small style={{ color: themeColors.textSecondary }}>
+                  Actualizado: {lastUpdated.toLocaleTimeString()}
+                </small>
+              )}
+            </div>
             <small style={{ color: themeColors.textSecondary }}>
               Arrastra las secciones para cambiar su orden en el dashboard
             </small>
           </div>
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            onClick={resetToDefaults}
-            title="Restaurar configuración por defecto"
-          >
-            <i className="bi bi-arrow-clockwise me-1"></i>
-            Restaurar
-          </Button>
+          
+          {/* 🆕 Botones de acción */}
+          <div className="d-flex gap-2">
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={handleSyncFromServer}
+              disabled={isSyncing}
+              title="Sincronizar configuración desde el servidor"
+            >
+              {isSyncing ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-1" />
+                  Sincronizando...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-arrow-down-circle me-1"></i>
+                  Sincronizar
+                </>
+              )}
+            </Button>
+            
+            <Button
+              variant="success"
+              size="sm"
+              onClick={handleApplyGlobally}
+              disabled={isApplyingGlobally}
+              title="Aplicar esta configuración para todos los usuarios"
+            >
+              {isApplyingGlobally ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-1" />
+                  Aplicando...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-globe me-1"></i>
+                  Aplicar a Todos
+                </>
+              )}
+            </Button>
+            
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              onClick={resetToDefaults}
+              title="Restaurar configuración por defecto"
+            >
+              <i className="bi bi-arrow-clockwise me-1"></i>
+              Restaurar
+            </Button>
+          </div>
         </div>
       </Card.Header>
       

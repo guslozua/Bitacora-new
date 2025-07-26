@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Row, Col, Button, Badge } from 'react-bootstrap';
+import { Card, Row, Col, Button, Badge, Spinner } from 'react-bootstrap';
 import { useDashboardKpiVisibility } from '../services/DashboardKpiVisibilityContext';
 import Swal from 'sweetalert2';
 
@@ -8,10 +8,23 @@ interface KpiAdminSectionProps {
 }
 
 const KpiAdminSection: React.FC<KpiAdminSectionProps> = ({ isDarkMode }) => {
-  const { kpiConfigs, toggleKpiVisibility, resetToDefaults, setKpiConfigs } = useDashboardKpiVisibility();
+  const { 
+    kpiConfigs, 
+    toggleKpiVisibility, 
+    resetToDefaults, 
+    setKpiConfigs,
+    // 🆕 Nuevas propiedades para sincronización
+    isServerSynced,
+    lastUpdated,
+    syncFromServer
+  } = useDashboardKpiVisibility();
+  
   const [isLoading, setIsLoading] = useState(false);
   const [draggedKpi, setDraggedKpi] = useState<string | null>(null);
   const [dragOverKpi, setDragOverKpi] = useState<string | null>(null);
+  // 🆕 Estados para configuración global
+  const [isApplyingGlobally, setIsApplyingGlobally] = useState<boolean>(false);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   const handleToggleKpi = async (kpiId: string) => {
     setIsLoading(true);
@@ -82,6 +95,81 @@ const KpiAdminSection: React.FC<KpiAdminSectionProps> = ({ isDarkMode }) => {
         }, 1500);
       }
     });
+  };
+
+  // 🆕 Función para aplicar configuración globalmente
+  const handleApplyGlobally = async (): Promise<void> => {
+    try {
+      const result = await Swal.fire({
+        title: '¿Aplicar configuración de KPIs globalmente?',
+        text: 'Esta configuración se aplicará para TODOS los usuarios del sistema.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, aplicar para todos',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#0d6efd',
+        background: isDarkMode ? '#343a40' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#212529'
+      });
+
+      if (result.isConfirmed) {
+        setIsApplyingGlobally(true);
+        await setKpiConfigs(kpiConfigs, true); // true = aplicar globalmente
+        
+        Swal.fire({
+          title: '¡Configuración aplicada!',
+          text: 'Los KPIs del dashboard se han configurado para todos los usuarios.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+          background: isDarkMode ? '#343a40' : '#ffffff',
+          color: isDarkMode ? '#ffffff' : '#212529'
+        });
+      }
+    } catch (error) {
+      console.error('Error aplicando configuración de KPIs globalmente:', error);
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo aplicar la configuración. Inténtalo nuevamente.',
+        icon: 'error',
+        confirmButtonText: 'Entendido',
+        background: isDarkMode ? '#343a40' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#212529'
+      });
+    } finally {
+      setIsApplyingGlobally(false);
+    }
+  };
+
+  // 🆕 Función para sincronizar desde servidor
+  const handleSyncFromServer = async (): Promise<void> => {
+    try {
+      setIsSyncing(true);
+      await syncFromServer();
+      
+      Swal.fire({
+        title: '¡Sincronizado!',
+        text: 'Configuración de KPIs actualizada desde el servidor.',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+        background: isDarkMode ? '#343a40' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#212529'
+      });
+    } catch (error) {
+      console.error('Error sincronizando KPIs desde servidor:', error);
+      Swal.fire({
+        title: 'Error de sincronización',
+        text: 'No se pudo conectar con el servidor.',
+        icon: 'error',
+        timer: 2000,
+        showConfirmButton: false,
+        background: isDarkMode ? '#343a40' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#212529'
+      });
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   // 🎯 FUNCIONES DE DRAG AND DROP
@@ -208,30 +296,98 @@ const KpiAdminSection: React.FC<KpiAdminSectionProps> = ({ isDarkMode }) => {
 
   return (
     <Card className={`mb-4 border-0 shadow-sm ${isDarkMode ? 'bg-dark text-light' : ''}`}>
-      <Card.Header className={`d-flex justify-content-between align-items-center py-3 ${isDarkMode ? 'bg-secondary' : 'bg-light'}`}>
-        <h5 className="mb-0 fw-bold">
-          <i className="bi bi-bar-chart-line me-2 text-primary"></i>
-          KPIs del Dashboard Principal
-        </h5>
-        <div className="d-flex gap-2">
-          <Button
-            variant="outline-warning"
-            size="sm"
-            onClick={handleClearCache}
-            disabled={isLoading}
-            title="Limpiar cache"
-          >
-            <i className="bi bi-trash"></i>
-          </Button>
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            onClick={handleResetDefaults}
-            disabled={isLoading}
-            title="Restaurar configuración"
-          >
-            <i className="bi bi-arrow-clockwise"></i>
-          </Button>
+      <Card.Header className={`py-3 ${isDarkMode ? 'bg-secondary' : 'bg-light'}`}>
+        <div className="d-flex justify-content-between align-items-center">
+          <div className="flex-grow-1">
+            <div className="d-flex align-items-center mb-1">
+              <h5 className="mb-0 fw-bold me-3">
+                <i className="bi bi-bar-chart-line me-2 text-primary"></i>
+                KPIs del Dashboard Principal
+              </h5>
+              {/* 🆕 Indicador de estado de sincronización */}
+              <Badge 
+                bg={isServerSynced ? 'success' : 'warning'} 
+                className="me-2"
+                style={{ fontSize: '0.7rem' }}
+              >
+                <i className={`bi ${isServerSynced ? 'bi-cloud-check' : 'bi-cloud-slash'} me-1`}></i>
+                {isServerSynced ? 'Sincronizado' : 'Solo local'}
+              </Badge>
+              {lastUpdated && (
+                <small className="text-muted">
+                  Actualizado: {lastUpdated.toLocaleTimeString()}
+                </small>
+              )}
+            </div>
+            <small className="text-muted">
+              Configura los KPIs que se muestran en el dashboard principal
+            </small>
+          </div>
+          
+          {/* 🆕 Botones de acción */}
+          <div className="d-flex gap-2">
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={handleSyncFromServer}
+              disabled={isSyncing}
+              title="Sincronizar configuración desde el servidor"
+            >
+              {isSyncing ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-1" />
+                  Sincronizando...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-arrow-down-circle me-1"></i>
+                  Sincronizar
+                </>
+              )}
+            </Button>
+            
+            <Button
+              variant="success"
+              size="sm"
+              onClick={handleApplyGlobally}
+              disabled={isApplyingGlobally}
+              title="Aplicar esta configuración para todos los usuarios"
+            >
+              {isApplyingGlobally ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-1" />
+                  Aplicando...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-globe me-1"></i>
+                  Aplicar a Todos
+                </>
+              )}
+            </Button>
+            
+            <Button
+              variant="outline-warning"
+              size="sm"
+              onClick={handleClearCache}
+              disabled={isLoading}
+              title="Limpiar cache"
+            >
+              <i className="bi bi-trash me-1"></i>
+              Limpiar Cache
+            </Button>
+            
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              onClick={handleResetDefaults}
+              disabled={isLoading}
+              title="Restaurar configuración por defecto"
+            >
+              <i className="bi bi-arrow-clockwise me-1"></i>
+              Restaurar
+            </Button>
+          </div>
         </div>
       </Card.Header>
       

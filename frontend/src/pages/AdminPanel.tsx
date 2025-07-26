@@ -11,6 +11,9 @@ import { useDashboardSectionVisibility } from '../services/DashboardSectionVisib
 import KpiAdminSection from '../components/KpiAdminSection';
 import SectionOrderManager from '../components/SectionOrderManager';
 import { API_BASE_URL } from '../services/apiConfig';
+import AdminConfigService from '../services/AdminConfigService';
+import '../utils/configReset'; // Importar utilidades de reset
+// import '../utils/force9Sections'; // 🚀 SOLUCIÓN DIRECTA para 9 secciones - temporalmente comentado por errores de TS
 
 
 interface SidebarVisibility {
@@ -35,9 +38,11 @@ const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
 
-  const { visibility, setVisibility } = useSidebarVisibility() as {
+  const { visibility, setVisibility, isServerSynced, lastUpdated } = useSidebarVisibility() as {
     visibility: SidebarVisibility;
-    setVisibility: (visibility: SidebarVisibility) => void;
+    setVisibility: (visibility: SidebarVisibility, applyGlobally?: boolean) => Promise<void>;
+    isServerSynced: boolean;
+    lastUpdated: Date | null;
   };
 
   // Usar el contexto de secciones del Dashboard - solo necesitamos resetToDefaults
@@ -97,6 +102,10 @@ const AdminPanel: React.FC = () => {
 
   const [loadingStats, setLoadingStats] = useState<boolean>(true);
 
+  // 🆕 NUEVOS ESTADOS PARA CONFIGURACIONES GLOBALES
+  const [isApplyingGlobally, setIsApplyingGlobally] = useState<boolean>(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+
   // 🆕 ACTUALIZADO: Array completo de elementos del sidebar incluyendo monitoreo aternity y análisis de sesiones
   const sidebarItemsMeta: SidebarItemMeta[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'bi-clipboard-data-fill', color: '#3498db' },
@@ -125,7 +134,7 @@ const AdminPanel: React.FC = () => {
     try {
       setLoadingStats(true);
       const token = localStorage.getItem('token');
-      
+
       if (!token) {
         console.error('No hay token de autenticación');
         return;
@@ -138,7 +147,7 @@ const AdminPanel: React.FC = () => {
       // 🔄 OBTENER DATOS DE MÚLTIPLES ENDPOINTS
       const [
         usersRes,
-        projectsRes, 
+        projectsRes,
         hitosRes,
         tasksRes,
         itrackerRes,
@@ -177,7 +186,7 @@ const AdminPanel: React.FC = () => {
       // Tareas Pendientes (no completadas)
       if (tasksRes.status === 'fulfilled' && tasksRes.value.data?.data) {
         const todasTareas = tasksRes.value.data.data;
-        tareasPendientes = todasTareas.filter((tarea: any) => 
+        tareasPendientes = todasTareas.filter((tarea: any) =>
           tarea.estado !== 'completada' && tarea.estado !== 'completado'
         ).length;
       }
@@ -185,50 +194,50 @@ const AdminPanel: React.FC = () => {
       // Archivos Cargados (iTracker + Tabulaciones + ABM estimado)
       let conteoItracker = 0;
       let conteoTabulaciones = 0;
-      
+
       if (itrackerRes.status === 'fulfilled' && itrackerRes.value.data?.count) {
         conteoItracker = itrackerRes.value.data.count;
       }
-      
+
       if (tabulacionesRes.status === 'fulfilled' && tabulacionesRes.value.data?.count) {
         conteoTabulaciones = tabulacionesRes.value.data.count;
       }
-      
+
       // Estimación conservadora para archivos ABM
       const estimacionABM = Math.floor(conteoItracker * 0.3);
       archivosCargados = conteoItracker + conteoTabulaciones + estimacionABM;
 
       // 🎯 ACTUALIZAR ESTADO CON DATOS REALES
       setRealAdminStats([
-        { 
-          title: 'Usuarios Activos', 
-          value: usuariosActivos, 
-          icon: 'bi-people-fill', 
-          color: '#3498db' 
+        {
+          title: 'Usuarios Activos',
+          value: usuariosActivos,
+          icon: 'bi-people-fill',
+          color: '#3498db'
         },
-        { 
-          title: 'Proyectos Totales', 
-          value: proyectosTotales, 
-          icon: 'bi-diagram-3-fill', 
-          color: '#2ecc71' 
+        {
+          title: 'Proyectos Totales',
+          value: proyectosTotales,
+          icon: 'bi-diagram-3-fill',
+          color: '#2ecc71'
         },
-        { 
-          title: 'Hitos Registrados', 
-          value: hitosRegistrados, 
-          icon: 'bi-flag-fill', 
-          color: '#f39c12' 
+        {
+          title: 'Hitos Registrados',
+          value: hitosRegistrados,
+          icon: 'bi-flag-fill',
+          color: '#f39c12'
         },
-        { 
-          title: 'Tareas Pendientes', 
-          value: tareasPendientes, 
-          icon: 'bi-list-task', 
-          color: '#e74c3c' 
+        {
+          title: 'Tareas Pendientes',
+          value: tareasPendientes,
+          icon: 'bi-list-task',
+          color: '#e74c3c'
         },
-        { 
-          title: 'Registros Cargados', 
-          value: archivosCargados, 
-          icon: 'bi-cloud-upload-fill', 
-          color: '#9b59b6' 
+        {
+          title: 'Registros Cargados',
+          value: archivosCargados,
+          icon: 'bi-cloud-upload-fill',
+          color: '#9b59b6'
         }
       ]);
 
@@ -242,7 +251,7 @@ const AdminPanel: React.FC = () => {
 
     } catch (error) {
       console.error('Error cargando estadísticas administrativas:', error);
-      
+
       // En caso de error, mantener valores por defecto
       setRealAdminStats([
         { title: 'Usuarios Activos', value: 0, icon: 'bi-people-fill', color: '#3498db' },
@@ -264,7 +273,7 @@ const AdminPanel: React.FC = () => {
   // 🔄 Función para refrescar estadísticas
   const refreshStats = async (): Promise<void> => {
     await fetchAdminStats();
-    
+
     Swal.fire({
       title: '¡Estadísticas actualizadas!',
       text: 'Los datos han sido recargados desde el servidor',
@@ -277,6 +286,171 @@ const AdminPanel: React.FC = () => {
     });
   };
 
+  // 🆕 NUEVAS FUNCIONES PARA CONFIGURACIONES GLOBALES
+
+  // 🌐 FUNCIÓN: Aplicar configuración globalmente
+  const applyConfigurationGlobally = async (configType: 'sidebar' | 'dashboard' | 'kpis'): Promise<void> => {
+    try {
+      setIsApplyingGlobally(true);
+
+      const result = await Swal.fire({
+        title: '¿Aplicar configuración globalmente?',
+        html: `
+        <div style="text-align: left; margin: 20px 0;">
+          <p><strong>Esta acción:</strong></p>
+          <ul style="text-align: left;">
+            <li>✅ Aplicará la configuración actual a <strong>todos los usuarios</strong></li>
+            <li>✅ Se sincronizará automáticamente en todos los dispositivos</li>
+            <li>✅ Se guardará como configuración por defecto del sistema</li>
+            <li>⚠️ Sobrescribirá las configuraciones personalizadas de usuarios</li>
+          </ul>
+          <p style="color: #dc3545; font-size: 0.9em;">
+            <strong>Nota:</strong> Esta acción no se puede deshacer fácilmente.
+          </p>
+        </div>
+      `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, aplicar globalmente',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#0d6efd',
+        cancelButtonColor: '#6c757d',
+        background: isDarkMode ? '#343a40' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#212529'
+      });
+
+      if (!result.isConfirmed) return;
+
+      let success = false;
+      let message = '';
+
+      switch (configType) {
+        case 'sidebar':
+          success = await AdminConfigService.saveSidebarConfiguration(localVisibility, true);
+          message = 'Configuración del sidebar aplicada globalmente';
+          if (success) {
+            await setVisibility(localVisibility, true);
+          }
+          break;
+
+        case 'dashboard':
+          message = 'Configuración del dashboard (próximamente)';
+          break;
+
+        case 'kpis':
+          message = 'Configuración de KPIs (próximamente)';
+          break;
+      }
+
+      if (success) {
+        setLastSyncTime(new Date());
+        setIsDirty(false);
+
+        await Swal.fire({
+          title: '¡Configuración aplicada!',
+          text: message,
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+          background: isDarkMode ? '#343a40' : '#ffffff',
+          color: isDarkMode ? '#ffffff' : '#212529'
+        });
+
+        if (configType === 'sidebar') {
+          await fetchAdminStats();
+        }
+      } else {
+        throw new Error('No se pudo aplicar la configuración globalmente');
+      }
+
+    } catch (error) {
+      console.error('Error applying configuration globally:', error);
+
+      await Swal.fire({
+        title: 'Error',
+        text: 'No se pudo aplicar la configuración globalmente. Por favor, intenta nuevamente.',
+        icon: 'error',
+        confirmButtonText: 'Entendido',
+        confirmButtonColor: '#dc3545',
+        background: isDarkMode ? '#343a40' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#212529'
+      });
+    } finally {
+      setIsApplyingGlobally(false);
+    }
+  };
+
+  // 🔄 FUNCIÓN: Sincronizar configuraciones desde servidor
+  const syncConfigurationsFromServer = async (): Promise<void> => {
+    try {
+      const result = await Swal.fire({
+        title: '¿Sincronizar configuraciones?',
+        text: 'Esto cargará las configuraciones más recientes desde el servidor y puede sobrescribir cambios locales no guardados.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, sincronizar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#0d6efd',
+        background: isDarkMode ? '#343a40' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#212529'
+      });
+
+      if (!result.isConfirmed) return;
+
+      Swal.fire({
+        title: 'Sincronizando...',
+        text: 'Cargando configuraciones desde el servidor',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        background: isDarkMode ? '#343a40' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#212529',
+        didOpen: () => {
+          Swal.showLoading(Swal.getDenyButton());
+        }
+      });
+
+      await AdminConfigService.syncConfigurationsFromServer();
+      window.location.reload();
+
+    } catch (error) {
+      console.error('Error syncing configurations:', error);
+
+      Swal.fire({
+        title: 'Error de sincronización',
+        text: 'No se pudo conectar con el servidor para sincronizar las configuraciones.',
+        icon: 'error',
+        confirmButtonText: 'Entendido',
+        background: isDarkMode ? '#343a40' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#212529'
+      });
+    }
+  };
+
+  // 📊 COMPONENTE: Indicador de estado de sincronización
+  const SyncStatusIndicator: React.FC = () => {
+    return (
+      <div className="d-flex align-items-center">
+        <div
+          className={`rounded-circle me-2`}
+          style={{
+            width: '8px',
+            height: '8px',
+            backgroundColor: isServerSynced ? '#28a745' : '#ffc107'
+          }}
+        />
+        <small style={{ color: themeColors.textMuted }}>
+          {isServerSynced ? 'Sincronizado' : 'Solo local'}
+          {lastUpdated && (
+            <span className="ms-1">
+              ({lastUpdated.toLocaleTimeString()})
+            </span>
+          )}
+        </small>
+      </div>
+    );
+  };
+
   const toggleSidebarItem = (id: string): void => {
     const newState: SidebarVisibility = {
       ...localVisibility,
@@ -286,20 +460,43 @@ const AdminPanel: React.FC = () => {
     setIsDirty(true);
   };
 
-  const saveChanges = (): void => {
-    setVisibility(localVisibility);
-    setIsDirty(false);
+  const saveChanges = async (): Promise<void> => {
+    try {
+      await setVisibility(localVisibility, false);
+      setIsDirty(false);
 
-    Swal.fire({
-      title: '¡Cambios guardados!',
-      text: 'La configuración ha sido actualizada correctamente',
-      icon: 'success',
-      iconColor: '#339fff',
-      timer: 1500,
-      showConfirmButton: false,
-      background: isDarkMode ? '#343a40' : '#ffffff',
-      color: isDarkMode ? '#ffffff' : '#212529'
-    });
+      Swal.fire({
+        title: '¡Cambios guardados!',
+        html: `
+        <div>
+          <p>La configuración ha sido actualizada en tu perfil.</p>
+          <div style="margin-top: 15px; padding: 10px; background-color: rgba(13, 110, 253, 0.1); border-radius: 5px;">
+            <small style="color: #0d6efd;">
+              <i class="bi bi-info-circle me-1"></i>
+              <strong>Tip:</strong> Para aplicar estos cambios a todos los usuarios, 
+              usa el botón "Aplicar a Todos los Usuarios".
+            </small>
+          </div>
+        </div>
+      `,
+        icon: 'success',
+        timer: 3000,
+        showConfirmButton: false,
+        background: isDarkMode ? '#343a40' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#212529'
+      });
+    } catch (error) {
+      console.error('Error saving changes:', error);
+
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudieron guardar los cambios. Por favor, intenta nuevamente.',
+        icon: 'error',
+        confirmButtonText: 'Entendido',
+        background: isDarkMode ? '#343a40' : '#ffffff',
+        color: isDarkMode ? '#ffffff' : '#212529'
+      });
+    }
   };
 
   const cancelChanges = (): void => {
@@ -516,10 +713,10 @@ const AdminPanel: React.FC = () => {
               </Button>
             </div>
           </Col>
-          
+
           {realAdminStats.map((stat, index) => (
             <Col md={6} lg={Math.floor(12 / realAdminStats.length)} key={index}>
-              <Card 
+              <Card
                 className="border-0 shadow-sm h-100"
                 style={{ backgroundColor: themeColors.cardBackground }}
               >
@@ -553,20 +750,67 @@ const AdminPanel: React.FC = () => {
           ))}
         </Row>
 
-        <Card 
+        <Card
           className="mb-4 border-0 shadow-sm"
           style={{ backgroundColor: themeColors.cardBackground }}
         >
-          <Card.Header 
+          <Card.Header
             className="py-3"
             style={{ backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }}
           >
-            <h5 className="fw-bold mb-0" style={{ color: themeColors.textPrimary }}>
-              <i className="bi bi-layout-sidebar me-2 text-primary"></i>
-              Menú lateral (Sidebar)
-            </h5>
+            <div className="d-flex justify-content-between align-items-center">
+              <h5 className="fw-bold mb-0" style={{ color: themeColors.textPrimary }}>
+                <i className="bi bi-layout-sidebar me-2 text-primary"></i>
+                Menú lateral (Sidebar)
+              </h5>
+              <SyncStatusIndicator />
+            </div>
           </Card.Header>
           <Card.Body>
+            {/* Botones de acción global */}
+            <Row className="mb-3">
+              <Col>
+                <div className="d-flex gap-2 flex-wrap">
+                  <Button
+                    variant="success"
+                    size="sm"
+                    onClick={() => applyConfigurationGlobally('sidebar')}
+                    disabled={isApplyingGlobally || !isDirty}
+                    className="shadow-sm"
+                  >
+                    {isApplyingGlobally ? (
+                      <>
+                        <Spinner animation="border" size="sm" className="me-1" />
+                        Aplicando...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-globe me-1"></i>
+                        Aplicar a Todos los Usuarios
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={syncConfigurationsFromServer}
+                    className="shadow-sm"
+                  >
+                    <i className="bi bi-arrow-clockwise me-1"></i>
+                    Sincronizar desde Servidor
+                  </Button>
+
+                  {isDirty && (
+                    <Badge bg="warning" className="align-self-center">
+                      <i className="bi bi-exclamation-triangle me-1"></i>
+                      Cambios sin aplicar
+                    </Badge>
+                  )}
+                </div>
+              </Col>
+            </Row>
+
             <Row>
               <Col md={3}>
                 <div className="pb-2 d-flex align-items-center">
@@ -577,16 +821,16 @@ const AdminPanel: React.FC = () => {
                 </div>
                 <Card className="border-0 shadow-sm">
                   <Card.Body className="p-0">
-                    <div 
-                      className="sidebar-preview" 
-                      style={{ 
+                    <div
+                      className="sidebar-preview"
+                      style={{
                         backgroundColor: themeColors.sidebarBg,
-                        borderRadius: '8px', 
+                        borderRadius: '8px',
                         overflow: 'hidden'
                       }}
                     >
-                      <div 
-                        className="sidebar-header p-3 d-flex align-items-center" 
+                      <div
+                        className="sidebar-header p-3 d-flex align-items-center"
                         style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}
                       >
                         <div className="d-flex align-items-center">
@@ -602,8 +846,8 @@ const AdminPanel: React.FC = () => {
                       <div className="sidebar-body py-2" style={{ fontSize: '0.85rem' }}>
                         {sidebarItemsMeta.map(item => (
                           localVisibility[item.id] !== false && (
-                            <div 
-                              key={item.id} 
+                            <div
+                              key={item.id}
                               className="sidebar-item d-flex align-items-center px-3 py-1"
                               style={{ color: themeColors.sidebarText }}
                             >
@@ -613,7 +857,7 @@ const AdminPanel: React.FC = () => {
                           )
                         ))}
                         <div className="mt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                          <div 
+                          <div
                             className="sidebar-item d-flex align-items-center px-3 py-1 mt-2"
                             style={{ color: themeColors.sidebarText }}
                           >
@@ -645,7 +889,7 @@ const AdminPanel: React.FC = () => {
                 <Row>
                   {sidebarItemsMeta.map(item => (
                     <Col xs={12} md={6} lg={4} key={item.id} className="mb-3">
-                      <Card 
+                      <Card
                         className="border shadow-sm h-100"
                         style={{ backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }}
                       >
@@ -693,11 +937,11 @@ const AdminPanel: React.FC = () => {
         {/* 🆕 NUEVA SECCIÓN: Configuración de KPIs del Dashboard */}
         <KpiAdminSection isDarkMode={isDarkMode} />
 
-        <Card 
+        <Card
           className="mb-4 border-0 shadow-sm"
           style={{ backgroundColor: themeColors.cardBackground }}
         >
-          <Card.Header 
+          <Card.Header
             className="py-3"
             style={{ backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }}
           >
@@ -910,7 +1154,7 @@ const AdminPanel: React.FC = () => {
                   </Card.Body>
                 </Card>
               </Col>
-              
+
               <Col md={4} className="mb-3">
                 <Card className="h-100 border-0 shadow-sm">
                   <Card.Body className="p-0">
@@ -1007,8 +1251,8 @@ const AdminPanel: React.FC = () => {
                           height: '3.5rem',
                           padding: 0
                         }}>
-                        <i 
-                          className="bi bi-journal-text fs-3" 
+                        <i
+                          className="bi bi-journal-text fs-3"
                           style={{ color: isDarkMode ? '#adb5bd' : '#495057' }}
                         ></i>
                       </div>
@@ -1021,17 +1265,17 @@ const AdminPanel: React.FC = () => {
             </Row>
           </Card.Body>
         </Card>
-        
+
         {/* MODALES */}
         <Modal
           show={showItrackerModal}
           onHide={resetItrackerModal}
           centered
         >
-          <Modal.Header 
-            closeButton 
+          <Modal.Header
+            closeButton
             className="border-0 pb-0"
-            style={{ 
+            style={{
               backgroundColor: themeColors.cardBackground,
               color: themeColors.textPrimary
             }}
@@ -1078,7 +1322,7 @@ const AdminPanel: React.FC = () => {
               {uploadError && <Alert variant="danger" className="mt-3">{uploadError}</Alert>}
             </Form>
           </Modal.Body>
-          <Modal.Footer 
+          <Modal.Footer
             className="border-0 pt-0"
             style={{ backgroundColor: themeColors.cardBackground }}
           >
@@ -1113,10 +1357,10 @@ const AdminPanel: React.FC = () => {
           onHide={resetTabulacionesModal}
           centered
         >
-          <Modal.Header 
-            closeButton 
+          <Modal.Header
+            closeButton
             className="border-0 pb-0"
-            style={{ 
+            style={{
               backgroundColor: themeColors.cardBackground,
               color: themeColors.textPrimary
             }}
@@ -1163,7 +1407,7 @@ const AdminPanel: React.FC = () => {
               {uploadError && <Alert variant="danger" className="mt-3">{uploadError}</Alert>}
             </Form>
           </Modal.Body>
-          <Modal.Footer 
+          <Modal.Footer
             className="border-0 pt-0"
             style={{ backgroundColor: themeColors.cardBackground }}
           >

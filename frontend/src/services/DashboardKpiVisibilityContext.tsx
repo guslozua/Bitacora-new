@@ -1,5 +1,9 @@
-// frontend/src/services/DashboardKpiVisibilityContext.tsx
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+// ============================================================================
+// ARCHIVO ACTUALIZADO: frontend/src/services/DashboardKpiVisibilityContext.tsx
+// Integración con API para configuraciones globales
+// ============================================================================
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+import AdminConfigService from './AdminConfigService';
 
 export interface KpiConfig {
   id: string;
@@ -15,14 +19,18 @@ export interface KpiConfig {
 
 type DashboardKpiVisibilityContextType = {
   kpiConfigs: KpiConfig[];
-  setKpiConfigs: (configs: KpiConfig[]) => void;
+  setKpiConfigs: (configs: KpiConfig[], applyGlobally?: boolean) => Promise<void>;
   toggleKpiVisibility: (id: string) => void;
   getVisibleKpis: () => KpiConfig[];
   resetToDefaults: () => void;
+  // 🆕 Nuevas propiedades para sincronización
+  isServerSynced: boolean;
+  lastUpdated: Date | null;
+  syncFromServer: () => Promise<void>;
 };
 
 const defaultKpiConfigs: KpiConfig[] = [
-  // 🔥 KPIS PRINCIPALES DEL DASHBOARD (ANTES FIJOS)
+  // 🔥 KPIS PRINCIPALES DEL DASHBOARD
   {
     id: 'proyectos_activos',
     label: 'Proyectos Activos',
@@ -98,63 +106,85 @@ const defaultKpiConfigs: KpiConfig[] = [
     visible: true,
     endpoint: '/api/tabulaciones/stats',
     dataKey: 'total',
-    description: 'Total de árboles de tabulación gestionados',
+    description: 'Total de tabulaciones registradas',
     order: 7
   },
   {
-    id: 'placas',
-    label: 'Placas Emitidas',
-    icon: 'bi bi-clipboard-check',
-    color: 'warning',
+    id: 'itracker_registros',
+    label: 'Registros iTracker',
+    icon: 'bi bi-graph-up',
+    color: 'primary',
     visible: true,
-    endpoint: '/api/placas/stats',
-    dataKey: 'total',
-    description: 'Total de placas de novedades emitidas',
+    endpoint: '/api/itracker/stats',
+    dataKey: 'total_records',
+    description: 'Total de registros iTracker procesados',
     order: 8
   },
   {
-    id: 'itracker',
-    label: 'iTracker Gestionados',
-    icon: 'bi bi-bug-fill',
-    color: 'danger',
+    id: 'hitos_completados',
+    label: 'Hitos Completados',
+    icon: 'bi bi-flag-fill',
+    color: 'success',
     visible: true,
-    endpoint: '/api/itracker/stats',
-    dataKey: 'total',
-    description: 'Total de tickets iTracker gestionados',
+    endpoint: '/api/hitos/stats',
+    dataKey: 'completados',
+    description: 'Hitos completados este mes',
     order: 9
   },
   {
-    id: 'incidentes_guardias',
-    label: 'Incidentes en Guardias',
-    icon: 'bi bi-shield-exclamation',
-    color: 'warning',
+    id: 'placas_generadas',
+    label: 'Placas Generadas',
+    icon: 'bi bi-card-text',
+    color: 'info',
     visible: true,
-    endpoint: '/api/informes/incidentes',
-    dataKey: 'total_incidentes',
-    description: 'Total de incidentes registrados en guardias',
+    endpoint: '/api/placas/stats',
+    dataKey: 'total_placas',
+    description: 'Total de placas generadas',
     order: 10
   },
   {
-    id: 'hitos_totales',
-    label: 'Hitos Totales',
-    icon: 'bi bi-flag-fill',
-    color: 'success',
-    visible: false,
-    endpoint: '/api/hitos',
-    dataKey: 'total',
-    description: 'Total de hitos registrados en el sistema',
+    id: 'contactos_activos',
+    label: 'Contactos Activos',
+    icon: 'bi bi-person-lines-fill',
+    color: 'primary',
+    visible: true,
+    endpoint: '/api/contactos/stats',
+    dataKey: 'activos',
+    description: 'Contactos activos en el sistema',
     order: 11
   },
   {
-    id: 'eventos_mes',
-    label: 'Eventos del Mes',
-    icon: 'bi bi-calendar-event',
-    color: 'info',
-    visible: false,
-    endpoint: '/api/eventos',
-    dataKey: 'eventos_mes',
-    description: 'Eventos programados para el mes actual',
+    id: 'mensajes_pendientes',
+    label: 'Mensajes Pendientes',
+    icon: 'bi bi-envelope-fill',
+    color: 'warning',
+    visible: true,
+    endpoint: '/api/mensajes/stats',
+    dataKey: 'pendientes',
+    description: 'Mensajes pendientes de respuesta',
     order: 12
+  },
+  {
+    id: 'sesiones_activas',
+    label: 'Sesiones Activas',
+    icon: 'bi bi-activity',
+    color: 'success',
+    visible: false, // 🔒 Experimental - oculto por defecto
+    endpoint: '/api/session-analysis/stats',
+    dataKey: 'active_sessions',
+    description: 'Sesiones activas en el sistema',
+    order: 13
+  },
+  {
+    id: 'alertas_aternity',
+    label: 'Alertas Aternity',
+    icon: 'bi bi-exclamation-triangle',
+    color: 'danger',
+    visible: false, // 🔒 Experimental - oculto por defecto
+    endpoint: '/api/aternity/alerts',
+    dataKey: 'active_alerts',
+    description: 'Alertas activas en Aternity',
+    order: 14
   }
 ];
 
@@ -169,65 +199,157 @@ export const useDashboardKpiVisibility = () => {
 };
 
 export const DashboardKpiVisibilityProvider = ({ children }: { children: ReactNode }) => {
-  // Cargar configuración desde localStorage o usar valores por defecto
-  const [kpiConfigs, setKpiConfigsState] = useState<KpiConfig[]>(() => {
-    const savedConfigs = localStorage.getItem('dashboardKpiConfigs');
-    if (savedConfigs) {
-      try {
-        const parsed = JSON.parse(savedConfigs);
-        
-        // 🔥 MIGRACIÓN AUTOMÁTICA: Corregir endpoints incorrectos
-        const migratedConfigs = defaultKpiConfigs.map(defaultKpi => {
-          const saved = parsed.find((kpi: KpiConfig) => kpi.id === defaultKpi.id);
-          if (saved) {
-            // Aplicar migraciones específicas para endpoints corregidos
-            const migrated = { ...defaultKpi, ...saved };
+  // 🔄 Estados principales
+  const [kpiConfigs, setKpiConfigsState] = useState<KpiConfig[]>(defaultKpiConfigs);
+  const [isServerSynced, setIsServerSynced] = useState<boolean>(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+
+  // 🔄 Función para cargar configuración desde el servidor o localStorage
+  const loadConfiguration = useCallback(async (): Promise<void> => {
+    try {
+      console.log('🔧 DashboardKpis: Cargando configuración...');
+
+      // 1. Intentar cargar desde el servidor
+      const serverConfig = await AdminConfigService.getKpiConfiguration(false);
+      
+      if (serverConfig && Array.isArray(serverConfig)) {
+        console.log('✅ DashboardKpis: Configuración cargada desde servidor');
+        setKpiConfigsState(serverConfig.sort((a, b) => a.order - b.order));
+        setIsServerSynced(true);
+        setLastUpdated(new Date());
+        return;
+      }
+
+      // 2. Fallback a localStorage
+      const savedKpis = localStorage.getItem('kpiConfigs');
+      if (savedKpis) {
+        try {
+          const parsed = JSON.parse(savedKpis);
+          
+          if (Array.isArray(parsed)) {
+            // Migrar configuración si hay KPIs nuevos en defaultKpiConfigs
+            const migratedKpis = defaultKpiConfigs.map(defaultKpi => {
+              const saved = parsed.find((kpi: KpiConfig) => kpi.id === defaultKpi.id);
+              return saved ? { ...defaultKpi, ...saved } : defaultKpi;
+            });
             
-            // Forzar actualización de endpoints corregidos
-            migrated.endpoint = defaultKpi.endpoint;
-            migrated.dataKey = defaultKpi.dataKey;
-            migrated.label = defaultKpi.label;
-            migrated.description = defaultKpi.description;
-            
-            return migrated;
+            setKpiConfigsState(migratedKpis.sort((a, b) => a.order - b.order));
+            console.log('✅ DashboardKpis: Configuración cargada desde localStorage');
+          } else {
+            throw new Error('Invalid format in localStorage');
           }
-          return defaultKpi;
-        });
-        
-        // Guardar configuración migrada
-        localStorage.setItem('dashboardKpiConfigs', JSON.stringify(migratedConfigs));
-        
-        return migratedConfigs.sort((a, b) => a.order - b.order);
-      } catch (error) {
-        console.error('Error parsing saved KPI configs:', error);
-        return defaultKpiConfigs;
+          
+          setIsServerSynced(false);
+        } catch (error) {
+          console.error('❌ DashboardKpis: Error parsing localStorage, using defaults');
+          setKpiConfigsState(defaultKpiConfigs);
+          setIsServerSynced(false);
+        }
+      } else {
+        // 3. Usar configuración por defecto
+        console.log('🔧 DashboardKpis: Usando configuración por defecto');
+        setKpiConfigsState(defaultKpiConfigs);
+        setIsServerSynced(false);
+      }
+    } catch (error) {
+      console.error('❌ DashboardKpis: Error loading configuration:', error);
+      
+      // Fallback final a localStorage o defaults
+      const savedKpis = localStorage.getItem('kpiConfigs');
+      if (savedKpis) {
+        try {
+          const parsed = JSON.parse(savedKpis);
+          if (Array.isArray(parsed)) {
+            setKpiConfigsState(parsed);
+          } else {
+            setKpiConfigsState(defaultKpiConfigs);
+          }
+          setIsServerSynced(false);
+        } catch {
+          setKpiConfigsState(defaultKpiConfigs);
+          setIsServerSynced(false);
+        }
+      } else {
+        setKpiConfigsState(defaultKpiConfigs);
+        setIsServerSynced(false);
       }
     }
-    return defaultKpiConfigs;
-  });
+  }, []);
 
-  // Función para actualizar configuración y guardar en localStorage
-  const setKpiConfigs = (configs: KpiConfig[]) => {
-    setKpiConfigsState(configs);
-    localStorage.setItem('dashboardKpiConfigs', JSON.stringify(configs));
+  // 🔄 Inicializar configuración al montar el componente
+  useEffect(() => {
+    if (!isInitialized) {
+      loadConfiguration().finally(() => {
+        setIsInitialized(true);
+      });
+    }
+  }, [isInitialized, loadConfiguration]);
+
+  // 🔄 Función para actualizar KPIs y guardar (local y/o servidor)
+  const setKpiConfigs = async (newConfigs: KpiConfig[], applyGlobally: boolean = false): Promise<void> => {
+    try {
+      // 1. Actualizar estado local
+      setKpiConfigsState(newConfigs);
+      setLastUpdated(new Date());
+
+      // 2. Guardar en localStorage como backup
+      localStorage.setItem('kpiConfigs', JSON.stringify(newConfigs));
+
+      // 3. Guardar en servidor
+      if (applyGlobally) {
+        console.log('🌐 DashboardKpis: Guardando configuración globalmente');
+        const success = await AdminConfigService.saveKpiConfiguration(newConfigs, true);
+        
+        if (success) {
+          setIsServerSynced(true);
+          console.log('✅ DashboardKpis: Configuración global guardada exitosamente');
+        } else {
+          console.error('❌ DashboardKpis: Error guardando configuración global');
+          setIsServerSynced(false);
+        }
+      } else {
+        // Guardar configuración personal
+        const success = await AdminConfigService.saveKpiConfiguration(newConfigs, false);
+        
+        if (success) {
+          setIsServerSynced(true);
+          console.log('✅ DashboardKpis: Configuración personal guardada exitosamente');
+        } else {
+          console.error('❌ DashboardKpis: Error guardando configuración personal');
+          setIsServerSynced(false);
+        }
+      }
+    } catch (error) {
+      console.error('❌ DashboardKpis: Error saving configuration:', error);
+      setIsServerSynced(false);
+      
+      // Solo actualizar localStorage si falla el servidor
+      localStorage.setItem('kpiConfigs', JSON.stringify(newConfigs));
+    }
+  };
+
+  // 🔄 Función para sincronizar desde servidor
+  const syncFromServer = async (): Promise<void> => {
+    await loadConfiguration();
   };
 
   // Toggle visibilidad de un KPI específico
   const toggleKpiVisibility = (id: string) => {
-    const newConfigs = kpiConfigs.map(config =>
-      config.id === id ? { ...config, visible: !config.visible } : config
+    const newConfigs = kpiConfigs.map(kpi =>
+      kpi.id === id ? { ...kpi, visible: !kpi.visible } : kpi
     );
-    setKpiConfigs(newConfigs);
+    setKpiConfigs(newConfigs, false); // Solo guardar localmente
   };
 
   // Obtener solo KPIs visibles
   const getVisibleKpis = () => {
-    return kpiConfigs.filter(config => config.visible).sort((a, b) => a.order - b.order);
+    return kpiConfigs.filter(kpi => kpi.visible).sort((a, b) => a.order - b.order);
   };
 
   // Resetear a configuración por defecto
   const resetToDefaults = () => {
-    setKpiConfigs(defaultKpiConfigs);
+    setKpiConfigs(defaultKpiConfigs, false);
   };
 
   return (
@@ -237,7 +359,11 @@ export const DashboardKpiVisibilityProvider = ({ children }: { children: ReactNo
         setKpiConfigs, 
         toggleKpiVisibility, 
         getVisibleKpis, 
-        resetToDefaults 
+        resetToDefaults,
+        // 🆕 Nuevas propiedades para sincronización
+        isServerSynced,
+        lastUpdated,
+        syncFromServer
       }}
     >
       {children}
