@@ -1,5 +1,5 @@
 // frontend/src/services/DashboardKpiVisibilityContext.tsx
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from './apiConfig';
 
@@ -179,11 +179,25 @@ export const DashboardKpiVisibilityProvider = ({ children }: { children: ReactNo
   const [isLoading, setIsLoading] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasLoadedRef = useRef(false);
 
   // Cargar configuración al inicializar el contexto
   useEffect(() => {
     cargarConfiguracion();
   }, []);
+
+  // Efecto adicional para monitorear la presencia del token después del login
+  useEffect(() => {
+    // Solo ejecutar si no hemos cargado configuración global y no es la primera carga
+    if (!hasLoadedRef.current && !isGlobalConfig && !isLoading) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        console.log('🔄 Token detectado, recargando configuración de KPIs...');
+        hasLoadedRef.current = true;
+        cargarConfiguracion();
+      }
+    }
+  }, [isLoading, isGlobalConfig]);
 
   const cargarConfiguracion = async () => {
     try {
@@ -191,28 +205,40 @@ export const DashboardKpiVisibilityProvider = ({ children }: { children: ReactNo
       setError(null);
       console.log('🔍 Cargando configuración global de dashboard KPIs...');
 
-      // Verificar si el usuario es SuperAdmin
+      // Verificar si el usuario es SuperAdmin - usando el token directamente
       const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const userResponse = await axios.get(`${API_BASE_URL}/auth/me`, {
-            headers: { 'x-auth-token': token }
-          });
-          const userRoles = userResponse.data.roles || [];
-          setIsSuperAdmin(userRoles.includes('SuperAdmin'));
-        } catch (error) {
-          console.log('No se pudo verificar rol de usuario');
-        }
+      if (!token) {
+        console.log('🔍 No hay token, usando configuración local de dashboard KPIs');
+        cargarDesdeLocalStorage();
+        return;
+      }
+
+      try {
+        // Decodificar el token para obtener los roles
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userRoles = payload.roles || [];
+        setIsSuperAdmin(userRoles.includes('SuperAdmin'));
+      } catch (error) {
+        console.log('No se pudo verificar rol de usuario desde token');
       }
 
       // Intentar cargar configuraciones globales
       const response = await axios.get(`${API_BASE_URL}/configuraciones-globales/tipo/dashboard_kpis`, {
-        headers: token ? { 'x-auth-token': token } : {}
+        headers: { 'x-auth-token': token }
       });
 
-      if (response.data && response.data.length > 0) {
+      console.log('📊 [DEBUG] Respuesta completa de dashboard KPIs:', response);
+      console.log('📊 [DEBUG] response.data:', response.data);
+      console.log('📊 [DEBUG] response.data.success:', response.data?.success);
+      console.log('📊 [DEBUG] response.data.data:', response.data?.data);
+      console.log('📊 [DEBUG] response.data.data?.length:', response.data?.data?.length);
+
+      if (response.data.success && response.data.data && response.data.data.length > 0) {
+        console.log('📊 [DEBUG] Configuraciones encontradas:', response.data.data);
         // Configuraciones globales encontradas
-        const globalConfig = response.data.find((config: any) => config.clave === 'global_dashboard_kpis');
+        const globalConfig = response.data.data.find((config: any) => config.clave === 'global_dashboard_kpis');
+        
+        console.log('📊 [DEBUG] globalConfig encontrado:', globalConfig);
         
         if (globalConfig && globalConfig.valor) {
           console.log('✅ Configuración global de dashboard KPIs cargada:', globalConfig.valor);
