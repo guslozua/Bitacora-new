@@ -89,15 +89,25 @@ export const fetchGanttData = async (): Promise<ExtendedTask[]> => {
   };
 
   try {
-    const [projectsRes, tasksRes, subtasksRes] = await Promise.all([
-      axios.get("${API_URL}/projects", config),
-      axios.get("${API_URL}/tasks", config),
-      axios.get("${API_URL}/subtasks", config),
-    ]);
+  const [projectsRes, tasksRes, subtasksRes] = await Promise.all([
+  axios.get(`${API_URL}/projects`, config),
+  axios.get(`${API_URL}/tasks`, config),
+  axios.get(`${API_URL}/subtasks`, config),
+  ]);
 
     const projects: Proyecto[] = projectsRes.data.data || [];
     const tasks: Tarea[] = tasksRes.data.data || [];
     const subtasks: Subtarea[] = subtasksRes.data.data || [];
+
+    console.log('📊 [DEBUG GANTT] Respuestas de API:');
+    console.log('📊 Projects response:', projectsRes.data);
+    console.log('📊 Tasks response:', tasksRes.data);
+    console.log('📊 Subtasks response:', subtasksRes.data);
+    
+    console.log('📊 [DEBUG GANTT] Datos procesados:');
+    console.log('📊 Projects:', projects.length, projects);
+    console.log('📊 Tasks:', tasks.length, tasks);
+    console.log('📊 Subtasks:', subtasks.length, subtasks);
 
     console.log("Datos cargados - Proyectos:", projects.length, "Tareas:", tasks.length, "Subtareas:", subtasks.length);
 
