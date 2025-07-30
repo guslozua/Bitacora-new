@@ -1,5 +1,7 @@
 // frontend/src/services/DashboardKpiVisibilityContext.tsx
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import axios from 'axios';
+import { API_BASE_URL } from './apiConfig';
 
 export interface KpiConfig {
   id: string;
@@ -19,10 +21,14 @@ type DashboardKpiVisibilityContextType = {
   toggleKpiVisibility: (id: string) => void;
   getVisibleKpis: () => KpiConfig[];
   resetToDefaults: () => void;
+  isGlobalConfig: boolean;
+  isLoading: boolean;
+  isSuperAdmin: boolean;
+  aplicarConfiguracionGlobal: (configuracion: KpiConfig[]) => Promise<boolean>;
+  error: string | null;
 };
 
 const defaultKpiConfigs: KpiConfig[] = [
-  // 🔥 KPIS PRINCIPALES DEL DASHBOARD (ANTES FIJOS)
   {
     id: 'proyectos_activos',
     label: 'Proyectos Activos',
@@ -67,13 +73,12 @@ const defaultKpiConfigs: KpiConfig[] = [
     description: 'Eventos programados para hoy',
     order: 4
   },
-  // 🆕 KPIS ADICIONALES DEL SISTEMA
   {
     id: 'altas_pic',
     label: 'Total Altas PIC',
     icon: 'bi bi-person-plus-fill',
     color: 'primary',
-    visible: true,
+    visible: false,
     endpoint: '/api/abm/stats',
     dataKey: 'total_altas_pic',
     description: 'Total de altas PIC en el año actual',
@@ -84,7 +89,7 @@ const defaultKpiConfigs: KpiConfig[] = [
     label: 'Total Altas Social',
     icon: 'bi bi-people-fill',
     color: 'success',
-    visible: true,
+    visible: false,
     endpoint: '/api/abm/stats',
     dataKey: 'total_altas_social',
     description: 'Total de altas Social en el año actual',
@@ -95,7 +100,7 @@ const defaultKpiConfigs: KpiConfig[] = [
     label: 'Árboles de Tabulación',
     icon: 'bi bi-diagram-3-fill',
     color: 'info',
-    visible: true,
+    visible: false,
     endpoint: '/api/tabulaciones/stats',
     dataKey: 'total',
     description: 'Total de árboles de tabulación gestionados',
@@ -106,7 +111,7 @@ const defaultKpiConfigs: KpiConfig[] = [
     label: 'Placas Emitidas',
     icon: 'bi bi-clipboard-check',
     color: 'warning',
-    visible: true,
+    visible: false,
     endpoint: '/api/placas/stats',
     dataKey: 'total',
     description: 'Total de placas de novedades emitidas',
@@ -117,7 +122,7 @@ const defaultKpiConfigs: KpiConfig[] = [
     label: 'iTracker Gestionados',
     icon: 'bi bi-bug-fill',
     color: 'danger',
-    visible: true,
+    visible: false,
     endpoint: '/api/itracker/stats',
     dataKey: 'total',
     description: 'Total de tickets iTracker gestionados',
@@ -128,7 +133,7 @@ const defaultKpiConfigs: KpiConfig[] = [
     label: 'Incidentes en Guardias',
     icon: 'bi bi-shield-exclamation',
     color: 'warning',
-    visible: true,
+    visible: false,
     endpoint: '/api/informes/incidentes',
     dataKey: 'total_incidentes',
     description: 'Total de incidentes registrados en guardias',
@@ -169,14 +174,74 @@ export const useDashboardKpiVisibility = () => {
 };
 
 export const DashboardKpiVisibilityProvider = ({ children }: { children: ReactNode }) => {
-  // Cargar configuración desde localStorage o usar valores por defecto
-  const [kpiConfigs, setKpiConfigsState] = useState<KpiConfig[]>(() => {
+  const [kpiConfigs, setKpiConfigsState] = useState<KpiConfig[]>(defaultKpiConfigs);
+  const [isGlobalConfig, setIsGlobalConfig] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Cargar configuración al inicializar el contexto
+  useEffect(() => {
+    cargarConfiguracion();
+  }, []);
+
+  const cargarConfiguracion = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      console.log('🔍 Cargando configuración global de dashboard KPIs...');
+
+      // Verificar si el usuario es SuperAdmin
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const userResponse = await axios.get(`${API_BASE_URL}/auth/me`, {
+            headers: { 'x-auth-token': token }
+          });
+          const userRoles = userResponse.data.roles || [];
+          setIsSuperAdmin(userRoles.includes('SuperAdmin'));
+        } catch (error) {
+          console.log('No se pudo verificar rol de usuario');
+        }
+      }
+
+      // Intentar cargar configuraciones globales
+      const response = await axios.get(`${API_BASE_URL}/configuraciones-globales/tipo/dashboard_kpis`, {
+        headers: token ? { 'x-auth-token': token } : {}
+      });
+
+      if (response.data && response.data.length > 0) {
+        // Configuraciones globales encontradas
+        const globalConfig = response.data.find((config: any) => config.clave === 'global_dashboard_kpis');
+        
+        if (globalConfig && globalConfig.valor) {
+          console.log('✅ Configuración global de dashboard KPIs cargada:', globalConfig.valor);
+          setKpiConfigsState(globalConfig.valor);
+          setIsGlobalConfig(true);
+          console.log('🌐 Usando configuración global de dashboard KPIs');
+          return;
+        }
+      }
+
+      // No hay configuraciones globales, intentar localStorage
+      console.log('⚠️ No hay configuración global, intentando localStorage...');
+      cargarDesdeLocalStorage();
+
+    } catch (error) {
+      console.log('⚠️ Error cargando configuración global, usando localStorage:', error);
+      cargarDesdeLocalStorage();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const cargarDesdeLocalStorage = () => {
     const savedConfigs = localStorage.getItem('dashboardKpiConfigs');
     if (savedConfigs) {
       try {
         const parsed = JSON.parse(savedConfigs);
         
-        // 🔥 MIGRACIÓN AUTOMÁTICA: Corregir endpoints incorrectos
+        // Migración automática: Corregir endpoints incorrectos
         const migratedConfigs = defaultKpiConfigs.map(defaultKpi => {
           const saved = parsed.find((kpi: KpiConfig) => kpi.id === defaultKpi.id);
           if (saved) {
@@ -194,22 +259,58 @@ export const DashboardKpiVisibilityProvider = ({ children }: { children: ReactNo
           return defaultKpi;
         });
         
-        // Guardar configuración migrada
+        setKpiConfigsState(migratedConfigs.sort((a, b) => a.order - b.order));
         localStorage.setItem('dashboardKpiConfigs', JSON.stringify(migratedConfigs));
-        
-        return migratedConfigs.sort((a, b) => a.order - b.order);
+        console.log('📱 Usando configuración local de dashboard KPIs');
       } catch (error) {
         console.error('Error parsing saved KPI configs:', error);
-        return defaultKpiConfigs;
+        setKpiConfigsState(defaultKpiConfigs);
       }
+    } else {
+      setKpiConfigsState(defaultKpiConfigs);
+      console.log('🔄 Usando configuración por defecto de dashboard KPIs');
     }
-    return defaultKpiConfigs;
-  });
+    setIsGlobalConfig(false);
+  };
 
-  // Función para actualizar configuración y guardar en localStorage
+  // Función para actualizar configuración
   const setKpiConfigs = (configs: KpiConfig[]) => {
     setKpiConfigsState(configs);
-    localStorage.setItem('dashboardKpiConfigs', JSON.stringify(configs));
+    if (!isGlobalConfig) {
+      localStorage.setItem('dashboardKpiConfigs', JSON.stringify(configs));
+    }
+  };
+
+  // Función para aplicar configuración como global (solo SuperAdmin)
+  const aplicarConfiguracionGlobal = async (configuracion: KpiConfig[]): Promise<boolean> => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+
+      const response = await axios.post(
+        `${API_BASE_URL}/configuraciones-globales/aplicar-global`,
+        {
+          tipo_configuracion: 'dashboard_kpis',
+          configuracion_local: configuracion
+        },
+        {
+          headers: { 'x-auth-token': token }
+        }
+      );
+
+      if (response.status === 200) {
+        // Recargar configuración para reflejar cambios
+        await cargarConfiguracion();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error aplicando configuración global:', error);
+      setError('Error aplicando configuración global');
+      return false;
+    }
   };
 
   // Toggle visibilidad de un KPI específico
@@ -237,7 +338,12 @@ export const DashboardKpiVisibilityProvider = ({ children }: { children: ReactNo
         setKpiConfigs, 
         toggleKpiVisibility, 
         getVisibleKpis, 
-        resetToDefaults 
+        resetToDefaults,
+        isGlobalConfig,
+        isLoading,
+        isSuperAdmin,
+        aplicarConfiguracionGlobal,
+        error
       }}
     >
       {children}

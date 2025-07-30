@@ -1,5 +1,7 @@
 // frontend/src/services/DashboardSectionVisibilityContext.tsx
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import axios from 'axios';
+import { API_BASE_URL } from './apiConfig';
 
 export interface DashboardSection {
   id: string;
@@ -20,16 +22,29 @@ type DashboardSectionVisibilityContextType = {
   reorderSections: (dragIndex: number, hoverIndex: number) => void;
   moveSectionToPosition: (sectionId: string, newOrder: number) => void;
   getSectionsInOrder: () => DashboardSection[];
+  isGlobalConfig: boolean;
+  isLoading: boolean;
+  isSuperAdmin: boolean;
+  aplicarConfiguracionGlobal: (configuracion: DashboardSection[]) => Promise<boolean>;
+  error: string | null;
 };
 
 const defaultSections: DashboardSection[] = [
+  {
+    id: 'anuncios',
+    label: 'Anuncios',
+    description: 'Carrusel de anuncios y noticias importantes',
+    visible: true,
+    icon: 'bi-megaphone',
+    order: 1
+  },
   {
     id: 'kpis-sistema',
     label: 'KPIs del Sistema',
     description: 'Indicadores clave y métricas del sistema',
     visible: true,
     icon: 'bi-speedometer2',
-    order: 1
+    order: 2
   },
   {
     id: 'actividad-reciente',
@@ -37,7 +52,7 @@ const defaultSections: DashboardSection[] = [
     description: 'Últimas acciones y cambios en el sistema',
     visible: true,
     icon: 'bi-clock-history',
-    order: 2
+    order: 3
   },
   {
     id: 'calendario',
@@ -45,21 +60,13 @@ const defaultSections: DashboardSection[] = [
     description: 'Mini calendario con eventos próximos',
     visible: true,
     icon: 'bi-calendar-event',
-    order: 3
-  },
-  {
-    id: 'anuncios',
-    label: 'Anuncios',
-    description: 'Carrusel de anuncios y noticias importantes',
-    visible: true,
-    icon: 'bi-megaphone',
     order: 4
   },
   {
     id: 'reportes-rapidos',
     label: 'Reportes Rápidos',
     description: 'Gráfico con estadísticas del sistema',
-    visible: true,
+    visible: false,
     icon: 'bi-bar-chart-fill',
     order: 5
   },
@@ -67,7 +74,7 @@ const defaultSections: DashboardSection[] = [
     id: 'proximos-eventos',
     label: 'Próximos Eventos',
     description: 'Lista de eventos programados',
-    visible: true,
+    visible: false,
     icon: 'bi-calendar-check',
     order: 6
   },
@@ -75,7 +82,7 @@ const defaultSections: DashboardSection[] = [
     id: 'acciones-rapidas',
     label: 'Acciones Rápidas',
     description: 'Botones para crear proyectos, tareas y eventos',
-    visible: true,
+    visible: false,
     icon: 'bi-lightning-charge',
     order: 7
   },
@@ -83,7 +90,7 @@ const defaultSections: DashboardSection[] = [
     id: 'resumen-sistema',
     label: 'Resumen del Sistema',
     description: 'Estadísticas generales y métricas del sistema',
-    visible: true,
+    visible: false,
     icon: 'bi-pie-chart-fill',
     order: 8
   },
@@ -91,7 +98,7 @@ const defaultSections: DashboardSection[] = [
     id: 'cronograma-proyectos',
     label: 'Cronograma de Proyectos',
     description: 'Vista Gantt con el cronograma de proyectos',
-    visible: true,
+    visible: false,
     icon: 'bi-diagram-3-fill',
     order: 9
   }
@@ -108,8 +115,68 @@ export const useDashboardSectionVisibility = () => {
 };
 
 export const DashboardSectionVisibilityProvider = ({ children }: { children: ReactNode }) => {
-  // Cargar configuración desde localStorage o usar valores por defecto
-  const [sections, setSectionsState] = useState<DashboardSection[]>(() => {
+  const [sections, setSectionsState] = useState<DashboardSection[]>(defaultSections);
+  const [isGlobalConfig, setIsGlobalConfig] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Cargar configuración al inicializar el contexto
+  useEffect(() => {
+    cargarConfiguracion();
+  }, []);
+
+  const cargarConfiguracion = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      console.log('🔍 Cargando configuración global de dashboard sections...');
+
+      // Verificar si el usuario es SuperAdmin
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const userResponse = await axios.get(`${API_BASE_URL}/auth/me`, {
+            headers: { 'x-auth-token': token }
+          });
+          const userRoles = userResponse.data.roles || [];
+          setIsSuperAdmin(userRoles.includes('SuperAdmin'));
+        } catch (error) {
+          console.log('No se pudo verificar rol de usuario');
+        }
+      }
+
+      // Intentar cargar configuraciones globales
+      const response = await axios.get(`${API_BASE_URL}/configuraciones-globales/tipo/dashboard_sections`, {
+        headers: token ? { 'x-auth-token': token } : {}
+      });
+
+      if (response.data && response.data.length > 0) {
+        // Configuraciones globales encontradas
+        const globalConfig = response.data.find((config: any) => config.clave === 'global_dashboard_sections');
+        
+        if (globalConfig && globalConfig.valor) {
+          console.log('✅ Configuración global de dashboard sections cargada:', globalConfig.valor);
+          setSectionsState(globalConfig.valor);
+          setIsGlobalConfig(true);
+          console.log('🌐 Usando configuración global de dashboard sections');
+          return;
+        }
+      }
+
+      // No hay configuraciones globales, intentar localStorage
+      console.log('⚠️ No hay configuración global, intentando localStorage...');
+      cargarDesdeLocalStorage();
+
+    } catch (error) {
+      console.log('⚠️ Error cargando configuración global, usando localStorage:', error);
+      cargarDesdeLocalStorage();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const cargarDesdeLocalStorage = () => {
     const savedSections = localStorage.getItem('dashboardSections');
     if (savedSections) {
       try {
@@ -121,8 +188,9 @@ export const DashboardSectionVisibilityProvider = ({ children }: { children: Rea
         if (!hasKpisSection) {
           // Si no tiene la sección de KPIs, resetear a configuración por defecto
           console.log('Migrando configuración del dashboard para incluir KPIs del Sistema');
+          setSectionsState(defaultSections);
           localStorage.setItem('dashboardSections', JSON.stringify(defaultSections));
-          return defaultSections;
+          return;
         }
         
         // Migrar configuración si hay secciones nuevas en defaultSections
@@ -131,19 +199,57 @@ export const DashboardSectionVisibilityProvider = ({ children }: { children: Rea
           return saved ? { ...defaultSection, ...saved } : defaultSection;
         });
         
-        return migratedSections.sort((a, b) => a.order - b.order);
+        setSectionsState(migratedSections.sort((a, b) => a.order - b.order));
+        console.log('📱 Usando configuración local de dashboard sections');
       } catch (error) {
         console.error('Error parsing saved dashboard sections:', error);
-        return defaultSections;
+        setSectionsState(defaultSections);
       }
+    } else {
+      setSectionsState(defaultSections);
+      console.log('🔄 Usando configuración por defecto de dashboard sections');
     }
-    return defaultSections;
-  });
+    setIsGlobalConfig(false);
+  };
 
-  // Función para actualizar secciones y guardar en localStorage
+  // Función para actualizar secciones
   const setSections = (sections: DashboardSection[]) => {
     setSectionsState(sections);
-    localStorage.setItem('dashboardSections', JSON.stringify(sections));
+    if (!isGlobalConfig) {
+      localStorage.setItem('dashboardSections', JSON.stringify(sections));
+    }
+  };
+
+  // Función para aplicar configuración como global (solo SuperAdmin)
+  const aplicarConfiguracionGlobal = async (configuracion: DashboardSection[]): Promise<boolean> => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+
+      const response = await axios.post(
+        `${API_BASE_URL}/configuraciones-globales/aplicar-global`,
+        {
+          tipo_configuracion: 'dashboard_sections',
+          configuracion_local: configuracion
+        },
+        {
+          headers: { 'x-auth-token': token }
+        }
+      );
+
+      if (response.status === 200) {
+        // Recargar configuración para reflejar cambios
+        await cargarConfiguracion();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error aplicando configuración global:', error);
+      setError('Error aplicando configuración global');
+      return false;
+    }
   };
 
   // Toggle visibilidad de una sección específica
@@ -227,7 +333,12 @@ export const DashboardSectionVisibilityProvider = ({ children }: { children: Rea
         isSectionVisible,
         reorderSections,
         moveSectionToPosition,
-        getSectionsInOrder
+        getSectionsInOrder,
+        isGlobalConfig,
+        isLoading,
+        isSuperAdmin,
+        aplicarConfiguracionGlobal,
+        error
       }}
     >
       {children}

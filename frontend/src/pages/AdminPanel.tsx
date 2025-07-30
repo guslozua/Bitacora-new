@@ -10,6 +10,7 @@ import AbmUploadModal from '../components/AbmUploadModal';
 import { useDashboardSectionVisibility } from '../services/DashboardSectionVisibilityContext';
 import KpiAdminSection from '../components/KpiAdminSection';
 import SectionOrderManager from '../components/SectionOrderManager';
+import GlobalConfigurationPanel from '../components/GlobalConfigurationPanel';
 import { API_BASE_URL } from '../services/apiConfig';
 
 
@@ -686,6 +687,9 @@ const AdminPanel: React.FC = () => {
             </Row>
           </Card.Body>
         </Card>
+
+        {/* 🆕 NUEVO COMPONENTE: Panel de Configuraciones Globales */}
+        <GlobalConfigurationPanel isDarkMode={isDarkMode} />
 
         {/* 🆕 NUEVO COMPONENTE: Gestor de Orden y Visibilidad de Secciones */}
         <SectionOrderManager isDarkMode={isDarkMode} />

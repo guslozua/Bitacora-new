@@ -39,6 +39,9 @@ const hitosRoutes = require('./routes/hitos');
 // 🔔 AGREGAR IMPORT DE NOTIFICACIONES
 const notificacionesRoutes = require('./routes/notificaciones.routes');
 
+// 🆕 AGREGAR IMPORT DE CONFIGURACIONES GLOBALES
+const configuracionGlobalRoutes = require('./routes/configuracionGlobalRoutes');
+
 // Importar el programador de limpieza
 const { scheduleCleanup, cleanupUploadsFolder } = require('./utils/cleanupScheduler');
 
@@ -139,6 +142,9 @@ app.use('/api/hitos', hitosRoutes);
 
 // 🔔 RUTA DE NOTIFICACIONES
 app.use('/api/notificaciones', notificacionesRoutes);
+
+// 🆕 RUTA DE CONFIGURACIONES GLOBALES
+app.use('/api/configuraciones-globales', configuracionGlobalRoutes);
 
 console.log('\n🔍 === ANÁLISIS DE RUTAS REGISTRADAS ===');
 
