@@ -202,6 +202,10 @@ class AnnouncementModel {
         throw new Error('Faltan campos requeridos: title, content, created_by');
       }
       
+      // Convertir strings vacíos a NULL para fechas
+      const processedStartDate = start_date === '' || start_date === null || start_date === undefined ? null : start_date;
+      const processedEndDate = end_date === '' || end_date === null || end_date === undefined ? null : end_date;
+      
       const query = `
         INSERT INTO announcements (
           title, content, type, icon, priority, active, 
@@ -212,7 +216,7 @@ class AnnouncementModel {
       
       const [result] = await connection.query(query, [
         title, content, type, icon, priority, active,
-        start_date, end_date, action_text, action_url,
+        processedStartDate, processedEndDate, action_text, action_url,
         target_audience, created_by
       ]);
       
@@ -249,6 +253,10 @@ class AnnouncementModel {
         target_audience
       } = announcementData;
       
+      // Convertir strings vacíos a NULL para fechas
+      const processedStartDate = start_date === '' || start_date === null || start_date === undefined ? null : start_date;
+      const processedEndDate = end_date === '' || end_date === null || end_date === undefined ? null : end_date;
+      
       const query = `
         UPDATE announcements SET
           title = ?, content = ?, type = ?, icon = ?, 
@@ -259,7 +267,7 @@ class AnnouncementModel {
       
       const [result] = await connection.query(query, [
         title, content, type, icon, priority, active,
-        start_date, end_date, action_text, action_url,
+        processedStartDate, processedEndDate, action_text, action_url,
         target_audience, id
       ]);
       
