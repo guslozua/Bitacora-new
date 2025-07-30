@@ -253,6 +253,37 @@ export const SidebarVisibilityProvider = ({ children }: { children: ReactNode })
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  // Efecto adicional para monitorear la presencia del token después del login
+  useEffect(() => {
+    let tokenCheckInterval: NodeJS.Timeout;
+    
+    // Solo verificar si no estamos cargando y no hay configuración global
+    if (!isLoading && !isGlobalConfig) {
+      tokenCheckInterval = setInterval(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+          console.log('🔄 Token detectado después del login, recargando configuración del sidebar...');
+          clearInterval(tokenCheckInterval);
+          initializeConfiguration();
+        }
+      }, 1000); // Verificar cada segundo
+    }
+
+    // Limpiar intervalo después de 10 segundos para evitar verificaciones infinitas
+    const cleanupTimer = setTimeout(() => {
+      if (tokenCheckInterval) {
+        clearInterval(tokenCheckInterval);
+      }
+    }, 10000);
+
+    return () => {
+      if (tokenCheckInterval) {
+        clearInterval(tokenCheckInterval);
+      }
+      clearTimeout(cleanupTimer);
+    };
+  }, [isLoading, isGlobalConfig]);
+
   const value: SidebarVisibilityContextType = {
     visibility,
     setVisibility,
