@@ -692,7 +692,7 @@ const Dashboard = () => {
                 <Button
                   variant="primary"
                   className="d-flex align-items-center justify-content-center"
-                  onClick={() => navigate('/projects/new')}
+                  onClick={() => navigate('/projects')}
                 >
                   <i className="bi bi-plus-circle me-2"></i>
                   Nuevo Proyecto
@@ -700,7 +700,7 @@ const Dashboard = () => {
                 <Button
                   variant="success"
                   className="d-flex align-items-center justify-content-center"
-                  onClick={() => navigate('/tasks/new')}
+                  onClick={() => navigate('/projects')}
                 >
                   <i className="bi bi-check-circle me-2"></i>
                   Nueva Tarea
@@ -708,7 +708,7 @@ const Dashboard = () => {
                 <Button
                   variant="info"
                   className="d-flex align-items-center justify-content-center"
-                  onClick={() => navigate('/calendar/new')}
+                  onClick={() => navigate('/calendar/admin')}
                 >
                   <i className="bi bi-calendar-plus me-2"></i>
                   Nuevo Evento
