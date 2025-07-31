@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 21-07-2025 a las 19:09:33
+-- Tiempo de generación: 31-07-2025 a las 18:34:52
 -- Versión del servidor: 10.4.25-MariaDB
 -- Versión de PHP: 8.2.0
 
@@ -149,6 +149,41 @@ CREATE TABLE `comentarios` (
   `id_usuario` int(11) DEFAULT NULL,
   `id_tarea` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `configuraciones_globales`
+--
+
+CREATE TABLE `configuraciones_globales` (
+  `id` int(11) NOT NULL,
+  `tipo_configuracion` enum('sidebar','dashboard_sections','dashboard_kpis') NOT NULL COMMENT 'Tipo de configuración',
+  `clave` varchar(100) NOT NULL COMMENT 'Identificador específico de la configuración',
+  `valor` longtext NOT NULL COMMENT 'Valor de la configuración en formato JSON',
+  `activo` tinyint(1) NOT NULL DEFAULT 1 COMMENT 'Si la configuración está activa',
+  `orden` int(11) DEFAULT NULL COMMENT 'Orden para elementos que requieren secuencia',
+  `descripcion` text DEFAULT NULL COMMENT 'Descripción de qué hace esta configuración',
+  `usuario_creacion` int(11) NOT NULL COMMENT 'ID del usuario que creó la configuración',
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_actualizacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Configuraciones globales del sistema establecidas por SuperAdmin';
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `configuraciones_usuarios_override`
+--
+
+CREATE TABLE `configuraciones_usuarios_override` (
+  `id` int(11) NOT NULL,
+  `usuario_id` int(11) NOT NULL COMMENT 'ID del usuario que tiene override',
+  `configuracion_global_id` int(11) NOT NULL COMMENT 'ID de la configuración global que se sobrescribe',
+  `valor_override` longtext NOT NULL COMMENT 'Valor override en formato JSON',
+  `activo` tinyint(1) NOT NULL DEFAULT 1 COMMENT 'Si el override está activo',
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_actualizacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Overrides de configuraciones globales por usuario específico';
 
 -- --------------------------------------------------------
 
@@ -685,6 +720,7 @@ CREATE TABLE `proyectos` (
   `fecha_inicio` date DEFAULT NULL,
   `fecha_fin` date DEFAULT NULL,
   `estado` enum('pendiente','en progreso','completado') DEFAULT 'pendiente',
+  `prioridad` enum('baja','media','alta') DEFAULT 'media',
   `id_usuario_responsable` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -1095,6 +1131,29 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 
 --
+-- Indices de la tabla `configuraciones_globales`
+--
+ALTER TABLE `configuraciones_globales`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_tipo_clave` (`tipo_configuracion`,`clave`),
+  ADD KEY `idx_tipo_configuracion` (`tipo_configuracion`),
+  ADD KEY `idx_activo` (`activo`),
+  ADD KEY `idx_orden` (`orden`),
+  ADD KEY `fk_usuario_creacion` (`usuario_creacion`),
+  ADD KEY `idx_tipo_activo` (`tipo_configuracion`,`activo`),
+  ADD KEY `idx_usuario_fecha` (`usuario_creacion`,`fecha_creacion`);
+
+--
+-- Indices de la tabla `configuraciones_usuarios_override`
+--
+ALTER TABLE `configuraciones_usuarios_override`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_usuario_configuracion` (`usuario_id`,`configuracion_global_id`),
+  ADD KEY `idx_usuario_id` (`usuario_id`),
+  ADD KEY `idx_configuracion_global_id` (`configuracion_global_id`),
+  ADD KEY `idx_activo` (`activo`);
+
+--
 -- Indices de la tabla `glosario`
 --
 ALTER TABLE `glosario`
@@ -1106,7 +1165,32 @@ ALTER TABLE `glosario`
 -- Indices de la tabla `guardias`
 --
 ALTER TABLE `guardias`
+  ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `unique_fecha_usuario` (`fecha`,`usuario`);
+
+--
+-- Indices de la tabla `hitos`
+--
+ALTER TABLE `hitos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_hitos_proyecto` (`id_proyecto_origen`),
+  ADD KEY `idx_hitos_fechas` (`fecha_inicio`,`fecha_fin`);
+
+--
+-- Indices de la tabla `hito_tareas`
+--
+ALTER TABLE `hito_tareas`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_hito_tareas_hito` (`id_hito`);
+
+--
+-- Indices de la tabla `hito_usuarios`
+--
+ALTER TABLE `hito_usuarios`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_hito_usuario` (`id_hito`,`id_usuario`),
+  ADD KEY `idx_hito_usuarios_hito` (`id_hito`),
+  ADD KEY `idx_hito_usuarios_usuario` (`id_usuario`);
 
 --
 -- Indices de la tabla `incidentes_guardia`
@@ -1130,6 +1214,18 @@ ALTER TABLE `metricas_sesiones_historicas`
   ADD KEY `idx_fecha_corte` (`fecha_corte`);
 
 --
+-- Indices de la tabla `placas`
+--
+ALTER TABLE `placas`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indices de la tabla `proyectos`
+--
+ALTER TABLE `proyectos`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indices de la tabla `sesiones_data`
 --
 ALTER TABLE `sesiones_data`
@@ -1143,13 +1239,61 @@ ALTER TABLE `sesiones_data`
   ADD KEY `idx_usuario_asociado` (`usuario_asociado`);
 
 --
+-- Indices de la tabla `subtareas`
+--
+ALTER TABLE `subtareas`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indices de la tabla `tareas`
+--
+ALTER TABLE `tareas`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- AUTO_INCREMENT de las tablas volcadas
 --
+
+--
+-- AUTO_INCREMENT de la tabla `configuraciones_globales`
+--
+ALTER TABLE `configuraciones_globales`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `configuraciones_usuarios_override`
+--
+ALTER TABLE `configuraciones_usuarios_override`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `glosario`
 --
 ALTER TABLE `glosario`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `guardias`
+--
+ALTER TABLE `guardias`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `hitos`
+--
+ALTER TABLE `hitos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `hito_tareas`
+--
+ALTER TABLE `hito_tareas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `hito_usuarios`
+--
+ALTER TABLE `hito_usuarios`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -1171,10 +1315,44 @@ ALTER TABLE `metricas_sesiones_historicas`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `placas`
+--
+ALTER TABLE `placas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `proyectos`
+--
+ALTER TABLE `proyectos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `sesiones_data`
 --
 ALTER TABLE `sesiones_data`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `subtareas`
+--
+ALTER TABLE `subtareas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `tareas`
+--
+ALTER TABLE `tareas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Restricciones para tablas volcadas
+--
+
+--
+-- Filtros para la tabla `hito_usuarios`
+--
+ALTER TABLE `hito_usuarios`
+  ADD CONSTRAINT `fk_hito_usuarios_hito` FOREIGN KEY (`id_hito`) REFERENCES `hitos` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
