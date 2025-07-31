@@ -79,9 +79,11 @@ const UserAvatars: React.FC<UserAvatarsProps> = ({
     <div className="d-flex align-items-center" style={{ marginLeft: '5px' }}>
       {displayUsers.map((user, index) => (
         <OverlayTrigger
-          key={user.id}
+          // 🚨 FIX: Clave más robusta que combina itemId, userId e index para evitar duplicados
+          key={`${itemType}-${itemId}-user-${user.id}-${index}`}
           placement="top"
-          overlay={<Tooltip id={`tooltip-user-${user.id}`}>{user.nombre}</Tooltip>}
+          // 🚨 FIX: ID único del tooltip para evitar conflictos
+          overlay={<Tooltip id={`tooltip-${itemType}-${itemId}-user-${user.id}-${index}`}>{user.nombre}</Tooltip>}
         >
           <div 
             className="user-avatar" 
@@ -112,9 +114,12 @@ const UserAvatars: React.FC<UserAvatarsProps> = ({
       
       {hasMore && (
         <OverlayTrigger
+          // 🚨 FIX: Clave única para el botón "más usuarios"
+          key={`${itemType}-${itemId}-more-users`}
           placement="top"
           overlay={
-            <Tooltip id={`tooltip-more-users`}>
+            // 🚨 FIX: ID único del tooltip para "más usuarios"
+            <Tooltip id={`tooltip-${itemType}-${itemId}-more-users`}>
               {users.slice(maxDisplay).map(u => u.nombre).join(', ')}
             </Tooltip>
           }

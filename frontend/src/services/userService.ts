@@ -78,6 +78,9 @@ interface AssignedUsersCache {
 
 const assignedUsersCache: AssignedUsersCache = {};
 
+// Duración del caché en milisegundos (5 minutos)
+const CACHE_DURATION = 5 * 60 * 1000;
+
 // Función para extraer el ID numérico de un ID con prefijo
 export const getNumericId = (id: string | number): string => {
   if (typeof id !== 'string') return id.toString();
@@ -140,6 +143,87 @@ const getApiEndpoint = (itemType: ItemType, itemId: string): string => {
       return `${API_BASE_URL}/subtasks/${numericId}/users`;
     default:
       throw new Error(`Tipo de elemento no soportado: ${itemType}`);
+  }
+};
+
+// ========== FUNCIÓN PRINCIPAL FALTANTE ==========
+
+/**
+ * Obtener usuarios asignados a un elemento con caché opcional
+ */
+export const fetchAssignedUsers = async (
+  itemType: ItemType, 
+  itemId: string, 
+  skipCache = false
+): Promise<User[]> => {
+  const cacheKey = getCacheKey(itemType, itemId);
+  const now = Date.now();
+  
+  // Verificar si tenemos datos en caché válidos
+  if (
+    !skipCache && 
+    assignedUsersCache[cacheKey] && 
+    now - assignedUsersCache[cacheKey].lastFetch < 10000 // 10 segundos
+  ) {
+    console.log(`[userService] Usando datos en caché para usuarios de ${itemType} ${itemId}`);
+    return assignedUsersCache[cacheKey].data;
+  }
+  
+  try {
+    const endpoint = getApiEndpoint(itemType, itemId);
+    console.log(`[userService] Obteniendo usuarios asignados de: ${endpoint}`);
+    
+    const response = await axios.get(endpoint, getAuthConfig());
+    console.log(`[userService] Respuesta de usuarios asignados:`, response.data);
+    
+    let users: User[] = [];
+    
+    if (response.data && Array.isArray(response.data)) {
+      users = response.data;
+    } else if (response.data.success && Array.isArray(response.data.usuarios)) {
+      users = response.data.usuarios;
+    } else if (response.data.data && Array.isArray(response.data.data)) {
+      users = response.data.data;
+    } else if (response.data.users && Array.isArray(response.data.users)) {
+      users = response.data.users;
+    } else {
+      console.warn('[userService] Formato de respuesta inesperado:', response.data);
+      users = [];
+    }
+    
+    // Procesar usuarios para asegurarnos de tener todos los datos necesarios
+    const processedUsers = users.map(user => {
+      // Asegurarnos de que tenemos id_usuario (crucial para desasignación)
+      if (user.id_usuario === undefined) {
+        // Si no tenemos id_usuario explícito pero sabemos que 'id' es el de la asignación
+        // y hay otras propiedades que indican que es una asignación, intentamos encontrar id_usuario
+        if (user.id_proyecto || user.rol || user.fecha_asignacion) {
+          console.warn('[userService] Respuesta de API sin id_usuario explícito:', user);
+          // En este caso, no podemos determinar automáticamente el id_usuario
+          // Buscamos otros campos que podrían tener el id del usuario
+          const possibleUserIdFields = ['usuario_id', 'user_id', 'usuarioId', 'userId', 'id_user'];
+          for (const field of possibleUserIdFields) {
+            if ((user as any)[field] !== undefined) {
+              user.id_usuario = (user as any)[field];
+              console.log(`[userService] Se encontró id_usuario en campo alternativo: ${field}`);
+              break;
+            }
+          }
+        }
+      }
+      return user;
+    });
+    
+    // Actualizar caché
+    assignedUsersCache[cacheKey] = {
+      data: processedUsers,
+      lastFetch: now
+    };
+    
+    return processedUsers;
+  } catch (error: any) {
+    console.error('[userService] Error al obtener usuarios asignados:', error.response?.data || error.message);
+    throw error;
   }
 };
 
@@ -560,83 +644,6 @@ export const fetchAllUsers = async (): Promise<User[]> => {
   }
 };
 
-// Obtener usuarios asignados a un elemento con caché opcional
-export const fetchAssignedUsers = async (
-  itemType: ItemType, 
-  itemId: string, 
-  skipCache = false
-): Promise<User[]> => {
-  const cacheKey = getCacheKey(itemType, itemId);
-  const now = Date.now();
-  
-  // Verificar si tenemos datos en caché válidos
-  if (
-    !skipCache && 
-    assignedUsersCache[cacheKey] && 
-    now - assignedUsersCache[cacheKey].lastFetch < 10000 // 10 segundos
-  ) {
-    console.log(`[userService] Usando datos en caché para usuarios de ${itemType} ${itemId}`);
-    return assignedUsersCache[cacheKey].data;
-  }
-  
-  try {
-    const endpoint = getApiEndpoint(itemType, itemId);
-    console.log(`[userService] Obteniendo usuarios asignados de: ${endpoint}`);
-    
-    const response = await axios.get(endpoint, getAuthConfig());
-    console.log(`[userService] Respuesta de usuarios asignados:`, response.data);
-    
-    let users: User[] = [];
-    
-    if (response.data && Array.isArray(response.data)) {
-      users = response.data;
-    } else if (response.data.success && Array.isArray(response.data.usuarios)) {
-      users = response.data.usuarios;
-    } else if (response.data.data && Array.isArray(response.data.data)) {
-      users = response.data.data;
-    } else if (response.data.users && Array.isArray(response.data.users)) {
-      users = response.data.users;
-    } else {
-      console.warn('[userService] Formato de respuesta inesperado:', response.data);
-      users = [];
-    }
-    
-    // Procesar usuarios para asegurarnos de tener todos los datos necesarios
-    const processedUsers = users.map(user => {
-      // Asegurarnos de que tenemos id_usuario (crucial para desasignación)
-      if (user.id_usuario === undefined) {
-        // Si no tenemos id_usuario explícito pero sabemos que 'id' es el de la asignación
-        // y hay otras propiedades que indican que es una asignación, intentamos encontrar id_usuario
-        if (user.id_proyecto || user.rol || user.fecha_asignacion) {
-          console.warn('[userService] Respuesta de API sin id_usuario explícito:', user);
-          // En este caso, no podemos determinar automáticamente el id_usuario
-          // Buscamos otros campos que podrían tener el id del usuario
-          const possibleUserIdFields = ['usuario_id', 'user_id', 'usuarioId', 'userId', 'id_user'];
-          for (const field of possibleUserIdFields) {
-            if ((user as any)[field] !== undefined) {
-              user.id_usuario = (user as any)[field];
-              console.log(`[userService] Se encontró id_usuario en campo alternativo: ${field}`);
-              break;
-            }
-          }
-        }
-      }
-      return user;
-    });
-    
-    // Actualizar caché
-    assignedUsersCache[cacheKey] = {
-      data: processedUsers,
-      lastFetch: now
-    };
-    
-    return processedUsers;
-  } catch (error: any) {
-    console.error('[userService] Error al obtener usuarios asignados:', error.response?.data || error.message);
-    throw error;
-  }
-};
-
 // Asignar usuarios a un elemento - VERSIÓN MEJORADA CON ROLES
 export const assignUsers = async (
   itemType: ItemType,
@@ -1041,6 +1048,66 @@ export const diagnoseAPI = async () => {
   console.log('=== FIN DEL DIAGNÓSTICO ===');
   
   return results;
+};
+
+// ========== FUNCIONES DE UTILIDAD ADICIONALES ==========
+
+/**
+ * Invalidar caché para un elemento específico
+ */
+export const invalidateUserCache = (itemType: ItemType, itemId: string): void => {
+  const cacheKey = getCacheKey(itemType, itemId);
+  delete assignedUsersCache[cacheKey];
+  console.log(`[userService] Caché invalidado para ${itemType} ${getNumericId(itemId)}`);
+};
+
+/**
+ * Limpiar todo el caché de usuarios asignados
+ */
+export const clearAssignedUsersCache = (): void => {
+  Object.keys(assignedUsersCache).forEach(key => {
+    delete assignedUsersCache[key];
+  });
+  console.log('[userService] Todo el caché de usuarios asignados ha sido limpiado');
+};
+
+/**
+ * Obtener estadísticas del caché
+ */
+export const getCacheStats = () => {
+  const now = Date.now();
+  const stats = {
+    totalEntries: Object.keys(assignedUsersCache).length,
+    expired: 0,
+    active: 0,
+    details: [] as Array<{
+      key: string;
+      userCount: number;
+      ageMinutes: number;
+      isExpired: boolean;
+    }>
+  };
+
+  Object.entries(assignedUsersCache).forEach(([key, data]) => {
+    const ageMs = now - data.lastFetch;
+    const ageMinutes = Math.round(ageMs / (1000 * 60));
+    const isExpired = ageMs > CACHE_DURATION;
+
+    if (isExpired) {
+      stats.expired++;
+    } else {
+      stats.active++;
+    }
+
+    stats.details.push({
+      key,
+      userCount: data.data.length,
+      ageMinutes,
+      isExpired
+    });
+  });
+
+  return stats;
 };
 
 // Función para limpiar caché

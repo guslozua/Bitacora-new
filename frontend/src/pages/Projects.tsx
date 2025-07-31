@@ -36,6 +36,7 @@ interface ProjectData {
   description: string;
   startDate: string;
   endDate: string;
+  priority: string; // 🆕 NUEVO CAMPO PRIORIDAD
 }
 
 interface Proyecto {
@@ -43,6 +44,7 @@ interface Proyecto {
   nombre: string;
   descripcion?: string;
   estado: 'activo' | 'completado' | 'pausado' | 'cancelado' | 'finalizado' | 'en progreso';
+  prioridad?: string; // 🆕 NUEVO CAMPO PRIORIDAD
   fecha_inicio?: string;
   fecha_fin?: string;
   progreso?: number;
@@ -63,6 +65,7 @@ const Projects = () => {
     description: '',
     startDate: '',
     endDate: '',
+    priority: 'media', // 🆕 NUEVO CAMPO PRIORIDAD
   });
 
   // Estados para los KPIs
@@ -348,7 +351,7 @@ const Projects = () => {
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement> // 🔧 AGREGAR HTMLSelectElement
   ) => {
     const { name, value } = e.target;
     setProjectData((prev) => ({ ...prev, [name]: value }));
@@ -357,7 +360,7 @@ const Projects = () => {
   // 🔧 FUNCIÓN PARA CERRAR EL OFFCANVAS Y LIMPIAR ESTADO
   const handleCloseOffcanvas = () => {
     setShowOffcanvas(false);
-    setProjectData({ name: '', description: '', startDate: '', endDate: '' });
+    setProjectData({ name: '', description: '', startDate: '', endDate: '', priority: 'media' }); // 🆕 INCLUIR PRIORIDAD
     setEditingProject(null);
   };
 
@@ -381,12 +384,18 @@ const Projects = () => {
         },
       };
 
+      // ✅ CORRECCIÓN: Usar los nombres de campos que espera el backend
       const projectPayload = {
-        nombre: projectData.name.trim(),
-        descripcion: projectData.description.trim(),
-        fecha_inicio: projectData.startDate,
-        fecha_fin: projectData.endDate,
+        nombre: projectData.name.trim(),           // name → nombre
+        descripcion: projectData.description.trim(), // description → descripcion
+        fecha_inicio: projectData.startDate,      // startDate → fecha_inicio
+        fecha_fin: projectData.endDate,           // endDate → fecha_fin
+        prioridad: projectData.priority,          // 🆕 NUEVO: priority → prioridad
+        // 🔧 CORREGIDO: No siempre enviar estado 'activo' al editar
+        ...(editingProject ? {} : { estado: 'activo' }) // Solo agregar estado al crear
       };
+
+    console.log('🔍 Payload corregido enviando a la API:', projectPayload);
 
       let response;
       let successMessage;
@@ -408,6 +417,11 @@ const Projects = () => {
         });
         handleCloseOffcanvas();
         await fetchData(); // Recargar datos
+        
+        // ✅ REFRESH AUTOMÁTICO DESPUÉS DE CREAR/EDITAR PROYECTO
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500); // Esperar 1.5 segundos para que el usuario vea el mensaje
       } else {
         setMessage({
           type: 'danger',
@@ -480,7 +494,8 @@ const Projects = () => {
       name: proyecto.nombre,
       description: proyecto.descripcion || '',
       startDate: proyecto.fecha_inicio ? proyecto.fecha_inicio.split('T')[0] : '',
-      endDate: proyecto.fecha_fin ? proyecto.fecha_fin.split('T')[0] : ''
+      endDate: proyecto.fecha_fin ? proyecto.fecha_fin.split('T')[0] : '',
+      priority: proyecto.prioridad || 'media' // 🆕 INCLUIR PRIORIDAD
     });
     
     // Establecer que estamos editando (no creando)
@@ -495,8 +510,9 @@ const Projects = () => {
     });
   };
 
+  // 🔥 FUNCIÓN MEJORADA PARA ELIMINAR PROYECTO CON CASCADA
   const handleDeleteProject = async (proyecto: Proyecto) => {
-    if (window.confirm(`¿Está seguro de que desea eliminar el proyecto "${proyecto.nombre}"?`)) {
+    if (window.confirm(`¿Está seguro de que desea eliminar el proyecto "${proyecto.nombre}"?\n\n⚠️ ATENCIÓN: Esto también eliminará todas las tareas y subtareas asociadas.`)) {
       try {
         const config = {
           headers: {
@@ -505,14 +521,60 @@ const Projects = () => {
           },
         };
 
+        // 📋 PASO 1: Obtener todas las tareas del proyecto
+        console.log(`📋 Obteniendo tareas del proyecto ${proyecto.id}...`);
+        const tasksRes = await axios.get(`${API_BASE_URL}/tasks`, config);
+        const todasLasTareas = tasksRes.data?.data || [];
+        const tareasDelProyecto = todasLasTareas.filter((tarea: any) => tarea.id_proyecto === proyecto.id);
+        
+        console.log(`🔍 Encontradas ${tareasDelProyecto.length} tareas para eliminar`);
+
+        // 📋 PASO 2: Para cada tarea, obtener y eliminar sus subtareas
+        for (const tarea of tareasDelProyecto) {
+          try {
+            console.log(`🗋 Eliminando subtareas de la tarea ${tarea.id}...`);
+            
+            // Obtener subtareas de esta tarea
+            const subtasksRes = await axios.get(`${API_BASE_URL}/subtasks`, config);
+            const todasLasSubtareas = subtasksRes.data?.data || [];
+            const subtareasDeLaTarea = todasLasSubtareas.filter((subtarea: any) => subtarea.id_tarea === tarea.id);
+            
+            // Eliminar cada subtarea
+            for (const subtarea of subtareasDeLaTarea) {
+              try {
+                await axios.delete(`${API_BASE_URL}/subtasks/${subtarea.id}`, config);
+                console.log(`✅ Subtarea ${subtarea.id} eliminada`);
+              } catch (subtaskError: any) {
+                console.warn(`⚠️ Error al eliminar subtarea ${subtarea.id}:`, subtaskError.message);
+              }
+            }
+            
+            // Eliminar la tarea
+            await axios.delete(`${API_BASE_URL}/tasks/${tarea.id}`, config);
+            console.log(`✅ Tarea ${tarea.id} eliminada`);
+            
+          } catch (taskError: any) {
+            console.warn(`⚠️ Error al eliminar tarea ${tarea.id}:`, taskError.message);
+          }
+        }
+
+        // 📋 PASO 3: Finalmente eliminar el proyecto
+        console.log(`🗋 Eliminando proyecto ${proyecto.id}...`);
         const response = await axios.delete(`${API_BASE_URL}/projects/${proyecto.id}`, config);
 
         if (response.data.success) {
           setMessage({
             type: 'success',
-            text: `Proyecto "${proyecto.nombre}" eliminado correctamente`
+            text: `✅ Proyecto "${proyecto.nombre}" y todas sus tareas/subtareas eliminados correctamente`
           });
-          await fetchData(); // Recargar datos
+          
+          // Recargar datos después de eliminar
+          await fetchData();
+          
+          // ✅ REFRESH AUTOMÁTICO DESPUÉS DE ELIMINAR
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
         } else {
           setMessage({
             type: 'danger',
@@ -1067,6 +1129,21 @@ const Projects = () => {
                 onChange={handleInputChange}
                 className="shadow-sm"
               />
+            </Form.Group>
+
+            {/* 🆕 NUEVO CAMPO PRIORIDAD */}
+            <Form.Group controlId="formProjectPriority" className="mb-3">
+              <Form.Label className="fw-semibold">Prioridad</Form.Label>
+              <Form.Select
+                name="priority"
+                value={projectData.priority}
+                onChange={handleInputChange}
+                className="shadow-sm"
+              >
+                <option value="baja">Baja</option>
+                <option value="media">Media</option>
+                <option value="alta">Alta</option>
+              </Form.Select>
             </Form.Group>
 
             <div className="d-flex justify-content-end gap-2 mt-4">

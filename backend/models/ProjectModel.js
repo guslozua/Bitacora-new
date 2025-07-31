@@ -10,8 +10,8 @@ exports.getProjects = async (req, res) => {
     
     let query = `
       SELECT p.*, u.nombre as responsable_nombre, u.email as responsable_email
-      FROM Proyectos p
-      LEFT JOIN Usuarios u ON p.id_usuario_responsable = u.id
+      FROM proyectos p
+      LEFT JOIN usuarios u ON p.id_usuario_responsable = u.id
       WHERE 1=1
     `;
 
@@ -64,8 +64,8 @@ exports.getProjectById = async (req, res) => {
 
     const query = `
       SELECT p.*, u.nombre as responsable_nombre, u.email as responsable_email
-      FROM Proyectos p
-      LEFT JOIN Usuarios u ON p.id_usuario_responsable = u.id
+      FROM proyectos p
+      LEFT JOIN usuarios u ON p.id_usuario_responsable = u.id
       WHERE p.id = ?
     `;
 
@@ -94,24 +94,64 @@ exports.getProjectById = async (req, res) => {
 
 // Crear un nuevo proyecto y retornar el ID (método adicional)
 exports.createProjectAndReturnId = async (projectData, userId) => {
-  const { nombre, descripcion, fecha_inicio, fecha_fin, estado, id_usuario_responsable } = projectData;
+  try {
+    console.log('🔍 [MODEL DEBUG] Datos recibidos en createProjectAndReturnId:', {
+      projectData,
+      userId
+    });
 
-  const query = `
-    INSERT INTO Proyectos 
-    (nombre, descripcion, fecha_inicio, fecha_fin, estado, id_usuario_responsable)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `;
+    const { nombre, descripcion, fecha_inicio, fecha_fin, estado, prioridad, id_usuario_responsable } = projectData;
 
-  const [result] = await db.query(query, [
-    nombre,
-    descripcion || null,
-    fecha_inicio || null,
-    fecha_fin || null,
-    estado || 'activo',
-    id_usuario_responsable || null
-  ]);
+    console.log('🔍 [MODEL DEBUG] Campos extraídos:', {
+      nombre,
+      descripcion,
+      fecha_inicio,
+      fecha_fin,
+      estado,
+      prioridad, // 🆕 NUEVO CAMPO
+      id_usuario_responsable
+    });
 
-  return result;
+    const query = `
+      INSERT INTO proyectos 
+      (nombre, descripcion, fecha_inicio, fecha_fin, estado, prioridad, id_usuario_responsable)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const params = [
+      nombre,
+      descripcion || null,
+      fecha_inicio || null,
+      fecha_fin || null,
+      estado || 'activo',
+      prioridad || 'media', // 🆕 NUEVO CAMPO CON VALOR POR DEFECTO
+      id_usuario_responsable || null
+    ];
+
+    console.log('🔍 [MODEL DEBUG] Query a ejecutar:', query);
+    console.log('🔍 [MODEL DEBUG] Parámetros:', params);
+
+    const [result] = await db.query(query, params);
+
+    console.log('🔍 [MODEL DEBUG] Resultado de la query:', result);
+    console.log('🔍 [MODEL DEBUG] insertId obtenido:', result.insertId);
+
+    if (!result.insertId) {
+      console.error('❌ [MODEL DEBUG] No se obtuvo insertId de la base de datos');
+      throw new Error('La base de datos no retornó un ID válido');
+    }
+
+    return result;
+
+  } catch (error) {
+    console.error('❌ [MODEL DEBUG] Error en createProjectAndReturnId:', {
+      message: error.message,
+      stack: error.stack,
+      projectData,
+      userId
+    });
+    throw error;
+  }
 };
 
 // Crear un nuevo proyecto
@@ -125,7 +165,7 @@ exports.createProject = async (req, res) => {
   }
 
   try {
-    const { nombre, descripcion, fecha_inicio, fecha_fin, estado, id_usuario_responsable } = req.body;
+    const { nombre, descripcion, fecha_inicio, fecha_fin, estado, prioridad, id_usuario_responsable } = req.body;
     const id_usuario = req.user?.id;
 
     const result = await this.createProjectAndReturnId(req.body, id_usuario);
@@ -137,7 +177,7 @@ exports.createProject = async (req, res) => {
       id_proyecto: result.insertId
     });
 
-    const [newProject] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [result.insertId]);
+    const [newProject] = await db.query('SELECT * FROM proyectos WHERE id = ?', [result.insertId]);
 
     res.status(201).json({
       success: true,
@@ -166,15 +206,15 @@ exports.updateProject = async (req, res) => {
 
   try {
     const projectId = req.params.id;
-    const { nombre, descripcion, fecha_inicio, fecha_fin, estado, id_usuario_responsable } = req.body;
+    const { nombre, descripcion, fecha_inicio, fecha_fin, estado, prioridad, id_usuario_responsable } = req.body;
     const id_usuario = req.user?.id;
 
-    const [existingProjects] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [projectId]);
+    const [existingProjects] = await db.query('SELECT * FROM proyectos WHERE id = ?', [projectId]);
     if (existingProjects.length === 0) {
       return res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
     }
 
-    let query = 'UPDATE Proyectos SET ';
+    let query = 'UPDATE proyectos SET ';
     const updateFields = [];
     const params = [];
 
@@ -183,6 +223,7 @@ exports.updateProject = async (req, res) => {
     if (fecha_inicio !== undefined) { updateFields.push('fecha_inicio = ?'); params.push(fecha_inicio); }
     if (fecha_fin !== undefined) { updateFields.push('fecha_fin = ?'); params.push(fecha_fin); }
     if (estado !== undefined) { updateFields.push('estado = ?'); params.push(estado); }
+    if (prioridad !== undefined) { updateFields.push('prioridad = ?'); params.push(prioridad); } // 🆕 NUEVO CAMPO
     if (id_usuario_responsable !== undefined) { updateFields.push('id_usuario_responsable = ?'); params.push(id_usuario_responsable); }
 
     if (updateFields.length === 0) {
@@ -192,7 +233,8 @@ exports.updateProject = async (req, res) => {
     query += updateFields.join(', ') + ' WHERE id = ?';
     params.push(projectId);
 
-    await db.query(query, params);
+    const result = await db.query(query, params);
+    console.log('🔍 [UPDATE] Resultado de la query:', result);
 
     await logEvento({
       tipo_evento: 'ACTUALIZACIÓN',
@@ -203,8 +245,8 @@ exports.updateProject = async (req, res) => {
 
     const [updatedProject] = await db.query(`
       SELECT p.*, u.nombre as responsable_nombre, u.email as responsable_email
-      FROM Proyectos p
-      LEFT JOIN Usuarios u ON p.id_usuario_responsable = u.id
+      FROM proyectos p
+      LEFT JOIN usuarios u ON p.id_usuario_responsable = u.id
       WHERE p.id = ?
     `, [projectId]);
 
@@ -229,13 +271,13 @@ exports.deleteProject = async (req, res) => {
     const projectId = req.params.id;
     const id_usuario = req.user?.id;
 
-    const [existingProjects] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [projectId]);
+    const [existingProjects] = await db.query('SELECT * FROM proyectos WHERE id = ?', [projectId]);
     if (existingProjects.length === 0) {
       return res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
     }
 
     const nombreProyecto = existingProjects[0].nombre;
-    await db.query('DELETE FROM Proyectos WHERE id = ?', [projectId]);
+    await db.query('DELETE FROM proyectos WHERE id = ?', [projectId]);
 
     await logEvento({
       tipo_evento: 'ELIMINACIÓN',
@@ -268,17 +310,17 @@ exports.changeProjectStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Estado no válido' });
     }
 
-    const [existingProjects] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [id]);
+    const [existingProjects] = await db.query('SELECT * FROM proyectos WHERE id = ?', [id]);
     if (existingProjects.length === 0) {
       return res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
     }
 
-    await db.query('UPDATE Proyectos SET estado = ? WHERE id = ?', [estado, id]);
+    await db.query('UPDATE proyectos SET estado = ? WHERE id = ?', [estado, id]);
 
     const [updatedProject] = await db.query(`
       SELECT p.*, u.nombre as responsable_nombre, u.email as responsable_email
-      FROM Proyectos p
-      LEFT JOIN Usuarios u ON p.id_usuario_responsable = u.id
+      FROM proyectos p
+      LEFT JOIN usuarios u ON p.id_usuario_responsable = u.id
       WHERE p.id = ?
     `, [id]);
 
@@ -307,7 +349,7 @@ exports.getProjectStats = async (req, res) => {
         SUM(CASE WHEN estado = 'completado' THEN 1 ELSE 0 END) as completados,
         SUM(CASE WHEN estado = 'archivado' THEN 1 ELSE 0 END) as archivados,
         SUM(CASE WHEN estado = 'cancelado' THEN 1 ELSE 0 END) as cancelados
-      FROM Proyectos
+      FROM proyectos
     `);
 
     const today = new Date();
@@ -316,7 +358,7 @@ exports.getProjectStats = async (req, res) => {
 
     const [upcomingProjects] = await db.query(`
       SELECT COUNT(*) as proximosAVencer
-      FROM Proyectos
+      FROM proyectos
       WHERE fecha_fin BETWEEN ? AND ?
       AND estado = 'activo'
     `, [today, nextWeek]);

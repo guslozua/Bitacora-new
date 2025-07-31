@@ -243,17 +243,41 @@ const KanbanBoard: React.FC = () => {
       };
 
       const response = await axios.post(`${API_BASE_URL}/tasks`, newTask, config);
-      if (response.data.success) {
-        alert(`✅ Tarea creada con éxito`);
-        setTaskForm({ titulo: '', descripcion: '', prioridad: 'media', fecha_inicio: '', fecha_vencimiento: '' });
-        setShowDetails(false);
-        await fetchData();
-      } else {
-        alert(`❌ No se pudo crear la tarea: ${response.data.message || 'Error desconocido'}`);
+      
+      // ✅ MANEJO MEJORADO CON REFRESH AUTOMÁTICO
+      try {
+        if (response.data.success) {
+          alert(`✅ Tarea creada con éxito`);
+          setTaskForm({ titulo: '', descripcion: '', prioridad: 'media', fecha_inicio: '', fecha_vencimiento: '' });
+          setShowDetails(false);
+          await fetchData();
+          
+          // ✅ REFRESH AUTOMÁTICO DESPUÉS DE CREAR TAREA
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          alert(`❌ No se pudo crear la tarea: ${response.data.message || 'Error desconocido'}`);
+          // ⚠️ Refresh también en caso de error ya que la tarea se puede haber creado
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        }
+      } catch (responseError) {
+        // Si hay error en el procesamiento de respuesta, también refresh
+        console.warn('Error procesando respuesta, pero refrescando por si la tarea se creó');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
       }
     } catch (error: any) {
       console.error('Error al crear tarea:', error);
       alert(`Error al crear la tarea: ${error.response?.data?.message || error.message}`);
+      
+      // ⚠️ REFRESH INCLUSO EN CASO DE ERROR (porque viste que se crean a pesar del error)
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     }
   }, [selectedCard, taskForm, validateDates]);
 
@@ -292,19 +316,142 @@ const KanbanBoard: React.FC = () => {
       };
 
       const response = await axios.post(`${API_BASE_URL}/tasks/${selectedCard.metadata.entityId}/subtasks`, newSubtask, config);
-      if (response.data.success) {
-        alert(`✅ Subtarea creada con éxito`);
-        setSubtaskForm({ titulo: '', descripcion: '', prioridad: 'media', fecha_inicio: '', fecha_vencimiento: '' });
-        setShowDetails(false);
-        await fetchData();
-      } else {
-        alert(`❌ No se pudo crear la subtarea: ${response.data.message || 'Error desconocido'}`);
+      
+      // ✅ MANEJO MEJORADO CON REFRESH AUTOMÁTICO
+      try {
+        if (response.data.success) {
+          alert(`✅ Subtarea creada con éxito`);
+          setSubtaskForm({ titulo: '', descripcion: '', prioridad: 'media', fecha_inicio: '', fecha_vencimiento: '' });
+          setShowDetails(false);
+          await fetchData();
+          
+          // ✅ REFRESH AUTOMÁTICO DESPUÉS DE CREAR SUBTAREA
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          alert(`❌ No se pudo crear la subtarea: ${response.data.message || 'Error desconocido'}`);
+          // ⚠️ Refresh también en caso de error ya que la subtarea se puede haber creado
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        }
+      } catch (responseError) {
+        // Si hay error en el procesamiento de respuesta, también refresh
+        console.warn('Error procesando respuesta, pero refrescando por si la subtarea se creó');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
       }
     } catch (error: any) {
       console.error('Error al crear subtarea:', error);
       alert(`Error al crear la subtarea: ${error.response?.data?.message || error.message}`);
+      
+      // ⚠️ REFRESH INCLUSO EN CASO DE ERROR (porque puede haberse creado a pesar del error)
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     }
   }, [selectedCard, subtaskForm, validateDates]);
+
+  // 📍 NUEVAS FUNCIONES DE ELIMINACIÓN
+  
+  // Eliminar proyecto con cascada
+  const handleDeleteProject = async (projectId: string) => {
+    if (window.confirm(`¿Está seguro de que desea eliminar este proyecto?\n\n⚠️ ATENCIÓN: Esto también eliminará todas las tareas y subtareas asociadas.`)) {
+      try {
+        const token = localStorage.getItem('token');
+        const config = {
+          headers: {
+            'x-auth-token': token || '',
+            'Content-Type': 'application/json',
+          },
+        };
+
+        // Eliminar proyecto (el backend debería manejar la cascada)
+        const response = await axios.delete(`${API_BASE_URL}/projects/${projectId}`, config);
+        
+        if (response.data.success) {
+          alert('✅ Proyecto eliminado correctamente');
+          setShowDetails(false);
+          await fetchData();
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          alert('❌ Error al eliminar el proyecto');
+        }
+      } catch (error: any) {
+        console.error('Error al eliminar proyecto:', error);
+        alert(`Error al eliminar el proyecto: ${error.response?.data?.message || error.message}`);
+      }
+    }
+  };
+
+  // Eliminar tarea
+  const handleDeleteTask = async (taskId: string) => {
+    if (window.confirm(`¿Está seguro de que desea eliminar esta tarea?\n\n⚠️ ATENCIÓN: Esto también eliminará todas las subtareas asociadas.`)) {
+      try {
+        const token = localStorage.getItem('token');
+        const config = {
+          headers: {
+            'x-auth-token': token || '',
+            'Content-Type': 'application/json',
+          },
+        };
+
+        const response = await axios.delete(`${API_BASE_URL}/tasks/${taskId}`, config);
+        
+        if (response.data.success) {
+          alert('✅ Tarea eliminada correctamente');
+          setShowDetails(false);
+          await fetchData();
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          alert('❌ Error al eliminar la tarea');
+        }
+      } catch (error: any) {
+        console.error('Error al eliminar tarea:', error);
+        alert(`Error al eliminar la tarea: ${error.response?.data?.message || error.message}`);
+      }
+    }
+  };
+
+  // Eliminar subtarea
+  const handleDeleteSubtask = async (subtaskId: string) => {
+    if (window.confirm('¿Está seguro de que desea eliminar esta subtarea?')) {
+      try {
+        const token = localStorage.getItem('token');
+        const config = {
+          headers: {
+            'x-auth-token': token || '',
+            'Content-Type': 'application/json',
+          },
+        };
+
+        const response = await axios.delete(`${API_BASE_URL}/subtasks/${subtaskId}`, config);
+        
+        if (response.data.success) {
+          alert('✅ Subtarea eliminada correctamente');
+          setShowDetails(false);
+          await fetchData();
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          alert('❌ Error al eliminar la subtarea');
+        }
+      } catch (error: any) {
+        console.error('Error al eliminar subtarea:', error);
+        alert(`Error al eliminar la subtarea: ${error.response?.data?.message || error.message}`);
+      }
+    }
+  };
 
   // Cargar datos
   const fetchData = useCallback(async () => {
@@ -341,13 +488,18 @@ const KanbanBoard: React.FC = () => {
           description: project.descripcion || '',
           label: 'Proyecto',
           draggable: true,
-          tags: [{ title: 'Proyecto', color: '#8e44ad' }],
+          tags: [
+            { title: 'Proyecto', color: '#8e44ad' },
+            // 🆕 AGREGAR TAG DE PRIORIDAD PARA PROYECTOS
+            { title: `Prioridad: ${project.prioridad || 'Media'}`, color: getPriorityColor(project.prioridad) }
+          ],
           metadata: {
             type: 'project',
             entityId: project.id.toString(),
             startDate: project.fecha_inicio,
             endDate: project.fecha_fin,
-            progress: calculateProgress(estado)
+            progress: calculateProgress(estado),
+            priority: project.prioridad // 🆕 INCLUIR PRIORIDAD EN METADATA
           }
         };
 
@@ -396,16 +548,20 @@ const KanbanBoard: React.FC = () => {
           }
         }
 
-        const hasParent = task.id_proyecto && newProjectMap[`project-${task.id_proyecto}`];
-        if (!hasParent) {
-          if (estado === 'completado' || estado === 'finalizado' || estado === 'completada' || estado === 'finalizada') {
-            completados.push(card);
-          } else if (estado === 'en progreso') {
-            enProgreso.push(card);
-          } else {
-            pendientes.push(card);
-          }
+        // 📍 CORREGIDO: MOSTRAR TODAS LAS TAREAS (INCLUSO CON PADRE)
+        // Eliminamos el filtro hasParent para que se muestren todas las tareas
+        // const hasParent = task.id_proyecto && newProjectMap[`project-${task.id_proyecto}`];
+        // if (!hasParent) { // VIEJO CÓDIGO QUE OCULTABA LAS TAREAS
+        
+        // ✅ AHORA MOSTRAMOS TODAS LAS TAREAS SIN IMPORTAR SI TIENEN PADRE O NO
+        if (estado === 'completado' || estado === 'finalizado' || estado === 'completada' || estado === 'finalizada') {
+          completados.push(card);
+        } else if (estado === 'en progreso') {
+          enProgreso.push(card);
+        } else {
+          pendientes.push(card);
         }
+        // } // CERRAMOS EL VIEJO IF hasParent
       });
 
       // Procesar subtareas
@@ -442,16 +598,20 @@ const KanbanBoard: React.FC = () => {
           }
         }
 
-        const hasParent = subtask.id_tarea && newTaskMap[`task-${subtask.id_tarea}`];
-        if (!hasParent) {
-          if (estado === 'completado' || estado === 'finalizado' || estado === 'completada' || estado === 'finalizada') {
-            completados.push(card);
-          } else if (estado === 'en progreso') {
-            enProgreso.push(card);
-          } else {
-            pendientes.push(card);
-          }
+        // 📍 CORREGIDO: MOSTRAR TODAS LAS SUBTAREAS (INCLUSO CON PADRE)
+        // Eliminamos el filtro hasParent para que se muestren todas las subtareas
+        // const hasParent = subtask.id_tarea && newTaskMap[`task-${subtask.id_tarea}`];
+        // if (!hasParent) { // VIEJO CÓDIGO QUE OCULTABA LAS SUBTAREAS
+        
+        // ✅ AHORA MOSTRAMOS TODAS LAS SUBTAREAS SIN IMPORTAR SI TIENEN PADRE O NO
+        if (estado === 'completado' || estado === 'finalizado' || estado === 'completada' || estado === 'finalizada') {
+          completados.push(card);
+        } else if (estado === 'en progreso') {
+          enProgreso.push(card);
+        } else {
+          pendientes.push(card);
         }
+        // } // CERRAMOS EL VIEJO IF hasParent
       });
 
       setProjectMap(newProjectMap);
@@ -947,6 +1107,42 @@ const KanbanBoard: React.FC = () => {
                   <ProgressBar now={selectedCard.metadata.progress || 0} label={`${selectedCard.metadata.progress || 0}%`} className="mb-3" />
                   <p><strong>ID:</strong> {selectedCard.metadata.entityId}</p>
                   <p><strong>Tipo:</strong> {selectedCard.metadata.type}</p>
+
+                  {/* 📍 BOTONES DE ACCIÓN PARA ELIMINACIÓN */}
+                  <div className="d-flex gap-2 mb-4 mt-3">
+                    {selectedCard.metadata.type === 'project' && (
+                      <Button 
+                        variant="outline-danger" 
+                        size="sm"
+                        onClick={() => handleDeleteProject(selectedCard.metadata.entityId)}
+                      >
+                        <i className="bi bi-trash me-1"></i>
+                        Eliminar Proyecto
+                      </Button>
+                    )}
+                    
+                    {selectedCard.metadata.type === 'task' && (
+                      <Button 
+                        variant="outline-danger" 
+                        size="sm"
+                        onClick={() => handleDeleteTask(selectedCard.metadata.entityId)}
+                      >
+                        <i className="bi bi-trash me-1"></i>
+                        Eliminar Tarea
+                      </Button>
+                    )}
+                    
+                    {selectedCard.metadata.type === 'subtask' && (
+                      <Button 
+                        variant="outline-danger" 
+                        size="sm"
+                        onClick={() => handleDeleteSubtask(selectedCard.metadata.entityId)}
+                      >
+                        <i className="bi bi-trash me-1"></i>
+                        Eliminar Subtarea
+                      </Button>
+                    )}
+                  </div>
 
                   {/* Formulario para agregar tareas si es un proyecto */}
                   {selectedCard.metadata.type === 'project' && (

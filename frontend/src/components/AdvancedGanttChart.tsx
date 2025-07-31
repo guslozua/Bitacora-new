@@ -421,6 +421,116 @@ const AdvancedGanttChart = () => {
     }
   };
 
+  // 📍 NUEVAS FUNCIONES DE ELIMINACIÓN PARA GANTT
+  
+  // Eliminar proyecto con cascada
+  const handleDeleteProjectGantt = async (projectId: string) => {
+    if (window.confirm(`¿Está seguro de que desea eliminar este proyecto?\n\n⚠️ ATENCIÓN: Esto también eliminará todas las tareas y subtareas asociadas.`)) {
+      try {
+        const config = {
+          headers: {
+            'x-auth-token': token || '',
+            'Content-Type': 'application/json',
+          },
+        };
+
+        // Extraer ID numérico del proyecto
+        const numericId = projectId.toString().includes('project-') 
+          ? projectId.toString().split('project-')[1] 
+          : projectId;
+
+        const response = await axios.delete(`${API_BASE_URL}/projects/${numericId}`, config);
+        
+        if (response.data.success) {
+          alert('✅ Proyecto eliminado correctamente');
+          setShowDetails(false);
+          await refreshGanttData();
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          alert('❌ Error al eliminar el proyecto');
+        }
+      } catch (error: any) {
+        console.error('Error al eliminar proyecto:', error);
+        alert(`Error al eliminar el proyecto: ${error.response?.data?.message || error.message}`);
+      }
+    }
+  };
+
+  // Eliminar tarea
+  const handleDeleteTaskGantt = async (taskId: string) => {
+    if (window.confirm(`¿Está seguro de que desea eliminar esta tarea?\n\n⚠️ ATENCIÓN: Esto también eliminará todas las subtareas asociadas.`)) {
+      try {
+        const config = {
+          headers: {
+            'x-auth-token': token || '',
+            'Content-Type': 'application/json',
+          },
+        };
+
+        // Extraer ID numérico de la tarea
+        const numericId = taskId.toString().includes('task-') 
+          ? taskId.toString().split('task-')[1] 
+          : taskId;
+
+        const response = await axios.delete(`${API_BASE_URL}/tasks/${numericId}`, config);
+        
+        if (response.data.success) {
+          alert('✅ Tarea eliminada correctamente');
+          setShowDetails(false);
+          await refreshGanttData();
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          alert('❌ Error al eliminar la tarea');
+        }
+      } catch (error: any) {
+        console.error('Error al eliminar tarea:', error);
+        alert(`Error al eliminar la tarea: ${error.response?.data?.message || error.message}`);
+      }
+    }
+  };
+
+  // Eliminar subtarea
+  const handleDeleteSubtaskGantt = async (subtaskId: string) => {
+    if (window.confirm('¿Está seguro de que desea eliminar esta subtarea?')) {
+      try {
+        const config = {
+          headers: {
+            'x-auth-token': token || '',
+            'Content-Type': 'application/json',
+          },
+        };
+
+        // Extraer ID numérico de la subtarea
+        const numericId = subtaskId.toString().includes('subtask-') 
+          ? subtaskId.toString().split('subtask-')[1] 
+          : subtaskId;
+
+        const response = await axios.delete(`${API_BASE_URL}/subtasks/${numericId}`, config);
+        
+        if (response.data.success) {
+          alert('✅ Subtarea eliminada correctamente');
+          setShowDetails(false);
+          await refreshGanttData();
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          alert('❌ Error al eliminar la subtarea');
+        }
+      } catch (error: any) {
+        console.error('Error al eliminar subtarea:', error);
+        alert(`Error al eliminar la subtarea: ${error.response?.data?.message || error.message}`);
+      }
+    }
+  };
+
   // Función para validar fechas dentro del rango de la tarea/proyecto padre
   const validateDates = (start: Date, end: Date, parentStart: Date, parentEnd: Date) => {
     if (end < start) {
@@ -468,19 +578,43 @@ const AdvancedGanttChart = () => {
       };
 
       const response = await axios.post(`${API_BASE_URL}/tasks`, newTask, config);
-      if (response.data.success) {
-        alert(`✅ Tarea creada con éxito con ID: ${response.data.id}`);
-        setTaskForm({ titulo: '', descripcion: '', prioridad: 'media', fecha_inicio: '', fecha_vencimiento: '' });
-        setShowDetails(false);
-
-        // Actualizar datos en lugar de recargar la página
-        refreshGanttData();
-      } else {
-        alert(`❌ No se pudo crear la tarea: ${response.data.message || 'Error desconocido'}`);
+      
+      // ✅ MANEJO MEJORADO CON REFRESH AUTOMÁTICO
+      try {
+        if (response.data.success) {
+          alert(`✅ Tarea creada con éxito con ID: ${response.data.id}`);
+          setTaskForm({ titulo: '', descripcion: '', prioridad: 'media', fecha_inicio: '', fecha_vencimiento: '' });
+          setShowDetails(false);
+          
+          // Actualizar datos en lugar de recargar la página
+          refreshGanttData();
+          
+          // ✅ REFRESH AUTOMÁTICO DESPUÉS DE CREAR TAREA
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          alert(`❌ No se pudo crear la tarea: ${response.data.message || 'Error desconocido'}`);
+          // ⚠️ Refresh también en caso de error ya que la tarea se puede haber creado
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        }
+      } catch (responseError) {
+        // Si hay error en el procesamiento de respuesta, también refresh
+        console.warn('Error procesando respuesta, pero refrescando por si la tarea se creó');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
       }
     } catch (error: any) {
       console.error('Error al crear tarea:', error.response?.data || error.message);
       alert(`Error al crear la tarea: ${error.response?.data?.message || error.message}`);
+      
+      // ⚠️ REFRESH INCLUSO EN CASO DE ERROR (porque puede haberse creado a pesar del error)
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     }
   };
 
@@ -523,19 +657,43 @@ const AdvancedGanttChart = () => {
       };
 
       const response = await axios.post(`${API_BASE_URL}/tasks/${taskId}/subtasks`, newSubtask, config);
-      if (response.data.success) {
-        alert(`✅ Subtarea creada con éxito con ID: ${response.data.id}`);
-        setSubtaskForm({ titulo: '', descripcion: '', prioridad: 'media', fecha_inicio: '', fecha_vencimiento: '' });
-        setShowDetails(false);
-
-        // Actualizar datos en lugar de recargar la página
-        refreshGanttData();
-      } else {
-        alert(`❌ No se pudo crear la subtarea: ${response.data.message || 'Error desconocido'}`);
+      
+      // ✅ MANEJO MEJORADO CON REFRESH AUTOMÁTICO
+      try {
+        if (response.data.success) {
+          alert(`✅ Subtarea creada con éxito con ID: ${response.data.id}`);
+          setSubtaskForm({ titulo: '', descripcion: '', prioridad: 'media', fecha_inicio: '', fecha_vencimiento: '' });
+          setShowDetails(false);
+          
+          // Actualizar datos en lugar de recargar la página
+          refreshGanttData();
+          
+          // ✅ REFRESH AUTOMÁTICO DESPUÉS DE CREAR SUBTAREA
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          alert(`❌ No se pudo crear la subtarea: ${response.data.message || 'Error desconocido'}`);
+          // ⚠️ Refresh también en caso de error ya que la subtarea se puede haber creado
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        }
+      } catch (responseError) {
+        // Si hay error en el procesamiento de respuesta, también refresh
+        console.warn('Error procesando respuesta, pero refrescando por si la subtarea se creó');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
       }
     } catch (error: any) {
       console.error('Error al crear subtarea:', error.response?.data || error.message);
       alert(`Error al crear la subtarea: ${error.response?.data?.message || error.message}`);
+      
+      // ⚠️ REFRESH INCLUSO EN CASO DE ERROR (porque puede haberse creado a pesar del error)
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     }
   };
 
@@ -941,6 +1099,42 @@ const AdvancedGanttChart = () => {
                     <p><strong>Depende de:</strong> {Array.isArray(selectedTask.dependencies) ? selectedTask.dependencies.join(', ') : 'Ninguna'}</p>
                   )}
                   <p><strong>Tipo:</strong> {selectedTask.isSubtask === true ? 'Subtarea' : selectedTask.type || 'No especificado'}</p>
+
+                  {/* 📍 BOTONES DE ACCIÓN PARA ELIMINACIÓN EN GANTT */}
+                  <div className="d-flex gap-2 mb-4 mt-3">
+                    {selectedTask.type === 'project' && (
+                      <Button 
+                        variant="outline-danger" 
+                        size="sm"
+                        onClick={() => handleDeleteProjectGantt(selectedTask.id.toString())}
+                      >
+                        <i className="bi bi-trash me-1"></i>
+                        Eliminar Proyecto
+                      </Button>
+                    )}
+                    
+                    {selectedTask.type === 'task' && selectedTask.isSubtask !== true && (
+                      <Button 
+                        variant="outline-danger" 
+                        size="sm"
+                        onClick={() => handleDeleteTaskGantt(selectedTask.id.toString())}
+                      >
+                        <i className="bi bi-trash me-1"></i>
+                        Eliminar Tarea
+                      </Button>
+                    )}
+                    
+                    {selectedTask.isSubtask === true && (
+                      <Button 
+                        variant="outline-danger" 
+                        size="sm"
+                        onClick={() => handleDeleteSubtaskGantt(selectedTask.id.toString())}
+                      >
+                        <i className="bi bi-trash me-1"></i>
+                        Eliminar Subtarea
+                      </Button>
+                    )}
+                  </div>
 
                   {/* Botón para marcar como completado */}
                   {!isItemCompleted && (

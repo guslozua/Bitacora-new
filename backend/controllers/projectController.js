@@ -39,6 +39,7 @@ exports.createProject = async (req, res) => {
   // Validar datos de entrada
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('❌ Errores de validación:', errors.array());
     return res.status(400).json({
       success: false,
       errors: errors.array()
@@ -46,26 +47,45 @@ exports.createProject = async (req, res) => {
   }
   
   try {
+    console.log('🔍 [DEBUG] Datos recibidos en controller:', req.body);
+    console.log('🔍 [DEBUG] Usuario autenticado:', req.user);
+
     // Extraer información relevante del cuerpo de la solicitud
     const { nombre, descripcion, fecha_inicio, fecha_fin, estado } = req.body;
     const userId = req.user.id;
 
+    console.log('🔍 [DEBUG] Datos procesados:', {
+      nombre,
+      descripcion,
+      fecha_inicio,
+      fecha_fin,
+      estado,
+      userId
+    });
+
     // Obtener nombre del usuario
     const [userInfo] = await db.query('SELECT nombre FROM Usuarios WHERE id = ?', [userId]);
     const nombreUsuario = userInfo.length > 0 ? userInfo[0].nombre : null;
+    console.log('🔍 [DEBUG] Usuario encontrado:', nombreUsuario);
 
     // Obtener nombre del proyecto
     const nombreProyecto = nombre || 'Proyecto sin nombre';
 
+    console.log('🔍 [DEBUG] Llamando a projectModel.createProjectAndReturnId con:', req.body);
+
     // Llamar al método del modelo para crear el proyecto
     const result = await projectModel.createProjectAndReturnId(req.body, userId);
     
+    console.log('🔍 [DEBUG] Resultado del modelo:', result);
+
     // Si no tenemos un ID de proyecto válido, manejamos el error
     if (!result || !result.insertId) {
+      console.error('❌ [DEBUG] No se obtuvo insertId válido:', result);
       throw new Error('No se pudo obtener el ID del proyecto creado');
     }
 
-    // Registrar el evento en la bitácora
+    console.log('✅ [DEBUG] Proyecto creado con ID:', result.insertId);
+
     await logEvento({
       tipo_evento: 'CREACIÓN',
       descripcion: `Proyecto creado: ${nombreProyecto}`,
@@ -79,6 +99,8 @@ exports.createProject = async (req, res) => {
       nombre_subtarea: null
     });
 
+    console.log('✅ [DEBUG] Evento registrado en bitácora');
+
     // Enviar respuesta al cliente
     return res.status(201).json({
       success: true,
@@ -89,7 +111,13 @@ exports.createProject = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error al crear proyecto:', error);
+    console.error('❌ [DEBUG] Error completo en createProject:', {
+      message: error.message,
+      stack: error.stack,
+      data: req.body,
+      user: req.user
+    });
+    
     res.status(500).json({
       success: false,
       message: 'Error al crear el proyecto',
@@ -110,67 +138,9 @@ exports.updateProject = async (req, res) => {
   }
   
   try {
-    const projectId = req.params.id;
-    const { nombre, descripcion, fecha_inicio, fecha_fin, estado } = req.body;
-    const userId = req.user.id;
-
-    // Obtener información actual del proyecto
-    const [currentProject] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [projectId]);
+    // 🔧 USAR EL MODELO EN LUGAR DE QUERY DIRECTA
+    return await projectModel.updateProject(req, res);
     
-    if (!currentProject || currentProject.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Proyecto no encontrado'
-      });
-    }
-
-    // Obtener nombre del usuario
-    const [userInfo] = await db.query('SELECT nombre FROM Usuarios WHERE id = ?', [userId]);
-    const nombreUsuario = userInfo.length > 0 ? userInfo[0].nombre : null;
-
-    // Usar el nombre actualizado o el actual si no se proporcionó
-    const nombreProyecto = nombre || currentProject[0].nombre;
-    
-    // Actualizar el proyecto en la base de datos
-    const [result] = await db.query(
-      'UPDATE Proyectos SET nombre = ?, descripcion = ?, fecha_inicio = ?, fecha_fin = ?, estado = ? WHERE id = ?',
-      [
-        nombre || currentProject[0].nombre,
-        descripcion || currentProject[0].descripcion,
-        fecha_inicio || currentProject[0].fecha_inicio,
-        fecha_fin || currentProject[0].fecha_fin,
-        estado || currentProject[0].estado,
-        projectId
-      ]
-    );
-
-    // Registrar el evento en la bitácora
-    await logEvento({
-      tipo_evento: 'ACTUALIZACIÓN',
-      descripcion: `Proyecto actualizado: ${nombreProyecto} (${estado || currentProject[0].estado})`,
-      id_usuario: userId,
-      nombre_usuario: nombreUsuario,
-      id_proyecto: projectId,
-      nombre_proyecto: nombreProyecto,
-      id_tarea: null,
-      nombre_tarea: null,
-      id_subtarea: null,
-      nombre_subtarea: null
-    });
-
-    // Enviar respuesta al cliente
-    return res.json({
-      success: true,
-      message: 'Proyecto actualizado con éxito',
-      data: {
-        id: projectId,
-        nombre: nombre || currentProject[0].nombre,
-        descripcion: descripcion || currentProject[0].descripcion,
-        fecha_inicio: fecha_inicio || currentProject[0].fecha_inicio,
-        fecha_fin: fecha_fin || currentProject[0].fecha_fin,
-        estado: estado || currentProject[0].estado
-      }
-    });
   } catch (error) {
     console.error('Error al actualizar proyecto:', error);
     res.status(500).json({
