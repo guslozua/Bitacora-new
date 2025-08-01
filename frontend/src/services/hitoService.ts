@@ -196,7 +196,7 @@ class HitoService {
     }
   }
 
-  // Exportar hito a PDF
+  // Exportar hito individual a PDF
   async exportHitoToPDF(hitoId: number): Promise<{ success: boolean }> {
     try {
       console.log('📄 Exportando hito a PDF:', hitoId);
@@ -225,6 +225,39 @@ class HitoService {
       return { success: true };
     } catch (error) {
       console.error(`❌ Error al exportar hito con ID ${hitoId} a PDF:`, error);
+      throw error;
+    }
+  }
+
+  // 🆕 NUEVA FUNCIÓN: Exportar todos los hitos a PDF
+  async exportAllHitosToPDF(): Promise<{ success: boolean }> {
+    try {
+      console.log('📋 Exportando todos los hitos a PDF...');
+      
+      const response = await api.get('/hitos/exportar/todos', {
+        responseType: 'blob'
+      });
+      
+      // Crear URL del blob
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      // Crear elemento <a> para descarga
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `reporte_hitos_completo_${Date.now()}.pdf`);
+      
+      // Agregar al DOM, hacer clic y remover
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      // Limpiar URL del blob
+      window.URL.revokeObjectURL(url);
+      
+      console.log('✅ Reporte completo exportado exitosamente');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error al exportar todos los hitos a PDF:', error);
       throw error;
     }
   }

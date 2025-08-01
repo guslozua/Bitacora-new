@@ -17,6 +17,1297 @@ exports.getHitos = async (req, res) => {
       usuario: req.query.usuario
     };
 
+// 📋 NUEVA FUNCIÓN: EXPORTAR TODOS LOS HITOS A PDF - REPORTE CONSOLIDADO
+exports.exportAllHitosToPDF = async (req, res) => {
+  try {
+    console.log('📋 Iniciando exportación de todos los hitos...');
+
+    // Obtener todos los hitos ordenados cronológicamente
+    const hitos = await hitoModel.getHitos({});
+    
+    if (!hitos || hitos.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'No hay hitos disponibles para exportar' 
+      });
+    }
+
+    console.log(`📊 Exportando ${hitos.length} hitos...`);
+
+    // Crear directorio temporal si no existe
+    const tempDir = path.join(__dirname, '../temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    // Crear nombre de archivo único
+    const fileName = `reporte_hitos_completo_${Date.now()}.pdf`;
+    const filePath = path.join(tempDir, fileName);
+
+    // 🎨 CONFIGURACIÓN DEL DOCUMENTO
+    const doc = new PDFDocument({ 
+      margin: 50,
+      size: 'A4',
+      info: {
+        Title: 'Reporte Completo de Hitos',
+        Author: 'Sistema de Gestión de Hitos',
+        Subject: 'Informe consolidado de todos los hitos',
+        Creator: 'Bitácora System',
+        Producer: 'PDFKit'
+      }
+    });
+    
+    const stream = fs.createWriteStream(filePath);
+    doc.pipe(stream);
+
+    // 🎨 COLORES Y ESTILOS (reutilizando los del individual)
+    const colors = {
+      primary: '#1e293b',
+      secondary: '#64748b',
+      accent: '#334155',
+      text: '#000000',
+      lightGray: '#f8fafc',
+      darkGray: '#475569'
+    };
+
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    const margin = 50;
+    const contentWidth = pageWidth - (margin * 2);
+
+    // 🖼️ FUNCIÓN PARA LOGO (reutilizada del individual)
+    const addLogo = () => {
+      const logoPath = path.join(__dirname, '../assets/logo.png');
+      
+      try {
+        if (fs.existsSync(logoPath)) {
+          doc.image(logoPath, margin, margin, { width: 50, height: 50 });
+        } else {
+          doc.fontSize(14)
+             .fillColor(colors.primary)
+             .font('Helvetica-Bold')
+             .text('TASKMANAGER', margin, margin + 15)
+             .fontSize(8)
+             .fillColor(colors.secondary)
+             .font('Helvetica')
+             .text('Sistema de Gestión', margin, margin + 35);
+        }
+      } catch (error) {
+        doc.fontSize(14)
+           .fillColor(colors.primary)
+           .font('Helvetica-Bold')
+           .text('TASKMANAGER', margin, margin + 15)
+           .fontSize(8)
+           .fillColor(colors.secondary)
+           .font('Helvetica')
+           .text('Sistema de Gestión', margin, margin + 35);
+      }
+    };
+
+    // 🎨 PORTADA DEL REPORTE
+    const addCoverPage = () => {
+      addLogo();
+      
+      // Título principal
+      doc.fontSize(28)
+         .fillColor(colors.primary)
+         .font('Helvetica-Bold')
+         .text('REPORTE COMPLETO DE HITOS', margin, 150, { align: 'center' });
+      
+      // Información del reporte
+      doc.fontSize(12)
+         .fillColor(colors.secondary)
+         .font('Helvetica')
+         .text(`Total de Hitos: ${hitos.length}`, margin, 220, { align: 'center' })
+         .text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, margin, 240, { align: 'center' });
+    };
+
+    // 🎨 FUNCIÓN PARA AGREGAR CADA HITO
+    const addHitoToPDF = async (hito, index) => {
+      if (index > 0) {
+        doc.addPage();
+      }
+      
+      let currentY = margin;
+      
+      // Título del hito
+      doc.fontSize(16)
+         .fillColor(colors.primary)
+         .font('Helvetica-Bold')
+         .text(`${index + 1}. ${hito.nombre}`, margin, currentY);
+      
+      currentY += 30;
+      
+      // Información básica
+      const info = [
+        `ID: ${hito.id}`,
+        `Fecha Inicio: ${hito.fecha_inicio ? new Date(hito.fecha_inicio).toLocaleDateString('es-ES') : 'No especificada'}`,
+        `Fecha Fin: ${hito.fecha_fin ? new Date(hito.fecha_fin).toLocaleDateString('es-ES') : 'No especificada'}`,
+        `Proyecto Origen: ${hito.proyecto_origen_nombre || 'Hito manual'}`
+      ];
+      
+      info.forEach(item => {
+        doc.fontSize(10)
+           .fillColor(colors.text)
+           .font('Helvetica')
+           .text(item, margin, currentY);
+        currentY += 15;
+      });
+      
+      currentY += 10;
+      
+      // Descripción
+      if (hito.descripcion) {
+        doc.fontSize(12)
+           .fillColor(colors.primary)
+           .font('Helvetica-Bold')
+           .text('DESCRIPCIÓN:', margin, currentY);
+           
+        currentY += 15;
+        
+        doc.fontSize(10)
+           .fillColor(colors.text)
+           .font('Helvetica')
+           .text(hito.descripcion, margin, currentY, {
+             width: contentWidth,
+             lineGap: 3
+           });
+           
+        currentY = doc.y + 15;
+      }
+      
+      // Impacto
+      if (hito.impacto) {
+        doc.fontSize(12)
+           .fillColor(colors.primary)
+           .font('Helvetica-Bold')
+           .text('IMPACTO:', margin, currentY);
+           
+        currentY += 15;
+        
+        doc.fontSize(10)
+           .fillColor(colors.text)
+           .font('Helvetica')
+           .text(hito.impacto, margin, currentY, {
+             width: contentWidth,
+             lineGap: 3
+           });
+           
+        currentY = doc.y + 15;
+      }
+      
+      // Obtener usuarios y tareas
+      try {
+        const usuarios = await hitoModel.getHitoUsers(hito.id);
+        const tareas = await hitoModel.getHitoTasks(hito.id);
+        
+        // Usuarios
+        if (usuarios && usuarios.length > 0) {
+          doc.fontSize(12)
+             .fillColor(colors.primary)
+             .font('Helvetica-Bold')
+             .text('USUARIOS:', margin, currentY);
+             
+          currentY += 15;
+          
+          usuarios.forEach(usuario => {
+            doc.fontSize(9)
+               .fillColor(colors.text)
+               .font('Helvetica')
+               .text(`• ${usuario.nombre} (${usuario.email}) - ${usuario.rol}`, margin + 10, currentY);
+            currentY += 12;
+          });
+          
+          currentY += 10;
+        }
+        
+        // Tareas
+        if (tareas && tareas.length > 0) {
+          doc.fontSize(12)
+             .fillColor(colors.primary)
+             .font('Helvetica-Bold')
+             .text('TAREAS:', margin, currentY);
+             
+          currentY += 15;
+          
+          tareas.forEach(tarea => {
+            doc.fontSize(9)
+               .fillColor(colors.text)
+               .font('Helvetica')
+               .text(`• ${tarea.nombre_tarea} - ${tarea.estado}`, margin + 10, currentY);
+            currentY += 12;
+          });
+        }
+      } catch (error) {
+        console.error(`Error al obtener detalles del hito ${hito.id}:`, error);
+      }
+    };
+
+    // 🚀 GENERAR EL PDF
+    
+    // Portada
+    addCoverPage();
+    
+    // Agregar cada hito
+    for (let i = 0; i < hitos.length; i++) {
+      if (i === 0) {
+        doc.addPage();
+      }
+      await addHitoToPDF(hitos[i], i);
+    }
+    
+    // Finalizar documento
+    doc.end();
+
+    // Registrar evento
+    try {
+      await logEvento({
+        tipo_evento: 'EXPORTACIÓN_MASIVA',
+        descripcion: `Exportación completa de ${hitos.length} hitos a PDF`,
+        id_usuario: req.user?.id
+      });
+    } catch (logError) {
+      console.error('⚠️ Error al registrar evento:', logError.message);
+    }
+
+    // Esperar a que se complete la escritura del archivo
+    stream.on('finish', () => {
+      console.log('✅ PDF completo generado exitosamente');
+      
+      // Enviar archivo al cliente
+      res.download(filePath, fileName, (err) => {
+        if (err) {
+          console.error('Error al enviar el archivo:', err);
+          return res.status(500).json({
+            success: false,
+            message: 'Error al generar el PDF',
+            error: err.message
+          });
+        }
+        
+        // Eliminar archivo temporal después de enviarlo
+        fs.unlink(filePath, (unlinkErr) => {
+          if (unlinkErr) {
+            console.error('Error al eliminar archivo temporal:', unlinkErr);
+          }
+        });
+      });
+    });
+
+    // Manejar errores
+    stream.on('error', (err) => {
+      console.error('Error al escribir el archivo PDF:', err);
+      res.status(500).json({
+        success: false,
+        message: 'Error al generar el PDF',
+        error: err.message
+      });
+    });
+
+  } catch (error) {
+    console.error('❌ Error al exportar todos los hitos a PDF:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al exportar los hitos a PDF',
+      error: error.message
+    });
+  }
+};
+
+// 📋 NUEVA FUNCIÓN: EXPORTAR TODOS LOS HITOS A PDF - REPORTE CONSOLIDADO
+exports.exportAllHitosToPDF = async (req, res) => {
+  try {
+    console.log('📋 Iniciando exportación de todos los hitos...');
+
+    // Obtener todos los hitos ordenados cronológicamente
+    const hitos = await hitoModel.getHitos({});
+    
+    if (!hitos || hitos.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'No hay hitos disponibles para exportar' 
+      });
+    }
+
+    console.log(`📊 Exportando ${hitos.length} hitos...`);
+
+    // Crear directorio temporal si no existe
+    const tempDir = path.join(__dirname, '../temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    // Crear nombre de archivo único
+    const fileName = `reporte_hitos_completo_${Date.now()}.pdf`;
+    const filePath = path.join(tempDir, fileName);
+
+    // 🎨 CONFIGURACIÓN DEL DOCUMENTO
+    const doc = new PDFDocument({ 
+      margin: 50,
+      size: 'A4',
+      info: {
+        Title: 'Reporte Completo de Hitos',
+        Author: 'Sistema de Gestión de Hitos',
+        Subject: 'Informe consolidado de todos los hitos',
+        Creator: 'Bitácora System',
+        Producer: 'PDFKit'
+      }
+    });
+    
+    const stream = fs.createWriteStream(filePath);
+    doc.pipe(stream);
+
+    // 🎨 COLORES Y ESTILOS (reutilizando los del individual)
+    const colors = {
+      primary: '#1e293b',
+      secondary: '#64748b',
+      accent: '#334155',
+      text: '#000000',
+      lightGray: '#f8fafc',
+      darkGray: '#475569'
+    };
+
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    const margin = 50;
+    const contentWidth = pageWidth - (margin * 2);
+
+    // 🖼️ FUNCIÓN PARA LOGO (reutilizada del individual)
+    const addLogo = () => {
+      const logoPath = path.join(__dirname, '../assets/logo.png');
+      
+      try {
+        if (fs.existsSync(logoPath)) {
+          doc.image(logoPath, margin, margin, { width: 50, height: 50 });
+        } else {
+          doc.fontSize(14)
+             .fillColor(colors.primary)
+             .font('Helvetica-Bold')
+             .text('TASKMANAGER', margin, margin + 15)
+             .fontSize(8)
+             .fillColor(colors.secondary)
+             .font('Helvetica')
+             .text('Sistema de Gestión', margin, margin + 35);
+        }
+      } catch (error) {
+        doc.fontSize(14)
+           .fillColor(colors.primary)
+           .font('Helvetica-Bold')
+           .text('TASKMANAGER', margin, margin + 15)
+           .fontSize(8)
+           .fillColor(colors.secondary)
+           .font('Helvetica')
+           .text('Sistema de Gestión', margin, margin + 35);
+      }
+    };
+
+    // 🎨 PORTADA DEL REPORTE
+    const addCoverPage = () => {
+      addLogo();
+      
+      // Título principal
+      doc.fontSize(28)
+         .fillColor(colors.primary)
+         .font('Helvetica-Bold')
+         .text('REPORTE COMPLETO DE HITOS', margin, 150, { align: 'center' });
+      
+      // Información del reporte
+      doc.fontSize(12)
+         .fillColor(colors.secondary)
+         .font('Helvetica')
+         .text(`Total de Hitos: ${hitos.length}`, margin, 220, { align: 'center' })
+         .text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, margin, 240, { align: 'center' });
+    };
+
+    // 🎨 FUNCIÓN PARA AGREGAR CADA HITO
+    const addHitoToPDF = async (hito, index) => {
+      if (index > 0) {
+        doc.addPage();
+      }
+      
+      let currentY = margin;
+      
+      // Título del hito
+      doc.fontSize(16)
+         .fillColor(colors.primary)
+         .font('Helvetica-Bold')
+         .text(`${index + 1}. ${hito.nombre}`, margin, currentY);
+      
+      currentY += 30;
+      
+      // Información básica
+      const info = [
+        `ID: ${hito.id}`,
+        `Fecha Inicio: ${hito.fecha_inicio ? new Date(hito.fecha_inicio).toLocaleDateString('es-ES') : 'No especificada'}`,
+        `Fecha Fin: ${hito.fecha_fin ? new Date(hito.fecha_fin).toLocaleDateString('es-ES') : 'No especificada'}`,
+        `Proyecto Origen: ${hito.proyecto_origen_nombre || 'Hito manual'}`
+      ];
+      
+      info.forEach(item => {
+        doc.fontSize(10)
+           .fillColor(colors.text)
+           .font('Helvetica')
+           .text(item, margin, currentY);
+        currentY += 15;
+      });
+      
+      currentY += 10;
+      
+      // Descripción
+      if (hito.descripcion) {
+        doc.fontSize(12)
+           .fillColor(colors.primary)
+           .font('Helvetica-Bold')
+           .text('DESCRIPCIÓN:', margin, currentY);
+           
+        currentY += 15;
+        
+        doc.fontSize(10)
+           .fillColor(colors.text)
+           .font('Helvetica')
+           .text(hito.descripcion, margin, currentY, {
+             width: contentWidth,
+             lineGap: 3
+           });
+           
+        currentY = doc.y + 15;
+      }
+      
+      // Impacto
+      if (hito.impacto) {
+        doc.fontSize(12)
+           .fillColor(colors.primary)
+           .font('Helvetica-Bold')
+           .text('IMPACTO:', margin, currentY);
+           
+        currentY += 15;
+        
+        doc.fontSize(10)
+           .fillColor(colors.text)
+           .font('Helvetica')
+           .text(hito.impacto, margin, currentY, {
+             width: contentWidth,
+             lineGap: 3
+           });
+           
+        currentY = doc.y + 15;
+      }
+      
+      // Obtener usuarios y tareas
+      try {
+        const usuarios = await hitoModel.getHitoUsers(hito.id);
+        const tareas = await hitoModel.getHitoTasks(hito.id);
+        
+        // Usuarios
+        if (usuarios && usuarios.length > 0) {
+          doc.fontSize(12)
+             .fillColor(colors.primary)
+             .font('Helvetica-Bold')
+             .text('USUARIOS:', margin, currentY);
+             
+          currentY += 15;
+          
+          usuarios.forEach(usuario => {
+            doc.fontSize(9)
+               .fillColor(colors.text)
+               .font('Helvetica')
+               .text(`• ${usuario.nombre} (${usuario.email}) - ${usuario.rol}`, margin + 10, currentY);
+            currentY += 12;
+          });
+          
+          currentY += 10;
+        }
+        
+        // Tareas
+        if (tareas && tareas.length > 0) {
+          doc.fontSize(12)
+             .fillColor(colors.primary)
+             .font('Helvetica-Bold')
+             .text('TAREAS:', margin, currentY);
+             
+          currentY += 15;
+          
+          tareas.forEach(tarea => {
+            doc.fontSize(9)
+               .fillColor(colors.text)
+               .font('Helvetica')
+               .text(`• ${tarea.nombre_tarea} - ${tarea.estado}`, margin + 10, currentY);
+            currentY += 12;
+          });
+        }
+      } catch (error) {
+        console.error(`Error al obtener detalles del hito ${hito.id}:`, error);
+      }
+    };
+
+    // 🚀 GENERAR EL PDF
+    
+    // Portada
+    addCoverPage();
+    
+    // Agregar cada hito
+    for (let i = 0; i < hitos.length; i++) {
+      if (i === 0) {
+        doc.addPage();
+      }
+      await addHitoToPDF(hitos[i], i);
+    }
+    
+    // Finalizar documento
+    doc.end();
+
+    // Registrar evento
+    try {
+      await logEvento({
+        tipo_evento: 'EXPORTACIÓN_MASIVA',
+        descripcion: `Exportación completa de ${hitos.length} hitos a PDF`,
+        id_usuario: req.user?.id
+      });
+    } catch (logError) {
+      console.error('⚠️ Error al registrar evento:', logError.message);
+    }
+
+    // Esperar a que se complete la escritura del archivo
+    stream.on('finish', () => {
+      console.log('✅ PDF completo generado exitosamente');
+      
+      // Enviar archivo al cliente
+      res.download(filePath, fileName, (err) => {
+        if (err) {
+          console.error('Error al enviar el archivo:', err);
+          return res.status(500).json({
+            success: false,
+            message: 'Error al generar el PDF',
+            error: err.message
+          });
+        }
+        
+        // Eliminar archivo temporal después de enviarlo
+        fs.unlink(filePath, (unlinkErr) => {
+          if (unlinkErr) {
+            console.error('Error al eliminar archivo temporal:', unlinkErr);
+          }
+        });
+      });
+    });
+
+    // Manejar errores
+    stream.on('error', (err) => {
+      console.error('Error al escribir el archivo PDF:', err);
+      res.status(500).json({
+        success: false,
+        message: 'Error al generar el PDF',
+        error: err.message
+      });
+    });
+
+  } catch (error) {
+    console.error('❌ Error al exportar todos los hitos a PDF:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al exportar los hitos a PDF',
+      error: error.message
+    });
+  }
+};
+
+// 📋 NUEVA FUNCIÓN: EXPORTAR TODOS LOS HITOS A PDF - REPORTE CONSOLIDADO
+exports.exportAllHitosToPDF = async (req, res) => {
+  try {
+    console.log('📋 Iniciando exportación de todos los hitos...');
+
+    // Obtener todos los hitos ordenados cronológicamente
+    const hitos = await hitoModel.getHitos({});
+    
+    if (!hitos || hitos.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'No hay hitos disponibles para exportar' 
+      });
+    }
+
+    console.log(`📊 Exportando ${hitos.length} hitos...`);
+
+    // Crear directorio temporal si no existe
+    const tempDir = path.join(__dirname, '../temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    // Crear nombre de archivo único
+    const fileName = `reporte_hitos_completo_${Date.now()}.pdf`;
+    const filePath = path.join(tempDir, fileName);
+
+    // 🎨 CONFIGURACIÓN DEL DOCUMENTO
+    const doc = new PDFDocument({ 
+      margin: 50,
+      size: 'A4',
+      info: {
+        Title: 'Reporte Completo de Hitos',
+        Author: 'Sistema de Gestión de Hitos',
+        Subject: 'Informe consolidado de todos los hitos',
+        Creator: 'Bitácora System',
+        Producer: 'PDFKit'
+      }
+    });
+    
+    const stream = fs.createWriteStream(filePath);
+    doc.pipe(stream);
+
+    // 🎨 COLORES Y ESTILOS (reutilizando los del individual)
+    const colors = {
+      primary: '#1e293b',
+      secondary: '#64748b',
+      accent: '#334155',
+      text: '#000000',
+      lightGray: '#f8fafc',
+      darkGray: '#475569'
+    };
+
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    const margin = 50;
+    const contentWidth = pageWidth - (margin * 2);
+
+    // 🖼️ FUNCIÓN PARA LOGO (reutilizada del individual)
+    const addLogo = () => {
+      const logoPath = path.join(__dirname, '../assets/logo.png');
+      
+      try {
+        if (fs.existsSync(logoPath)) {
+          doc.image(logoPath, margin, margin, { width: 50, height: 50 });
+        } else {
+          doc.fontSize(14)
+             .fillColor(colors.primary)
+             .font('Helvetica-Bold')
+             .text('TASKMANAGER', margin, margin + 15)
+             .fontSize(8)
+             .fillColor(colors.secondary)
+             .font('Helvetica')
+             .text('Sistema de Gestión', margin, margin + 35);
+        }
+      } catch (error) {
+        doc.fontSize(14)
+           .fillColor(colors.primary)
+           .font('Helvetica-Bold')
+           .text('TASKMANAGER', margin, margin + 15)
+           .fontSize(8)
+           .fillColor(colors.secondary)
+           .font('Helvetica')
+           .text('Sistema de Gestión', margin, margin + 35);
+      }
+    };
+
+    // 🎨 PORTADA DEL REPORTE
+    const addCoverPage = () => {
+      addLogo();
+      
+      // Título principal
+      doc.fontSize(28)
+         .fillColor(colors.primary)
+         .font('Helvetica-Bold')
+         .text('REPORTE COMPLETO DE HITOS', margin, 150, { align: 'center' });
+      
+      // Información del reporte
+      doc.fontSize(12)
+         .fillColor(colors.secondary)
+         .font('Helvetica')
+         .text(`Total de Hitos: ${hitos.length}`, margin, 220, { align: 'center' })
+         .text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, margin, 240, { align: 'center' });
+    };
+
+    // 🎨 FUNCIÓN PARA AGREGAR CADA HITO
+    const addHitoToPDF = async (hito, index) => {
+      if (index > 0) {
+        doc.addPage();
+      }
+      
+      let currentY = margin;
+      
+      // Título del hito
+      doc.fontSize(16)
+         .fillColor(colors.primary)
+         .font('Helvetica-Bold')
+         .text(`${index + 1}. ${hito.nombre}`, margin, currentY);
+      
+      currentY += 30;
+      
+      // Información básica
+      const info = [
+        `ID: ${hito.id}`,
+        `Fecha Inicio: ${hito.fecha_inicio ? new Date(hito.fecha_inicio).toLocaleDateString('es-ES') : 'No especificada'}`,
+        `Fecha Fin: ${hito.fecha_fin ? new Date(hito.fecha_fin).toLocaleDateString('es-ES') : 'No especificada'}`,
+        `Proyecto Origen: ${hito.proyecto_origen_nombre || 'Hito manual'}`
+      ];
+      
+      info.forEach(item => {
+        doc.fontSize(10)
+           .fillColor(colors.text)
+           .font('Helvetica')
+           .text(item, margin, currentY);
+        currentY += 15;
+      });
+      
+      currentY += 10;
+      
+      // Descripción
+      if (hito.descripcion) {
+        doc.fontSize(12)
+           .fillColor(colors.primary)
+           .font('Helvetica-Bold')
+           .text('DESCRIPCIÓN:', margin, currentY);
+           
+        currentY += 15;
+        
+        doc.fontSize(10)
+           .fillColor(colors.text)
+           .font('Helvetica')
+           .text(hito.descripcion, margin, currentY, {
+             width: contentWidth,
+             lineGap: 3
+           });
+           
+        currentY = doc.y + 15;
+      }
+      
+      // Impacto
+      if (hito.impacto) {
+        doc.fontSize(12)
+           .fillColor(colors.primary)
+           .font('Helvetica-Bold')
+           .text('IMPACTO:', margin, currentY);
+           
+        currentY += 15;
+        
+        doc.fontSize(10)
+           .fillColor(colors.text)
+           .font('Helvetica')
+           .text(hito.impacto, margin, currentY, {
+             width: contentWidth,
+             lineGap: 3
+           });
+           
+        currentY = doc.y + 15;
+      }
+      
+      // Obtener usuarios y tareas
+      try {
+        const usuarios = await hitoModel.getHitoUsers(hito.id);
+        const tareas = await hitoModel.getHitoTasks(hito.id);
+        
+        // Usuarios
+        if (usuarios && usuarios.length > 0) {
+          doc.fontSize(12)
+             .fillColor(colors.primary)
+             .font('Helvetica-Bold')
+             .text('USUARIOS:', margin, currentY);
+             
+          currentY += 15;
+          
+          usuarios.forEach(usuario => {
+            doc.fontSize(9)
+               .fillColor(colors.text)
+               .font('Helvetica')
+               .text(`• ${usuario.nombre} (${usuario.email}) - ${usuario.rol}`, margin + 10, currentY);
+            currentY += 12;
+          });
+          
+          currentY += 10;
+        }
+        
+        // Tareas
+        if (tareas && tareas.length > 0) {
+          doc.fontSize(12)
+             .fillColor(colors.primary)
+             .font('Helvetica-Bold')
+             .text('TAREAS:', margin, currentY);
+             
+          currentY += 15;
+          
+          tareas.forEach(tarea => {
+            doc.fontSize(9)
+               .fillColor(colors.text)
+               .font('Helvetica')
+               .text(`• ${tarea.nombre_tarea} - ${tarea.estado}`, margin + 10, currentY);
+            currentY += 12;
+          });
+        }
+      } catch (error) {
+        console.error(`Error al obtener detalles del hito ${hito.id}:`, error);
+      }
+    };
+
+    // 🚀 GENERAR EL PDF
+    
+    // Portada
+    addCoverPage();
+    
+    // Agregar cada hito
+    for (let i = 0; i < hitos.length; i++) {
+      if (i === 0) {
+        doc.addPage();
+      }
+      await addHitoToPDF(hitos[i], i);
+    }
+    
+    // Finalizar documento
+    doc.end();
+
+    // Registrar evento
+    try {
+      await logEvento({
+        tipo_evento: 'EXPORTACIÓN_MASIVA',
+        descripcion: `Exportación completa de ${hitos.length} hitos a PDF`,
+        id_usuario: req.user?.id
+      });
+    } catch (logError) {
+      console.error('⚠️ Error al registrar evento:', logError.message);
+    }
+
+    // Esperar a que se complete la escritura del archivo
+    stream.on('finish', () => {
+      console.log('✅ PDF completo generado exitosamente');
+      
+      // Enviar archivo al cliente
+      res.download(filePath, fileName, (err) => {
+        if (err) {
+          console.error('Error al enviar el archivo:', err);
+          return res.status(500).json({
+            success: false,
+            message: 'Error al generar el PDF',
+            error: err.message
+          });
+        }
+        
+        // Eliminar archivo temporal después de enviarlo
+        fs.unlink(filePath, (unlinkErr) => {
+          if (unlinkErr) {
+            console.error('Error al eliminar archivo temporal:', unlinkErr);
+          }
+        });
+      });
+    });
+
+    // Manejar errores
+    stream.on('error', (err) => {
+      console.error('Error al escribir el archivo PDF:', err);
+      res.status(500).json({
+        success: false,
+        message: 'Error al generar el PDF',
+        error: err.message
+      });
+    });
+
+  } catch (error) {
+    console.error('❌ Error al exportar todos los hitos a PDF:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al exportar los hitos a PDF',
+      error: error.message
+    });
+  }
+};
+
+// 📋 EXPORTAR TODOS LOS HITOS A PDF - REPORTE CONSOLIDADO
+exports.exportAllHitosToPDF = async (req, res) => {
+  try {
+    console.log('📋 Iniciando exportación de todos los hitos...');
+
+    // Obtener todos los hitos ordenados cronológicamente
+    const hitos = await hitoModel.getHitos({});
+    
+    if (!hitos || hitos.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'No hay hitos disponibles para exportar' 
+      });
+    }
+
+    console.log(`📊 Exportando ${hitos.length} hitos...`);
+
+    // Crear directorio temporal si no existe
+    const tempDir = path.join(__dirname, '../temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    // Crear nombre de archivo único
+    const fileName = `reporte_hitos_completo_${Date.now()}.pdf`;
+    const filePath = path.join(tempDir, fileName);
+
+    // 🎨 CONFIGURACIÓN DEL DOCUMENTO
+    const doc = new PDFDocument({ 
+      margin: 50,
+      size: 'A4',
+      info: {
+        Title: 'Reporte Completo de Hitos',
+        Author: 'Sistema de Gestión de Hitos',
+        Subject: 'Informe consolidado de todos los hitos',
+        Creator: 'Bitácora System',
+        Producer: 'PDFKit'
+      }
+    });
+    
+    const stream = fs.createWriteStream(filePath);
+    doc.pipe(stream);
+
+    // 🎨 COLORES Y ESTILOS (reutilizando los del individual)
+    const colors = {
+      primary: '#1e293b',
+      secondary: '#64748b',
+      accent: '#334155',
+      text: '#000000',
+      lightGray: '#f8fafc',
+      darkGray: '#475569',
+      success: '#16a34a',
+      warning: '#eab308',
+      danger: '#dc2626'
+    };
+
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    const margin = 50;
+    const contentWidth = pageWidth - (margin * 2);
+
+    // 🖼️ FUNCIÓN PARA LOGO (reutilizada)
+    const addLogo = () => {
+      const logoPath = path.join(__dirname, '../assets/logo.png');
+      
+      try {
+        if (fs.existsSync(logoPath)) {
+          doc.image(logoPath, margin, margin, { width: 50, height: 50 });
+        } else {
+          doc.fontSize(14)
+             .fillColor(colors.primary)
+             .font('Helvetica-Bold')
+             .text('TASKMANAGER', margin, margin + 15)
+             .fontSize(8)
+             .fillColor(colors.secondary)
+             .font('Helvetica')
+             .text('Sistema de Gestión', margin, margin + 35);
+        }
+      } catch (error) {
+        doc.fontSize(14)
+           .fillColor(colors.primary)
+           .font('Helvetica-Bold')
+           .text('TASKMANAGER', margin, margin + 15)
+           .fontSize(8)
+           .fillColor(colors.secondary)
+           .font('Helvetica')
+           .text('Sistema de Gestión', margin, margin + 35);
+      }
+    };
+
+    // 🎨 PORTADA DEL REPORTE
+    const addCoverPage = () => {
+      addLogo();
+      
+      // Título principal
+      doc.fontSize(28)
+         .fillColor(colors.primary)
+         .font('Helvetica-Bold')
+         .text('REPORTE COMPLETO', margin, 150, { align: 'center' });
+         
+      doc.fontSize(24)
+         .fillColor(colors.darkGray)
+         .text('DE HITOS', margin, 185, { align: 'center' });
+      
+      // Información del reporte
+      const reportInfo = [
+        `Total de Hitos: ${hitos.length}`,
+        `Fecha de generación: ${new Date().toLocaleDateString('es-ES', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })}`,
+        `Hora: ${new Date().toLocaleTimeString('es-ES')}`
+      ];
+      
+      let infoY = 280;
+      reportInfo.forEach(info => {
+        doc.fontSize(12)
+           .fillColor(colors.secondary)
+           .font('Helvetica')
+           .text(info, margin, infoY, { align: 'center' });
+        infoY += 25;
+      });
+      
+      // Estadísticas rápidas
+      const stats = getHitosStats(hitos);
+      
+      doc.fontSize(16)
+         .fillColor(colors.primary)
+         .font('Helvetica-Bold')
+         .text('RESUMEN EJECUTIVO', margin, 400, { align: 'center' });
+      
+      let statsY = 430;
+      Object.entries(stats).forEach(([key, value]) => {
+        doc.fontSize(11)
+           .fillColor(colors.text)
+           .font('Helvetica')
+           .text(`${key}: ${value}`, margin + 50, statsY);
+        statsY += 20;
+      });
+    };
+
+    // 📊 FUNCIÓN PARA CALCULAR ESTADÍSTICAS
+    const getHitosStats = (hitosData) => {
+      const stats = {
+        'Hitos activos': hitosData.filter(h => h.fecha_fin && new Date(h.fecha_fin) >= new Date()).length,
+        'Hitos completados': hitosData.filter(h => h.fecha_fin && new Date(h.fecha_fin) < new Date()).length,
+        'Hitos sin fecha fin': hitosData.filter(h => !h.fecha_fin).length,
+        'Proyectos origen': [...new Set(hitosData.map(h => h.proyecto_origen_nombre).filter(Boolean))].length
+      };
+      return stats;
+    };
+
+    // 🎨 FUNCIÓN PARA AGREGAR HITO AL PDF
+    const addHitoToPDF = async (hito, index) => {
+      // Nueva página para cada hito (excepto el primero después de la portada)
+      if (index > 0) {
+        doc.addPage();
+      }
+      
+      let currentY = margin;
+      
+      // Encabezado del hito
+      doc.fontSize(18)
+         .fillColor(colors.primary)
+         .font('Helvetica-Bold')
+         .text(`${index + 1}. ${hito.nombre}`, margin, currentY);
+      
+      currentY += 35;
+      
+      // ID y fechas
+      doc.fontSize(10)
+         .fillColor(colors.secondary)
+         .font('Helvetica')
+         .text(`ID: #${hito.id} | Creado: ${new Date(hito.fecha_creacion).toLocaleDateString('es-ES')}`, pageWidth - margin - 200, currentY - 25, { align: 'right' });
+      
+      // Información básica en cajas
+      const infoBoxes = [
+        { label: 'Fecha Inicio', value: hito.fecha_inicio ? new Date(hito.fecha_inicio).toLocaleDateString('es-ES') : 'No especificada' },
+        { label: 'Fecha Fin', value: hito.fecha_fin ? new Date(hito.fecha_fin).toLocaleDateString('es-ES') : 'No especificada' },
+        { label: 'Proyecto Origen', value: hito.proyecto_origen_nombre || 'Hito manual' }
+      ];
+      
+      const boxWidth = (contentWidth - 20) / 3;
+      infoBoxes.forEach((box, i) => {
+        const boxX = margin + (i * (boxWidth + 10));
+        
+        // Caja con fondo
+        doc.rect(boxX, currentY, boxWidth, 40)
+           .fillColor(colors.lightGray)
+           .fill();
+        
+        // Label
+        doc.fontSize(8)
+           .fillColor(colors.secondary)
+           .font('Helvetica-Bold')
+           .text(box.label, boxX + 5, currentY + 5);
+        
+        // Valor
+        doc.fontSize(9)
+           .fillColor(colors.text)
+           .font('Helvetica')
+           .text(box.value, boxX + 5, currentY + 20, {
+             width: boxWidth - 10,
+             ellipsis: true
+           });
+      });
+      
+      currentY += 60;
+      
+      // Descripción
+      if (hito.descripcion) {
+        doc.fontSize(12)
+           .fillColor(colors.primary)
+           .font('Helvetica-Bold')
+           .text('DESCRIPCIÓN', margin, currentY);
+        
+        currentY += 20;
+        
+        doc.fontSize(10)
+           .fillColor(colors.text)
+           .font('Helvetica')
+           .text(hito.descripcion, margin, currentY, {
+             width: contentWidth,
+             lineGap: 3
+           });
+        
+        currentY = doc.y + 20;
+      }
+      
+      // Impacto
+      if (hito.impacto) {
+        doc.fontSize(12)
+           .fillColor(colors.primary)
+           .font('Helvetica-Bold')
+           .text('IMPACTO', margin, currentY);
+        
+        currentY += 20;
+        
+        doc.fontSize(10)
+           .fillColor(colors.text)
+           .font('Helvetica')
+           .text(hito.impacto, margin, currentY, {
+             width: contentWidth,
+             lineGap: 3
+           });
+        
+        currentY = doc.y + 20;
+      }
+      
+      // Obtener usuarios y tareas del hito
+      try {
+        const usuarios = await hitoModel.getHitoUsers(hito.id);
+        const tareas = await hitoModel.getHitoTasks(hito.id);
+        
+        // Usuarios (si hay)
+        if (usuarios && usuarios.length > 0) {
+          doc.fontSize(12)
+             .fillColor(colors.primary)
+             .font('Helvetica-Bold')
+             .text('USUARIOS INVOLUCRADOS', margin, currentY);
+          
+          currentY += 20;
+          
+          usuarios.forEach(usuario => {
+            doc.fontSize(9)
+               .fillColor(colors.text)
+               .font('Helvetica')
+               .text(`• ${usuario.nombre} (${usuario.email}) - ${usuario.rol.toUpperCase()}`, margin + 10, currentY);
+            currentY += 15;
+          });
+          
+          currentY += 10;
+        }
+        
+        // Tareas (si hay)
+        if (tareas && tareas.length > 0) {
+          doc.fontSize(12)
+             .fillColor(colors.primary)
+             .font('Helvetica-Bold')
+             .text('TAREAS ASOCIADAS', margin, currentY);
+          
+          currentY += 20;
+          
+          tareas.forEach((tarea, i) => {
+            if (currentY > pageHeight - 100) {
+              doc.addPage();
+              currentY = margin;
+            }
+            
+            doc.fontSize(10)
+               .fillColor(colors.darkGray)
+               .font('Helvetica-Bold')
+               .text(`${i + 1}. ${tarea.nombre_tarea}`, margin + 10, currentY);
+            
+            currentY += 15;
+            
+            if (tarea.descripcion) {
+              doc.fontSize(9)
+                 .fillColor(colors.text)
+                 .font('Helvetica')
+                 .text(`   ${tarea.descripcion}`, margin + 10, currentY);
+              currentY += 12;
+            }
+            
+            doc.fontSize(8)
+               .fillColor(colors.secondary)
+               .font('Helvetica')
+               .text(`   Estado: ${tarea.estado} | ${tarea.fecha_inicio ? new Date(tarea.fecha_inicio).toLocaleDateString('es-ES') : 'Sin fecha'} - ${tarea.fecha_fin ? new Date(tarea.fecha_fin).toLocaleDateString('es-ES') : 'Sin fecha'}`, margin + 10, currentY);
+            
+            currentY += 20;
+          });
+        }
+      } catch (error) {
+        console.error(`Error al obtener detalles del hito ${hito.id}:`, error);
+      }
+      
+      // Línea separadora al final del hito
+      doc.strokeColor(colors.lightGray)
+         .lineWidth(1)
+         .moveTo(margin, pageHeight - margin - 30)
+         .lineTo(pageWidth - margin, pageHeight - margin - 30)
+         .stroke();
+      
+      // Pie de página
+      doc.fontSize(8)
+         .fillColor(colors.secondary)
+         .font('Helvetica')
+         .text(`Página ${doc.pageNumber} | Hito ${index + 1} de ${hitos.length}`, margin, pageHeight - margin - 15, { align: 'right' });
+    };
+
+    // 🚀 GENERAR EL PDF
+    
+    // Portada
+    addCoverPage();
+    
+    // Agregar cada hito
+    for (let i = 0; i < hitos.length; i++) {
+      doc.addPage();
+      await addHitoToPDF(hitos[i], i);
+    }
+    
+    // Finalizar documento
+    doc.end();
+
+    // Registrar evento
+    try {
+      await logEvento({
+        tipo_evento: 'EXPORTACIÓN_MASIVA',
+        descripcion: `Exportación completa de ${hitos.length} hitos a PDF`,
+        id_usuario: req.user?.id
+      });
+    } catch (logError) {
+      console.error('⚠️ Error al registrar evento:', logError.message);
+    }
+
+    // Esperar a que se complete la escritura del archivo
+    stream.on('finish', () => {
+      console.log('✅ PDF generado exitosamente');
+      
+      // Enviar archivo al cliente
+      res.download(filePath, fileName, (err) => {
+        if (err) {
+          console.error('Error al enviar el archivo:', err);
+          return res.status(500).json({
+            success: false,
+            message: 'Error al generar el PDF',
+            error: err.message
+          });
+        }
+        
+        // Eliminar archivo temporal después de enviarlo
+        fs.unlink(filePath, (unlinkErr) => {
+          if (unlinkErr) {
+            console.error('Error al eliminar archivo temporal:', unlinkErr);
+          }
+        });
+      });
+    });
+
+    // Manejar errores
+    stream.on('error', (err) => {
+      console.error('Error al escribir el archivo PDF:', err);
+      res.status(500).json({
+        success: false,
+        message: 'Error al generar el PDF',
+        error: err.message
+      });
+    });
+
+  } catch (error) {
+    console.error('❌ Error al exportar todos los hitos a PDF:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al exportar los hitos a PDF',
+      error: error.message
+    });
+  }
+};
+
     const hitos = await hitoModel.getHitos(filters);
 
     res.status(200).json({

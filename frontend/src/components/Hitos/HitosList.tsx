@@ -323,6 +323,21 @@ const HitosList: React.FC = () => {
     }
   };
 
+  // 🆕 NUEVA FUNCIÓN: Exportar todos los hitos a PDF
+  const handleExportAllPDF = async (): Promise<void> => {
+    try {
+      setMessage({ type: 'info', text: 'Generando PDF completo... Esto puede tomar unos momentos.' });
+      await hitoService.exportAllHitosToPDF();
+      setMessage({ type: 'success', text: 'Reporte completo de hitos generado correctamente' });
+    } catch (error: any) {
+      console.error('Error al exportar todos los hitos a PDF:', error);
+      setMessage({ 
+        type: 'danger', 
+        text: `Error al generar el reporte completo: ${error.response?.data?.message || error.message}` 
+      });
+    }
+  };
+
   // Manejar cambio en filtros
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
@@ -379,6 +394,17 @@ const HitosList: React.FC = () => {
               >
                 <i className="bi bi-plus-lg me-1"></i>
                 Nuevo Hito
+              </Button>
+            </div>
+            <div>
+              <Button 
+                variant="success"
+                onClick={handleExportAllPDF}
+                disabled={loading || hitos.length === 0}
+                title="Exportar todos los hitos a PDF"
+              >
+                <i className="bi bi-file-earmark-pdf me-1"></i>
+                Exportar Todo a PDF
               </Button>
             </div>
           </div>

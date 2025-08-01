@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const hitoController = require('../controllers/hitoController');
+const hitoExportController = require('../controllers/hitoExportAll'); // Nuevo controlador
 const { check } = require('express-validator');
 const auth = require('../middleware/authMiddleware');
 
@@ -71,5 +72,10 @@ router.post('/:id/tareas', [
 // @desc    Exportar hito a PDF
 // @access  Private
 router.get('/:id/exportar', hitoController.exportHitoToPDF);
+
+// @route   GET /api/hitos/exportar/todos
+// @desc    Exportar todos los hitos a PDF
+// @access  Private
+router.get('/exportar/todos', hitoExportController.exportAllHitosToPDF);
 
 module.exports = router;
