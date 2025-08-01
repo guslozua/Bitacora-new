@@ -21,7 +21,7 @@ const ThemedFooter: React.FC = () => {
             src="/logoxsideb.png"
             alt="ATPC Logo"
             style={{
-              height: '40px',
+              height: '35px',
               marginRight: '10px',
               objectFit: 'contain'
             }}
