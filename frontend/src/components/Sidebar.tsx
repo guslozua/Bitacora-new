@@ -181,7 +181,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     { id: 'placas', icon: 'bi-clipboard', label: 'Placas', route: '/placasdash' },
     { id: 'usuarios', icon: 'bi-people-fill', label: 'ABM Usuarios', route: '/abmdashboard' },
     { id: 'itracker', icon: 'bi-circle', label: 'iTracker', route: '/itrackerdash' },
-    { id: 'tabulaciones', icon: 'bi-table', label: 'Tabulaciones', route: '/tabulacionesdash' },
+    { id: 'tabulaciones', icon: 'bi-grid-3x3-gap', label: 'Tabulaciones', route: '/tabulacionesdash' },
     { id: 'sessionanalysis', icon: 'bi-graph-up-arrow', label: 'Análisis de Sesiones', route: '/session-analysis' },
     { id: 'aternity', icon: 'bi-speedometer2', label: 'Monitoreo Aternity', route: '/aternity' },
     //{ id: 'incidencias', icon: 'bi-shield-exclamation', label: 'Inc. en Guardia', route: '/incidencias' },

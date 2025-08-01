@@ -106,7 +106,7 @@ const AdminPanel: React.FC = () => {
     { id: 'placas', label: 'Placas', icon: 'bi-clipboard', color: '#f1c40f' },
     { id: 'usuarios', label: 'ABM Usuarios', icon: 'bi-people-fill', color: '#e74c3c' },
     { id: 'itracker', label: 'iTracker', icon: 'bi-circle', color: '#3498db' },
-    { id: 'tabulaciones', label: 'Tabulaciones', icon: 'bi-table', color: '#2ecc71' },
+    { id: 'tabulaciones', label: 'Tabulaciones', icon: 'bi-grid-3x3-gap', color: '#2ecc71' },
     { id: 'sessionanalysis', label: 'Análisis de Sesiones', icon: 'bi-graph-up-arrow', color: '#ff6b6b' },
     { id: 'aternity', label: 'Monitoreo Aternity', icon: 'bi-speedometer2', color: '#17a2b8' },
     { id: 'contactos', label: 'Agenda de Contactos', icon: 'bi-telephone-fill', color: '#c30b4e' },
@@ -780,7 +780,7 @@ const AdminPanel: React.FC = () => {
                           height: '3.5rem',
                           padding: 0
                         }}>
-                        <i className="bi bi-table fs-3 text-info"></i>
+                        <i className="bi bi-grid-3x3-gap fs-3 text-info"></i>
                       </div>
                       <span className="fw-medium">Subir archivos Tabulaciones</span>
                     </Button>
@@ -1132,7 +1132,7 @@ const AdminPanel: React.FC = () => {
                   height: '2.5rem',
                   padding: 0
                 }}>
-                <i className="bi bi-table text-info"></i>
+                <i className="bi bi-grid-3x3-gap text-info"></i>
               </div>
               Carga de Tabulaciones
             </Modal.Title>
