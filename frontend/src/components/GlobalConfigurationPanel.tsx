@@ -316,7 +316,7 @@ const GlobalConfigurationPanel: React.FC<GlobalConfigurationPanelProps> = ({ isD
                     className="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
                     style={{ width: '3rem', height: '3rem' }}
                   >
-                    <i className="bi bi-grid-3x3-gap fs-4 text-success"></i>
+                    <i className="bi bi-layout-wtf fs-4 text-success"></i>
                   </div>
                   <h6 className="fw-bold mb-2">Secciones Dashboard</h6>
                   <p className="small text-muted mb-3">
