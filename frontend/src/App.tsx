@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import { SidebarVisibilityProvider } from './services/SidebarVisibilityContext';
 import { ThemeProvider } from './context/ThemeContext'; // 🔥 NUEVO IMPORT
 import { DashboardKpiVisibilityProvider } from './services/DashboardKpiVisibilityContext';
@@ -85,6 +86,37 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element, allowedRoles }
       user.roles.some((role: string) => allowedRoles.includes(role));
     
     if (!hasRequiredRole) {
+      // Mostrar SweetAlert y luego redirigir
+      setTimeout(() => {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Acceso Denegado',
+          html: `
+            <div style="text-align: left; padding: 10px;">
+              <p><strong>No tienes permisos para acceder al Panel Administrativo</strong></p>
+              <br>
+              <p>Esta sección está restringida a usuarios con perfiles de:</p>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>👑 <strong>Administrador</strong></li>
+                <li>🔧 <strong>Super Administrador</strong></li>
+              </ul>
+              <br>
+              <p style="color: #666; font-size: 14px;">
+                💡 Si consideras que deberías tener acceso, contacta al administrador del sistema.
+              </p>
+            </div>
+          `,
+          showConfirmButton: false,
+          timer: 4000,
+          timerProgressBar: true,
+          allowEscapeKey: true,
+          allowOutsideClick: true,
+          customClass: {
+            popup: 'swal2-popup-simple'
+          }
+        });
+      }, 100);
+      
       return <Navigate to="/dashboard" replace />;
     }
   }
@@ -159,7 +191,7 @@ const App: React.FC = () => {
               <Route path="/itrackerdash" element={<ProtectedRoute element={<ItrackerDash />} />} />
               <Route path="/tabulaciones" element={<ProtectedRoute element={<TabulacionesUpload />} />} />
               <Route path="/tabulacionesdash" element={<ProtectedRoute element={<TabulacionesDash />} />} />
-              <Route path="/admin" element={<ProtectedRoute element={<AdminPanel />} />} />
+              <Route path="/admin" element={<ProtectedRoute element={<AdminPanel />} allowedRoles={['Admin', 'SuperAdmin']} />} />
               <Route path="/abmdashboard" element={<ProtectedRoute element={<AbmDashboard />} />} />
               <Route path="/abm" element={<ProtectedRoute element={<AbmUpload />} />} />
               <Route path="/placasdash" element={<ProtectedRoute element={<PlacasDash />} />} />

@@ -1548,3 +1548,58 @@
   --bs-table-border-color: #495057 !important;
   --bs-table-color: #ffffff !important;
 }
+
+/* ======================== */
+/* 🚨 ESTILOS PARA SWEETALERT2 PERSONALIZADO */
+/* ======================== */
+
+/* Personalización SOLO para el popup de acceso denegado */
+.swal2-popup.swal2-popup-simple {
+  border-radius: 10px !important;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15) !important;
+  border: none !important;
+  font-family: inherit !important;
+}
+
+/* Icono de warning SOLO para acceso denegado */
+.swal2-popup.swal2-popup-simple .swal2-icon.swal2-warning {
+  border-color: #ffc107 !important;
+  color: #ffc107 !important;
+  border-width: 3px !important;
+}
+
+.swal2-popup.swal2-popup-simple .swal2-icon.swal2-warning .swal2-icon-content {
+  color: #ffc107 !important;
+  font-weight: bold !important;
+}
+
+/* Título SOLO para acceso denegado */
+.swal2-popup.swal2-popup-simple .swal2-title {
+  color: #dc3545 !important;
+  font-weight: 600 !important;
+  font-size: 1.4rem !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Contenido HTML SOLO para acceso denegado */
+.swal2-popup.swal2-popup-simple .swal2-html-container {
+  margin: 1rem 0 !important;
+  line-height: 1.5 !important;
+  text-align: left !important;
+}
+
+/* Lista SOLO para acceso denegado */
+.swal2-popup.swal2-popup-simple .swal2-html-container ul {
+  text-align: left !important;
+  display: inline-block !important;
+}
+
+.swal2-popup.swal2-popup-simple .swal2-html-container li {
+  margin: 5px 0 !important;
+  color: #333 !important;
+}
+
+/* Barra de progreso del timer SOLO para acceso denegado */
+.swal2-popup.swal2-popup-simple .swal2-timer-progress-bar {
+  background: #007bff !important;
+}
