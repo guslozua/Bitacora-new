@@ -232,6 +232,22 @@ const AdminRolesPage: React.FC = () => {
                   Volver
                 </Button>
                 <Button 
+                  variant="outline-info"
+                  className="me-2"
+                  onClick={() => navigate('/admin/permissions')}
+                >
+                  <i className="bi bi-key-fill me-1"></i>
+                  Permisos
+                </Button>
+                <Button 
+                  variant="outline-success"
+                  className="me-2"
+                  onClick={() => navigate('/admin/permissions/matrix')}
+                >
+                  <i className="bi bi-grid-3x3-gap-fill me-1"></i>
+                  Matriz
+                </Button>
+                <Button 
                   variant="primary"
                   onClick={handleCreateRole}
                 >

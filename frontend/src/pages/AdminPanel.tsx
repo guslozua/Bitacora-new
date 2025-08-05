@@ -762,6 +762,59 @@ const AdminPanel: React.FC = () => {
                   </Card.Body>
                 </Card>
               </Col>
+              
+              {/* 🔑 NUEVAS TARJETAS PARA GESTIÓN DE PERMISOS */}
+              <Col md={4} className="mb-3">
+                <Card className="h-100 border-0 shadow-sm">
+                  <Card.Body className="p-0">
+                    <Button
+                      variant="light"
+                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
+                      onClick={() => navigate('/admin/permissions')}
+                      style={{
+                        backgroundColor: isDarkMode ? '#495057' : '#f8f9fa',
+                        color: themeColors.textPrimary
+                      }}
+                    >
+                      <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                        style={{
+                          width: '3.5rem',
+                          height: '3.5rem',
+                          padding: 0
+                        }}>
+                        <i className="bi bi-key-fill fs-3 text-info"></i>
+                      </div>
+                      <span className="fw-medium">Gestión de Permisos</span>
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
+              
+              <Col md={4} className="mb-3">
+                <Card className="h-100 border-0 shadow-sm">
+                  <Card.Body className="p-0">
+                    <Button
+                      variant="light"
+                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
+                      onClick={() => navigate('/admin/permissions/matrix')}
+                      style={{
+                        backgroundColor: isDarkMode ? '#495057' : '#f8f9fa',
+                        color: themeColors.textPrimary
+                      }}
+                    >
+                      <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                        style={{
+                          width: '3.5rem',
+                          height: '3.5rem',
+                          padding: 0
+                        }}>
+                        <i className="bi bi-grid-3x3-gap-fill fs-3 text-success"></i>
+                      </div>
+                      <span className="fw-medium">Matriz de Permisos</span>
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
               <Col md={4} className="mb-3">
                 <Card className="h-100 border-0 shadow-sm">
                   <Card.Body className="p-0">

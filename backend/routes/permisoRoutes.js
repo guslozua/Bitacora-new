@@ -24,12 +24,18 @@ router.put('/:id', updatePermiso);
 router.delete('/:id', deletePermiso);
 
 // Rutas para permisos por categoría
+router.get('/by-category', getPermisosByCategoria);
+
+// Rutas para permisos de roles (compatible con frontend)
+router.get('/role/:id', getPermisosPorRol);
+
+// Rutas para asignar/quitar permisos (compatible con frontend)
+router.post('/assign', asignarPermisoARol);
+router.delete('/remove', quitarPermisoDeRol);
+
+// Mantener rutas legacy por compatibilidad
 router.get('/categoria', getPermisosByCategoria);
-
-// Rutas para permisos de roles
 router.get('/rol/:id', getPermisosPorRol);
-
-// Rutas para asignar/quitar permisos (individuales)
 router.post('/asignar', asignarPermisoARol);
 router.delete('/quitar', quitarPermisoDeRol);
 

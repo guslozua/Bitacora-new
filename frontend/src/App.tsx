@@ -49,6 +49,8 @@ import ScrollToTop from './components/ScrollToTop';
 import AdminUsersDashboard from './pages/AdminUsersDashboard';
 import AdminRolesPage from './pages/AdminRolesPage';
 import RolePermissionsPage from './pages/RolePermissionsPage';
+import AdminPermissionsPage from './pages/AdminPermissionsPage';
+import RolePermissionMatrixPage from './pages/RolePermissionMatrixPage';
 import UserDetail from './components/users/UserDetail';
 import UserForm from './components/users/UserForm';
 
@@ -255,6 +257,17 @@ const App: React.FC = () => {
                 path="/admin/roles/:roleId/permissions" 
                 element={<ProtectedRoute element={<RolePermissionsPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
               />
+              
+              {/* 🔑 NUEVAS RUTAS PARA GESTIÓN DE PERMISOS */}
+              <Route 
+                path="/admin/permissions" 
+                element={<ProtectedRoute element={<AdminPermissionsPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+              />
+              <Route 
+                path="/admin/permissions/matrix" 
+                element={<ProtectedRoute element={<RolePermissionMatrixPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+              />
+              
               <Route 
                 path="/admin/users/new" 
                 element={<ProtectedRoute element={<UserForm />} allowedRoles={['Admin', 'SuperAdmin']} />} 

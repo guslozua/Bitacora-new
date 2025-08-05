@@ -1,20 +1,16 @@
 // src/pages/RolePermissionsPage.tsx
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Form, Spinner, Alert, Badge } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Form, Spinner, Alert, Badge, ButtonGroup } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import LightFooter from '../components/LightFooter';
 import { isAuthenticated } from '../services/authService';
+import { fetchAllRoles, Role, assignPermissionsToRole } from '../services/roleService';
 import { 
-  Role, 
-  Permission,
-  fetchAllPermissions, 
-  getRolePermissions, 
-  assignPermissionsToRole,
-  fetchAllRoles,
-  groupPermissionsByCategory,
-  formatCategoryName
-} from '../services/roleService';
+  fetchAllPermissions,
+  getPermissionsByRole,
+  Permission
+} from '../services/permissionService';
 
 const RolePermissionsPage: React.FC = () => {
   const { roleId } = useParams<{ roleId: string }>();
@@ -25,6 +21,8 @@ const RolePermissionsPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,7 +44,7 @@ const RolePermissionsPage: React.FC = () => {
       const [rolesData, allPermissionsData, rolePermissionsData] = await Promise.all([
         fetchAllRoles(),
         fetchAllPermissions(),
-        getRolePermissions(Number(roleId))
+        getPermissionsByRole(Number(roleId))
       ]);
 
       // Encontrar el rol actual
@@ -56,18 +54,22 @@ const RolePermissionsPage: React.FC = () => {
       }
 
       setRole(currentRole);
-      setAllPermissions(allPermissionsData);
-      setRolePermissions(rolePermissionsData);
+      setAllPermissions(allPermissionsData || []);
+      setRolePermissions(rolePermissionsData || []);
       
-      // Inicializar permisos seleccionados
-      const selectedIds = new Set(rolePermissionsData.map(p => p.id));
-      setSelectedPermissions(selectedIds);
+      // Establecer permisos seleccionados
+      const currentPermissionIds = new Set(rolePermissionsData.map(p => p.id));
+      setSelectedPermissions(currentPermissionIds);
 
     } catch (err: any) {
-      setError(err.message || 'Error al cargar datos');
+      setError(err.message || 'Error al cargar los datos');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBack = () => {
+    navigate('/admin/roles');
   };
 
   const handlePermissionToggle = (permissionId: number) => {
@@ -80,57 +82,135 @@ const RolePermissionsPage: React.FC = () => {
     setSelectedPermissions(newSelected);
   };
 
-  const handleSelectAll = (permissions: Permission[]) => {
+  const handleSelectAll = () => {
+    const filteredPermissions = getFilteredPermissions();
     const newSelected = new Set(selectedPermissions);
-    permissions.forEach(p => newSelected.add(p.id));
+    filteredPermissions.forEach(permission => {
+      newSelected.add(permission.id);
+    });
     setSelectedPermissions(newSelected);
   };
 
-  const handleDeselectAll = (permissions: Permission[]) => {
+  const handleDeselectAll = () => {
+    const filteredPermissions = getFilteredPermissions();
     const newSelected = new Set(selectedPermissions);
-    permissions.forEach(p => newSelected.delete(p.id));
+    filteredPermissions.forEach(permission => {
+      newSelected.delete(permission.id);
+    });
     setSelectedPermissions(newSelected);
   };
 
-  const handleSave = async () => {
+  const handleSavePermissions = async () => {
+    if (!role) return;
+
+    const result = await Swal.fire({
+      title: 'Guardar permisos',
+      html: `
+        <p>¿Confirmas los cambios en los permisos del rol <strong>"${role.nombre}"</strong>?</p>
+        <br>
+        <div class="text-start">
+          <p><strong>Permisos seleccionados:</strong> ${selectedPermissions.size}</p>
+          <p><strong>Cambios:</strong> ${Math.abs(selectedPermissions.size - rolePermissions.length)}</p>
+        </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#0d6efd',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, guardar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
       setSaving(true);
       
+      // Convertir Set a Array
       const permissionIds = Array.from(selectedPermissions);
-      await assignPermissionsToRole(Number(roleId), permissionIds);
-
+      
+      await assignPermissionsToRole(role.id, permissionIds);
+      
+      // Recargar datos para mostrar cambios
+      await loadData();
+      
       Swal.fire({
         icon: 'success',
         title: '¡Permisos actualizados!',
-        text: 'Los permisos del rol han sido actualizados correctamente',
+        text: 'Los permisos han sido asignados correctamente al rol',
         timer: 2000,
         showConfirmButton: false
       });
-
-      // Recargar permisos del rol
-      const updatedRolePermissions = await getRolePermissions(Number(roleId));
-      setRolePermissions(updatedRolePermissions);
-
+      
     } catch (err: any) {
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: err.message || 'Error al actualizar permisos'
+        text: err.message || 'Error al actualizar los permisos'
       });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleBack = () => {
-    navigate('/admin/roles');
+  const getBadgeColor = (categoria: string) => {
+    const colors = {
+      'sistema': 'danger',
+      'proyectos': 'primary',
+      'tareas': 'success',
+      'subtareas': 'info',
+      'informes': 'warning',
+      'usuarios': 'secondary',
+      'configuracion': 'dark',
+      'general': 'light'
+    };
+    return colors[categoria as keyof typeof colors] || 'secondary';
   };
 
-  const getChangesCount = () => {
-    const currentPermissionIds = new Set(rolePermissions.map(p => p.id));
-    const added = Array.from(selectedPermissions).filter(id => !currentPermissionIds.has(id));
-    const removed = Array.from(currentPermissionIds).filter(id => !selectedPermissions.has(id));
-    return added.length + removed.length;
+  const getCategoryIcon = (categoria: string) => {
+    const icons = {
+      'sistema': 'bi-gear-fill',
+      'proyectos': 'bi-kanban-fill', 
+      'tareas': 'bi-check2-square',
+      'subtareas': 'bi-list-task',
+      'informes': 'bi-file-earmark-text',
+      'usuarios': 'bi-people-fill',
+      'configuracion': 'bi-sliders',
+      'general': 'bi-collection'
+    };
+    return icons[categoria as keyof typeof icons] || 'bi-shield';
+  };
+
+  const getFilteredPermissions = () => {
+    return allPermissions.filter(permission => {
+      const matchesSearch = permission.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           permission.descripcion?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || permission.categoria === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  };
+
+  const groupPermissionsByCategory = (permissions: Permission[]) => {
+    const grouped = permissions.reduce((acc, permission) => {
+      if (!acc[permission.categoria]) {
+        acc[permission.categoria] = [];
+      }
+      acc[permission.categoria].push(permission);
+      return acc;
+    }, {} as Record<string, Permission[]>);
+    
+    return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b));
+  };
+
+  const getAvailableCategories = () => {
+    const categories = new Set(allPermissions.map(p => p.categoria));
+    return Array.from(categories).sort();
+  };
+
+  const hasChanges = () => {
+    const currentIds = new Set(rolePermissions.map(p => p.id));
+    return currentIds.size !== selectedPermissions.size || 
+           !Array.from(currentIds).every(id => selectedPermissions.has(id));
   };
 
   if (loading) {
@@ -143,23 +223,20 @@ const RolePermissionsPage: React.FC = () => {
     );
   }
 
-  if (error || !role) {
+  if (!role) {
     return (
       <Container fluid className="py-4">
         <Alert variant="danger">
           <i className="bi bi-exclamation-triangle me-2"></i>
-          {error || 'Rol no encontrado'}
+          Rol no encontrado
         </Alert>
-        <Button variant="secondary" onClick={handleBack}>
-          <i className="bi bi-arrow-left me-1"></i>
-          Volver a Roles
-        </Button>
       </Container>
     );
   }
 
-  const groupedPermissions = groupPermissionsByCategory(allPermissions);
-  const changesCount = getChangesCount();
+  const filteredPermissions = getFilteredPermissions();
+  const groupedPermissions = groupPermissionsByCategory(filteredPermissions);
+  const availableCategories = getAvailableCategories();
 
   return (
     <>
@@ -170,11 +247,17 @@ const RolePermissionsPage: React.FC = () => {
             <div className="d-flex justify-content-between align-items-center mb-4">
               <div>
                 <h2 className="mb-1">
-                  <i className="bi bi-key me-2 text-warning"></i>
-                  Permisos del Rol
+                  <i className="bi bi-key-fill me-2 text-primary"></i>
+                  Permisos del Rol: {role.nombre}
                 </h2>
                 <p className="text-muted mb-0">
-                  Gestiona los permisos para el rol <strong>"{role.nombre}"</strong>
+                  Asigna o quita permisos específicos a este rol
+                  {role.is_default === 1 && (
+                    <Badge bg="warning" className="ms-2">
+                      <i className="bi bi-star-fill me-1"></i>
+                      Rol por defecto
+                    </Badge>
+                  )}
                 </p>
               </div>
               <div>
@@ -182,176 +265,229 @@ const RolePermissionsPage: React.FC = () => {
                   variant="outline-secondary" 
                   className="me-2"
                   onClick={handleBack}
-                  disabled={saving}
                 >
                   <i className="bi bi-arrow-left me-1"></i>
                   Volver
                 </Button>
-                {changesCount > 0 && (
-                  <Button 
-                    variant="success"
-                    onClick={handleSave}
-                    disabled={saving}
-                  >
-                    {saving ? (
-                      <>
-                        <Spinner as="span" animation="border" size="sm" className="me-2" />
-                        Guardando...
-                      </>
-                    ) : (
-                      <>
-                        <i className="bi bi-check-lg me-1"></i>
-                        Guardar Cambios ({changesCount})
-                      </>
-                    )}
-                  </Button>
-                )}
+                <Button 
+                  variant="success"
+                  onClick={handleSavePermissions}
+                  disabled={saving || !hasChanges()}
+                >
+                  {saving ? (
+                    <>
+                      <Spinner as="span" animation="border" size="sm" className="me-1" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-check-lg me-1"></i>
+                      Guardar Cambios
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
 
-            {/* Información del rol */}
-            <Card className="border-0 shadow-sm mb-4">
-              <Card.Body>
-                <Row>
-                  <Col md={8}>
-                    <h5 className="mb-2">
-                      <i className="bi bi-shield-check text-primary me-2"></i>
-                      {role.nombre}
-                      {role.is_default === 1 && (
-                        <Badge bg="warning" className="ms-2">
-                          <i className="bi bi-star-fill me-1"></i>
-                          Por defecto
-                        </Badge>
-                      )}
-                    </h5>
-                    <p className="text-muted mb-0">
-                      {role.descripcion || 'Sin descripción'}
-                    </p>
-                  </Col>
-                  <Col md={4} className="text-end">
-                    <div className="text-muted small">
-                      <div>Permisos actuales: <strong>{rolePermissions.length}</strong></div>
-                      <div>Permisos seleccionados: <strong>{selectedPermissions.size}</strong></div>
-                      {changesCount > 0 && (
-                        <div className="text-warning">
-                          <i className="bi bi-exclamation-triangle me-1"></i>
-                          {changesCount} cambio(s) pendiente(s)
-                        </div>
-                      )}
+            {error && (
+              <Alert variant="danger" className="mb-4">
+                <i className="bi bi-exclamation-triangle me-2"></i>
+                {error}
+              </Alert>
+            )}
+
+            {hasChanges() && (
+              <Alert variant="info" className="mb-4">
+                <i className="bi bi-info-circle me-2"></i>
+                Tienes cambios sin guardar. No olvides hacer clic en "Guardar Cambios" cuando termines.
+              </Alert>
+            )}
+
+            {/* Estadísticas */}
+            <Row className="mb-4">
+              <Col md={3}>
+                <Card className="border-0 shadow-sm">
+                  <Card.Body className="text-center">
+                    <div className="text-primary mb-2">
+                      <i className="bi bi-check-circle-fill" style={{ fontSize: '2rem' }}></i>
                     </div>
+                    <h4 className="mb-1">{selectedPermissions.size}</h4>
+                    <small className="text-muted">Seleccionados</small>
+                  </Card.Body>
+                </Card>
+              </Col>
+              <Col md={3}>
+                <Card className="border-0 shadow-sm">
+                  <Card.Body className="text-center">
+                    <div className="text-success mb-2">
+                      <i className="bi bi-key-fill" style={{ fontSize: '2rem' }}></i>
+                    </div>
+                    <h4 className="mb-1">{allPermissions.length}</h4>
+                    <small className="text-muted">Total Permisos</small>
+                  </Card.Body>
+                </Card>
+              </Col>
+              <Col md={3}>
+                <Card className="border-0 shadow-sm">
+                  <Card.Body className="text-center">
+                    <div className="text-info mb-2">
+                      <i className="bi bi-collection" style={{ fontSize: '2rem' }}></i>
+                    </div>
+                    <h4 className="mb-1">{availableCategories.length}</h4>
+                    <small className="text-muted">Categorías</small>
+                  </Card.Body>
+                </Card>
+              </Col>
+              <Col md={3}>
+                <Card className="border-0 shadow-sm">
+                  <Card.Body className="text-center">
+                    <div className="text-warning mb-2">
+                      <i className="bi bi-pencil-square" style={{ fontSize: '2rem' }}></i>
+                    </div>
+                    <h4 className="mb-1">
+                      {Math.abs(selectedPermissions.size - rolePermissions.length)}
+                    </h4>
+                    <small className="text-muted">Cambios</small>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
+
+            {/* Filtros */}
+            <Card className="border-0 shadow-sm mb-4">
+              <Card.Header className="bg-light border-0">
+                <h5 className="mb-0">
+                  <i className="bi bi-funnel me-2"></i>
+                  Filtros y Búsqueda
+                </h5>
+              </Card.Header>
+              <Card.Body>
+                <Row className="align-items-end">
+                  <Col md={4}>
+                    <Form.Group>
+                      <Form.Label><strong>Buscar permisos</strong></Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="Buscar por nombre o descripción..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <Form.Group>
+                      <Form.Label><strong>Filtrar por categoría</strong></Form.Label>
+                      <Form.Select
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                      >
+                        <option value="all">Todas las categorías</option>
+                        {availableCategories.map(category => (
+                          <option key={category} value={category}>
+                            {category.charAt(0).toUpperCase() + category.slice(1)}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <ButtonGroup className="w-100">
+                      <Button
+                        variant="outline-success"
+                        onClick={handleSelectAll}
+                        disabled={filteredPermissions.length === 0}
+                      >
+                        <i className="bi bi-check-all me-1"></i>
+                        Seleccionar Filtrados
+                      </Button>
+                      <Button
+                        variant="outline-danger"
+                        onClick={handleDeselectAll}
+                        disabled={filteredPermissions.length === 0}
+                      >
+                        <i className="bi bi-x-circle me-1"></i>
+                        Deseleccionar Filtrados
+                      </Button>
+                    </ButtonGroup>
                   </Col>
                 </Row>
               </Card.Body>
             </Card>
 
-            {/* Permisos por categoría */}
-            <Row>
-              {Object.entries(groupedPermissions).map(([category, permissions]) => {
-                const categorySelected = permissions.filter(p => selectedPermissions.has(p.id)).length;
-                const allSelected = categorySelected === permissions.length;
-                const someSelected = categorySelected > 0 && categorySelected < permissions.length;
-
-                return (
-                  <Col md={6} lg={4} key={category} className="mb-4">
-                    <Card className="border-0 shadow-sm h-100">
-                      <Card.Header className="bg-light border-0">
-                        <div className="d-flex justify-content-between align-items-center">
-                          <h6 className="mb-0">
-                            <i className="bi bi-folder me-2"></i>
-                            {formatCategoryName(category)}
-                          </h6>
-                          <div>
-                            <Button
-                              variant="outline-primary"
-                              size="sm"
-                              className="me-1"
-                              onClick={() => handleSelectAll(permissions)}
-                              disabled={allSelected}
-                            >
-                              Todos
-                            </Button>
-                            <Button
-                              variant="outline-secondary"
-                              size="sm"
-                              onClick={() => handleDeselectAll(permissions)}
-                              disabled={categorySelected === 0}
-                            >
-                              Ninguno
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="mt-2">
-                          <Badge 
-                            bg={allSelected ? 'success' : someSelected ? 'warning' : 'secondary'}
-                            className="small"
-                          >
-                            {categorySelected} de {permissions.length} seleccionados
-                          </Badge>
-                        </div>
-                      </Card.Header>
-                      <Card.Body className="p-3">
-                        {permissions.map((permission) => (
-                          <Form.Check
-                            key={permission.id}
-                            type="checkbox"
-                            id={`permission-${permission.id}`}
-                            label={
-                              <div>
-                                <div className="fw-medium">{permission.nombre}</div>
-                                {permission.descripcion && (
-                                  <small className="text-muted">
-                                    {permission.descripcion}
-                                  </small>
-                                )}
-                              </div>
-                            }
-                            checked={selectedPermissions.has(permission.id)}
-                            onChange={() => handlePermissionToggle(permission.id)}
-                            className="mb-2"
-                          />
-                        ))}
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                );
-              })}
-            </Row>
-
-            {/* Resumen de cambios */}
-            {changesCount > 0 && (
-              <Card className="border-warning bg-warning bg-opacity-10 mt-4">
-                <Card.Body>
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div>
-                      <h6 className="text-warning mb-1">
-                        <i className="bi bi-exclamation-triangle me-2"></i>
-                        Cambios Pendientes
-                      </h6>
-                      <p className="mb-0 small text-muted">
-                        Tienes {changesCount} cambio(s) sin guardar. Haz clic en "Guardar Cambios" para aplicarlos.
-                      </p>
-                    </div>
-                    <Button 
-                      variant="warning"
-                      onClick={handleSave}
-                      disabled={saving}
-                    >
-                      {saving ? (
-                        <>
-                          <Spinner as="span" animation="border" size="sm" className="me-2" />
-                          Guardando...
-                        </>
-                      ) : (
-                        <>
-                          <i className="bi bi-check-lg me-1"></i>
-                          Guardar Cambios
-                        </>
-                      )}
-                    </Button>
+            {/* Lista de permisos */}
+            <Card className="border-0 shadow-sm">
+              <Card.Header className="bg-light border-0">
+                <h5 className="mb-0">
+                  <i className="bi bi-list-check me-2"></i>
+                  Permisos Disponibles
+                  <Badge bg="secondary" className="ms-2">
+                    {filteredPermissions.length} de {allPermissions.length}
+                  </Badge>
+                </h5>
+              </Card.Header>
+              <Card.Body>
+                {filteredPermissions.length === 0 ? (
+                  <div className="text-center py-5">
+                    <i className="bi bi-search text-muted" style={{ fontSize: '3rem' }}></i>
+                    <p className="text-muted mt-3">
+                      {searchTerm || selectedCategory !== 'all' ? 
+                        'No hay permisos que coincidan con los filtros' : 
+                        'No hay permisos disponibles'
+                      }
+                    </p>
                   </div>
-                </Card.Body>
-              </Card>
-            )}
+                ) : (
+                  <div>
+                    {groupedPermissions.map(([categoria, permissions]) => (
+                      <div key={categoria} className="mb-4">
+                        <h6 className="text-uppercase text-muted mb-3 border-bottom pb-2">
+                          <i className={`${getCategoryIcon(categoria)} me-2`}></i>
+                          {categoria}
+                          <Badge bg={getBadgeColor(categoria)} className="ms-2">
+                            {permissions.length}
+                          </Badge>
+                        </h6>
+                        <Row>
+                          {permissions.map((permission) => {
+                            const isSelected = selectedPermissions.has(permission.id);
+                            return (
+                              <Col md={6} lg={4} key={permission.id} className="mb-3">
+                                <Card 
+                                  className={`h-100 cursor-pointer ${isSelected ? 'border-success bg-light' : 'border-light'}`}
+                                  onClick={() => handlePermissionToggle(permission.id)}
+                                  style={{ cursor: 'pointer' }}
+                                >
+                                  <Card.Body>
+                                    <div className="d-flex justify-content-between align-items-start mb-2">
+                                      <Form.Check
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => handlePermissionToggle(permission.id)}
+                                        className="me-2"
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
+                                      <div className="flex-grow-1">
+                                        <h6 className="mb-1">{permission.nombre}</h6>
+                                        <p className="text-muted small mb-0">
+                                          {permission.descripcion || 'Sin descripción'}
+                                        </p>
+                                      </div>
+                                      {isSelected && (
+                                        <i className="bi bi-check-circle-fill text-success"></i>
+                                      )}
+                                    </div>
+                                  </Card.Body>
+                                </Card>
+                              </Col>
+                            );
+                          })}
+                        </Row>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card.Body>
+            </Card>
           </Col>
         </Row>
       </Container>

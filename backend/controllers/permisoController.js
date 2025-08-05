@@ -146,23 +146,31 @@ const deletePermiso = async (req, res) => {
 // Obtener permisos por categoría
 const getPermisosByCategoria = async (req, res) => {
     try {
-        const [results] = await db.query(`
-            SELECT categoria, 
-                   GROUP_CONCAT(
-                       JSON_OBJECT(
-                           'id', id,
-                           'nombre', nombre,
-                           'descripcion', descripcion
-                       )
-                   ) as permisos
-            FROM Permisos 
-            GROUP BY categoria 
-            ORDER BY categoria
-        `);
+        // Obtener todos los permisos y agruparlos por categoría en JavaScript
+        const [results] = await db.query('SELECT * FROM Permisos ORDER BY categoria, nombre');
+        
+        // Agrupar por categoría
+        const groupedByCategory = results.reduce((acc, permiso) => {
+            if (!acc[permiso.categoria]) {
+                acc[permiso.categoria] = [];
+            }
+            acc[permiso.categoria].push({
+                id: permiso.id,
+                nombre: permiso.nombre,
+                descripcion: permiso.descripcion
+            });
+            return acc;
+        }, {});
+        
+        // Convertir a array de objetos
+        const categoryArray = Object.entries(groupedByCategory).map(([categoria, permisos]) => ({
+            categoria,
+            permisos
+        }));
         
         res.json({
             success: true,
-            data: results
+            data: categoryArray
         });
     } catch (err) {
         console.error('Error obteniendo permisos por categoría:', err);
