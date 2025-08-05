@@ -743,6 +743,31 @@ const AdminPanel: React.FC = () => {
                     <Button
                       variant="light"
                       className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
+                      onClick={() => navigate('/admin/roles')}
+                      style={{
+                        backgroundColor: isDarkMode ? '#495057' : '#f8f9fa',
+                        color: themeColors.textPrimary
+                      }}
+                    >
+                      <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                        style={{
+                          width: '3.5rem',
+                          height: '3.5rem',
+                          padding: 0
+                        }}>
+                        <i className="bi bi-shield-check fs-3 text-warning"></i>
+                      </div>
+                      <span className="fw-medium">Gestión de Roles</span>
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
+              <Col md={4} className="mb-3">
+                <Card className="h-100 border-0 shadow-sm">
+                  <Card.Body className="p-0">
+                    <Button
+                      variant="light"
+                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
                       onClick={() => setShowItrackerModal(true)}
                       style={{
                         backgroundColor: isDarkMode ? '#495057' : '#f8f9fa',

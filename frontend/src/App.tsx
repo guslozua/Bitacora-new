@@ -47,6 +47,8 @@ import ScrollToTop from './components/ScrollToTop';
 
 // Nuevos imports para el panel de administración de usuarios
 import AdminUsersDashboard from './pages/AdminUsersDashboard';
+import AdminRolesPage from './pages/AdminRolesPage';
+import RolePermissionsPage from './pages/RolePermissionsPage';
 import UserDetail from './components/users/UserDetail';
 import UserForm from './components/users/UserForm';
 
@@ -244,6 +246,14 @@ const App: React.FC = () => {
               <Route 
                 path="/admin/users" 
                 element={<ProtectedRoute element={<AdminUsersDashboard />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+              />
+              <Route 
+                path="/admin/roles" 
+                element={<ProtectedRoute element={<AdminRolesPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+              />
+              <Route 
+                path="/admin/roles/:roleId/permissions" 
+                element={<ProtectedRoute element={<RolePermissionsPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
               />
               <Route 
                 path="/admin/users/new" 

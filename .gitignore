@@ -1,58 +1,63 @@
-# Dependencias
+# Dependencies
 node_modules/
-**/node_modules/
-
-# Variables de entorno
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Production builds
+/frontend/build
+/frontend/dist
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Logs
 *.log
+logs/
 
-# Compilación y producción
-build/
-dist/
-*/build/
-*/dist/
-
-# IDEs y editores
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
-.DS_Store
-Thumbs.db
-
-# Archivos temporales
+# Temporary files
 *.tmp
-*.bak
-*~
-.backup
-.cache/
+*.temp
+temp/
 
-# Uploads (archivos subidos por usuarios)
-backend/uploads/*/
-!backend/uploads/.gitkeep
+# SQL temporary files (debugging)
+*fix*.sql
+*recreate*.sql
+*cleanup*.sql
+*check*.sql
+testDB.js
+aternity_server.js
+update-passwords.js
 
-# Archivos de base de datos locales
-*.sqlite
+# Uploads (archivos subidos por usuarios)  
+/backend/uploads/*
+!/backend/uploads/.gitkeep
+
+# Database backups
+*.sql.backup
 *.db
 
-# Testing y coverage
-/coverage
-**/coverage/
-
-# Dependencias específicas
-.pnp
-.pnp.js
-
-# Archivos de sistema
+# OS generated files
 .DS_Store
-.AppleDouble
-.LSOverride
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+coverage/
+.nyc_output
+
+# Cache
+.cache/
+.parcel-cache/

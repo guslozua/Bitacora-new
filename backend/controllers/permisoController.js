@@ -1,37 +1,303 @@
 // controllers/permisoController.js
-const PermisoModel = require('../models/permisoModel');
+const db = require('../config/db');
 
-exports.getAllPermisos = (req, res) => {
-  PermisoModel.getAllPermisos((err, results) => {
-    if (err) return res.status(500).json({ message: 'Error al obtener permisos' });
-    res.json(results);
-  });
+// Obtener todos los permisos
+const getAllPermisos = async (req, res) => {
+    try {
+        const [results] = await db.query('SELECT * FROM Permisos ORDER BY categoria, nombre');
+        
+        res.json({
+            success: true,
+            data: results
+        });
+    } catch (err) {
+        console.error('Error obteniendo permisos:', err);
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Error obteniendo permisos', 
+            error: err.message 
+        });
+    }
 };
 
-exports.createPermiso = (req, res) => {
-  const { nombre } = req.body;
-  if (!nombre) return res.status(400).json({ message: 'Nombre de permiso requerido' });
-
-  PermisoModel.createPermiso(nombre, (err, result) => {
-    if (err) return res.status(500).json({ message: 'Error al crear permiso' });
-    res.json({ message: 'Permiso creado', id: result.insertId });
-  });
+// Crear un nuevo permiso
+const createPermiso = async (req, res) => {
+    const { nombre, descripcion = '', categoria = 'general' } = req.body;
+    
+    if (!nombre) {
+        return res.status(400).json({
+            success: false,
+            message: 'El nombre del permiso es requerido'
+        });
+    }
+    
+    try {
+        // Verificar si ya existe un permiso con ese nombre
+        const [existingPermisos] = await db.query('SELECT id FROM Permisos WHERE nombre = ?', [nombre]);
+        
+        if (existingPermisos.length > 0) {
+            return res.status(409).json({
+                success: false,
+                message: 'Ya existe un permiso con ese nombre'
+            });
+        }
+        
+        const [result] = await db.query(
+            'INSERT INTO Permisos (nombre, descripcion, categoria) VALUES (?, ?, ?)',
+            [nombre, descripcion, categoria]
+        );
+        
+        res.status(201).json({
+            success: true,
+            message: 'Permiso creado correctamente',
+            permisoId: result.insertId
+        });
+    } catch (err) {
+        console.error('Error creando permiso:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Error creando permiso',
+            error: err.message
+        });
+    }
 };
 
-exports.asignarPermisoARol = (req, res) => {
-  const { id_rol, id_permiso } = req.body;
-  if (!id_rol || !id_permiso) return res.status(400).json({ message: 'Datos incompletos' });
-
-  PermisoModel.asignarPermisoARol(id_rol, id_permiso, (err) => {
-    if (err) return res.status(500).json({ message: 'Error al asignar permiso' });
-    res.json({ message: 'Permiso asignado al rol' });
-  });
+// Actualizar un permiso
+const updatePermiso = async (req, res) => {
+    const permisoId = req.params.id;
+    const { nombre, descripcion, categoria } = req.body;
+    
+    if (!nombre) {
+        return res.status(400).json({
+            success: false,
+            message: 'El nombre del permiso es requerido'
+        });
+    }
+    
+    try {
+        // Verificar si ya existe un permiso con ese nombre (excepto el actual)
+        const [existingPermisos] = await db.query(
+            'SELECT id FROM Permisos WHERE nombre = ? AND id != ?',
+            [nombre, permisoId]
+        );
+        
+        if (existingPermisos.length > 0) {
+            return res.status(409).json({
+                success: false,
+                message: 'Ya existe otro permiso con ese nombre'
+            });
+        }
+        
+        // Actualizar el permiso
+        await db.query(
+            'UPDATE Permisos SET nombre = ?, descripcion = ?, categoria = ? WHERE id = ?',
+            [nombre, descripcion, categoria, permisoId]
+        );
+        
+        res.json({
+            success: true,
+            message: 'Permiso actualizado correctamente'
+        });
+    } catch (err) {
+        console.error('Error actualizando permiso:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Error actualizando permiso',
+            error: err.message
+        });
+    }
 };
 
-exports.getPermisosPorRol = (req, res) => {
-  const { id } = req.params;
-  PermisoModel.getPermisosPorRol(id, (err, results) => {
-    if (err) return res.status(500).json({ message: 'Error al obtener permisos del rol' });
-    res.json(results);
-  });
+// Eliminar un permiso
+const deletePermiso = async (req, res) => {
+    const permisoId = req.params.id;
+    
+    try {
+        // Verificar si hay roles con este permiso
+        const [rolesWithPermiso] = await db.query(
+            'SELECT COUNT(*) as count FROM rol_permiso WHERE id_permiso = ?',
+            [permisoId]
+        );
+        
+        if (rolesWithPermiso[0].count > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `No se puede eliminar el permiso porque está asignado a ${rolesWithPermiso[0].count} rol(es)`
+            });
+        }
+        
+        // Eliminar el permiso
+        await db.query('DELETE FROM Permisos WHERE id = ?', [permisoId]);
+        
+        res.json({
+            success: true,
+            message: 'Permiso eliminado correctamente'
+        });
+    } catch (err) {
+        console.error('Error eliminando permiso:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Error eliminando permiso',
+            error: err.message
+        });
+    }
+};
+
+// Obtener permisos por categoría
+const getPermisosByCategoria = async (req, res) => {
+    try {
+        const [results] = await db.query(`
+            SELECT categoria, 
+                   GROUP_CONCAT(
+                       JSON_OBJECT(
+                           'id', id,
+                           'nombre', nombre,
+                           'descripcion', descripcion
+                       )
+                   ) as permisos
+            FROM Permisos 
+            GROUP BY categoria 
+            ORDER BY categoria
+        `);
+        
+        res.json({
+            success: true,
+            data: results
+        });
+    } catch (err) {
+        console.error('Error obteniendo permisos por categoría:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Error obteniendo permisos por categoría',
+            error: err.message
+        });
+    }
+};
+
+// Obtener permisos de un rol específico
+const getPermisosPorRol = async (req, res) => {
+    const roleId = req.params.id;
+    
+    try {
+        const [results] = await db.query(`
+            SELECT p.* 
+            FROM Permisos p
+            JOIN rol_permiso rp ON p.id = rp.id_permiso
+            WHERE rp.id_rol = ?
+            ORDER BY p.categoria, p.nombre
+        `, [roleId]);
+        
+        res.json({
+            success: true,
+            data: results
+        });
+    } catch (err) {
+        console.error('Error obteniendo permisos del rol:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Error obteniendo permisos del rol',
+            error: err.message
+        });
+    }
+};
+
+// Asignar permiso a rol (método individual - ya está en roleController como batch)
+const asignarPermisoARol = async (req, res) => {
+    const { id_rol, id_permiso } = req.body;
+    
+    if (!id_rol || !id_permiso) {
+        return res.status(400).json({
+            success: false,
+            message: 'id_rol e id_permiso son requeridos'
+        });
+    }
+    
+    try {
+        // Verificar si ya existe esta asignación
+        const [existingAssignments] = await db.query(
+            'SELECT id FROM rol_permiso WHERE id_rol = ? AND id_permiso = ?',
+            [id_rol, id_permiso]
+        );
+        
+        if (existingAssignments.length > 0) {
+            return res.status(409).json({
+                success: false,
+                message: 'El rol ya tiene este permiso asignado'
+            });
+        }
+        
+        // Asignar el permiso
+        await db.query(
+            'INSERT INTO rol_permiso (id_rol, id_permiso) VALUES (?, ?)',
+            [id_rol, id_permiso]
+        );
+        
+        res.json({
+            success: true,
+            message: 'Permiso asignado correctamente al rol'
+        });
+    } catch (err) {
+        console.error('Error asignando permiso:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Error asignando permiso',
+            error: err.message
+        });
+    }
+};
+
+// Quitar permiso de rol
+const quitarPermisoDeRol = async (req, res) => {
+    const { id_rol, id_permiso } = req.body;
+    
+    if (!id_rol || !id_permiso) {
+        return res.status(400).json({
+            success: false,
+            message: 'id_rol e id_permiso son requeridos'
+        });
+    }
+    
+    try {
+        // Verificar si existe la asignación
+        const [existingAssignments] = await db.query(
+            'SELECT id FROM rol_permiso WHERE id_rol = ? AND id_permiso = ?',
+            [id_rol, id_permiso]
+        );
+        
+        if (existingAssignments.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'El rol no tiene este permiso asignado'
+            });
+        }
+        
+        // Quitar el permiso
+        await db.query(
+            'DELETE FROM rol_permiso WHERE id_rol = ? AND id_permiso = ?',
+            [id_rol, id_permiso]
+        );
+        
+        res.json({
+            success: true,
+            message: 'Permiso eliminado correctamente del rol'
+        });
+    } catch (err) {
+        console.error('Error quitando permiso:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Error quitando permiso',
+            error: err.message
+        });
+    }
+};
+
+module.exports = {
+    getAllPermisos,
+    createPermiso,
+    updatePermiso,
+    deletePermiso,
+    getPermisosByCategoria,
+    getPermisosPorRol,
+    asignarPermisoARol,
+    quitarPermisoDeRol
 };

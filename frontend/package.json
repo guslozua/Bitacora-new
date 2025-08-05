@@ -68,6 +68,7 @@
   "engines": {
     "node": ">=16"
   },
+  "proxy": "http://localhost:5000",
   "resolutions": {
     "webpack": "^5.88.2"
   },

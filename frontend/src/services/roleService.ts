@@ -1,155 +1,319 @@
-// src/services/roleService.ts - con manejo de errores mejorado
+// src/services/roleService.ts
 import axios from 'axios';
-import { getToken } from './authService';
-import { ApiResponse } from './userService'; // Reusamos la interfaz
 import { API_BASE_URL } from './apiConfig';
 
-// Interfaz para roles
+// Interfaces
 export interface Role {
   id: number;
   nombre: string;
-  descripcion?: string;
-  is_default?: number;
-  fecha_creacion?: Date | string;
+  descripcion: string;
+  is_default: number;
+  fecha_creacion: string;
 }
 
-// Interfaz para permisos
-export interface Permiso {
+export interface Permission {
   id: number;
   nombre: string;
-  descripcion?: string;
-  categoria?: string;
-  fecha_creacion?: Date | string;
+  descripcion: string;
+  categoria: string;
+  fecha_creacion: string;
 }
 
+export interface CreateRoleData {
+  nombre: string;
+  descripcion: string;
+  is_default: number;
+}
 
+export interface UpdateRoleData {
+  nombre: string;
+  descripcion: string;
+  is_default: number;
+}
 
-// Configuración con token de autenticación
-const getAuthConfig = () => {
-  const token = getToken();
+// Configurar interceptor para incluir token automáticamente
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
   return {
-    headers: {
-      'Authorization': `Bearer ${token || ''}`,
-      'Content-Type': 'application/json'
-    }
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
   };
 };
 
-// Obtener todos los roles con datos de respaldo
+// ============================================
+// SERVICIOS PARA ROLES
+// ============================================
+
+/**
+ * Obtener todos los roles
+ */
 export const fetchAllRoles = async (): Promise<Role[]> => {
   try {
-    console.log('Solicitando roles al servidor...');
+    const response = await axios.get(`${API_BASE_URL}/roles`, {
+      headers: getAuthHeaders()
+    });
     
-    // Intentar obtener roles del servidor
-    try {
-      const response = await axios.get<ApiResponse<Role[]> | Role[]>(`${API_BASE_URL}/roles`, getAuthConfig());
-      
-      console.log('Respuesta del servidor roles:', response.data);
-      
-      // Manejar ambos formatos de respuesta posibles
-      if (response.data && typeof response.data === 'object' && 'data' in response.data && Array.isArray(response.data.data)) {
-        return response.data.data;
-      }
-      return Array.isArray(response.data) ? response.data : [];
-    } catch (error: any) {
-      console.warn('Error al obtener roles:', error.message);
-      
-      // *** IMPORTANTE: Usar datos de respaldo mientras se corrige el problema en el backend ***
-      console.log('Usando datos de respaldo para roles');
-      return [
-        { id: 1, nombre: 'SuperAdmin', descripcion: 'Administrador con todos los permisos', is_default: 0 },
-        { id: 2, nombre: 'Admin', descripcion: 'Administrador del sistema', is_default: 0 },
-        { id: 3, nombre: 'Usuario', descripcion: 'Usuario regular', is_default: 1 },
-        { id: 4, nombre: 'Editor', descripcion: 'Editor de contenido', is_default: 0 },
-        { id: 5, nombre: 'Supervisor', descripcion: 'Supervisor de tareas', is_default: 0 }
-      ];
-    }
-  } catch (generalError: any) {
-    console.error('Error general al obtener roles:', generalError);
-    
-    // Devolver datos de respaldo en caso de error general
-    return [
-      { id: 1, nombre: 'SuperAdmin', descripcion: 'Administrador con todos los permisos', is_default: 0 },
-      { id: 2, nombre: 'Admin', descripcion: 'Administrador del sistema', is_default: 0 },
-      { id: 3, nombre: 'Usuario', descripcion: 'Usuario regular', is_default: 1 }
-    ];
-  }
-};
-
-// Asignar rol a usuario
-export const assignRoleToUser = async (
-  userId: number, 
-  roleId: number
-): Promise<ApiResponse> => {
-  try {
-    const response = await axios.put(
-      `${API_BASE_URL}/roles/assign`,
-      { userId, roleId },
-      getAuthConfig()
-    );
-    return response.data;
-  } catch (error: any) {
-    console.error('Error al asignar rol:', error);
-    throw error;
-  }
-};
-
-// Quitar rol a usuario
-export const removeRoleFromUser = async (
-  userId: number, 
-  roleId: number
-): Promise<ApiResponse> => {
-  try {
-    const response = await axios.delete(
-      `${API_BASE_URL}/roles/assign`,
-      { 
-        data: { userId, roleId },
-        ...getAuthConfig()
-      }
-    );
-    return response.data;
-  } catch (error: any) {
-    console.error('Error al quitar rol:', error);
-    throw error;
-  }
-};
-
-// Obtener roles de un usuario con manejo de errores
-export const fetchUserRoles = async (userId: number | string): Promise<Role[]> => {
-  try {
-    const response = await axios.get<ApiResponse<Role[]> | Role[]>(
-      `${API_BASE_URL}/roles/user/${userId}`,
-      getAuthConfig()
-    );
-    
-    // Manejar ambos formatos de respuesta posibles
-    if (response.data && typeof response.data === 'object' && 'data' in response.data && Array.isArray(response.data.data)) {
+    if (response.data.success) {
       return response.data.data;
+    } else {
+      throw new Error(response.data.message || 'Error al obtener roles');
     }
-    return Array.isArray(response.data) ? response.data : [];
   } catch (error: any) {
-    console.error(`Error al obtener roles para el usuario ${userId}:`, error);
-    // Devolver array vacío para evitar errores en componentes
-    return [];
+    console.error('Error fetching roles:', error);
+    throw new Error(error.response?.data?.message || 'Error al conectar con el servidor');
   }
 };
 
-// Obtener permisos de un rol con manejo de errores
-export const fetchRolePermissions = async (roleId: number | string): Promise<Permiso[]> => {
+/**
+ * Crear un nuevo rol
+ */
+export const createRole = async (roleData: CreateRoleData): Promise<any> => {
   try {
-    const response = await axios.get<ApiResponse<Permiso[]> | Permiso[]>(
-      `${API_BASE_URL}/roles/${roleId}/permissions`,
-      getAuthConfig()
-    );
+    const response = await axios.post(`${API_BASE_URL}/roles`, roleData, {
+      headers: getAuthHeaders()
+    });
     
-    // Manejar ambos formatos de respuesta posibles
-    if (response.data && typeof response.data === 'object' && 'data' in response.data && Array.isArray(response.data.data)) {
-      return response.data.data;
+    if (response.data.success) {
+      return response.data;
+    } else {
+      throw new Error(response.data.message || 'Error al crear rol');
     }
-    return Array.isArray(response.data) ? response.data : [];
   } catch (error: any) {
-    console.error(`Error al obtener permisos para el rol ${roleId}:`, error);
-    // Devolver array vacío para evitar errores en componentes
-    return [];
+    console.error('Error creating role:', error);
+    throw new Error(error.response?.data?.message || 'Error al crear rol');
   }
+};
+
+/**
+ * Actualizar un rol existente
+ */
+export const updateRole = async (roleId: number, roleData: UpdateRoleData): Promise<any> => {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/roles/${roleId}`, roleData, {
+      headers: getAuthHeaders()
+    });
+    
+    if (response.data.success) {
+      return response.data;
+    } else {
+      throw new Error(response.data.message || 'Error al actualizar rol');
+    }
+  } catch (error: any) {
+    console.error('Error updating role:', error);
+    throw new Error(error.response?.data?.message || 'Error al actualizar rol');
+  }
+};
+
+/**
+ * Eliminar un rol
+ */
+export const deleteRole = async (roleId: number): Promise<any> => {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/roles/${roleId}`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (response.data.success) {
+      return response.data;
+    } else {
+      throw new Error(response.data.message || 'Error al eliminar rol');
+    }
+  } catch (error: any) {
+    console.error('Error deleting role:', error);
+    throw new Error(error.response?.data?.message || 'Error al eliminar rol');
+  }
+};
+
+/**
+ * Obtener usuarios que tienen un rol específico
+ */
+export const getUsersByRole = async (roleId: number): Promise<any[]> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/users?rol=${roleId}`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.message || 'Error al obtener usuarios');
+    }
+  } catch (error: any) {
+    console.error('Error fetching users by role:', error);
+    throw new Error(error.response?.data?.message || 'Error al obtener usuarios');
+  }
+};
+
+/**
+ * Asignar un rol a un usuario
+ */
+export const assignRoleToUser = async (userId: number, roleId: number): Promise<any> => {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/roles/assign`, {
+      userId,
+      roleId
+    }, {
+      headers: getAuthHeaders()
+    });
+    
+    if (response.data.success) {
+      return response.data;
+    } else {
+      throw new Error(response.data.message || 'Error al asignar rol');
+    }
+  } catch (error: any) {
+    console.error('Error assigning role:', error);
+    throw new Error(error.response?.data?.message || 'Error al asignar rol');
+  }
+};
+
+/**
+ * Quitar un rol de un usuario
+ */
+export const removeRoleFromUser = async (userId: number, roleId: number): Promise<any> => {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/roles/assign`, {
+      headers: getAuthHeaders(),
+      data: {
+        userId,
+        roleId
+      }
+    });
+    
+    if (response.data.success) {
+      return response.data;
+    } else {
+      throw new Error(response.data.message || 'Error al quitar rol');
+    }
+  } catch (error: any) {
+    console.error('Error removing role:', error);
+    throw new Error(error.response?.data?.message || 'Error al quitar rol');
+  }
+};
+
+// ============================================
+// SERVICIOS PARA PERMISOS DE ROLES
+// ============================================
+
+/**
+ * Obtener todos los permisos disponibles
+ */
+export const fetchAllPermissions = async (): Promise<Permission[]> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/../permissions`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.message || 'Error al obtener permisos');
+    }
+  } catch (error: any) {
+    console.error('Error fetching permissions:', error);
+    throw new Error(error.response?.data?.message || 'Error al obtener permisos');
+  }
+};
+
+/**
+ * Obtener permisos de un rol específico
+ */
+export const getRolePermissions = async (roleId: number): Promise<Permission[]> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/roles/${roleId}/permissions`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.message || 'Error al obtener permisos del rol');
+    }
+  } catch (error: any) {
+    console.error('Error fetching role permissions:', error);
+    throw new Error(error.response?.data?.message || 'Error al obtener permisos del rol');
+  }
+};
+
+/**
+ * Asignar permisos a un rol
+ */
+export const assignPermissionsToRole = async (roleId: number, permissionIds: number[]): Promise<any> => {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/roles/${roleId}/permissions`, {
+      permisoIds: permissionIds
+    }, {
+      headers: getAuthHeaders()
+    });
+    
+    if (response.data.success) {
+      return response.data;
+    } else {
+      throw new Error(response.data.message || 'Error al asignar permisos');
+    }
+  } catch (error: any) {
+    console.error('Error assigning permissions:', error);
+    throw new Error(error.response?.data?.message || 'Error al asignar permisos');
+  }
+};
+
+/**
+ * Obtener roles de un usuario específico
+ */
+export const getUserRoles = async (userId: number): Promise<Role[]> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/roles/user/${userId}`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.message || 'Error al obtener roles del usuario');
+    }
+  } catch (error: any) {
+    console.error('Error fetching user roles:', error);
+    throw new Error(error.response?.data?.message || 'Error al obtener roles del usuario');
+  }
+};
+
+// ============================================
+// UTILIDADES
+// ============================================
+
+/**
+ * Agrupar permisos por categoría
+ */
+export const groupPermissionsByCategory = (permissions: Permission[]): { [key: string]: Permission[] } => {
+  return permissions.reduce((groups, permission) => {
+    const category = permission.categoria || 'general';
+    if (!groups[category]) {
+      groups[category] = [];
+    }
+    groups[category].push(permission);
+    return groups;
+  }, {} as { [key: string]: Permission[] });
+};
+
+/**
+ * Verificar si un rol es el rol por defecto
+ */
+export const isDefaultRole = (role: Role): boolean => {
+  return role.is_default === 1;
+};
+
+/**
+ * Formatear nombre de categoría
+ */
+export const formatCategoryName = (category: string): string => {
+  const categoryNames: { [key: string]: string } = {
+    'sistema': 'Sistema',
+    'proyectos': 'Proyectos',
+    'tareas': 'Tareas',
+    'subtareas': 'Subtareas',
+    'informes': 'Informes',
+    'general': 'General'
+  };
+  
+  return categoryNames[category] || category.charAt(0).toUpperCase() + category.slice(1);
 };

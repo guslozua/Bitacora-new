@@ -121,6 +121,7 @@ app.use('/api/abm/pic', require('./routes/abmPic'));
 app.use('/api/abm/stats', require('./routes/abmStats'));
 app.use('/api/placas', placasRoutes);
 app.use('/api/permisos', require('./routes/permisoRoutes'));
+app.use('/api/permissions', require('./routes/permisoRoutes')); // Alias en inglés
 app.use('/api/roles', roleRoutes);
 app.use('/api/eventos', eventosRoutes); // ruta de eventos al servidor
 app.use('/api/guardias', guardiasRoutes);

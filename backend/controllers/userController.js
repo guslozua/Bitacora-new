@@ -99,8 +99,18 @@ const getAllUsers = async (req, res) => {
         }
         
         if (rol) {
-            sqlQuery += ` AND r.nombre = ?`;
-            queryParams.push(rol);
+            // Verificar si rol es un número (ID) o un string (nombre)
+            const isNumeric = !isNaN(rol) && !isNaN(parseFloat(rol));
+            
+            if (isNumeric) {
+                // Si es un número, filtrar por ID del rol
+                sqlQuery += ` AND r.id = ?`;
+                queryParams.push(parseInt(rol));
+            } else {
+                // Si es un string, filtrar por nombre del rol
+                sqlQuery += ` AND r.nombre = ?`;
+                queryParams.push(rol);
+            }
         }
         
         if (estado) {
@@ -122,11 +132,22 @@ const getAllUsers = async (req, res) => {
             limit: limit,
             limitNum,
             offset,
-            totalParams: queryParams.length
+            totalParams: queryParams.length,
+            rol: rol,
+            rolType: typeof rol,
+            isNumeric: rol ? (!isNaN(rol) && !isNaN(parseFloat(rol))) : false
         });
+        
+        console.log('📝 SQL Query:', sqlQuery);
+        console.log('📝 Query Params:', queryParams);
         
         // Ejecutar consulta principal
         const [results] = await db.query(sqlQuery, queryParams);
+        
+        console.log('✅ Resultados de la consulta:', results.length, 'usuarios encontrados');
+        if (results.length > 0) {
+            console.log('✅ Primer resultado:', results[0]);
+        }
         
         // Consulta para el total de registros (para paginación)
         let countQuery = `
@@ -148,8 +169,16 @@ const getAllUsers = async (req, res) => {
             countParams.push(`%${email}%`);
         }
         if (rol) {
-            countQuery += ` AND r.nombre = ?`;
-            countParams.push(rol);
+            // Aplicar la misma lógica de filtro que en la consulta principal
+            const isNumeric = !isNaN(rol) && !isNaN(parseFloat(rol));
+            
+            if (isNumeric) {
+                countQuery += ` AND r.id = ?`;
+                countParams.push(parseInt(rol));
+            } else {
+                countQuery += ` AND r.nombre = ?`;
+                countParams.push(rol);
+            }
         }
         if (estado) {
             countQuery += ` AND u.estado = ?`;
