@@ -544,15 +544,39 @@ const getUserPermissions = (req, res) => {
 };
 
 // Obtener permisos del usuario autenticado
-const getMyPermissions = (req, res) => {
+const getMyPermissions = async (req, res) => {
     const userId = req.user.id;
-    UserModel.getPermisosByUserId(userId, (err, permisos) => {
-        if (err) return res.status(500).json({ message: 'Error al obtener permisos' });
+    
+    try {
+        // Consulta para obtener todos los permisos del usuario a través de sus roles
+        const sql = `
+            SELECT DISTINCT p.nombre as permiso
+            FROM Usuarios u
+            JOIN usuario_rol ur ON u.id = ur.id_usuario
+            JOIN Roles r ON ur.id_rol = r.id
+            JOIN rol_permiso rp ON r.id = rp.id_rol
+            JOIN Permisos p ON rp.id_permiso = p.id
+            WHERE u.id = ?
+            ORDER BY p.nombre
+        `;
+        
+        const [results] = await db.query(sql, [userId]);
+        
+        // Extraer solo los nombres de los permisos en un array
+        const permissions = results.map(row => row.permiso);
+        
         res.json({ 
             success: true,
-            permisos 
+            permissions
         });
-    });
+    } catch (err) {
+        console.error('Error obteniendo permisos del usuario:', err);
+        return res.status(500).json({ 
+            success: false,
+            message: 'Error al obtener permisos',
+            error: err.message
+        });
+    }
 };
 
 // Obtener conteo de usuarios (para dashboard)

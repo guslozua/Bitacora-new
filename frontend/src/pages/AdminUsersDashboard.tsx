@@ -17,6 +17,11 @@ import {
 import { useNavigate } from 'react-router-dom';
 import LightFooter from '../components/LightFooter';
 
+// 🔐 NUEVOS IMPORTS PARA EL SISTEMA DE PERMISOS
+import PermissionGate from '../components/PermissionGate';
+import { usePermissions } from '../hooks/usePermissions';
+import { SYSTEM_PERMISSIONS, USER_PERMISSIONS } from '../utils/permissions';
+
 const AdminUsersDashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +32,9 @@ const AdminUsersDashboard: React.FC = () => {
   const [filters, setFilters] = useState<UserFilters>({});
   const [allUsers, setAllUsers] = useState<UserAdmin[]>([]);
   const navigate = useNavigate();
+  
+  // 🔐 HOOK PARA VERIFICAR PERMISOS
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
   
   // Estados para controlar el modal de creación/edición
   const [showUserModal, setShowUserModal] = useState<boolean>(false);
@@ -300,13 +308,30 @@ const AdminUsersDashboard: React.FC = () => {
           >
             <i className="bi bi-arrow-left me-1"></i> Volver al Panel
           </Button>
-          <Button 
-            variant="primary" 
-            className="shadow-sm"
-            onClick={handleCreateUser}
+          
+          {/* 🔐 BOTÓN CREAR USUARIO CON CONTROL DE PERMISOS */}
+          <PermissionGate 
+            permission={SYSTEM_PERMISSIONS.CREATE_USER}
+            fallback={
+              <Button 
+                variant="outline-primary" 
+                className="shadow-sm" 
+                disabled
+                title="No tienes permisos para crear usuarios"
+              >
+                <i className="bi bi-lock me-1"></i> Sin permisos
+              </Button>
+            }
           >
-            <i className="bi bi-plus-circle me-1"></i> Nuevo Usuario
-          </Button>
+            <Button 
+              variant="primary" 
+              className="shadow-sm"
+              onClick={handleCreateUser}
+              disabled={permissionsLoading}
+            >
+              <i className="bi bi-plus-circle me-1"></i> Nuevo Usuario
+            </Button>
+          </PermissionGate>
         </div>
       </div>
       

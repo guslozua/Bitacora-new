@@ -13,6 +13,11 @@ import SectionOrderManager from '../components/SectionOrderManager';
 import GlobalConfigurationPanel from '../components/GlobalConfigurationPanel';
 import { API_BASE_URL } from '../services/apiConfig';
 
+// 🔐 NUEVOS IMPORTS PARA EL SISTEMA DE PERMISOS
+import PermissionGate from '../components/PermissionGate';
+import { usePermissions } from '../hooks/usePermissions';
+import { SYSTEM_PERMISSIONS, USER_PERMISSIONS } from '../utils/permissions';
+
 
 interface SidebarVisibility {
   [key: string]: boolean;
@@ -35,6 +40,9 @@ interface AdminStat {
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
+  
+  // 🔐 HOOK PARA VERIFICAR PERMISOS
+  const { hasPermission, hasAnyPermission, isLoading: permissionsLoading } = usePermissions();
 
   const { visibility, setVisibility } = useSidebarVisibility() as {
     visibility: SidebarVisibility;

@@ -1,7 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button, Tooltip } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { useSidebarVisibility } from '../services/SidebarVisibilityContext'; 
+import { useSidebarVisibility } from '../services/SidebarVisibilityContext';
+
+// 🔐 NUEVOS IMPORTS PARA EL SISTEMA DE PERMISOS
+import PermissionGate from './PermissionGate';
+import { usePermissions } from '../hooks/usePermissions';
+import { SYSTEM_PERMISSIONS } from '../utils/permissions'; 
 
 interface SidebarProps {
   collapsed: boolean;
@@ -9,11 +14,23 @@ interface SidebarProps {
   onLogout: () => void;
 }
 
+// 🔐 INTERFAZ PARA ELEMENTOS DEL MENÚ CON PERMISOS OPCIONALES
+interface MenuItem {
+  id: string;
+  icon: string;
+  label: string;
+  route: string;
+  permission?: string; // Permiso opcional para controlar acceso
+}
+
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
   const navigate = useNavigate();
   const logoRef = useRef<HTMLImageElement | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const { visibility } = useSidebarVisibility();
+  
+  // 🔐 HOOK PARA VERIFICAR PERMISOS
+  const { hasPermission } = usePermissions();
   
   // Estados para tooltips personalizados
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -174,7 +191,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     transform: 'translateY(-50%)',
   };
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     { id: 'dashboard', icon: 'bi-clipboard-data-fill', label: 'Dashboard', route: '/dashboard' },
     { id: 'proyectos', icon: 'bi-diagram-3-fill', label: 'Proyectos', route: '/projects' },
     { id: 'hitos', icon: 'bi-flag-fill', label: 'Hitos', route: '/hitos' },
@@ -182,10 +199,24 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     { id: 'usuarios', icon: 'bi-people-fill', label: 'ABM Usuarios', route: '/abmdashboard' },
     { id: 'itracker', icon: 'bi-circle', label: 'iTracker', route: '/itrackerdash' },
     { id: 'tabulaciones', icon: 'bi-grid-3x3-gap', label: 'Tabulaciones', route: '/tabulacionesdash' },
-    { id: 'sessionanalysis', icon: 'bi-graph-up-arrow', label: 'Análisis de Sesiones', route: '/session-analysis' },
-    { id: 'aternity', icon: 'bi-speedometer2', label: 'Monitoreo Aternity', route: '/aternity' },
-    //{ id: 'incidencias', icon: 'bi-shield-exclamation', label: 'Inc. en Guardia', route: '/incidencias' },
-    { id: 'contactos', icon: 'bi-telephone-fill', label: 'Agenda de Contactos', route: '/contactos' }, // ✅ AGREGADO
+    
+    // 🔐 ELEMENTOS CON CONTROL DE PERMISOS
+    { 
+      id: 'sessionanalysis', 
+      icon: 'bi-graph-up-arrow', 
+      label: 'Análisis de Sesiones', 
+      route: '/session-analysis',
+      permission: SYSTEM_PERMISSIONS.ACCESS_ADMIN_PANEL 
+    },
+    { 
+      id: 'aternity', 
+      icon: 'bi-speedometer2', 
+      label: 'Monitoreo Aternity', 
+      route: '/aternity',
+      permission: SYSTEM_PERMISSIONS.ACCESS_ADMIN_PANEL 
+    },
+    
+    { id: 'contactos', icon: 'bi-telephone-fill', label: 'Agenda de Contactos', route: '/contactos' },
     { id: 'calendar', icon: 'bi-calendar-date', label: 'Calendario', route: '/calendar' },
     { id: 'messages', icon: 'bi-chat-dots-fill', label: 'Mensajes', route: '/messages' },
     { id: 'notifications', icon: 'bi-bell-fill', label: 'Notificaciones', route: '/notificaciones' },
@@ -194,8 +225,15 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
     { id: 'bitacora', icon: 'bi-journal-text', label: 'Bitácora', route: '/bitacora' },
     { id: 'stats', icon: 'bi-graph-up', label: 'Estadísticas', route: '/stats' }, 
     { id: 'reports', icon: 'bi-file-earmark-text', label: 'Informes', route: '/reports' },
-    //{ id: 'informes', icon: 'bi-bar-chart-fill', label: 'Informes y Estadísticas', route: '/informes' },//
-    { id: 'admin', icon: 'bi-gear-fill', label: 'Configuración', route: '/admin' },
+    
+    // 🔐 CONFIGURACIÓN ADMINISTRATIVA CON PERMISOS
+    { 
+      id: 'admin', 
+      icon: 'bi-gear-fill', 
+      label: 'Configuración', 
+      route: '/admin',
+      permission: SYSTEM_PERMISSIONS.ACCESS_ADMIN_PANEL 
+    },
   ];
 
   return (
@@ -289,23 +327,52 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggle, onLogout }) => {
             </style>
             {menuItems
               .filter(item => visibility[item.id] !== false)
-              .map((item) => (
-                <div
-                  key={item.route}
-                  style={getMenuItemStyle()}
-                  className="sidebar-item hover-highlight"
-                  onClick={() => navigate(item.route)}
-                  onMouseEnter={(e) => handleMouseEnter(e, item.id, item.label)}
-                  onMouseLeave={handleMouseLeave}
-                >
-                  <i className={`bi ${item.icon}`} style={iconStyle}></i>
-                  {!collapsed && (
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.label}
-                    </span>
-                  )}
-                </div>
-              ))}
+              .map((item) => {
+                // 🔐 SI EL ELEMENTO TIENE PERMISOS, APLICAR PERMISSIONGATE
+                if (item.permission) {
+                  return (
+                    <PermissionGate 
+                      key={item.route}
+                      permission={item.permission}
+                      fallback={null} // No mostrar nada si no tiene permisos
+                    >
+                      <div
+                        style={getMenuItemStyle()}
+                        className="sidebar-item hover-highlight"
+                        onClick={() => navigate(item.route)}
+                        onMouseEnter={(e) => handleMouseEnter(e, item.id, item.label)}
+                        onMouseLeave={handleMouseLeave}
+                      >
+                        <i className={`bi ${item.icon}`} style={iconStyle}></i>
+                        {!collapsed && (
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {item.label}
+                          </span>
+                        )}
+                      </div>
+                    </PermissionGate>
+                  );
+                }
+                
+                // 🔓 ELEMENTOS SIN CONTROL DE PERMISOS (ACCESO LIBRE)
+                return (
+                  <div
+                    key={item.route}
+                    style={getMenuItemStyle()}
+                    className="sidebar-item hover-highlight"
+                    onClick={() => navigate(item.route)}
+                    onMouseEnter={(e) => handleMouseEnter(e, item.id, item.label)}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    <i className={`bi ${item.icon}`} style={iconStyle}></i>
+                    {!collapsed && (
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.label}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
           </div>
 
           {/* Botón de scroll hacia abajo */}

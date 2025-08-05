@@ -14,6 +14,9 @@ import SimuladorRespuesta from '../components/Contactos/SimuladorRespuesta';
 import ContactosService from '../services/ContactosService';
 import { Equipo, Sistema, Integrante, ResultadoBusqueda } from '../types/contactos';
 
+// 🔐 IMPORTAR FUNCIONES DE AUTENTICACIÓN PARA LOGOUT CORRECTO
+import { logout } from '../services/authService';
+
 // ✅ ENUMS PARA CAMPOS PREDEFINIDOS
 export const ROLES_DISPONIBLES = [
   'Desarrollador Senior',
@@ -139,6 +142,20 @@ const ContactosPage: React.FC = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
+  // 🔐 FUNCIÓN DE LOGOUT CORREGIDA
+  const handleLogout = () => {
+    try {
+      // Limpiar sesión y datos de autenticación
+      logout();
+      // Redirigir a la ruta raíz donde está el LoginPage
+      navigate('/');
+    } catch (error) {
+      console.error('Error durante logout:', error);
+      // Forzar redirección incluso si hay error
+      navigate('/');
+    }
+  };
+
   const contentStyle = {
     marginLeft: sidebarCollapsed ? '80px' : '250px',
     transition: 'all 0.3s',
@@ -154,7 +171,7 @@ const ContactosPage: React.FC = () => {
         <Sidebar
           collapsed={sidebarCollapsed}
           toggle={toggleSidebar}
-          onLogout={() => navigate('/login')}
+          onLogout={handleLogout}
         />
         <div style={contentStyle}>
           <Container fluid className="py-4">
@@ -173,7 +190,7 @@ const ContactosPage: React.FC = () => {
       <Sidebar
         collapsed={sidebarCollapsed}
         toggle={toggleSidebar}
-        onLogout={() => navigate('/login')}
+        onLogout={handleLogout}
       />
 
       <div style={contentStyle}>
