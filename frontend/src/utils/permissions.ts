@@ -41,6 +41,16 @@ export const SUBTASK_PERMISSIONS = {
   DELETE_SUBTASK: 'eliminar_subtarea'
 } as const;
 
+// 🎫 PERMISOS DE PLACAS
+export const PLACA_PERMISSIONS = {
+  CREATE_PLACA: 'crear_placa',
+  EDIT_PLACA: 'editar_placa',
+  DELETE_PLACA: 'eliminar_placa',
+  VIEW_ALL_PLACAS: 'ver_todas_placas',
+  CLOSE_PLACA: 'cerrar_placas',
+  MANAGE_PLACA_SYSTEMS: 'gestionar_sistemas_placas'
+} as const;
+
 // 📈 PERMISOS DE INFORMES
 export const REPORT_PERMISSIONS = {
   VIEW_REPORTS: 'ver_informes',
@@ -75,6 +85,7 @@ export const PERMISSIONS_BY_CATEGORY = {
   proyectos: PROJECT_PERMISSIONS,
   tareas: TASK_PERMISSIONS,
   subtareas: SUBTASK_PERMISSIONS,
+  placas: PLACA_PERMISSIONS,
   informes: REPORT_PERMISSIONS,
   usuarios: USER_PERMISSIONS,
   configuracion: CONFIG_PERMISSIONS,
@@ -89,6 +100,7 @@ export const ALL_PERMISSIONS = [
   ...Object.values(PROJECT_PERMISSIONS),
   ...Object.values(TASK_PERMISSIONS),
   ...Object.values(SUBTASK_PERMISSIONS),
+  ...Object.values(PLACA_PERMISSIONS),
   ...Object.values(REPORT_PERMISSIONS),
   ...Object.values(USER_PERMISSIONS),
   ...Object.values(CONFIG_PERMISSIONS),
@@ -143,6 +155,16 @@ export const PERMISSION_GROUPS = {
     TASK_PERMISSIONS.ASSIGN_TASK_USERS
   ],
   
+  // Gestión de placas
+  PLACA_MANAGEMENT: [
+    PLACA_PERMISSIONS.CREATE_PLACA,
+    PLACA_PERMISSIONS.EDIT_PLACA,
+    PLACA_PERMISSIONS.DELETE_PLACA,
+    PLACA_PERMISSIONS.VIEW_ALL_PLACAS,
+    PLACA_PERMISSIONS.CLOSE_PLACA,
+    PLACA_PERMISSIONS.MANAGE_PLACA_SYSTEMS
+  ],
+  
   // Administración completa
   FULL_ADMIN: [
     SYSTEM_PERMISSIONS.ACCESS_ADMIN_PANEL,
@@ -171,6 +193,7 @@ export default {
   PROJECT_PERMISSIONS,
   TASK_PERMISSIONS,
   SUBTASK_PERMISSIONS,
+  PLACA_PERMISSIONS,
   REPORT_PERMISSIONS,
   USER_PERMISSIONS,
   CONFIG_PERMISSIONS,

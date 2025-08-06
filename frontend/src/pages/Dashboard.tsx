@@ -34,6 +34,18 @@ import { API_BASE_URL } from '../services/apiConfig';
 // Importamos funciones del servicio de autenticación
 import { getUserName, logout, getToken } from '../services/authService';
 
+// 🔐 NUEVOS IMPORTS PARA EL SISTEMA DE PERMISOS
+// NOTA: Implementamos permisos en CAPA ADICIONAL al sistema de visibilidad existente
+import PermissionGate from '../components/PermissionGate';
+import { usePermissions } from '../hooks/usePermissions';
+import { 
+  SYSTEM_PERMISSIONS, 
+  PROJECT_PERMISSIONS, 
+  TASK_PERMISSIONS, 
+  REPORT_PERMISSIONS, 
+  USER_PERMISSIONS 
+} from '../utils/permissions';
+
 // Función para calcular tiempo relativo en español
 const getTimeAgo = (date: Date): string => {
   const now = new Date();
@@ -68,6 +80,9 @@ const getTimeAgo = (date: Date): string => {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
+
+  // 🔐 HOOK PARA VERIFICAR PERMISOS (en capa adicional al sistema de visibilidad)
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
 
   const [usuarios, setUsuarios] = useState<number | null>(null);
   const [tareas, setTareas] = useState<number | null>(null);
@@ -481,74 +496,127 @@ const Dashboard = () => {
     }, 1000);
   };
 
+  // 🔐 FUNCIÓN AUXILIAR: Verificar permisos por sección (CAPA ADICIONAL)
+  // RESPETA el sistema de visibilidad existente - solo agrega permisos como filtro adicional
+  const hasPermissionForSection = (sectionId: string): boolean => {
+    switch (sectionId) {
+      case 'kpis-sistema':
+        return hasPermission(REPORT_PERMISSIONS.VIEW_REPORTS);
+      case 'actividad-reciente':
+        return hasPermission(REPORT_PERMISSIONS.VIEW_REPORTS);
+      case 'reportes-rapidos':
+        return hasPermission(REPORT_PERMISSIONS.VIEW_REPORTS);
+      case 'resumen-sistema':
+        return hasPermission(USER_PERMISSIONS.VIEW_USERS);
+      case 'cronograma-proyectos':
+        return hasPermission(PROJECT_PERMISSIONS.VIEW_ALL_PROJECTS);
+      case 'acciones-rapidas':
+        // Esta sección tiene botones individuales con permisos propios
+        return true;
+      // Secciones sin restricciones de permisos (accesibles para todos)
+      case 'calendario':
+      case 'anuncios':
+      case 'proximos-eventos':
+        return true;
+      default:
+        return true;
+    }
+  };
+
   // FUNCIÓN AUXILIAR: Renderizar componente de sección individual
   const renderSectionComponent = (sectionId: string): JSX.Element | null => {
     switch (sectionId) {
       case 'kpis-sistema':
         return (
-          <div className="mb-4">
-            <KpiRow 
-              title="Indicadores del Sistema"
-              subtitle="Métricas clave y estadísticas del sistema"
-              refreshTrigger={kpiRefreshTrigger}
-              onRefreshComplete={() => console.log('KPIs refreshed')}
-            />
-          </div>
+          <PermissionGate 
+            permission={REPORT_PERMISSIONS.VIEW_REPORTS}
+            fallback={
+              <Card className="shadow-sm border-0 themed-card">
+                <Card.Body className="text-center py-4">
+                  <i className="bi bi-bar-chart fs-1 text-muted mb-3 d-block"></i>
+                  <h6 className="text-muted">KPIs del Sistema</h6>
+                  <p className="text-muted small">No tienes permisos para ver las estadísticas del sistema</p>
+                </Card.Body>
+              </Card>
+            }
+          >
+            <div className="mb-4">
+              <KpiRow 
+                title="Indicadores del Sistema"
+                subtitle="Métricas clave y estadísticas del sistema"
+                refreshTrigger={kpiRefreshTrigger}
+                onRefreshComplete={() => console.log('KPIs refreshed')}
+              />
+            </div>
+          </PermissionGate>
         );
 
       case 'actividad-reciente':
         return (
-          <Card className="shadow-sm h-100 border-0 themed-card">
-            <Card.Body>
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h5 className="fw-bold mb-0">Actividad Reciente</h5>
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  onClick={() => navigate('/activity')}
-                >
-                  Ver todo
-                </Button>
-              </div>
-              <ListGroup variant="flush">
-                {loading ? (
-                  Array.from({ length: 3 }).map((_, idx) => (
-                    <ListGroup.Item key={idx} className="themed-bg-secondary">
-                      <div className="placeholder-glow">
-                        <span className="placeholder col-8"></span>
-                      </div>
-                    </ListGroup.Item>
-                  ))
-                ) : actividadReciente.length === 0 ? (
-                  <ListGroup.Item className="themed-bg-secondary text-center py-4">
-                    <i className="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
-                    <span className="text-muted">No hay actividad reciente</span>
-                  </ListGroup.Item>
-                ) : (
-                  actividadReciente.slice(0, 5).map((item, idx) => (
-                    <ListGroup.Item 
-                      key={idx} 
-                      className="themed-bg-secondary d-flex align-items-center"
-                      action
-                    >
-                      <div className="me-3">
-                        <div 
-                          className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
-                          style={{ width: '2rem', height: '2rem' }}
-                        >
-                          <i className={`${item.texto.includes('proyecto') ? 'bi bi-folder' : 'bi bi-check-circle'} text-primary`}></i>
+          <PermissionGate 
+            permission={REPORT_PERMISSIONS.VIEW_REPORTS}
+            fallback={
+              <Card className="shadow-sm h-100 border-0 themed-card">
+                <Card.Body className="text-center py-4">
+                  <i className="bi bi-activity fs-1 text-muted mb-3 d-block"></i>
+                  <h6 className="text-muted">Actividad Reciente</h6>
+                  <p className="text-muted small">No tienes permisos para ver la actividad del sistema</p>
+                </Card.Body>
+              </Card>
+            }
+          >
+            <Card className="shadow-sm h-100 border-0 themed-card">
+              <Card.Body>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h5 className="fw-bold mb-0">Actividad Reciente</h5>
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={() => navigate('/activity')}
+                  >
+                    Ver todo
+                  </Button>
+                </div>
+                <ListGroup variant="flush">
+                  {loading ? (
+                    Array.from({ length: 3 }).map((_, idx) => (
+                      <ListGroup.Item key={idx} className="themed-bg-secondary">
+                        <div className="placeholder-glow">
+                          <span className="placeholder col-8"></span>
                         </div>
-                      </div>
-                      <div className="flex-grow-1">
-                        <div className="fw-medium">{item.texto}</div>
-                        <small className="text-muted">{item.tiempoRelativo}</small>
-                      </div>
+                      </ListGroup.Item>
+                    ))
+                  ) : actividadReciente.length === 0 ? (
+                    <ListGroup.Item className="themed-bg-secondary text-center py-4">
+                      <i className="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
+                      <span className="text-muted">No hay actividad reciente</span>
                     </ListGroup.Item>
-                  ))
-                )}
-              </ListGroup>
-            </Card.Body>
-          </Card>
+                  ) : (
+                    actividadReciente.slice(0, 5).map((item, idx) => (
+                      <ListGroup.Item 
+                        key={idx} 
+                        className="themed-bg-secondary d-flex align-items-center"
+                        action
+                      >
+                        <div className="me-3">
+                          <div 
+                            className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                            style={{ width: '2rem', height: '2rem' }}
+                          >
+                            <i className={`${item.texto.includes('proyecto') ? 'bi bi-folder' : 'bi bi-check-circle'} text-primary`}></i>
+                          </div>
+                        </div>
+                        <div className="flex-grow-1">
+                          <div className="fw-medium">{item.texto}</div>
+                          <small className="text-muted">{item.tiempoRelativo}</small>
+                        </div>
+                      </ListGroup.Item>
+                    ))
+                  )}
+                </ListGroup>
+              </Card.Body>
+            </Card>
+          </PermissionGate>
         );
 
       case 'calendario':
@@ -587,48 +655,61 @@ const Dashboard = () => {
 
       case 'reportes-rapidos':
         return (
-          <Card className="shadow-sm h-100 border-0 themed-card">
-            <Card.Body>
-              <h5 className="fw-bold mb-3">Reportes Rápidos</h5>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart
-                  layout="vertical"
-                  data={chartData}
-                  margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-                  barCategoryGap={20}
-                >
-                  <CartesianGrid 
-                    strokeDasharray="3 3" 
-                    stroke={isDarkMode ? "#495057" : "#f0f0f0"} 
-                  />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: isDarkMode ? '#343a40' : '#ffffff',
-                      border: `1px solid ${isDarkMode ? '#495057' : '#dee2e6'}`,
-                      color: isDarkMode ? '#ffffff' : '#212529'
-                    }}
-                  />
-                  <XAxis type="number" hide />
-                  <YAxis
-                    dataKey="nombre"
-                    type="category"
-                    width={100}
-                    tick={{ 
-                      fontWeight: 'bold',
-                      fill: isDarkMode ? '#ffffff' : '#212529'
-                    }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Bar dataKey="cantidad">
-                    <Cell fill="#FA8072" />
-                    <Cell fill="#7B8EFA" />
-                    <Cell fill="#ff0080" />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </Card.Body>
-          </Card>
+          <PermissionGate 
+            permission={REPORT_PERMISSIONS.VIEW_REPORTS}
+            fallback={
+              <Card className="shadow-sm h-100 border-0 themed-card">
+                <Card.Body className="text-center py-4">
+                  <i className="bi bi-graph-up fs-1 text-muted mb-3 d-block"></i>
+                  <h6 className="text-muted">Reportes Rápidos</h6>
+                  <p className="text-muted small">No tienes permisos para ver los reportes del sistema</p>
+                </Card.Body>
+              </Card>
+            }
+          >
+            <Card className="shadow-sm h-100 border-0 themed-card">
+              <Card.Body>
+                <h5 className="fw-bold mb-3">Reportes Rápidos</h5>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart
+                    layout="vertical"
+                    data={chartData}
+                    margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                    barCategoryGap={20}
+                  >
+                    <CartesianGrid 
+                      strokeDasharray="3 3" 
+                      stroke={isDarkMode ? "#495057" : "#f0f0f0"} 
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: isDarkMode ? '#343a40' : '#ffffff',
+                        border: `1px solid ${isDarkMode ? '#495057' : '#dee2e6'}`,
+                        color: isDarkMode ? '#ffffff' : '#212529'
+                      }}
+                    />
+                    <XAxis type="number" hide />
+                    <YAxis
+                      dataKey="nombre"
+                      type="category"
+                      width={100}
+                      tick={{ 
+                        fontWeight: 'bold',
+                        fill: isDarkMode ? '#ffffff' : '#212529'
+                      }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Bar dataKey="cantidad">
+                      <Cell fill="#FA8072" />
+                      <Cell fill="#7B8EFA" />
+                      <Cell fill="#ff0080" />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card.Body>
+            </Card>
+          </PermissionGate>
         );
 
       case 'proximos-eventos':
@@ -689,22 +770,31 @@ const Dashboard = () => {
             <Card.Body>
               <h5 className="fw-bold mb-3">Acciones Rápidas</h5>
               <div className="d-grid gap-2">
-                <Button
-                  variant="primary"
-                  className="d-flex align-items-center justify-content-center"
-                  onClick={() => navigate('/projects')}
-                >
-                  <i className="bi bi-plus-circle me-2"></i>
-                  Nuevo Proyecto
-                </Button>
-                <Button
-                  variant="success"
-                  className="d-flex align-items-center justify-content-center"
-                  onClick={() => navigate('/projects')}
-                >
-                  <i className="bi bi-check-circle me-2"></i>
-                  Nueva Tarea
-                </Button>
+                {/* 🔐 NUEVO PROYECTO - Solo con permiso de crear proyectos */}
+                <PermissionGate permission={PROJECT_PERMISSIONS.CREATE_PROJECT}>
+                  <Button
+                    variant="primary"
+                    className="d-flex align-items-center justify-content-center"
+                    onClick={() => navigate('/projects')}
+                  >
+                    <i className="bi bi-plus-circle me-2"></i>
+                    Nuevo Proyecto
+                  </Button>
+                </PermissionGate>
+                
+                {/* 🔐 NUEVA TAREA - Solo con permiso de crear tareas */}
+                <PermissionGate permission={TASK_PERMISSIONS.CREATE_TASK}>
+                  <Button
+                    variant="success"
+                    className="d-flex align-items-center justify-content-center"
+                    onClick={() => navigate('/projects')}
+                  >
+                    <i className="bi bi-check-circle me-2"></i>
+                    Nueva Tarea
+                  </Button>
+                </PermissionGate>
+                
+                {/* 🔐 NUEVO EVENTO - Disponible para todos los usuarios autenticados */}
                 <Button
                   variant="info"
                   className="d-flex align-items-center justify-content-center"
@@ -720,55 +810,83 @@ const Dashboard = () => {
 
       case 'resumen-sistema':
         return (
-          <Card className="shadow-sm h-100 border-0 themed-card">
-            <Card.Body>
-              <h5 className="fw-bold mb-3">Resumen del Sistema</h5>
-              <Row>
-                <Col md={4} className="text-center">
-                  <div className="bg-primary bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
-                    <i className="bi bi-people-fill fs-3 text-primary"></i>
-                  </div>
-                  <h4 className="fw-bold">{usuarios || 0}</h4>
-                  <small className="text-muted">Usuarios</small>
-                </Col>
-                <Col md={4} className="text-center">
-                  <div className="bg-success bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
-                    <i className="bi bi-check-circle fs-3 text-success"></i>
-                  </div>
-                  <h4 className="fw-bold">{tareas || 0}</h4>
-                  <small className="text-muted">Tareas</small>
-                </Col>
-                <Col md={4} className="text-center">
-                  <div className="bg-warning bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
-                    <i className="bi bi-diagram-3-fill fs-3 text-warning"></i>
-                  </div>
-                  <h4 className="fw-bold">{proyectos || 0}</h4>
-                  <small className="text-muted">Proyectos</small>
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
+          <PermissionGate 
+            permission={USER_PERMISSIONS.VIEW_USERS}
+            fallback={
+              <Card className="shadow-sm h-100 border-0 themed-card">
+                <Card.Body className="text-center py-4">
+                  <i className="bi bi-pie-chart fs-1 text-muted mb-3 d-block"></i>
+                  <h6 className="text-muted">Resumen del Sistema</h6>
+                  <p className="text-muted small">No tienes permisos para ver las estadísticas del sistema</p>
+                </Card.Body>
+              </Card>
+            }
+          >
+            <Card className="shadow-sm h-100 border-0 themed-card">
+              <Card.Body>
+                <h5 className="fw-bold mb-3">Resumen del Sistema</h5>
+                <Row>
+                  <Col md={4} className="text-center">
+                    <div className="bg-primary bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
+                      <i className="bi bi-people-fill fs-3 text-primary"></i>
+                    </div>
+                    <h4 className="fw-bold">{usuarios || 0}</h4>
+                    <small className="text-muted">Usuarios</small>
+                  </Col>
+                  <Col md={4} className="text-center">
+                    <div className="bg-success bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
+                      <i className="bi bi-check-circle fs-3 text-success"></i>
+                    </div>
+                    <h4 className="fw-bold">{tareas || 0}</h4>
+                    <small className="text-muted">Tareas</small>
+                  </Col>
+                  <Col md={4} className="text-center">
+                    <div className="bg-warning bg-opacity-10 rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
+                      <i className="bi bi-diagram-3-fill fs-3 text-warning"></i>
+                    </div>
+                    <h4 className="fw-bold">{proyectos || 0}</h4>
+                    <small className="text-muted">Proyectos</small>
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </PermissionGate>
         );
 
       case 'cronograma-proyectos':
         return (
-          <Card className="shadow-sm h-100 border-0 themed-card">
-            <Card.Body>
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h5 className="fw-bold mb-0">Cronograma de Proyectos</h5>
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  onClick={() => navigate('/projects')}
-                >
-                  Ver todos
-                </Button>
-              </div>
-              <div style={{ height: '300px' }}>
-                <GanttChart />
-              </div>
-            </Card.Body>
-          </Card>
+          <PermissionGate 
+            permission={PROJECT_PERMISSIONS.VIEW_ALL_PROJECTS}
+            fallback={
+              <Card className="shadow-sm h-100 border-0 themed-card">
+                <Card.Body className="text-center py-4">
+                  <i className="bi bi-kanban fs-1 text-muted mb-3 d-block"></i>
+                  <h6 className="text-muted">Cronograma de Proyectos</h6>
+                  <p className="text-muted small">No tienes permisos para ver el cronograma de todos los proyectos</p>
+                </Card.Body>
+              </Card>
+            }
+          >
+            <Card className="shadow-sm h-100 border-0 themed-card">
+              <Card.Body>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h5 className="fw-bold mb-0">Cronograma de Proyectos</h5>
+                  <PermissionGate permission={PROJECT_PERMISSIONS.VIEW_ALL_PROJECTS}>
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => navigate('/projects')}
+                    >
+                      Ver todos
+                    </Button>
+                  </PermissionGate>
+                </div>
+                <div style={{ height: '300px' }}>
+                  <GanttChart />
+                </div>
+              </Card.Body>
+            </Card>
+          </PermissionGate>
         );
 
       default:
@@ -901,22 +1019,26 @@ const Dashboard = () => {
             <Alert variant="warning" className="mb-4">
               <Alert.Heading>Atención</Alert.Heading>
               <p>{error}</p>
-              <div className="d-flex justify-content-end">
-                <Button variant="outline-info" size="sm" onClick={toggleDataInfo}>
-                  {showDataInfo ? 'Ocultar detalles' : 'Ver detalles técnicos'}
-                </Button>
-              </div>
-
-              {showDataInfo && (
-                <div className="mt-3 small">
-                  <hr />
-                  <h6>Información para desarrolladores:</h6>
-                  <p>Respuestas API:</p>
-                  <pre className="bg-light p-2" style={{ maxHeight: '200px', overflow: 'auto' }}>
-                    {JSON.stringify(apiResponses, null, 2)}
-                  </pre>
+              
+              {/* 🔐 INFORMACIÓN TÉCNICA - Solo para administradores */}
+              <PermissionGate permission={SYSTEM_PERMISSIONS.ACCESS_ADMIN_PANEL}>
+                <div className="d-flex justify-content-end">
+                  <Button variant="outline-info" size="sm" onClick={toggleDataInfo}>
+                    {showDataInfo ? 'Ocultar detalles' : 'Ver detalles técnicos'}
+                  </Button>
                 </div>
-              )}
+
+                {showDataInfo && (
+                  <div className="mt-3 small">
+                    <hr />
+                    <h6>Información para desarrolladores:</h6>
+                    <p>Respuestas API:</p>
+                    <pre className="bg-light p-2" style={{ maxHeight: '200px', overflow: 'auto' }}>
+                      {JSON.stringify(apiResponses, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </PermissionGate>
             </Alert>
           )}
 

@@ -5,6 +5,11 @@ import { API_BASE_URL } from '../services/apiConfig';
 import Swal from 'sweetalert2';
 import PlacaFormModal from './PlacaFormModal';
 
+// 🔐 IMPORTS PARA EL SISTEMA DE PERMISOS
+import PermissionGate from './PermissionGate';
+import { usePermissions } from '../hooks/usePermissions';
+import { PLACA_PERMISSIONS } from '../utils/permissions';
+
 interface Placa {
   id: number;
   numero_placa: string;
@@ -27,6 +32,9 @@ interface PlacasTableProps {
 }
 
 const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange }) => {
+  // 🔐 HOOK PARA VERIFICAR PERMISOS
+  const { hasPermission } = usePermissions();
+  
   const [sortBy, setSortBy] = useState('');
   const [sortAsc, setSortAsc] = useState(true);
   const [data, setData] = useState<Placa[]>([]);
@@ -420,26 +428,35 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
                     </td>
                     <td style={columnStyles.acciones} onClick={(e) => e.stopPropagation()}>
                       <div className="d-flex gap-1">
-                        <Button 
-                          size="sm" 
-                          variant="outline-primary" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEditModal(placa);
-                          }}
-                        >
-                          <i className="bi bi-pencil-square"></i>
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline-danger"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            confirmDelete(placa.id, placa.numero_placa);
-                          }}
-                        >
-                          <i className="bi bi-trash"></i>
-                        </Button>
+                        {/* 🔐 BOTÓN EDITAR - Solo con permisos */}
+                        <PermissionGate permission={PLACA_PERMISSIONS.EDIT_PLACA}>
+                          <Button 
+                            size="sm" 
+                            variant="outline-primary" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditModal(placa);
+                            }}
+                            title="Editar placa"
+                          >
+                            <i className="bi bi-pencil-square"></i>
+                          </Button>
+                        </PermissionGate>
+                        
+                        {/* 🔐 BOTÓN ELIMINAR - Solo con permisos */}
+                        <PermissionGate permission={PLACA_PERMISSIONS.DELETE_PLACA}>
+                          <Button 
+                            size="sm" 
+                            variant="outline-danger"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirmDelete(placa.id, placa.numero_placa);
+                            }}
+                            title="Eliminar placa"
+                          >
+                            <i className="bi bi-trash"></i>
+                          </Button>
+                        </PermissionGate>
                       </div>
                     </td>
                   </tr>
@@ -542,24 +559,31 @@ const PlacasTable: React.FC<PlacasTableProps> = ({ year, month, onPlacaChange })
                   )}
 
                   <div className="d-flex justify-content-end gap-2 mt-4">
-                    <Button 
-                      variant="outline-primary" 
-                      onClick={() => {
-                        setShowDetail(false);
-                        openEditModal(selectedPlaca);
-                      }}
-                    >
-                      <i className="bi bi-pencil me-1"></i> Editar
-                    </Button>
-                    <Button 
-                      variant="outline-danger" 
-                      onClick={() => {
-                        setShowDetail(false);
-                        confirmDelete(selectedPlaca.id, selectedPlaca.numero_placa);
-                      }}
-                    >
-                      <i className="bi bi-trash me-1"></i> Eliminar
-                    </Button>
+                    {/* 🔐 BOTÓN EDITAR EN DETALLE - Solo con permisos */}
+                    <PermissionGate permission={PLACA_PERMISSIONS.EDIT_PLACA}>
+                      <Button 
+                        variant="outline-primary" 
+                        onClick={() => {
+                          setShowDetail(false);
+                          openEditModal(selectedPlaca);
+                        }}
+                      >
+                        <i className="bi bi-pencil me-1"></i> Editar
+                      </Button>
+                    </PermissionGate>
+                    
+                    {/* 🔐 BOTÓN ELIMINAR EN DETALLE - Solo con permisos */}
+                    <PermissionGate permission={PLACA_PERMISSIONS.DELETE_PLACA}>
+                      <Button 
+                        variant="outline-danger" 
+                        onClick={() => {
+                          setShowDetail(false);
+                          confirmDelete(selectedPlaca.id, selectedPlaca.numero_placa);
+                        }}
+                      >
+                        <i className="bi bi-trash me-1"></i> Eliminar
+                      </Button>
+                    </PermissionGate>
                   </div>
                 </div>
               )}

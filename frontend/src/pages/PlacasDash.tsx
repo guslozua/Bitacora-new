@@ -10,6 +10,12 @@ import PlacaFormModal from '../components/PlacaFormModal';
 import DistribucionTemporalGrafico from '../components/DistribucionTemporalGrafico';
 import PlacasPorMesLineChart from '../components/PlacasPorMesLineChart';
 
+// 🔐 IMPORTS PARA EL SISTEMA DE PERMISOS
+import PermissionGate from '../components/PermissionGate';
+import { usePermissions } from '../hooks/usePermissions';
+import { PLACA_PERMISSIONS, REPORT_PERMISSIONS } from '../utils/permissions';
+import AccessDenied from './AccessDenied';
+
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   BarChart, Bar, PieChart, Pie, Cell, Legend, CartesianGrid,
@@ -60,6 +66,13 @@ interface PlacasStats {
 
 const PlacasDash = () => {
   const navigate = useNavigate();
+  
+  // 🔐 HOOK PARA VERIFICAR PERMISOS
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
+  
+  // 🔐 VERIFICAR ACCESO A LA PÁGINA COMPLETA
+  const canViewPlacas = hasPermission(PLACA_PERMISSIONS.VIEW_ALL_PLACAS);
+  
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState('all');
@@ -230,6 +243,11 @@ const PlacasDash = () => {
     return null;
   };
 
+  // 🔐 CONTROL DE ACCESO PRINCIPAL - Si no tiene permisos, mostrar página de acceso denegado
+  if (!permissionsLoading && !canViewPlacas) {
+    return <AccessDenied />;
+  }
+
   return (
     <div className="d-flex">
       <Sidebar collapsed={sidebarCollapsed} toggle={toggleSidebar} onLogout={handleLogout} />
@@ -257,12 +275,23 @@ const PlacasDash = () => {
                   <option key={m.value} value={m.value}>{m.label}</option>
                 ))}
               </select>
-              <button
-                className="btn btn-primary shadow-sm"
-                onClick={() => setShowModal(true)}
+              
+              {/* 🔐 BOTÓN NUEVA PLACA - Solo con permisos */}
+              <PermissionGate 
+                permission={PLACA_PERMISSIONS.CREATE_PLACA}
+                fallback={
+                  <button className="btn btn-outline-secondary shadow-sm" disabled>
+                    <i className="bi bi-lock me-1"></i> Sin permisos
+                  </button>
+                }
               >
-                <i className="bi bi-plus-circle me-1"></i> Nueva Placa
-              </button>
+                <button
+                  className="btn btn-primary shadow-sm"
+                  onClick={() => setShowModal(true)}
+                >
+                  <i className="bi bi-plus-circle me-1"></i> Nueva Placa
+                </button>
+              </PermissionGate>
             </div>
           </div>
 
@@ -696,41 +725,54 @@ const PlacasDash = () => {
                 </Col>
 
                 <Col md={6}>
-                  <Card className="border-0 shadow-sm h-100">
-                    <Card.Body>
-                      <h5 className="fw-bold mb-3">Usuarios de Cierre</h5>
-                      <ResponsiveContainer width="100%" height={280}>
-                        <BarChart
-                          data={stats.top_usuarios}
-                          layout="vertical"
-                          margin={{ left: 120 }}
-                          barSize={22}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                          <XAxis type="number" />
-                          <YAxis
-                            dataKey="cerrado_por"
-                            type="category"
-                            tick={{ fontSize: 10 }}
-                          />
-                          <Tooltip content={<CustomTooltip />} />
-                          <Bar
-                            dataKey="cantidad"
-                            name="Placas Cerradas"
-                            fill={colors[3]}
-                            radius={[0, 4, 4, 0]}
+                  <PermissionGate 
+                    permission={REPORT_PERMISSIONS.VIEW_REPORTS}
+                    fallback={
+                      <Card className="border-0 shadow-sm h-100">
+                        <Card.Body className="text-center py-4">
+                          <i className="bi bi-people fs-1 text-muted mb-3 d-block"></i>
+                          <h6 className="text-muted">Usuarios de Cierre</h6>
+                          <p className="text-muted small">No tienes permisos para ver información de usuarios</p>
+                        </Card.Body>
+                      </Card>
+                    }
+                  >
+                    <Card className="border-0 shadow-sm h-100">
+                      <Card.Body>
+                        <h5 className="fw-bold mb-3">Usuarios de Cierre</h5>
+                        <ResponsiveContainer width="100%" height={280}>
+                          <BarChart
+                            data={stats.top_usuarios}
+                            layout="vertical"
+                            margin={{ left: 120 }}
+                            barSize={22}
                           >
-                            {stats.top_usuarios.map((entry, index) => (
-                              <Cell
-                                key={`cell-${index}`}
-                                fill={`${colors[3]}${90 - index * 15}`}
-                              />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </Card.Body>
-                  </Card>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                            <XAxis type="number" />
+                            <YAxis
+                              dataKey="cerrado_por"
+                              type="category"
+                              tick={{ fontSize: 10 }}
+                            />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Bar
+                              dataKey="cantidad"
+                              name="Placas Cerradas"
+                              fill={colors[3]}
+                              radius={[0, 4, 4, 0]}
+                            >
+                              {stats.top_usuarios.map((entry, index) => (
+                                <Cell
+                                  key={`cell-${index}`}
+                                  fill={`${colors[3]}${90 - index * 15}`}
+                                />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </Card.Body>
+                    </Card>
+                  </PermissionGate>
                 </Col>
               </Row>
 

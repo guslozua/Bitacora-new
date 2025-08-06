@@ -1,4 +1,10 @@
 // src/components/users/UserForm.tsx
+// 🔐 COMPONENTE CON CONTROL DE PERMISOS APLICADO
+// - Gestionar roles: SYSTEM_PERMISSIONS.MANAGE_ROLES
+// - Editar estado: SYSTEM_PERMISSIONS.EDIT_USER
+// - Crear usuario: SYSTEM_PERMISSIONS.CREATE_USER
+// - Campos sensibles: Acceso granular por permiso
+
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Card, Row, Col, Alert, Spinner } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -6,10 +12,18 @@ import Swal from 'sweetalert2';
 import { fetchUserById, createUser, updateUser, UserFormData } from '../../services/userService';
 import { fetchAllRoles, Role } from '../../services/roleService';
 
+// 🔐 NUEVOS IMPORTS PARA EL SISTEMA DE PERMISOS
+import PermissionGate from '../PermissionGate';
+import { usePermissions } from '../../hooks/usePermissions';
+import { SYSTEM_PERMISSIONS } from '../../utils/permissions';
+
 const UserForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEditMode = !!id;
+  
+  // 🔐 HOOK PARA VERIFICAR PERMISOS
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
   
   const [formData, setFormData] = useState<UserFormData>({
     nombre: '',
@@ -165,7 +179,38 @@ const UserForm: React.FC = () => {
     navigate('/admin/users');
   };
   
-  if (loading) return <div className="text-center p-5"><Spinner animation="border" /></div>;
+  // 🔐 MOSTRAR LOADING SI ESTÁ CARGANDO DATOS O PERMISOS
+  if (loading || permissionsLoading) {
+    return <div className="text-center p-5"><Spinner animation="border" /></div>;
+  }
+  
+  // 🔐 VERIFICACIÓN DE PERMISOS PARA ACCESO AL FORMULARIO
+  const canAccessForm = isEditMode 
+    ? hasPermission(SYSTEM_PERMISSIONS.EDIT_USER) 
+    : hasPermission(SYSTEM_PERMISSIONS.CREATE_USER);
+  
+  if (!canAccessForm) {
+    return (
+      <div className="container py-4">
+        <Card className="shadow-sm">
+          <Card.Header>
+            <h5 className="mb-0">Acceso Denegado</h5>
+          </Card.Header>
+          <Card.Body className="text-center py-5">
+            <i className="bi bi-shield-exclamation fs-1 text-warning mb-3 d-block"></i>
+            <h6 className="mb-3">No tienes permisos para {isEditMode ? 'editar usuarios' : 'crear usuarios'}</h6>
+            <p className="text-muted mb-4">
+              Para acceder a esta funcionalidad, necesitas el permiso <code>{isEditMode ? 'editar_usuario' : 'crear_usuario'}</code>.
+            </p>
+            <Button variant="outline-primary" onClick={handleCancel}>
+              <i className="bi bi-arrow-left me-2"></i>
+              Volver a la Lista
+            </Button>
+          </Card.Body>
+        </Card>
+      </div>
+    );
+  }
   
   return (
     <div className="container py-4">
@@ -227,61 +272,116 @@ const UserForm: React.FC = () => {
                 </Form.Group>
               </Col>
               <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Estado</Form.Label>
-                  <Form.Select
-                    name="estado"
-                    value={formData.estado}
-                    onChange={handleInputChange}
-                  >
-                    <option value="activo">Activo</option>
-                    <option value="inactivo">Inactivo</option>
-                    <option value="bloqueado">Bloqueado</option>
-                  </Form.Select>
-                </Form.Group>
+                {/* 🔐 CAMPO ESTADO - Solo con permiso de editar usuario */}
+                <PermissionGate 
+                  permission={SYSTEM_PERMISSIONS.EDIT_USER}
+                  fallback={
+                    <Form.Group className="mb-3">
+                      <Form.Label>Estado</Form.Label>
+                      <Form.Control
+                        type="text"
+                        value={formData.estado}
+                        disabled
+                        className="bg-light"
+                      />
+                      <Form.Text className="text-muted">
+                        No tienes permisos para cambiar el estado del usuario
+                      </Form.Text>
+                    </Form.Group>
+                  }
+                >
+                  <Form.Group className="mb-3">
+                    <Form.Label>Estado</Form.Label>
+                    <Form.Select
+                      name="estado"
+                      value={formData.estado}
+                      onChange={handleInputChange}
+                    >
+                      <option value="activo">Activo</option>
+                      <option value="inactivo">Inactivo</option>
+                      <option value="bloqueado">Bloqueado</option>
+                    </Form.Select>
+                  </Form.Group>
+                </PermissionGate>
               </Col>
             </Row>
             
-            <Form.Group className="mb-4">
-              <Form.Label>Roles</Form.Label>
-              {availableRoles.length === 0 ? (
-                <Alert variant="warning">
-                  No hay roles disponibles. Verifica la conexión con el servidor.
-                </Alert>
-              ) : (
-                <div className="border rounded p-3">
-                  <Row>
-                    {availableRoles.map(role => (
-                      <Col md={4} key={role.id}>
-                        <Form.Check
-                          type="checkbox"
-                          label={role.nombre}
-                          value={role.nombre}
-                          checked={(formData.roles || []).includes(role.nombre)}
-                          onChange={handleRoleChange}
-                          className="mb-2"
-                        />
-                      </Col>
-                    ))}
-                  </Row>
-                </div>
-              )}
-            </Form.Group>
+            {/* 🔐 SECCIÓN DE ROLES - Solo con permiso de gestionar roles */}
+            <PermissionGate 
+              permission={SYSTEM_PERMISSIONS.MANAGE_ROLES}
+              fallback={
+                <Form.Group className="mb-4">
+                  <Form.Label>Roles Asignados</Form.Label>
+                  <div className="border rounded p-3 bg-light">
+                    {(formData.roles || []).length > 0 ? (
+                      <div className="d-flex flex-wrap gap-2">
+                        {(formData.roles || []).map((role, index) => (
+                          <span key={index} className="badge bg-primary">{role}</span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted">Sin roles asignados</span>
+                    )}
+                    <Form.Text className="text-muted d-block mt-2">
+                      No tienes permisos para gestionar roles de usuario
+                    </Form.Text>
+                  </div>
+                </Form.Group>
+              }
+            >
+              <Form.Group className="mb-4">
+                <Form.Label>Roles</Form.Label>
+                {availableRoles.length === 0 ? (
+                  <Alert variant="warning">
+                    No hay roles disponibles. Verifica la conexión con el servidor.
+                  </Alert>
+                ) : (
+                  <div className="border rounded p-3">
+                    <Row>
+                      {availableRoles.map(role => (
+                        <Col md={4} key={role.id}>
+                          <Form.Check
+                            type="checkbox"
+                            label={role.nombre}
+                            value={role.nombre}
+                            checked={(formData.roles || []).includes(role.nombre)}
+                            onChange={handleRoleChange}
+                            className="mb-2"
+                          />
+                        </Col>
+                      ))}
+                    </Row>
+                  </div>
+                )}
+              </Form.Group>
+            </PermissionGate>
             
             <div className="d-flex gap-2 justify-content-end">
               <Button variant="secondary" onClick={handleCancel} disabled={saving}>
                 Cancelar
               </Button>
-              <Button variant="primary" type="submit" disabled={saving}>
-                {saving ? (
-                  <>
-                    <Spinner as="span" animation="border" size="sm" className="me-2" />
-                    Guardando...
-                  </>
-                ) : (
-                  isEditMode ? 'Actualizar Usuario' : 'Crear Usuario'
-                )}
-              </Button>
+              
+              {/* 🔐 BOTÓN GUARDAR - Solo con permiso correspondiente */}
+              <PermissionGate 
+                permission={isEditMode ? SYSTEM_PERMISSIONS.EDIT_USER : SYSTEM_PERMISSIONS.CREATE_USER}
+                fallback={
+                  <Button variant="outline-secondary" disabled>
+                    <i className="bi bi-lock me-2"></i>
+                    Sin permisos para {isEditMode ? 'editar' : 'crear'}
+                  </Button>
+                }
+              >
+                <Button variant="primary" type="submit" disabled={saving}>
+                  {saving ? (
+                    <>
+                      <Spinner as="span" animation="border" size="sm" className="me-2" />
+                      Guardando...
+                    </>
+                  ) : (
+                    isEditMode ? 'Actualizar Usuario' : 'Crear Usuario'
+                  )}
+                </Button>
+              </PermissionGate>
             </div>
           </Form>
         </Card.Body>

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 31-07-2025 a las 18:34:52
+-- Tiempo de generación: 06-08-2025 a las 05:55:09
 -- Versión del servidor: 10.4.25-MariaDB
 -- Versión de PHP: 8.2.0
 
@@ -986,7 +986,8 @@ CREATE TABLE `usuarios` (
 CREATE TABLE `usuario_rol` (
   `id` int(11) NOT NULL,
   `id_usuario` int(11) NOT NULL,
-  `id_rol` int(11) NOT NULL
+  `id_rol` int(11) NOT NULL,
+  `fecha_asignacion` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -1214,6 +1215,12 @@ ALTER TABLE `metricas_sesiones_historicas`
   ADD KEY `idx_fecha_corte` (`fecha_corte`);
 
 --
+-- Indices de la tabla `permisos`
+--
+ALTER TABLE `permisos`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indices de la tabla `placas`
 --
 ALTER TABLE `placas`
@@ -1249,6 +1256,21 @@ ALTER TABLE `subtareas`
 --
 ALTER TABLE `tareas`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indices de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indices de la tabla `usuario_rol`
+--
+ALTER TABLE `usuario_rol`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_usuario_rol` (`id_usuario`,`id_rol`),
+  ADD KEY `idx_usuario` (`id_usuario`),
+  ADD KEY `idx_rol` (`id_rol`);
 
 --
 -- AUTO_INCREMENT de las tablas volcadas
@@ -1315,6 +1337,12 @@ ALTER TABLE `metricas_sesiones_historicas`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `permisos`
+--
+ALTER TABLE `permisos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `placas`
 --
 ALTER TABLE `placas`
@@ -1342,6 +1370,18 @@ ALTER TABLE `subtareas`
 -- AUTO_INCREMENT de la tabla `tareas`
 --
 ALTER TABLE `tareas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `usuario_rol`
+--
+ALTER TABLE `usuario_rol`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --

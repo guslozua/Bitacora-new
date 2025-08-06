@@ -1,3 +1,10 @@
+// src/pages/Projects.tsx
+// 🔐 COMPONENTE CON CONTROL DE PERMISOS APLICADO
+// - Crear proyecto: PROJECT_PERMISSIONS.CREATE_PROJECT
+// - Ver detalles: GENERAL_PERMISSIONS.VIEW_PROJECTS
+// - Editar proyecto: PROJECT_PERMISSIONS.EDIT_PROJECT
+// - Eliminar proyecto: PROJECT_PERMISSIONS.DELETE_PROJECT
+
 import React, { useEffect, useState } from 'react';
 import {
   Container,
@@ -31,6 +38,11 @@ import '../styles/kanban.css';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
 
+// 🔐 NUEVOS IMPORTS PARA EL SISTEMA DE PERMISOS
+import PermissionGate from '../components/PermissionGate';
+import { usePermissions } from '../hooks/usePermissions';
+import { PROJECT_PERMISSIONS, GENERAL_PERMISSIONS } from '../utils/permissions';
+
 interface ProjectData {
   name: string;
   description: string;
@@ -55,6 +67,9 @@ interface Proyecto {
 const Projects = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
+
+  // 🔐 HOOK PARA VERIFICAR PERMISOS
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
 
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -612,14 +627,17 @@ const Projects = () => {
         <Container fluid className="py-4 px-4">
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h2 className="mb-0 fw-bold">Gestión de Proyectos</h2>
-            <Button
-              variant="primary"
-              className="shadow-sm"
-              onClick={() => setShowOffcanvas(true)}
-            >
-              <i className="bi bi-plus me-2"></i>
-              Nuevo Proyecto
-            </Button>
+            {/* 🔐 BOTÓN NUEVO PROYECTO - Solo con permiso de crear proyectos */}
+            <PermissionGate permission={PROJECT_PERMISSIONS.CREATE_PROJECT}>
+              <Button
+                variant="primary"
+                className="shadow-sm"
+                onClick={() => setShowOffcanvas(true)}
+              >
+                <i className="bi bi-plus me-2"></i>
+                Nuevo Proyecto
+              </Button>
+            </PermissionGate>
           </div>
 
           {/* 🎯 MENSAJES DE ESTADO */}
@@ -634,7 +652,8 @@ const Projects = () => {
             </Alert>
           )}
 
-          {loading ? (
+          {/* 🔐 MOSTRAR LOADING SI ESTÁ CARGANDO PROYECTOS O PERMISOS */}
+          {(loading || permissionsLoading) ? (
             <div className="text-center py-5">
               <Spinner animation="border" variant="primary" />
             </div>
@@ -924,44 +943,53 @@ const Projects = () => {
 
                                     <td>
                                       <div className="d-flex gap-1 justify-content-center">
-                                        <OverlayTrigger
-                                          placement="top"
-                                          overlay={<Tooltip>Ver detalles del proyecto</Tooltip>}
-                                        >
-                                          <Button
-                                            variant="outline-primary"
-                                            size="sm"
-                                            onClick={() => handleViewProject(proyecto)}
+                                        {/* 🔐 VER DETALLES - Cualquier usuario con acceso a proyectos puede ver */}
+                                        <PermissionGate permission={GENERAL_PERMISSIONS.VIEW_PROJECTS}>
+                                          <OverlayTrigger
+                                            placement="top"
+                                            overlay={<Tooltip>Ver detalles del proyecto</Tooltip>}
                                           >
-                                            <i className="bi bi-eye"></i>
-                                          </Button>
-                                        </OverlayTrigger>
+                                            <Button
+                                              variant="outline-primary"
+                                              size="sm"
+                                              onClick={() => handleViewProject(proyecto)}
+                                            >
+                                              <i className="bi bi-eye"></i>
+                                            </Button>
+                                          </OverlayTrigger>
+                                        </PermissionGate>
 
-                                        <OverlayTrigger
-                                          placement="top"
-                                          overlay={<Tooltip>Editar proyecto</Tooltip>}
-                                        >
-                                          <Button
-                                            variant="outline-warning"
-                                            size="sm"
-                                            onClick={() => handleEditProject(proyecto)}
+                                        {/* 🔐 EDITAR - Solo con permiso de editar proyectos */}
+                                        <PermissionGate permission={PROJECT_PERMISSIONS.EDIT_PROJECT}>
+                                          <OverlayTrigger
+                                            placement="top"
+                                            overlay={<Tooltip>Editar proyecto</Tooltip>}
                                           >
-                                            <i className="bi bi-pencil"></i>
-                                          </Button>
-                                        </OverlayTrigger>
+                                            <Button
+                                              variant="outline-warning"
+                                              size="sm"
+                                              onClick={() => handleEditProject(proyecto)}
+                                            >
+                                              <i className="bi bi-pencil"></i>
+                                            </Button>
+                                          </OverlayTrigger>
+                                        </PermissionGate>
 
-                                        <OverlayTrigger
-                                          placement="top"
-                                          overlay={<Tooltip>Eliminar proyecto</Tooltip>}
-                                        >
-                                          <Button
-                                            variant="outline-danger"
-                                            size="sm"
-                                            onClick={() => handleDeleteProject(proyecto)}
+                                        {/* 🔐 ELIMINAR - Solo con permiso de eliminar proyectos */}
+                                        <PermissionGate permission={PROJECT_PERMISSIONS.DELETE_PROJECT}>
+                                          <OverlayTrigger
+                                            placement="top"
+                                            overlay={<Tooltip>Eliminar proyecto</Tooltip>}
                                           >
-                                            <i className="bi bi-trash"></i>
-                                          </Button>
-                                        </OverlayTrigger>
+                                            <Button
+                                              variant="outline-danger"
+                                              size="sm"
+                                              onClick={() => handleDeleteProject(proyecto)}
+                                            >
+                                              <i className="bi bi-trash"></i>
+                                            </Button>
+                                          </OverlayTrigger>
+                                        </PermissionGate>
 
                                         {/* BOTÓN DE CONVERSIÓN A HITO CON TOOLTIPS CORREGIDOS */}
                                         {yaFueConvertidoAHito(proyecto.id) ? (
@@ -1226,20 +1254,23 @@ const Projects = () => {
 
                   {/* Botones para editar y convertir */}
                   <div className="mt-4 d-flex gap-2 flex-wrap">
-                    <Button 
-                      variant="outline-primary" 
-                      onClick={() => {
-                        setShowDetails(false);
-                        // Buscar el proyecto original para editar
-                        const projectToEdit = proyectos.find(p => `project-${p.id}` === selectedTask.id);
-                        if (projectToEdit) {
-                          handleEditProject(projectToEdit);
-                        }
-                      }}
-                    >
-                      <i className="bi bi-pencil me-2"></i>
-                      Editar Proyecto
-                    </Button>
+                    {/* 🔐 EDITAR PROYECTO - Solo con permiso de editar proyectos */}
+                    <PermissionGate permission={PROJECT_PERMISSIONS.EDIT_PROJECT}>
+                      <Button 
+                        variant="outline-primary" 
+                        onClick={() => {
+                          setShowDetails(false);
+                          // Buscar el proyecto original para editar
+                          const projectToEdit = proyectos.find(p => `project-${p.id}` === selectedTask.id);
+                          if (projectToEdit) {
+                            handleEditProject(projectToEdit);
+                          }
+                        }}
+                      >
+                        <i className="bi bi-pencil me-2"></i>
+                        Editar Proyecto
+                      </Button>
+                    </PermissionGate>
 
                     {/* BOTONES DE CONVERSIÓN EN PANEL DE DETALLES CON TOOLTIPS CORREGIDOS */}
                     {selectedTask.originalProject && (

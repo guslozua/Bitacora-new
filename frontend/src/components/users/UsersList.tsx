@@ -1,9 +1,20 @@
 // src/components/users/UsersList.tsx
+// 🔐 COMPONENTE CON CONTROL DE PERMISOS APLICADO
+// - Ver detalles: USER_PERMISSIONS.VIEW_USERS
+// - Editar usuario: SYSTEM_PERMISSIONS.EDIT_USER
+// - Bloquear/Desbloquear: SYSTEM_PERMISSIONS.EDIT_USER  
+// - Eliminar usuario: SYSTEM_PERMISSIONS.DELETE_USER
+
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Badge, Pagination, Spinner, Alert, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import Swal from 'sweetalert2';
 import { fetchAdminUsers, deleteUser, updateUser, UserFilters, UserAdmin } from '../../services/userService';
 import UserDetailModal from './UserDetailModal';
+
+// 🔐 NUEVOS IMPORTS PARA EL SISTEMA DE PERMISOS
+import PermissionGate from '../PermissionGate';
+import { usePermissions } from '../../hooks/usePermissions';
+import { SYSTEM_PERMISSIONS, USER_PERMISSIONS } from '../../utils/permissions';
 
 interface UsersListProps {
   filters?: UserFilters;
@@ -21,6 +32,9 @@ const UsersList: React.FC<UsersListProps> = ({ filters = {}, onEditUser, onViewU
   // Estados para el modal de detalles
   const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  
+  // 🔐 HOOK PARA VERIFICAR PERMISOS
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
   
   const loadUsers = async () => {
     try {
@@ -234,7 +248,8 @@ const UsersList: React.FC<UsersListProps> = ({ filters = {}, onEditUser, onViewU
     );
   };
   
-  if (loading && users.length === 0) {
+  // 🔐 MOSTRAR LOADING SI ESTÁ CARGANDO USUARIOS O PERMISOS
+  if ((loading && users.length === 0) || permissionsLoading) {
     return <div className="text-center p-4"><Spinner animation="border" /></div>;
   }
   
@@ -270,37 +285,49 @@ const UsersList: React.FC<UsersListProps> = ({ filters = {}, onEditUser, onViewU
                 <td>{renderStatusBadge(user.estado)}</td>
                 <td>
                   <div className="d-flex flex-wrap">
-                    {renderActionButton(
-                      "outline-info", 
-                      "fas fa-eye", 
-                      "Ver detalles del usuario", 
-                      () => handleViewUser(user.id), 
-                      loading
-                    )}
+                    {/* 🔐 VER DETALLES - Cualquier usuario con acceso a la lista puede ver */}
+                    <PermissionGate permission={USER_PERMISSIONS.VIEW_USERS}>
+                      {renderActionButton(
+                        "outline-info", 
+                        "fas fa-eye", 
+                        "Ver detalles del usuario", 
+                        () => handleViewUser(user.id), 
+                        loading
+                      )}
+                    </PermissionGate>
                     
-                    {renderActionButton(
-                      "outline-primary", 
-                      "fas fa-edit", 
-                      "Editar información del usuario", 
-                      () => handleEditUser(user.id), 
-                      loading
-                    )}
+                    {/* 🔐 EDITAR - Solo con permiso de editar usuarios */}
+                    <PermissionGate permission={SYSTEM_PERMISSIONS.EDIT_USER}>
+                      {renderActionButton(
+                        "outline-primary", 
+                        "fas fa-edit", 
+                        "Editar información del usuario", 
+                        () => handleEditUser(user.id), 
+                        loading
+                      )}
+                    </PermissionGate>
                     
-                    {renderActionButton(
-                      user.estado === 'bloqueado' ? 'outline-success' : 'outline-warning', 
-                      user.estado === 'bloqueado' ? 'fas fa-unlock' : 'fas fa-ban', 
-                      user.estado === 'bloqueado' ? 'Desbloquear acceso del usuario' : 'Bloquear acceso del usuario', 
-                      () => handleToggleBlock(user), 
-                      loading
-                    )}
+                    {/* 🔐 BLOQUEAR/DESBLOQUEAR - Solo con permiso de editar usuarios */}
+                    <PermissionGate permission={SYSTEM_PERMISSIONS.EDIT_USER}>
+                      {renderActionButton(
+                        user.estado === 'bloqueado' ? 'outline-success' : 'outline-warning', 
+                        user.estado === 'bloqueado' ? 'fas fa-unlock' : 'fas fa-ban', 
+                        user.estado === 'bloqueado' ? 'Desbloquear acceso del usuario' : 'Bloquear acceso del usuario', 
+                        () => handleToggleBlock(user), 
+                        loading
+                      )}
+                    </PermissionGate>
                     
-                    {renderActionButton(
-                      "outline-danger", 
-                      "fas fa-trash", 
-                      "Eliminar usuario permanentemente", 
-                      () => handleDeleteUser(user), 
-                      loading
-                    )}
+                    {/* 🔐 ELIMINAR - Solo con permiso de eliminar usuarios */}
+                    <PermissionGate permission={SYSTEM_PERMISSIONS.DELETE_USER}>
+                      {renderActionButton(
+                        "outline-danger", 
+                        "fas fa-trash", 
+                        "Eliminar usuario permanentemente", 
+                        () => handleDeleteUser(user), 
+                        loading
+                      )}
+                    </PermissionGate>
                   </div>
                 </td>
               </tr>

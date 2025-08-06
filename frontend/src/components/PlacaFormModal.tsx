@@ -4,6 +4,11 @@ import axios from 'axios';
 import { API_BASE_URL } from '../services/apiConfig';
 import Swal from 'sweetalert2';
 
+// 🔐 IMPORTS PARA EL SISTEMA DE PERMISOS
+import PermissionGate from './PermissionGate';
+import { usePermissions } from '../hooks/usePermissions';
+import { PLACA_PERMISSIONS, USER_PERMISSIONS } from '../utils/permissions';
+
 interface Placa {
   id?: number;
   numero_placa: string;
@@ -26,6 +31,15 @@ interface PlacaFormModalProps {
 }
 
 const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, placa = null }) => {
+  // 🔐 HOOK PARA VERIFICAR PERMISOS
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
+  
+  // 🔐 VERIFICAR ACCESO AL MODAL
+  const isEditMode = !!placa?.id;
+  const canAccessModal = isEditMode 
+    ? hasPermission(PLACA_PERMISSIONS.EDIT_PLACA)
+    : hasPermission(PLACA_PERMISSIONS.CREATE_PLACA);
+
   // Función para obtener la fecha y hora actual en formato ISO local
   const getCurrentLocalISOString = () => {
     const now = new Date();
@@ -289,6 +303,38 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
     }
   };
 
+  // 🔐 SI NO HAY PERMISOS DE ACCESO, MOSTRAR MODAL DE ACCESO DENEGADO
+  if (!permissionsLoading && !canAccessModal) {
+    return (
+      <Modal 
+        show={show} 
+        onHide={onHide} 
+        backdrop="static" 
+        size="sm" 
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className="bi bi-shield-x text-danger me-2"></i>
+            Acceso Denegado
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-center py-4">
+          <i className="bi bi-file-earmark-x fs-1 text-muted mb-3 d-block"></i>
+          <h5 className="text-muted">Sin permisos para {isEditMode ? 'editar' : 'crear'} placas</h5>
+          <p className="text-muted">No tienes los permisos necesarios para {isEditMode ? 'editar esta' : 'crear una nueva'} placa.</p>
+          <p className="small text-muted">Contacta al administrador si necesitas acceso a esta funcionalidad.</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={onHide}>
+            <i className="bi bi-arrow-left me-2"></i>
+            Volver
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    );
+  }
+
   return (
     <Modal 
       show={show} 
@@ -368,17 +414,48 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
             <div className="col-md-6">
               <Form.Group controlId="sistema">
                 <Form.Label>Sistema Afectado</Form.Label>
-                <Form.Select
-                  name="sistema"
-                  value={formData.sistema}
-                  onChange={handleChange}
-                  required
+                
+                {/* 🔐 LISTA DE SISTEMAS - Control granular */}
+                <PermissionGate 
+                  permission={PLACA_PERMISSIONS.MANAGE_PLACA_SYSTEMS}
+                  fallback={
+                    <>
+                      <Form.Select
+                        name="sistema"
+                        value={formData.sistema}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">-- Seleccione Sistema --</option>
+                        {/* Lista limitada para usuarios sin permisos especiales */}
+                        <option value="No aplica">No aplica</option>
+                        <option value="Red">Red</option>
+                        <option value="IVR">IVR</option>
+                        <option value="Pulse">Pulse</option>
+                        <option value="Virtual Access">Virtual Access</option>
+                      </Form.Select>
+                      <Form.Text className="text-muted">
+                        Lista limitada - Para más sistemas contacte al administrador
+                      </Form.Text>
+                    </>
+                  }
                 >
-                  <option value="">-- Seleccione Sistema --</option>
-                  {sistemasDisponibles.map(sistema => (
-                    <option key={sistema} value={sistema}>{sistema}</option>
-                  ))}
-                </Form.Select>
+                  <Form.Select
+                    name="sistema"
+                    value={formData.sistema}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">-- Seleccione Sistema --</option>
+                    {sistemasDisponibles.map(sistema => (
+                      <option key={sistema} value={sistema}>{sistema}</option>
+                    ))}
+                  </Form.Select>
+                  <Form.Text className="text-success">
+                    <i className="bi bi-check-circle me-1"></i>
+                    Acceso completo a todos los sistemas
+                  </Form.Text>
+                </PermissionGate>
               </Form.Group>
             </div>
             
@@ -423,71 +500,153 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
               </Form.Group>
             </div>
             
-            <div className="col-md-6">
-              <Form.Group controlId="fecha_cierre">
-                <Form.Label>Fecha y Hora de Cierre (opcional)</Form.Label>
-                <Form.Control
-                  type="datetime-local"
-                  name="fecha_cierre"
-                  value={formatDateForInput(formData.fecha_cierre)}
-                  onChange={handleChange}
-                  min={minFechaCierre}
-                />
-                <Form.Text className="text-muted">
-                  Dejar en blanco si aún no se ha resuelto. Debe ser posterior a la fecha y hora de inicio.
-                </Form.Text>
-              </Form.Group>
-            </div>
-            
-            <div className="col-md-6">
-              <Form.Group controlId="cerrado_por">
-                <Form.Label>Cerrado por (si aplica)</Form.Label>
-                <Form.Select
-                  name="cerrado_por"
-                  value={formData.cerrado_por || ''}
-                  onChange={handleChange}
-                >
-                  <option value="">-- Seleccione Usuario --</option>
-                  {usuariosCierre.map(usuario => (
-                    <option key={usuario} value={usuario}>{usuario}</option>
-                  ))}
-                </Form.Select>
-              </Form.Group>
-            </div>
-            
-            <div className="col-12">
-              <Form.Group controlId="causa_resolutiva">
-                <Form.Label>Causa o Acción Resolutiva (si aplica)</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
-                  name="causa_resolutiva"
-                  value={formData.causa_resolutiva || ''}
-                  onChange={handleChange}
-                  placeholder="Descripción de la solución implementada"
-                />
-              </Form.Group>
-            </div>
+            {/* 🔐 CAMPOS DE CIERRE - Solo con permiso especial */}
+            <PermissionGate 
+              permission={PLACA_PERMISSIONS.CLOSE_PLACA}
+              fallback={
+                <>
+                  <div className="col-md-6">
+                    <Form.Group controlId="fecha_cierre_readonly">
+                      <Form.Label>Fecha y Hora de Cierre</Form.Label>
+                      <Form.Control
+                        type="text"
+                        value={formData.fecha_cierre ? new Date(formData.fecha_cierre).toLocaleString('es-AR') : 'Sin cerrar'}
+                        disabled
+                        className="bg-light"
+                      />
+                      <Form.Text className="text-muted">
+                        No tienes permisos para cerrar placas
+                      </Form.Text>
+                    </Form.Group>
+                  </div>
+                  
+                  <div className="col-md-6">
+                    <Form.Group controlId="cerrado_por_readonly">
+                      <Form.Label>Cerrado por</Form.Label>
+                      <Form.Control
+                        type="text"
+                        value={formData.cerrado_por || 'No cerrado'}
+                        disabled
+                        className="bg-light"
+                      />
+                      <Form.Text className="text-muted">
+                        Solo lectura - Sin permisos de cierre
+                      </Form.Text>
+                    </Form.Group>
+                  </div>
+                  
+                  <div className="col-12">
+                    <Form.Group controlId="causa_resolutiva_readonly">
+                      <Form.Label>Causa o Acción Resolutiva</Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={2}
+                        value={formData.causa_resolutiva || 'Sin definir'}
+                        disabled
+                        className="bg-light"
+                      />
+                      <Form.Text className="text-muted">
+                        Solo lectura - Sin permisos de cierre
+                      </Form.Text>
+                    </Form.Group>
+                  </div>
+                </>
+              }
+            >
+              <div className="col-md-6">
+                <Form.Group controlId="fecha_cierre">
+                  <Form.Label>Fecha y Hora de Cierre (opcional)</Form.Label>
+                  <Form.Control
+                    type="datetime-local"
+                    name="fecha_cierre"
+                    value={formatDateForInput(formData.fecha_cierre)}
+                    onChange={handleChange}
+                    min={minFechaCierre}
+                  />
+                  <Form.Text className="text-muted">
+                    Dejar en blanco si aún no se ha resuelto. Debe ser posterior a la fecha y hora de inicio.
+                  </Form.Text>
+                </Form.Group>
+              </div>
+              
+              <div className="col-md-6">
+                <Form.Group controlId="cerrado_por">
+                  <Form.Label>Cerrado por (si aplica)</Form.Label>
+                  <PermissionGate 
+                    permission={USER_PERMISSIONS.VIEW_USERS}
+                    fallback={
+                      <Form.Control
+                        type="text"
+                        value={formData.cerrado_por || ''}
+                        placeholder="Usuario que cerró la placa"
+                        name="cerrado_por"
+                        onChange={handleChange}
+                      />
+                    }
+                  >
+                    <Form.Select
+                      name="cerrado_por"
+                      value={formData.cerrado_por || ''}
+                      onChange={handleChange}
+                    >
+                      <option value="">-- Seleccione Usuario --</option>
+                      {usuariosCierre.map(usuario => (
+                        <option key={usuario} value={usuario}>{usuario}</option>
+                      ))}
+                    </Form.Select>
+                  </PermissionGate>
+                </Form.Group>
+              </div>
+              
+              <div className="col-12">
+                <Form.Group controlId="causa_resolutiva">
+                  <Form.Label>Causa o Acción Resolutiva (si aplica)</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={2}
+                    name="causa_resolutiva"
+                    value={formData.causa_resolutiva || ''}
+                    onChange={handleChange}
+                    placeholder="Descripción de la solución implementada"
+                  />
+                </Form.Group>
+              </div>
+            </PermissionGate>
           </div>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleModalClose}>
             Cancelar
           </Button>
-          <Button 
-            variant="primary" 
-            type="submit" 
-            disabled={loading}
+          
+          {/* 🔐 BOTÓN GUARDAR/ACTUALIZAR - Con permisos */}
+          <PermissionGate 
+            permission={isEditMode ? PLACA_PERMISSIONS.EDIT_PLACA : PLACA_PERMISSIONS.CREATE_PLACA}
+            fallback={
+              <Button variant="outline-secondary" disabled>
+                <i className="bi bi-lock me-2"></i>
+                Sin permisos para {isEditMode ? 'actualizar' : 'guardar'}
+              </Button>
+            }
           >
-            {loading ? (
-              <>
-                <Spinner animation="border" size="sm" className="me-2" />
-                {placa?.id ? 'Actualizando...' : 'Guardando...'}
-              </>
-            ) : (
-              placa?.id ? 'Actualizar' : 'Guardar'
-            )}
-          </Button>
+            <Button 
+              variant="primary" 
+              type="submit" 
+              disabled={loading || permissionsLoading}
+            >
+              {loading ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  {isEditMode ? 'Actualizando...' : 'Guardando...'}
+                </>
+              ) : (
+                <>
+                  <i className={`bi ${isEditMode ? 'bi-pencil' : 'bi-plus-circle'} me-2`}></i>
+                  {isEditMode ? 'Actualizar' : 'Guardar'}
+                </>
+              )}
+            </Button>
+          </PermissionGate>
         </Modal.Footer>
       </Form>
     </Modal>
