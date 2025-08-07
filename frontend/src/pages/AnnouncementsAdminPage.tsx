@@ -1,4 +1,9 @@
 // src/pages/AnnouncementsAdminPage.tsx
+// 🔐 COMPONENTE CON CONTROL DE PERMISOS APLICADO
+// - Ver dashboard: ANNOUNCEMENT_PERMISSIONS.VIEW_ANNOUNCEMENTS
+// - Crear anuncio: ANNOUNCEMENT_PERMISSIONS.CREATE_ANNOUNCEMENTS
+// - Ver estadísticas: ANNOUNCEMENT_PERMISSIONS.MANAGE_ANNOUNCEMENT_STATS
+
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Alert, Tab, Tabs } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +19,11 @@ import AnnouncementsStats from '../components/AnnouncementsAdmin/AnnouncementsSt
 import AnnouncementPreview from '../components/AnnouncementsAdmin/AnnouncementPreview';
 import announcementsService, { Announcement } from '../services/announcementsService';
 import { getUserName, logout } from '../services/authService';
+
+// 🔐 NUEVOS IMPORTS PARA EL SISTEMA DE PERMISOS
+import PermissionGate from '../components/PermissionGate';
+import { usePermissions } from '../hooks/usePermissions';
+import { ANNOUNCEMENT_PERMISSIONS } from '../utils/permissions';
 
 // Tipos para las estadísticas - deben coincidir con el componente AnnouncementsStats
 interface AnnouncementStatsData {
@@ -48,6 +58,9 @@ const AnnouncementsAdminPage: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   
+  // 🔐 HOOK PARA VERIFICAR PERMISOS
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
+  
   // Estados para datos
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [stats, setStats] = useState<AnnouncementStatsData | null>(null);
@@ -55,10 +68,66 @@ const AnnouncementsAdminPage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
 
+  // Configuración de layout
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
+  const contentStyle = {
+    marginLeft: sidebarCollapsed ? '80px' : '250px',
+    transition: 'all 0.3s',
+    width: sidebarCollapsed ? 'calc(100% - 80px)' : 'calc(100% - 250px)',
+    display: 'flex' as 'flex',
+    flexDirection: 'column' as 'column',
+    minHeight: '100vh',
+  };
+
+  // 🔐 TODOS LOS HOOKS AL INICIO (evitar llamadas condicionales)
+  
   // Cargar datos inicial
   useEffect(() => {
-    loadData();
-  }, []);
+    if (hasPermission(ANNOUNCEMENT_PERMISSIONS.VIEW_ANNOUNCEMENTS)) {
+      loadData();
+    }
+  }, [hasPermission]);
+
+  // Limpiar mensajes después de 5 segundos
+  useEffect(() => {
+    if (success || error) {
+      const timer = setTimeout(() => {
+        setSuccess(null);
+        setError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success, error]);
+
+  // 🔐 VERIFICAR ACCESO AL DASHBOARD DE ANUNCIOS
+  if (!permissionsLoading && !hasPermission(ANNOUNCEMENT_PERMISSIONS.VIEW_ANNOUNCEMENTS)) {
+    return (
+      <div className="d-flex">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          toggle={toggleSidebar}
+          onLogout={() => logout()}
+        />
+        
+        <div style={contentStyle}>
+          <Container className="py-4">
+            <Alert variant="danger" className="text-center">
+              <div className="py-5">
+                <i className="bi bi-megaphone-fill display-1 text-danger mb-3 d-block"></i>
+                <h3>Acceso Denegado</h3>
+                <p className="mb-0">No tienes permisos para acceder al módulo de anuncios.</p>
+                <p className="small text-muted">Contacta al administrador si necesitas acceso a esta funcionalidad.</p>
+              </div>
+            </Alert>
+          </Container>
+          <ThemedFooter />
+        </div>
+      </div>
+    );
+  }
 
   const loadData = async () => {
     try {
@@ -363,30 +432,6 @@ const AnnouncementsAdminPage: React.FC = () => {
     }
   };
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
-
-  // Limpiar mensajes después de 5 segundos (mantener para compatibilidad)
-  useEffect(() => {
-    if (success || error) {
-      const timer = setTimeout(() => {
-        setSuccess(null);
-        setError(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [success, error]);
-
-  const contentStyle = {
-    marginLeft: sidebarCollapsed ? '80px' : '250px',
-    transition: 'all 0.3s',
-    width: sidebarCollapsed ? 'calc(100% - 80px)' : 'calc(100% - 250px)',
-    display: 'flex' as 'flex',
-    flexDirection: 'column' as 'column',
-    minHeight: '100vh',
-  };
-
   return (
     <div className="d-flex">
       <Sidebar collapsed={sidebarCollapsed} toggle={toggleSidebar} onLogout={handleLogout} />
@@ -408,14 +453,30 @@ const AnnouncementsAdminPage: React.FC = () => {
                 loading={refreshing}
                 size="md"
               />
-              <Button 
-                variant="primary" 
-                onClick={handleCreateNew}
-                disabled={loading}
+              
+              {/* 🔐 BOTÓN NUEVO ANUNCIO - Solo con permiso de crear */}
+              <PermissionGate 
+                permission={ANNOUNCEMENT_PERMISSIONS.CREATE_ANNOUNCEMENTS}
+                fallback={
+                  <Button 
+                    variant="outline-secondary" 
+                    disabled
+                    title="No tienes permisos para crear anuncios"
+                  >
+                    <i className="bi bi-lock me-2"></i>
+                    Sin permisos
+                  </Button>
+                }
               >
-                <i className="bi bi-plus-circle me-2"></i>
-                Nuevo Anuncio
-              </Button>
+                <Button 
+                  variant="primary" 
+                  onClick={handleCreateNew}
+                  disabled={loading || permissionsLoading}
+                >
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Nuevo Anuncio
+                </Button>
+              </PermissionGate>
             </div>
           </div>
 
@@ -434,55 +495,57 @@ const AnnouncementsAdminPage: React.FC = () => {
             </Alert>
           )}
 
-          {/* Estadísticas rápidas */}
-          {stats && (
-            <Row className="g-4 mb-4">
-              <Col md={3}>
-                <Card className="shadow-sm border-0 themed-card h-100">
-                  <Card.Body className="text-center">
-                    <div className="text-primary mb-2">
-                      <i className="bi bi-megaphone fs-1"></i>
-                    </div>
-                    <h3 className="fw-bold">{stats.general.total_announcements}</h3>
-                    <p className="text-muted mb-0">Total Anuncios</p>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col md={3}>
-                <Card className="shadow-sm border-0 themed-card h-100">
-                  <Card.Body className="text-center">
-                    <div className="text-success mb-2">
-                      <i className="bi bi-check-circle fs-1"></i>
-                    </div>
-                    <h3 className="fw-bold">{stats.general.active_announcements}</h3>
-                    <p className="text-muted mb-0">Activos</p>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col md={3}>
-                <Card className="shadow-sm border-0 themed-card h-100">
-                  <Card.Body className="text-center">
-                    <div className="text-info mb-2">
-                      <i className="bi bi-eye fs-1"></i>
-                    </div>
-                    <h3 className="fw-bold">{stats.general.total_views}</h3>
-                    <p className="text-muted mb-0">Visualizaciones</p>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col md={3}>
-                <Card className="shadow-sm border-0 themed-card h-100">
-                  <Card.Body className="text-center">
-                    <div className="text-warning mb-2">
-                      <i className="bi bi-hand-index fs-1"></i>
-                    </div>
-                    <h3 className="fw-bold">{stats.general.total_clicks}</h3>
-                    <p className="text-muted mb-0">Clics</p>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
-          )}
+          {/* 🔐 ESTADÍSTICAS RÁPIDAS - Solo con permiso de ver estadísticas */}
+          <PermissionGate permission={ANNOUNCEMENT_PERMISSIONS.MANAGE_ANNOUNCEMENT_STATS}>
+            {stats && (
+              <Row className="g-4 mb-4">
+                <Col md={3}>
+                  <Card className="shadow-sm border-0 themed-card h-100">
+                    <Card.Body className="text-center">
+                      <div className="text-primary mb-2">
+                        <i className="bi bi-megaphone fs-1"></i>
+                      </div>
+                      <h3 className="fw-bold">{stats.general.total_announcements}</h3>
+                      <p className="text-muted mb-0">Total Anuncios</p>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={3}>
+                  <Card className="shadow-sm border-0 themed-card h-100">
+                    <Card.Body className="text-center">
+                      <div className="text-success mb-2">
+                        <i className="bi bi-check-circle fs-1"></i>
+                      </div>
+                      <h3 className="fw-bold">{stats.general.active_announcements}</h3>
+                      <p className="text-muted mb-0">Activos</p>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={3}>
+                  <Card className="shadow-sm border-0 themed-card h-100">
+                    <Card.Body className="text-center">
+                      <div className="text-info mb-2">
+                        <i className="bi bi-eye fs-1"></i>
+                      </div>
+                      <h3 className="fw-bold">{stats.general.total_views}</h3>
+                      <p className="text-muted mb-0">Visualizaciones</p>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={3}>
+                  <Card className="shadow-sm border-0 themed-card h-100">
+                    <Card.Body className="text-center">
+                      <div className="text-warning mb-2">
+                        <i className="bi bi-hand-index fs-1"></i>
+                      </div>
+                      <h3 className="fw-bold">{stats.general.total_clicks}</h3>
+                      <p className="text-muted mb-0">Clics</p>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+            )}
+          </PermissionGate>
 
           {/* Contenido principal con pestañas */}
           <Card className="shadow-sm border-0 themed-card">
@@ -536,14 +599,17 @@ const AnnouncementsAdminPage: React.FC = () => {
                   </Tab>
                 )}
 
-                <Tab eventKey="stats" title={
-                  <span>
-                    <i className="bi bi-graph-up me-2"></i>
-                    Estadísticas
-                  </span>
-                }>
-                  <AnnouncementsStats stats={stats} />
-                </Tab>
+                {/* 🔐 PESTAÑA ESTADÍSTICAS - Solo con permiso */}
+                {hasPermission(ANNOUNCEMENT_PERMISSIONS.MANAGE_ANNOUNCEMENT_STATS) && (
+                  <Tab eventKey="stats" title={
+                    <span>
+                      <i className="bi bi-graph-up me-2"></i>
+                      Estadísticas
+                    </span>
+                  }>
+                    <AnnouncementsStats stats={stats} />
+                  </Tab>
+                )}
               </Tabs>
             </Card.Body>
           </Card>

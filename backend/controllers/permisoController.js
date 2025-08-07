@@ -258,7 +258,14 @@ const asignarPermisoARol = async (req, res) => {
 const quitarPermisoDeRol = async (req, res) => {
     const { id_rol, id_permiso } = req.body;
     
+    // 🔧 DEBUG: Agregar logs detallados
+    console.log('🔍 DEBUG quitarPermisoDeRol - INICIO');
+    console.log('📋 Body recibido:', req.body);
+    console.log('🎯 id_rol:', id_rol, 'tipo:', typeof id_rol);
+    console.log('🎯 id_permiso:', id_permiso, 'tipo:', typeof id_permiso);
+    
     if (!id_rol || !id_permiso) {
+        console.log('❌ ERROR: Faltan parámetros');
         return res.status(400).json({
             success: false,
             message: 'id_rol e id_permiso son requeridos'
@@ -266,31 +273,42 @@ const quitarPermisoDeRol = async (req, res) => {
     }
     
     try {
+        console.log('🔍 Verificando si existe la asignación...');
         // Verificar si existe la asignación
         const [existingAssignments] = await db.query(
             'SELECT id FROM rol_permiso WHERE id_rol = ? AND id_permiso = ?',
             [id_rol, id_permiso]
         );
         
+        console.log('📊 Asignaciones encontradas:', existingAssignments.length);
+        console.log('📋 Datos encontrados:', existingAssignments);
+        
         if (existingAssignments.length === 0) {
+            console.log('❌ No se encontró la asignación');
             return res.status(404).json({
                 success: false,
                 message: 'El rol no tiene este permiso asignado'
             });
         }
         
+        console.log('🗑️ Ejecutando DELETE...');
         // Quitar el permiso
-        await db.query(
+        const [result] = await db.query(
             'DELETE FROM rol_permiso WHERE id_rol = ? AND id_permiso = ?',
             [id_rol, id_permiso]
         );
+        
+        console.log('✅ DELETE ejecutado. Filas afectadas:', result.affectedRows);
+        console.log('📊 Resultado completo:', result);
         
         res.json({
             success: true,
             message: 'Permiso eliminado correctamente del rol'
         });
+        
+        console.log('🎉 Respuesta enviada exitosamente');
     } catch (err) {
-        console.error('Error quitando permiso:', err);
+        console.error('💥 ERROR quitando permiso:', err);
         return res.status(500).json({
             success: false,
             message: 'Error quitando permiso',

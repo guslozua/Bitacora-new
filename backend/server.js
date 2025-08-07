@@ -120,6 +120,18 @@ app.use('/api/abm/social', require('./routes/abmSocial'));
 app.use('/api/abm/pic', require('./routes/abmPic'));
 app.use('/api/abm/stats', require('./routes/abmStats'));
 app.use('/api/placas', placasRoutes);
+// 🔧 DEBUG MIDDLEWARE ESPECÍFICO PARA PERMISSIONS
+app.use('/api/permissions*', (req, res, next) => {
+  console.log('🔍 INTERCEPTOR PERMISSIONS:');
+  console.log('   Method:', req.method);
+  console.log('   URL:', req.originalUrl);
+  console.log('   Path:', req.path);
+  console.log('   Body:', req.body);
+  console.log('   Headers Authorization:', req.headers.authorization ? 'PRESENT' : 'MISSING');
+  console.log('   Content-Type:', req.headers['content-type']);
+  next();
+});
+
 app.use('/api/permisos', require('./routes/permisoRoutes'));
 app.use('/api/permissions', require('./routes/permisoRoutes')); // Alias en inglés
 app.use('/api/roles', roleRoutes);

@@ -1,9 +1,19 @@
 // src/components/AnnouncementsAdmin/AnnouncementsList.tsx
+// 🔐 COMPONENTE CON CONTROL DE PERMISOS APLICADO
+// - Editar anuncio: ANNOUNCEMENT_PERMISSIONS.EDIT_ANNOUNCEMENTS
+// - Eliminar anuncio: ANNOUNCEMENT_PERMISSIONS.DELETE_ANNOUNCEMENTS
+// - Cambiar estado: ANNOUNCEMENT_PERMISSIONS.PUBLISH_ANNOUNCEMENTS
+
 import React, { useState } from 'react';
 import { Table, Button, Badge, Dropdown, Form, InputGroup, Spinner, Alert } from 'react-bootstrap';
 import Swal from 'sweetalert2';
 import { useTheme } from '../../context/ThemeContext';
 import announcementsService, { Announcement } from '../../services/announcementsService';
+
+// 🔐 IMPORTS PARA EL SISTEMA DE PERMISOS
+import PermissionGate from '../PermissionGate';
+import { usePermissions } from '../../hooks/usePermissions';
+import { ANNOUNCEMENT_PERMISSIONS } from '../../utils/permissions';
 
 interface AnnouncementsListProps {
   announcements: Announcement[];
@@ -32,6 +42,9 @@ const AnnouncementsList: React.FC<AnnouncementsListProps> = ({
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('priority');
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+  
+  // 🔐 HOOK PARA VERIFICAR PERMISOS
+  const { hasPermission } = usePermissions();
 
   // Filtrar y ordenar anuncios
   const filteredAnnouncements = announcements
@@ -487,15 +500,17 @@ const AnnouncementsList: React.FC<AnnouncementsListProps> = ({
                   </td>
                   <td>
                     <div className="d-flex gap-1">
-                      {/* Botón rápido de estado */}
-                      <Button
-                        size="sm"
-                        variant={announcement.active ? 'success' : 'outline-success'}
-                        onClick={() => handleToggleStatusClick(announcement)}
-                        title={announcement.active ? 'Desactivar anuncio' : 'Activar anuncio'}
-                      >
-                        <i className={`bi ${announcement.active ? 'bi-pause-fill' : 'bi-play-fill'}`}></i>
-                      </Button>
+                      {/* 🔐 BOTÓN RÁPIDO DE ESTADO - Solo con permiso de publicar */}
+                      <PermissionGate permission={ANNOUNCEMENT_PERMISSIONS.PUBLISH_ANNOUNCEMENTS}>
+                        <Button
+                          size="sm"
+                          variant={announcement.active ? 'success' : 'outline-success'}
+                          onClick={() => handleToggleStatusClick(announcement)}
+                          title={announcement.active ? 'Desactivar anuncio' : 'Activar anuncio'}
+                        >
+                          <i className={`bi ${announcement.active ? 'bi-pause-fill' : 'bi-play-fill'}`}></i>
+                        </Button>
+                      </PermissionGate>
 
                       {/* Dropdown de acciones */}
                       <Dropdown>
@@ -508,6 +523,7 @@ const AnnouncementsList: React.FC<AnnouncementsListProps> = ({
                         </Dropdown.Toggle>
 
                         <Dropdown.Menu>
+                          {/* VER - Siempre visible si tiene acceso al dashboard */}
                           <Dropdown.Item 
                             onClick={() => onView(announcement)}
                             className="d-flex align-items-center"
@@ -515,29 +531,38 @@ const AnnouncementsList: React.FC<AnnouncementsListProps> = ({
                             <i className="bi bi-eye me-2"></i>Ver
                           </Dropdown.Item>
                           
-                          <Dropdown.Item 
-                            onClick={() => onEdit(announcement)}
-                            className="d-flex align-items-center"
-                          >
-                            <i className="bi bi-pencil me-2"></i>Editar
-                          </Dropdown.Item>
+                          {/* 🔐 EDITAR - Solo con permiso */}
+                          <PermissionGate permission={ANNOUNCEMENT_PERMISSIONS.EDIT_ANNOUNCEMENTS}>
+                            <Dropdown.Item 
+                              onClick={() => onEdit(announcement)}
+                              className="d-flex align-items-center"
+                            >
+                              <i className="bi bi-pencil me-2"></i>Editar
+                            </Dropdown.Item>
+                          </PermissionGate>
 
                           <Dropdown.Divider />
 
-                          <Dropdown.Item 
-                            onClick={() => handleToggleStatusClick(announcement)}
-                            className="d-flex align-items-center"
-                          >
-                            <i className={`bi ${announcement.active ? 'bi-pause' : 'bi-play'} me-2`}></i>
-                            {announcement.active ? 'Desactivar' : 'Activar'}
-                          </Dropdown.Item>
+                          {/* 🔐 CAMBIAR ESTADO - Solo con permiso de publicar */}
+                          <PermissionGate permission={ANNOUNCEMENT_PERMISSIONS.PUBLISH_ANNOUNCEMENTS}>
+                            <Dropdown.Item 
+                              onClick={() => handleToggleStatusClick(announcement)}
+                              className="d-flex align-items-center"
+                            >
+                              <i className={`bi ${announcement.active ? 'bi-pause' : 'bi-play'} me-2`}></i>
+                              {announcement.active ? 'Desactivar' : 'Activar'}
+                            </Dropdown.Item>
+                          </PermissionGate>
                           
-                          <Dropdown.Item 
-                            onClick={() => handleDuplicateClick(announcement)}
-                            className="d-flex align-items-center"
-                          >
-                            <i className="bi bi-files me-2"></i>Duplicar
-                          </Dropdown.Item>
+                          {/* 🔐 DUPLICAR - Solo con permiso de crear */}
+                          <PermissionGate permission={ANNOUNCEMENT_PERMISSIONS.CREATE_ANNOUNCEMENTS}>
+                            <Dropdown.Item 
+                              onClick={() => handleDuplicateClick(announcement)}
+                              className="d-flex align-items-center"
+                            >
+                              <i className="bi bi-files me-2"></i>Duplicar
+                            </Dropdown.Item>
+                          </PermissionGate>
 
                           {announcement.action_url && (
                             <>
@@ -555,12 +580,15 @@ const AnnouncementsList: React.FC<AnnouncementsListProps> = ({
 
                           <Dropdown.Divider />
 
-                          <Dropdown.Item 
-                            onClick={() => handleDeleteClick(announcement)}
-                            className="d-flex align-items-center text-danger"
-                          >
-                            <i className="bi bi-trash me-2"></i>Eliminar
-                          </Dropdown.Item>
+                          {/* 🔐 ELIMINAR - Solo con permiso */}
+                          <PermissionGate permission={ANNOUNCEMENT_PERMISSIONS.DELETE_ANNOUNCEMENTS}>
+                            <Dropdown.Item 
+                              onClick={() => handleDeleteClick(announcement)}
+                              className="d-flex align-items-center text-danger"
+                            >
+                              <i className="bi bi-trash me-2"></i>Eliminar
+                            </Dropdown.Item>
+                          </PermissionGate>
                         </Dropdown.Menu>
                       </Dropdown>
                     </div>

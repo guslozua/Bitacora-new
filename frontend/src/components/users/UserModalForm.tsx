@@ -5,6 +5,11 @@ import Swal from 'sweetalert2';
 import { fetchUserById, createUser, updateUser, UserFormData } from '../../services/userService';
 import { fetchAllRoles, Role } from '../../services/roleService';
 
+// 🔐 IMPORTS PARA EL SISTEMA DE PERMISOS
+import PermissionGate from '../PermissionGate';
+import { usePermissions } from '../../hooks/usePermissions';
+import { SYSTEM_PERMISSIONS } from '../../utils/permissions';
+
 interface UserModalFormProps {
   show: boolean;
   onHide: () => void;
@@ -14,6 +19,14 @@ interface UserModalFormProps {
 
 const UserModalForm: React.FC<UserModalFormProps> = ({ show, onHide, userId, onSuccess }) => {
   const isEditMode = !!userId;
+  
+  // 🔐 HOOK PARA VERIFICAR PERMISOS
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
+  
+  // 🔐 VERIFICAR ACCESO AL MODAL
+  const canAccessModal = isEditMode 
+    ? hasPermission(SYSTEM_PERMISSIONS.EDIT_USER)
+    : hasPermission(SYSTEM_PERMISSIONS.CREATE_USER);
   
   const [formData, setFormData] = useState<UserFormData>({
     nombre: '',
@@ -181,6 +194,38 @@ const UserModalForm: React.FC<UserModalFormProps> = ({ show, onHide, userId, onS
     }
   };
   
+  // 🔐 SI NO HAY PERMISOS DE ACCESO, MOSTRAR MODAL DE ACCESO DENEGADO
+  if (!permissionsLoading && !canAccessModal) {
+    return (
+      <Modal 
+        show={show} 
+        onHide={onHide} 
+        backdrop="static" 
+        size="sm" 
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className="bi bi-shield-x text-danger me-2"></i>
+            Acceso Denegado
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-center py-4">
+          <i className="bi bi-person-x fs-1 text-muted mb-3 d-block"></i>
+          <h5 className="text-muted">Sin permisos para {isEditMode ? 'editar' : 'crear'} usuarios</h5>
+          <p className="text-muted">No tienes los permisos necesarios para {isEditMode ? 'editar este' : 'crear un nuevo'} usuario.</p>
+          <p className="small text-muted">Contacta al administrador si necesitas acceso a esta funcionalidad.</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={onHide}>
+            <i className="bi bi-arrow-left me-2"></i>
+            Volver
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    );
+  }
+
   return (
     <Modal 
       show={show} 
@@ -269,31 +314,54 @@ const UserModalForm: React.FC<UserModalFormProps> = ({ show, onHide, userId, onS
                 </Col>
               </Row>
               
-              <Form.Group className="mb-4">
-                <Form.Label>Roles</Form.Label>
-                {availableRoles.length === 0 ? (
-                  <Alert variant="warning">
-                    No hay roles disponibles. Verifica la conexión con el servidor.
-                  </Alert>
-                ) : (
-                  <div className="border rounded p-3">
-                    <Row>
-                      {availableRoles.map(role => (
-                        <Col md={4} key={role.id}>
-                          <Form.Check
-                            type="checkbox"
-                            label={role.nombre}
-                            value={role.nombre}
-                            checked={(formData.roles || []).includes(role.nombre)}
-                            onChange={handleRoleChange}
-                            className="mb-2"
-                          />
-                        </Col>
-                      ))}
-                    </Row>
-                  </div>
-                )}
-              </Form.Group>
+              {/* 🔐 SECCIÓN DE ROLES - Control granular */}
+              <PermissionGate 
+                permission={SYSTEM_PERMISSIONS.MANAGE_ROLES}
+                fallback={
+                  <Form.Group className="mb-4">
+                    <Form.Label>Roles</Form.Label>
+                    <Alert variant="info">
+                      <i className="bi bi-info-circle me-2"></i>
+                      <strong>Roles asignados:</strong> {(formData.roles || []).length > 0 ? (formData.roles || []).join(', ') : 'Sin roles asignados'}
+                      <br />
+                      <small className="text-muted">No tienes permisos para modificar los roles de este usuario.</small>
+                    </Alert>
+                  </Form.Group>
+                }
+              >
+                <Form.Group className="mb-4">
+                  <Form.Label>
+                    <i className="bi bi-shield-check me-2 text-success"></i>
+                    Roles
+                  </Form.Label>
+                  {availableRoles.length === 0 ? (
+                    <Alert variant="warning">
+                      No hay roles disponibles. Verifica la conexión con el servidor.
+                    </Alert>
+                  ) : (
+                    <div className="border rounded p-3">
+                      <Row>
+                        {availableRoles.map(role => (
+                          <Col md={4} key={role.id}>
+                            <Form.Check
+                              type="checkbox"
+                              label={role.nombre}
+                              value={role.nombre}
+                              checked={(formData.roles || []).includes(role.nombre)}
+                              onChange={handleRoleChange}
+                              className="mb-2"
+                            />
+                          </Col>
+                        ))}
+                      </Row>
+                    </div>
+                  )}
+                  <Form.Text className="text-success">
+                    <i className="bi bi-check-circle me-1"></i>
+                    Tienes permisos para gestionar todos los roles del sistema
+                  </Form.Text>
+                </Form.Group>
+              </PermissionGate>
             </Form>
           </>
         )}
@@ -303,20 +371,35 @@ const UserModalForm: React.FC<UserModalFormProps> = ({ show, onHide, userId, onS
         <Button variant="secondary" onClick={onHide} disabled={saving}>
           Cancelar
         </Button>
-        <Button 
-          variant="primary" 
-          onClick={(e) => handleSubmit(e as any)} 
-          disabled={saving || loading}
+        
+        {/* 🔐 BOTÓN GUARDAR/ACTUALIZAR - Con permisos */}
+        <PermissionGate 
+          permission={isEditMode ? SYSTEM_PERMISSIONS.EDIT_USER : SYSTEM_PERMISSIONS.CREATE_USER}
+          fallback={
+            <Button variant="outline-secondary" disabled>
+              <i className="bi bi-lock me-2"></i>
+              Sin permisos para {isEditMode ? 'actualizar' : 'crear'}
+            </Button>
+          }
         >
-          {saving ? (
-            <>
-              <Spinner as="span" animation="border" size="sm" className="me-2" />
-              Guardando...
-            </>
-          ) : (
-            isEditMode ? 'Actualizar Usuario' : 'Crear Usuario'
-          )}
-        </Button>
+          <Button 
+            variant="primary" 
+            onClick={(e) => handleSubmit(e as any)} 
+            disabled={saving || loading || permissionsLoading}
+          >
+            {saving ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                {isEditMode ? 'Actualizando...' : 'Creando...'}
+              </>
+            ) : (
+              <>
+                <i className={`bi ${isEditMode ? 'bi-pencil' : 'bi-plus-circle'} me-2`}></i>
+                {isEditMode ? 'Actualizar Usuario' : 'Crear Usuario'}
+              </>
+            )}
+          </Button>
+        </PermissionGate>
       </Modal.Footer>
     </Modal>
   );

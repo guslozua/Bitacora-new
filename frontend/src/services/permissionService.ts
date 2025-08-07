@@ -190,7 +190,10 @@ export const assignPermissionToRole = async (roleId: number, permissionId: numbe
  */
 export const removePermissionFromRole = async (roleId: number, permissionId: number): Promise<any> => {
   try {
-    const response = await axios.delete(`${API_BASE_URL}/permissions/remove`, {
+    // 🔧 FIX: Usar configuración correcta para DELETE con body
+    const response = await axios({
+      method: 'DELETE',
+      url: `${API_BASE_URL}/permissions/remove`,
       data: {
         id_rol: roleId,
         id_permiso: permissionId
