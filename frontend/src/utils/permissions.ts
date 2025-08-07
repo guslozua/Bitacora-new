@@ -170,10 +170,7 @@ export const CONFIG_PERMISSIONS = {
 
 // 🌐 PERMISOS GENERALES
 export const GENERAL_PERMISSIONS = {
-  VIEW_PROJECTS: 'ver_proyectos',
-  CREATE_TASKS_GENERAL: 'crear_tareas',
-  EDIT_TASKS_GENERAL: 'editar_tareas',
-  DELETE_TASKS_GENERAL: 'eliminar_tareas'
+  VIEW_PROJECTS: 'ver_proyectos'
 } as const;
 
 /**
