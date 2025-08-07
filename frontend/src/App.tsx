@@ -14,7 +14,7 @@ import { initializeAuth, isAuthenticated } from './services/authService';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
-import Tasks from './pages/Tasks';
+
 import HitosPage from './pages/HitosPage';
 import ItrackerUpload from './pages/ItrackerUpload';
 import ItrackerDash from './pages/ItrackerDash';
@@ -64,75 +64,13 @@ import DiagnosticsPage from './pages/DiagnosticsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // 🛠️ IMPORTS PARA EL SISTEMA DE PERMISOS
-import { SYSTEM_PERMISSIONS, USER_PERMISSIONS, ROLES } from './utils/permissions';
+import { SYSTEM_PERMISSIONS, USER_PERMISSIONS, ROLES, ITRACKER_PERMISSIONS, TABULACION_PERMISSIONS, GUARDIA_PERMISSIONS, ABM_PERMISSIONS, PLACA_PERMISSIONS, ANNOUNCEMENT_PERMISSIONS, HITO_PERMISSIONS, NOTIFICATION_PERMISSIONS, DIAGNOSTICS_PERMISSIONS, CONTENT_PERMISSIONS, CALENDAR_PERMISSIONS, SESSION_ANALYSIS_PERMISSIONS, ATERNITY_PERMISSIONS } from './utils/permissions';
 
 // Función helper para obtener el userId actual
 const getCurrentUserId = (): number => {
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
   return user?.id || 0;
-};
-
-// 🎭 COMPONENTE TEMPORAL PARA COMPATIBILIDAD CON RUTAS ANTIGUAS
-// Este componente mantiene la funcionalidad anterior para rutas que aún no han sido migradas
-interface LegacyProtectedRouteProps {
-  element: React.ReactNode;
-  path?: string;
-  allowedRoles?: string[];
-}
-
-const LegacyProtectedRoute: React.FC<LegacyProtectedRouteProps> = ({ element, allowedRoles }) => {
-  // Verificar autenticación primero
-  if (!isAuthenticated()) {
-    return <Navigate to="/" replace />;
-  }
-  
-  // Si se especifican roles, verificar que el usuario tenga al menos uno de ellos
-  if (allowedRoles && allowedRoles.length > 0) {
-    const userStr = localStorage.getItem('user');
-    const user = userStr ? JSON.parse(userStr) : null;
-    
-    const hasRequiredRole = user && 
-      Array.isArray(user.roles) && 
-      user.roles.some((role: string) => allowedRoles.includes(role));
-    
-    if (!hasRequiredRole) {
-      // Mostrar SweetAlert y luego redirigir
-      setTimeout(() => {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Acceso Denegado',
-          html: `
-            <div style="text-align: left; padding: 10px;">
-              <p><strong>No tienes permisos para acceder al Panel Administrativo</strong></p>
-              <br>
-              <p>Esta sección está restringida a usuarios con perfiles de:</p>
-              <ul style="margin: 10px 0; padding-left: 20px;">
-                <li>👑 <strong>Administrador</strong></li>
-                <li>🔧 <strong>Super Administrador</strong></li>
-              </ul>
-              <br>
-              <p style="color: #666; font-size: 14px;">
-                💡 Si consideras que deberías tener acceso, contacta al administrador del sistema.
-              </p>
-            </div>
-          `,
-          showConfirmButton: false,
-          timer: 4000,
-          timerProgressBar: true,
-          allowEscapeKey: true,
-          allowOutsideClick: true,
-          customClass: {
-            popup: 'swal2-popup-simple'
-          }
-        });
-      }, 100);
-      
-      return <Navigate to="/dashboard" replace />;
-    }
-  }
-  
-  return <>{element}</>;
 };
 
 // Hack para solucionar problemas con react-beautiful-dnd en React 18
@@ -193,15 +131,15 @@ const App: React.FC = () => {
               {/* Rutas protegidas con solo autenticación */}
               <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} authOnly />} />
               <Route path="/projects" element={<ProtectedRoute element={<Projects />} authOnly />} />
-              <Route path="/tasks" element={<ProtectedRoute element={<Tasks />} authOnly />} />
+
               
               {/* 🔔 NUEVA RUTA PARA HITOS */}
-              <Route path="/hitos" element={<LegacyProtectedRoute element={<HitosPage />} />} />
+              <Route path="/hitos" element={<ProtectedRoute element={<HitosPage />} permission={HITO_PERMISSIONS.VIEW_HITOS} />} />
               
-              <Route path="/itracker" element={<LegacyProtectedRoute element={<ItrackerUpload />} />} />
-              <Route path="/itrackerdash" element={<LegacyProtectedRoute element={<ItrackerDash />} />} />
-              <Route path="/tabulaciones" element={<LegacyProtectedRoute element={<TabulacionesUpload />} />} />
-              <Route path="/tabulacionesdash" element={<LegacyProtectedRoute element={<TabulacionesDash />} />} />
+              <Route path="/itracker" element={<ProtectedRoute element={<ItrackerUpload />} permission={ITRACKER_PERMISSIONS.UPLOAD_ITRACKER} />} />
+              <Route path="/itrackerdash" element={<ProtectedRoute element={<ItrackerDash />} permission={ITRACKER_PERMISSIONS.VIEW_ITRACKER} />} />
+              <Route path="/tabulaciones" element={<ProtectedRoute element={<TabulacionesUpload />} permission={TABULACION_PERMISSIONS.UPLOAD_TABULACIONES} />} />
+              <Route path="/tabulacionesdash" element={<ProtectedRoute element={<TabulacionesDash />} permission={TABULACION_PERMISSIONS.VIEW_TABULACIONES} />} />
               {/* 🔐 RUTAS DE ADMINISTRACIÓN CON PERMISOS ESPECÍFICOS */}
               <Route 
                 path="/admin" 
@@ -212,38 +150,49 @@ const App: React.FC = () => {
                   />
                 } 
               />
-              <Route path="/abmdashboard" element={<LegacyProtectedRoute element={<AbmDashboard />} />} />
-              <Route path="/abm" element={<LegacyProtectedRoute element={<AbmUpload />} />} />
-              <Route path="/placasdash" element={<LegacyProtectedRoute element={<PlacasDash />} />} />
-              <Route path="/glosario" element={<LegacyProtectedRoute element={<Glosario />} />} />
-              <Route path="/links" element={<LegacyProtectedRoute element={<Enlaces />} />} />
-              <Route path="/contactos" element={<LegacyProtectedRoute element={<ContactosPage />} />} />
+              <Route path="/abmdashboard" element={<ProtectedRoute element={<AbmDashboard />} permission={ABM_PERMISSIONS.VIEW_ABM} />} />
+              <Route path="/abm" element={<ProtectedRoute element={<AbmUpload />} permission={ABM_PERMISSIONS.UPLOAD_ABM} />} />
+              <Route path="/placasdash" element={<ProtectedRoute element={<PlacasDash />} permission={PLACA_PERMISSIONS.VIEW_ALL_PLACAS} />} />
+              <Route path="/glosario" element={<ProtectedRoute element={<Glosario />} permission={CONTENT_PERMISSIONS.VIEW_GLOSARIO} />} />
+              <Route path="/links" element={<ProtectedRoute element={<Enlaces />} permission={CONTENT_PERMISSIONS.VIEW_ENLACES} />} />
+              <Route path="/contactos" element={<ProtectedRoute element={<ContactosPage />} permission={CONTENT_PERMISSIONS.VIEW_CONTACTOS} />} />
               
               {/* 🔔 NUEVA RUTA PARA NOTIFICACIONES */}
               <Route 
                 path="/notificaciones" 
                 element={
-                  <LegacyProtectedRoute 
+                  <ProtectedRoute 
                     element={<NotificacionesList userId={getCurrentUserId()} />} 
+                    permission={NOTIFICATION_PERMISSIONS.VIEW_NOTIFICATIONS}
                   />
                 } 
               />
               
               {/* Rutas del Calendario */}
-              <Route path="/calendar" element={<LegacyProtectedRoute element={<CalendarPage />} />} />
-              <Route path="/calendar/admin" element={<LegacyProtectedRoute element={<AdminCalendarPage />} />} />
-              <Route path="/calendar/event/:id" element={<LegacyProtectedRoute element={<EventPage />} />} />
+              <Route path="/calendar" element={<ProtectedRoute element={<CalendarPage />} permission={CALENDAR_PERMISSIONS.VIEW_CALENDAR} />} />
+              <Route path="/calendar/admin" element={<ProtectedRoute element={<AdminCalendarPage />} permission={CALENDAR_PERMISSIONS.MANAGE_CALENDAR_ADMIN} />} />
+              <Route path="/calendar/event/:id" element={<ProtectedRoute element={<EventPage />} permission={CALENDAR_PERMISSIONS.VIEW_CALENDAR} />} />
               
               {/* 🚀 NUEVA RUTA UNIFICADA PARA GESTIÓN DE GUARDIAS */}
               <Route 
                 path="/admin/gestion-guardias" 
-                element={<LegacyProtectedRoute element={<GestionGuardiasPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+                element={
+                  <ProtectedRoute 
+                    element={<GestionGuardiasPage />} 
+                    permission={GUARDIA_PERMISSIONS.VIEW_GUARDIAS}
+                  />
+                } 
               />
               
               {/* 📢 NUEVA RUTA PARA ADMINISTRACIÓN DE ANUNCIOS */}
               <Route 
                 path="/admin/announcements" 
-                element={<LegacyProtectedRoute element={<AnnouncementsAdminPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+                element={
+                  <ProtectedRoute 
+                    element={<AnnouncementsAdminPage />} 
+                    permission={ANNOUNCEMENT_PERMISSIONS.VIEW_ANNOUNCEMENTS}
+                  />
+                } 
               />
               
               {/* 🔄 RUTAS DE COMPATIBILIDAD (REDIRECCIONES) */}
@@ -342,19 +291,34 @@ const App: React.FC = () => {
               {/* 🚀 NUEVA RUTA PARA DIAGNÓSTICOS */}
               <Route 
                 path="/admin/diagnostics" 
-                element={<LegacyProtectedRoute element={<DiagnosticsPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+                element={
+                  <ProtectedRoute 
+                    element={<DiagnosticsPage />} 
+                    permission={DIAGNOSTICS_PERMISSIONS.VIEW_DIAGNOSTICS}
+                  />
+                } 
               />
               
               {/* 📊 NUEVA RUTA PARA ANÁLISIS DE SESIONES */}
               <Route 
                 path="/session-analysis" 
-                element={<LegacyProtectedRoute element={<SessionAnalysisDashboard />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+                element={
+                  <ProtectedRoute 
+                    element={<SessionAnalysisDashboard />} 
+                    permission={SESSION_ANALYSIS_PERMISSIONS.VIEW_SESSION_ANALYSIS}
+                  />
+                } 
               />
               
               {/* 📈 NUEVA RUTA PARA MONITOREO ATERNITY */}
               <Route 
                 path="/aternity" 
-                element={<LegacyProtectedRoute element={<AternityPage />} allowedRoles={['Admin', 'SuperAdmin']} />} 
+                element={
+                  <ProtectedRoute 
+                    element={<AternityPage />} 
+                    permission={ATERNITY_PERMISSIONS.VIEW_ATERNITY}
+                  />
+                } 
               />
               
               {/* Ruta para errores */}

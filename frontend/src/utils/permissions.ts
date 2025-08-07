@@ -16,6 +16,95 @@ export const SYSTEM_PERMISSIONS = {
   VIEW_SYSTEM_LOGS: 'ver_logs_sistema'
 } as const;
 
+// 🏥 PERMISOS DE GUARDIAS
+export const GUARDIA_PERMISSIONS = {
+  VIEW_GUARDIAS: 'ver_guardias',
+  CREATE_GUARDIA: 'crear_guardia',
+  EDIT_GUARDIA: 'editar_guardia',
+  DELETE_GUARDIA: 'eliminar_guardia',
+  MANAGE_CRONOGRAMA: 'gestionar_cronograma_guardias',
+  MANAGE_FACTURACION: 'gestionar_facturacion_guardias',
+  VIEW_INFORMES_GUARDIAS: 'ver_informes_guardias'
+} as const;
+
+// 📊 PERMISOS DE ITRACKER
+export const ITRACKER_PERMISSIONS = {
+  VIEW_ITRACKER: 'ver_itracker',
+  UPLOAD_ITRACKER: 'subir_itracker',
+  MANAGE_ITRACKER_DASHBOARD: 'gestionar_dashboard_itracker',
+  DELETE_ITRACKER_DATA: 'eliminar_datos_itracker'
+} as const;
+
+// 📋 PERMISOS DE TABULACIONES
+export const TABULACION_PERMISSIONS = {
+  VIEW_TABULACIONES: 'ver_tabulaciones',
+  UPLOAD_TABULACIONES: 'subir_tabulaciones',
+  MANAGE_TABULACIONES_DASHBOARD: 'gestionar_dashboard_tabulaciones',
+  DELETE_TABULACIONES_DATA: 'eliminar_datos_tabulaciones'
+} as const;
+
+// 🎯 PERMISOS DE HITOS
+export const HITO_PERMISSIONS = {
+  VIEW_HITOS: 'ver_hitos',
+  CREATE_HITO: 'crear_hito',
+  EDIT_HITO: 'editar_hito',
+  DELETE_HITO: 'eliminar_hito',
+  CONVERT_PROJECT_TO_HITO: 'convertir_proyecto_a_hito'
+} as const;
+
+// 📊 PERMISOS DE ABM
+export const ABM_PERMISSIONS = {
+  VIEW_ABM: 'ver_abm',
+  UPLOAD_ABM: 'subir_abm',
+  MANAGE_ABM_DASHBOARD: 'gestionar_dashboard_abm',
+  DELETE_ABM_DATA: 'eliminar_datos_abm'
+} as const;
+
+// 📅 PERMISOS DE CALENDARIO
+export const CALENDAR_PERMISSIONS = {
+  VIEW_CALENDAR: 'ver_calendario',
+  CREATE_EVENT: 'crear_evento',
+  EDIT_EVENT: 'editar_evento',
+  DELETE_EVENT: 'eliminar_evento',
+  MANAGE_CALENDAR_ADMIN: 'gestionar_calendario_admin'
+} as const;
+
+// 🔔 PERMISOS DE NOTIFICACIONES
+export const NOTIFICATION_PERMISSIONS = {
+  VIEW_NOTIFICATIONS: 'ver_notificaciones',
+  SEND_NOTIFICATIONS: 'enviar_notificaciones',
+  MANAGE_NOTIFICATIONS: 'gestionar_notificaciones'
+} as const;
+
+// 🔧 PERMISOS DE DIAGNÓSTICOS
+export const DIAGNOSTICS_PERMISSIONS = {
+  VIEW_DIAGNOSTICS: 'ver_diagnosticos',
+  RUN_DIAGNOSTICS: 'ejecutar_diagnosticos',
+  EXPORT_DIAGNOSTICS: 'exportar_diagnosticos'
+} as const;
+
+// 📈 PERMISOS DE ANÁLISIS DE SESIÓN
+export const SESSION_ANALYSIS_PERMISSIONS = {
+  VIEW_SESSION_ANALYSIS: 'ver_analisis_sesion',
+  EXPORT_SESSION_DATA: 'exportar_datos_sesion'
+} as const;
+
+// 📈 PERMISOS DE ATERNITY
+export const ATERNITY_PERMISSIONS = {
+  VIEW_ATERNITY: 'ver_aternity',
+  MANAGE_ATERNITY: 'gestionar_aternity'
+} as const;
+
+// 📚 PERMISOS DE CONTENIDO (Glosario, Enlaces, Contactos)
+export const CONTENT_PERMISSIONS = {
+  VIEW_GLOSARIO: 'ver_glosario',
+  EDIT_GLOSARIO: 'editar_glosario',
+  VIEW_ENLACES: 'ver_enlaces',
+  EDIT_ENLACES: 'editar_enlaces',
+  VIEW_CONTACTOS: 'ver_contactos',
+  EDIT_CONTACTOS: 'editar_contactos'
+} as const;
+
 // 📊 PERMISOS DE PROYECTOS
 export const PROJECT_PERMISSIONS = {
   CREATE_PROJECT: 'crear_proyecto',
@@ -100,7 +189,18 @@ export const PERMISSIONS_BY_CATEGORY = {
   informes: REPORT_PERMISSIONS,
   usuarios: USER_PERMISSIONS,
   configuracion: CONFIG_PERMISSIONS,
-  general: GENERAL_PERMISSIONS
+  general: GENERAL_PERMISSIONS,
+  guardias: GUARDIA_PERMISSIONS,
+  itracker: ITRACKER_PERMISSIONS,
+  tabulaciones: TABULACION_PERMISSIONS,
+  hitos: HITO_PERMISSIONS,
+  abm: ABM_PERMISSIONS,
+  calendario: CALENDAR_PERMISSIONS,
+  notificaciones: NOTIFICATION_PERMISSIONS,
+  diagnosticos: DIAGNOSTICS_PERMISSIONS,
+  analisis_sesion: SESSION_ANALYSIS_PERMISSIONS,
+  aternity: ATERNITY_PERMISSIONS,
+  contenido: CONTENT_PERMISSIONS
 } as const;
 
 /**
@@ -116,7 +216,18 @@ export const ALL_PERMISSIONS = [
   ...Object.values(REPORT_PERMISSIONS),
   ...Object.values(USER_PERMISSIONS),
   ...Object.values(CONFIG_PERMISSIONS),
-  ...Object.values(GENERAL_PERMISSIONS)
+  ...Object.values(GENERAL_PERMISSIONS),
+  ...Object.values(GUARDIA_PERMISSIONS),
+  ...Object.values(ITRACKER_PERMISSIONS),
+  ...Object.values(TABULACION_PERMISSIONS),
+  ...Object.values(HITO_PERMISSIONS),
+  ...Object.values(ABM_PERMISSIONS),
+  ...Object.values(CALENDAR_PERMISSIONS),
+  ...Object.values(NOTIFICATION_PERMISSIONS),
+  ...Object.values(DIAGNOSTICS_PERMISSIONS),
+  ...Object.values(SESSION_ANALYSIS_PERMISSIONS),
+  ...Object.values(ATERNITY_PERMISSIONS),
+  ...Object.values(CONTENT_PERMISSIONS)
 ] as const;
 
 /**
@@ -193,6 +304,44 @@ export const PERMISSION_GROUPS = {
     SYSTEM_PERMISSIONS.VIEW_SYSTEM_LOGS,
     CONFIG_PERMISSIONS.CONFIGURE_SYSTEM,
     CONFIG_PERMISSIONS.BACKUP_SYSTEM
+  ],
+
+  // Gestión de guardias
+  GUARDIA_MANAGEMENT: [
+    GUARDIA_PERMISSIONS.VIEW_GUARDIAS,
+    GUARDIA_PERMISSIONS.CREATE_GUARDIA,
+    GUARDIA_PERMISSIONS.EDIT_GUARDIA,
+    GUARDIA_PERMISSIONS.DELETE_GUARDIA,
+    GUARDIA_PERMISSIONS.MANAGE_CRONOGRAMA,
+    GUARDIA_PERMISSIONS.MANAGE_FACTURACION
+  ],
+
+  // Gestión de herramientas de datos
+  DATA_TOOLS_MANAGEMENT: [
+    ITRACKER_PERMISSIONS.VIEW_ITRACKER,
+    ITRACKER_PERMISSIONS.UPLOAD_ITRACKER,
+    TABULACION_PERMISSIONS.VIEW_TABULACIONES,
+    TABULACION_PERMISSIONS.UPLOAD_TABULACIONES,
+    ABM_PERMISSIONS.VIEW_ABM,
+    ABM_PERMISSIONS.UPLOAD_ABM
+  ],
+
+  // Gestión de contenido
+  CONTENT_MANAGEMENT: [
+    CONTENT_PERMISSIONS.VIEW_GLOSARIO,
+    CONTENT_PERMISSIONS.EDIT_GLOSARIO,
+    CONTENT_PERMISSIONS.VIEW_ENLACES,
+    CONTENT_PERMISSIONS.EDIT_ENLACES,
+    CONTENT_PERMISSIONS.VIEW_CONTACTOS,
+    CONTENT_PERMISSIONS.EDIT_CONTACTOS
+  ],
+
+  // Gestión de calendario y eventos
+  CALENDAR_MANAGEMENT: [
+    CALENDAR_PERMISSIONS.VIEW_CALENDAR,
+    CALENDAR_PERMISSIONS.CREATE_EVENT,
+    CALENDAR_PERMISSIONS.EDIT_EVENT,
+    CALENDAR_PERMISSIONS.DELETE_EVENT
   ]
 } as const;
 
@@ -221,6 +370,17 @@ export default {
   USER_PERMISSIONS,
   CONFIG_PERMISSIONS,
   GENERAL_PERMISSIONS,
+  GUARDIA_PERMISSIONS,
+  ITRACKER_PERMISSIONS,
+  TABULACION_PERMISSIONS,
+  HITO_PERMISSIONS,
+  ABM_PERMISSIONS,
+  CALENDAR_PERMISSIONS,
+  NOTIFICATION_PERMISSIONS,
+  DIAGNOSTICS_PERMISSIONS,
+  SESSION_ANALYSIS_PERMISSIONS,
+  ATERNITY_PERMISSIONS,
+  CONTENT_PERMISSIONS,
   PERMISSIONS_BY_CATEGORY,
   ALL_PERMISSIONS,
   ROLES,
