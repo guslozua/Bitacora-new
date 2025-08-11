@@ -39,6 +39,9 @@ import EventPage from './pages/EventPage';
 // 🚀 NUEVA PÁGINA UNIFICADA DE GESTIÓN DE GUARDIAS
 import GestionGuardiasPage from './pages/GestionGuardiasPage';
 
+// 🏠 NUEVA PÁGINA UNIFICADA DE GESTIÓN DE USUARIOS
+import GestionIntegralUsuarios from './pages/GestionIntegralUsuarios';
+
 // 📢 NUEVA PÁGINA DE ADMINISTRACIÓN DE ANUNCIOS
 import AnnouncementsAdminPage from './pages/AnnouncementsAdminPage';
 
@@ -180,6 +183,17 @@ const App: React.FC = () => {
                   <ProtectedRoute 
                     element={<GestionGuardiasPage />} 
                     permission={GUARDIA_PERMISSIONS.VIEW_GUARDIAS}
+                  />
+                } 
+              />
+              
+              {/* 🏠 NUEVA RUTA UNIFICADA PARA GESTIÓN INTEGRAL DE USUARIOS */}
+              <Route 
+                path="/admin/gestion-usuarios" 
+                element={
+                  <ProtectedRoute 
+                    element={<GestionIntegralUsuarios />} 
+                    permission={SYSTEM_PERMISSIONS.ACCESS_ADMIN_PANEL}
                   />
                 } 
               />

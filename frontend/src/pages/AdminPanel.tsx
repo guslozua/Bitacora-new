@@ -720,105 +720,59 @@ const AdminPanel: React.FC = () => {
           </Card.Header>
           <Card.Body>
             <Row>
+              {/* 🆕 BOTÓN UNIFICADO DE GESTIÓN INTEGRAL DE USUARIOS */}
               <Col md={4} className="mb-3">
                 <Card className="h-100 border-0 shadow-sm">
                   <Card.Body className="p-0">
                     <Button
                       variant="light"
-                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                      onClick={() => navigate('/admin/users')}
+                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0 position-relative"
+                      onClick={() => navigate('/admin/gestion-usuarios')}
                       style={{
+                        borderLeft: '4px solid #6f42c1',
                         backgroundColor: isDarkMode ? '#495057' : '#f8f9fa',
                         color: themeColors.textPrimary
                       }}
                     >
-                      <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                      <div
+                        className="rounded-circle d-flex align-items-center justify-content-center mb-3"
                         style={{
+                          backgroundColor: '#6f42c120',
                           width: '3.5rem',
                           height: '3.5rem',
                           padding: 0
                         }}>
-                        <i className="bi bi-people-fill fs-3 text-primary"></i>
+                        <i className="bi bi-people-fill fs-3" style={{ color: '#6f42c1' }}></i>
                       </div>
-                      <span className="fw-medium">Gestión de Usuarios</span>
-                    </Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col md={4} className="mb-3">
-                <Card className="h-100 border-0 shadow-sm">
-                  <Card.Body className="p-0">
-                    <Button
-                      variant="light"
-                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                      onClick={() => navigate('/admin/roles')}
-                      style={{
-                        backgroundColor: isDarkMode ? '#495057' : '#f8f9fa',
-                        color: themeColors.textPrimary
-                      }}
-                    >
-                      <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
+                      <span className="fw-medium" style={{ color: '000' }}>🏠 Gestión Integral de Usuarios</span>
+                      <Badge
+                        className="mt-2"
                         style={{
-                          width: '3.5rem',
-                          height: '3.5rem',
-                          padding: 0
-                        }}>
-                        <i className="bi bi-shield-check fs-3 text-warning"></i>
+                          backgroundColor: '#6f42c1',
+                          color: 'white',
+                          fontSize: '0.7rem'
+                        }}
+                      >
+                        <i className="bi bi-layers me-1"></i>
+                        Sistema Unificado
+                      </Badge>
+                      <div className="position-absolute top-0 end-0 m-2">
+                        <Badge
+                          className="rounded-pill"
+                          style={{
+                            backgroundColor: '#20c997',
+                            color: 'white'
+                          }}
+                        >
+                          <i className="bi bi-check-circle-fill"></i>
+                        </Badge>
                       </div>
-                      <span className="fw-medium">Gestión de Roles</span>
-                    </Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-              
-              {/* 🔑 NUEVAS TARJETAS PARA GESTIÓN DE PERMISOS */}
-              <Col md={4} className="mb-3">
-                <Card className="h-100 border-0 shadow-sm">
-                  <Card.Body className="p-0">
-                    <Button
-                      variant="light"
-                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                      onClick={() => navigate('/admin/permissions')}
-                      style={{
-                        backgroundColor: isDarkMode ? '#495057' : '#f8f9fa',
-                        color: themeColors.textPrimary
-                      }}
-                    >
-                      <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
-                        style={{
-                          width: '3.5rem',
-                          height: '3.5rem',
-                          padding: 0
-                        }}>
-                        <i className="bi bi-key-fill fs-3 text-info"></i>
+                      {/* Sub-descripción */}
+                      <div className="mt-2 px-2">
+                        <small className="text-muted d-block text-center">
+                          👥 Usuarios • 🛡️ Roles • 🔑 Permisos • 📊 Matriz
+                        </small>
                       </div>
-                      <span className="fw-medium">Gestión de Permisos</span>
-                    </Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-              
-              <Col md={4} className="mb-3">
-                <Card className="h-100 border-0 shadow-sm">
-                  <Card.Body className="p-0">
-                    <Button
-                      variant="light"
-                      className="w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4 border-0"
-                      onClick={() => navigate('/admin/permissions/matrix')}
-                      style={{
-                        backgroundColor: isDarkMode ? '#495057' : '#f8f9fa',
-                        color: themeColors.textPrimary
-                      }}
-                    >
-                      <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mb-3"
-                        style={{
-                          width: '3.5rem',
-                          height: '3.5rem',
-                          padding: 0
-                        }}>
-                        <i className="bi bi-grid-3x3-gap-fill fs-3 text-success"></i>
-                      </div>
-                      <span className="fw-medium">Matriz de Permisos</span>
                     </Button>
                   </Card.Body>
                 </Card>
