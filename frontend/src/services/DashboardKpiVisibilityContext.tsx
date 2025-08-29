@@ -242,7 +242,26 @@ export const DashboardKpiVisibilityProvider = ({ children }: { children: ReactNo
         
         if (globalConfig && globalConfig.valor) {
           console.log('✅ Configuración global de dashboard KPIs cargada:', globalConfig.valor);
-          setKpiConfigsState(globalConfig.valor);
+          
+          // Verificar si el valor es un array (configuración correcta) o un objeto con propiedades
+          let kpisData;
+          if (Array.isArray(globalConfig.valor)) {
+            // Es un array directo (formato correcto)
+            kpisData = globalConfig.valor;
+          } else if (globalConfig.valor.kpis && Array.isArray(globalConfig.valor.kpis)) {
+            // Es un objeto con propiedad kpis (formato alternativo)
+            kpisData = globalConfig.valor.kpis;
+          } else if (typeof globalConfig.valor === 'object' && globalConfig.valor !== null) {
+            // Es otro tipo de objeto, intentar extraer los KPIs
+            console.warn('⚠️ Formato de configuración global inesperado:', globalConfig.valor);
+            kpisData = Object.values(globalConfig.valor).find(value => Array.isArray(value)) || defaultKpiConfigs;
+          } else {
+            // Fallback a configuración por defecto
+            console.error('❌ Formato de configuración global inválido, usando por defecto');
+            kpisData = defaultKpiConfigs;
+          }
+          
+          setKpiConfigsState(kpisData);
           setIsGlobalConfig(true);
           console.log('🌐 Usando configuración global de dashboard KPIs');
           return;

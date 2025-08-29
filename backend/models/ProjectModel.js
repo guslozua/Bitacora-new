@@ -10,8 +10,8 @@ exports.getProjects = async (req, res) => {
     
     let query = `
       SELECT p.*, u.nombre as responsable_nombre, u.email as responsable_email
-      FROM proyectos p
-      LEFT JOIN usuarios u ON p.id_usuario_responsable = u.id
+      FROM taskmanagementsystem.proyectos p
+      LEFT JOIN taskmanagementsystem.usuarios u ON p.id_usuario_responsable = u.id
       WHERE 1=1
     `;
 
@@ -40,12 +40,12 @@ exports.getProjects = async (req, res) => {
 
     query += ' ORDER BY p.fecha_inicio DESC';
 
-    const [projects] = await db.query(query, params);
+    const projects = await db.query(query, params);
 
     res.status(200).json({
       success: true,
-      count: projects.length,
-      data: projects
+      count: projects[0].length,
+      data: projects[0]
     });
   } catch (error) {
     console.error('Error al obtener proyectos:', error);
@@ -64,14 +64,14 @@ exports.getProjectById = async (req, res) => {
 
     const query = `
       SELECT p.*, u.nombre as responsable_nombre, u.email as responsable_email
-      FROM proyectos p
-      LEFT JOIN usuarios u ON p.id_usuario_responsable = u.id
+      FROM taskmanagementsystem.proyectos p
+      LEFT JOIN taskmanagementsystem.usuarios u ON p.id_usuario_responsable = u.id
       WHERE p.id = ?
     `;
 
-    const [projects] = await db.query(query, [projectId]);
+    const projects = await db.query(query, [projectId]);
 
-    if (projects.length === 0) {
+    if (!projects[0] || projects[0].length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Proyecto no encontrado'
@@ -80,7 +80,7 @@ exports.getProjectById = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: projects[0]
+      data: projects[0][0]
     });
   } catch (error) {
     console.error('Error al obtener el proyecto:', error);
@@ -113,7 +113,7 @@ exports.createProjectAndReturnId = async (projectData, userId) => {
     });
 
     const query = `
-      INSERT INTO proyectos 
+      INSERT INTO taskmanagementsystem.proyectos 
       (nombre, descripcion, fecha_inicio, fecha_fin, estado, prioridad, id_usuario_responsable)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
@@ -131,17 +131,17 @@ exports.createProjectAndReturnId = async (projectData, userId) => {
     console.log('🔍 [MODEL DEBUG] Query a ejecutar:', query);
     console.log('🔍 [MODEL DEBUG] Parámetros:', params);
 
-    const [result] = await db.query(query, params);
+    const result = await db.query(query, params);
 
     console.log('🔍 [MODEL DEBUG] Resultado de la query:', result);
-    console.log('🔍 [MODEL DEBUG] insertId obtenido:', result.insertId);
+    console.log('🔍 [MODEL DEBUG] insertId obtenido:', result[0].insertId);
 
-    if (!result.insertId) {
+    if (!result[0].insertId) {
       console.error('❌ [MODEL DEBUG] No se obtuvo insertId de la base de datos');
       throw new Error('La base de datos no retornó un ID válido');
     }
 
-    return result;
+    return { insertId: result[0].insertId };
 
   } catch (error) {
     console.error('❌ [MODEL DEBUG] Error en createProjectAndReturnId:', {
@@ -177,7 +177,7 @@ exports.createProject = async (req, res) => {
       id_proyecto: result.insertId
     });
 
-    const [newProject] = await db.query('SELECT * FROM proyectos WHERE id = ?', [result.insertId]);
+    const [newProject] = await db.query('SELECT * FROM taskmanagementsystem.proyectos WHERE id = ?', [result.insertId]);
 
     res.status(201).json({
       success: true,
@@ -209,12 +209,12 @@ exports.updateProject = async (req, res) => {
     const { nombre, descripcion, fecha_inicio, fecha_fin, estado, prioridad, id_usuario_responsable } = req.body;
     const id_usuario = req.user?.id;
 
-    const [existingProjects] = await db.query('SELECT * FROM proyectos WHERE id = ?', [projectId]);
+    const [existingProjects] = await db.query('SELECT * FROM taskmanagementsystem.proyectos WHERE id = ?', [projectId]);
     if (existingProjects.length === 0) {
       return res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
     }
 
-    let query = 'UPDATE proyectos SET ';
+    let query = 'UPDATE taskmanagementsystem.proyectos SET ';
     const updateFields = [];
     const params = [];
 
@@ -245,8 +245,8 @@ exports.updateProject = async (req, res) => {
 
     const [updatedProject] = await db.query(`
       SELECT p.*, u.nombre as responsable_nombre, u.email as responsable_email
-      FROM proyectos p
-      LEFT JOIN usuarios u ON p.id_usuario_responsable = u.id
+      FROM taskmanagementsystem.proyectos p
+      LEFT JOIN taskmanagementsystem.usuarios u ON p.id_usuario_responsable = u.id
       WHERE p.id = ?
     `, [projectId]);
 
@@ -271,13 +271,13 @@ exports.deleteProject = async (req, res) => {
     const projectId = req.params.id;
     const id_usuario = req.user?.id;
 
-    const [existingProjects] = await db.query('SELECT * FROM proyectos WHERE id = ?', [projectId]);
+    const [existingProjects] = await db.query('SELECT * FROM taskmanagementsystem.proyectos WHERE id = ?', [projectId]);
     if (existingProjects.length === 0) {
       return res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
     }
 
     const nombreProyecto = existingProjects[0].nombre;
-    await db.query('DELETE FROM proyectos WHERE id = ?', [projectId]);
+    await db.query('DELETE FROM taskmanagementsystem.proyectos WHERE id = ?', [projectId]);
 
     await logEvento({
       tipo_evento: 'ELIMINACIÓN',
@@ -310,17 +310,17 @@ exports.changeProjectStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Estado no válido' });
     }
 
-    const [existingProjects] = await db.query('SELECT * FROM proyectos WHERE id = ?', [id]);
+    const [existingProjects] = await db.query('SELECT * FROM taskmanagementsystem.proyectos WHERE id = ?', [id]);
     if (existingProjects.length === 0) {
       return res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
     }
 
-    await db.query('UPDATE proyectos SET estado = ? WHERE id = ?', [estado, id]);
+    await db.query('UPDATE taskmanagementsystem.proyectos SET estado = ? WHERE id = ?', [estado, id]);
 
     const [updatedProject] = await db.query(`
       SELECT p.*, u.nombre as responsable_nombre, u.email as responsable_email
-      FROM proyectos p
-      LEFT JOIN usuarios u ON p.id_usuario_responsable = u.id
+      FROM taskmanagementsystem.proyectos p
+      LEFT JOIN taskmanagementsystem.usuarios u ON p.id_usuario_responsable = u.id
       WHERE p.id = ?
     `, [id]);
 
@@ -349,7 +349,7 @@ exports.getProjectStats = async (req, res) => {
         SUM(CASE WHEN estado = 'completado' THEN 1 ELSE 0 END) as completados,
         SUM(CASE WHEN estado = 'archivado' THEN 1 ELSE 0 END) as archivados,
         SUM(CASE WHEN estado = 'cancelado' THEN 1 ELSE 0 END) as cancelados
-      FROM proyectos
+      FROM taskmanagementsystem.proyectos
     `);
 
     const today = new Date();
@@ -358,7 +358,7 @@ exports.getProjectStats = async (req, res) => {
 
     const [upcomingProjects] = await db.query(`
       SELECT COUNT(*) as proximosAVencer
-      FROM proyectos
+      FROM taskmanagementsystem.proyectos
       WHERE fecha_fin BETWEEN ? AND ?
       AND estado = 'activo'
     `, [today, nextWeek]);
@@ -393,14 +393,20 @@ exports.getProjectUsers = async (projectId) => {
   const query = `
     SELECT pu.id, pu.id_proyecto, pu.id_usuario, pu.rol, pu.fecha_asignacion, 
            u.nombre, u.email
-    FROM proyecto_usuarios pu
-    JOIN usuarios u ON pu.id_usuario = u.id
+    FROM taskmanagementsystem.proyecto_usuarios pu
+    JOIN taskmanagementsystem.usuarios u ON pu.id_usuario = u.id
     WHERE pu.id_proyecto = ?
-    ORDER BY FIELD(pu.rol, 'responsable', 'colaborador', 'observador'), u.nombre
+    ORDER BY 
+      CASE pu.rol 
+        WHEN 'responsable' THEN 1
+        WHEN 'colaborador' THEN 2 
+        WHEN 'observador' THEN 3
+        ELSE 4
+      END, u.nombre
   `;
   
-  const [users] = await db.query(query, [projectId]);
-  return users;
+  const users = await db.query(query, [projectId]);
+  return users[0];
 };
 
 /**
@@ -412,16 +418,54 @@ exports.getProjectUsers = async (projectId) => {
  */
 exports.assignUserToProject = async (projectId, userId, rol = 'colaborador') => {
   try {
-    const query = `
-      INSERT INTO proyecto_usuarios (id_proyecto, id_usuario, rol)
-      VALUES (?, ?, ?)
-      ON DUPLICATE KEY UPDATE rol = ?
+    console.log(`[ProjectModel] Asignando usuario ${userId} al proyecto ${projectId} con rol ${rol}`);
+    
+    // Verificar si el usuario ya está asignado
+    const checkQuery = `
+      SELECT COUNT(*) as count 
+      FROM taskmanagementsystem.proyecto_usuarios 
+      WHERE id_proyecto = ? AND id_usuario = ?
     `;
     
-    const [result] = await db.query(query, [projectId, userId, rol, rol]);
-    return result;
+    const existingUser = await db.query(checkQuery, [projectId, userId]);
+    const userExists = existingUser[0] && existingUser[0].length > 0 && existingUser[0][0].count > 0;
+    
+    if (userExists) {
+      // Si existe, actualizar el rol
+      const updateQuery = `
+        UPDATE taskmanagementsystem.proyecto_usuarios 
+        SET rol = ?, fecha_asignacion = GETDATE()
+        WHERE id_proyecto = ? AND id_usuario = ?
+      `;
+      const result = await db.query(updateQuery, [rol, projectId, userId]);
+      console.log(`[ProjectModel] Usuario ${userId} actualizado en proyecto ${projectId}`);
+      return { 
+        affectedRows: result[0] ? result[0].affectedRows : 1, 
+        action: 'updated' 
+      };
+    } else {
+      // Si no existe, insertar nuevo registro
+      const insertQuery = `
+        INSERT INTO taskmanagementsystem.proyecto_usuarios 
+        (id_proyecto, id_usuario, rol, fecha_asignacion) 
+        VALUES (?, ?, ?, GETDATE())
+      `;
+      const result = await db.query(insertQuery, [projectId, userId, rol]);
+      console.log(`[ProjectModel] Usuario ${userId} insertado en proyecto ${projectId}`);
+      return { 
+        affectedRows: result[0] ? result[0].affectedRows : 1, 
+        action: 'inserted' 
+      };
+    }
   } catch (error) {
-    console.error('Error al asignar usuario al proyecto:', error);
+    console.error('[ProjectModel] Error al asignar usuario al proyecto:', error);
+    console.error('[ProjectModel] Error details:', {
+      projectId,
+      userId,
+      rol,
+      message: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 };
@@ -434,15 +478,21 @@ exports.assignUserToProject = async (projectId, userId, rol = 'colaborador') => 
  */
 exports.removeUserFromProject = async (projectId, userId) => {
   try {
+    console.log(`[ProjectModel] Eliminando usuario ${userId} del proyecto ${projectId}`);
+    
     const query = `
-      DELETE FROM proyecto_usuarios
+      DELETE FROM taskmanagementsystem.proyecto_usuarios
       WHERE id_proyecto = ? AND id_usuario = ?
     `;
     
-    const [result] = await db.query(query, [projectId, userId]);
-    return result;
+    const result = await db.query(query, [projectId, userId]);
+    console.log(`[ProjectModel] Usuario ${userId} eliminado del proyecto ${projectId}`);
+    
+    return { 
+      affectedRows: result[0] ? result[0].affectedRows : 0 
+    };
   } catch (error) {
-    console.error('Error al eliminar usuario del proyecto:', error);
+    console.error('[ProjectModel] Error al eliminar usuario del proyecto:', error);
     throw error;
   }
 };
@@ -456,16 +506,22 @@ exports.removeUserFromProject = async (projectId, userId) => {
  */
 exports.updateUserRoleInProject = async (projectId, userId, newRole) => {
   try {
+    console.log(`[ProjectModel] Actualizando rol de usuario ${userId} en proyecto ${projectId} a ${newRole}`);
+    
     const query = `
-      UPDATE proyecto_usuarios
-      SET rol = ?
+      UPDATE taskmanagementsystem.proyecto_usuarios
+      SET rol = ?, fecha_asignacion = GETDATE()
       WHERE id_proyecto = ? AND id_usuario = ?
     `;
     
-    const [result] = await db.query(query, [newRole, projectId, userId]);
-    return result;
+    const result = await db.query(query, [newRole, projectId, userId]);
+    console.log(`[ProjectModel] Rol actualizado para usuario ${userId} en proyecto ${projectId}`);
+    
+    return { 
+      affectedRows: result[0] ? result[0].affectedRows : 0 
+    };
   } catch (error) {
-    console.error('Error al actualizar rol de usuario en proyecto:', error);
+    console.error('[ProjectModel] Error al actualizar rol de usuario en proyecto:', error);
     throw error;
   }
 };

@@ -222,7 +222,12 @@ export const fetchAssignedUsers = async (
     
     return processedUsers;
   } catch (error: any) {
-    console.error('[userService] Error al obtener usuarios asignados:', error.response?.data || error.message);
+    // Solo log errores significativos para reducir spam en consola
+    if (error.response?.status !== 404) {
+      console.error(`[userService] Error al obtener usuarios asignados para ${itemType} ${itemId}:`, error.response?.data || error.message);
+    } else {
+      console.log(`[userService] No se encontraron usuarios para ${itemType} ${itemId} (esto es normal si no hay usuarios asignados)`);
+    }
     throw error;
   }
 };
@@ -708,19 +713,20 @@ export const assignUsers = async (
       
       // Arreglo de intentos con diferentes URLs y formatos de datos
       const attempts = [
-        // Para proyectos, intentar con formato que incluye rol
-        {
-          method: 'post',
-          url: `${API_BASE_URL}/${itemType}s/${numericId}/assign/${userId}`,
-          data: { rol: userRole },
-          description: `URL específica con rol: ${userRole}`
-        },
+        // ENDPOINT CORRECTO PRIMERO - según projectRoutes.js
         {
           method: 'post',
           url: getApiEndpoint(itemType, itemId),
           data: { userId, rol: userRole },
           description: `Formato estándar con rol: ${userRole}`
         },
+        // Endpoint incorrecto que causaba 404 - REMOVIDO
+        // {
+        //   method: 'post',
+        //   url: `${API_BASE_URL}/${itemType}s/${numericId}/assign/${userId}`,
+        //   data: { rol: userRole },
+        //   description: `URL específica con rol: ${userRole}`
+        // },
         {
           method: 'post',
           url: getApiEndpoint(itemType, itemId),
@@ -996,16 +1002,37 @@ export const updateUserRole = async (
   }
 };
 
-// Función para verificar todos los posibles endpoints
-export const diagnoseAPI = async () => {
-  console.log('=== DIAGNÓSTICO DE API ===');
+// Función para verificar endpoints disponibles (versión mejorada sin hardcoded IDs)
+export const diagnoseAPI = async (testItemIds?: { projectId?: string; taskId?: string; subtaskId?: string }) => {
+  console.log('=== DIAGNÓSTICO DE API (Mejorado) ===');
+  
+  // Solo probar endpoints con IDs válidos si se proporcionan
   const endpoints = [
-    { url: `${API_BASE_URL}/projects/1/users`, description: 'Usuarios de proyecto' },
-    { url: `${API_BASE_URL}/tasks/1/users`, description: 'Usuarios de tarea' },
-    { url: `${API_BASE_URL}/subtasks/1/users`, description: 'Usuarios de subtarea' },
     { url: `${API_BASE_URL}/users`, description: 'Lista de usuarios' },
     { url: `${API_BASE_URL}/usuarios`, description: 'Lista de usuarios (alt)' }
   ];
+  
+  // Solo agregar endpoints específicos si tenemos IDs válidos
+  if (testItemIds?.projectId) {
+    endpoints.push({ 
+      url: `${API_BASE_URL}/projects/${testItemIds.projectId}/users`, 
+      description: `Usuarios de proyecto ${testItemIds.projectId}` 
+    });
+  }
+  
+  if (testItemIds?.taskId) {
+    endpoints.push({ 
+      url: `${API_BASE_URL}/tasks/${testItemIds.taskId}/users`, 
+      description: `Usuarios de tarea ${testItemIds.taskId}` 
+    });
+  }
+  
+  if (testItemIds?.subtaskId) {
+    endpoints.push({ 
+      url: `${API_BASE_URL}/subtasks/${testItemIds.subtaskId}/users`, 
+      description: `Usuarios de subtarea ${testItemIds.subtaskId}` 
+    });
+  }
   
   const results = {
     success: 0,
@@ -1028,7 +1055,7 @@ export const diagnoseAPI = async () => {
         dataStructure: Array.isArray(res.data) ? 'array' : typeof res.data
       });
     } catch (error: any) {
-      console.error(`❌ Error en ${endpoint.description}:`, error.message);
+      console.log(`⚠️ Error en ${endpoint.description}:`, error.message);
       
       results.failed++;
       results.details.push({
@@ -1044,8 +1071,10 @@ export const diagnoseAPI = async () => {
   console.log('=== RESULTADOS DEL DIAGNÓSTICO ===');
   console.log(`Endpoints exitosos: ${results.success}/${endpoints.length}`);
   console.log(`Endpoints fallidos: ${results.failed}/${endpoints.length}`);
-  console.log('Detalles:', results.details);
-  console.log('=== FIN DEL DIAGNÓSTICO ===');
+  
+  if (results.failed > 0) {
+    console.log('ℹ️ Nota: Los errores 404 pueden ser normales si los elementos no existen');
+  }
   
   return results;
 };

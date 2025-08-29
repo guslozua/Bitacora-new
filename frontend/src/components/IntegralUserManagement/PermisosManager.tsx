@@ -80,10 +80,11 @@ const PermisosManager: React.FC = () => {
 
   const handleEditPermission = (permission: Permission) => {
     setEditingPermission(permission);
+    console.log('Editando permiso:', permission); // Debug log
     setPermissionForm({
       nombre: permission.nombre,
       descripcion: permission.descripcion || '',
-      categoria: permission.categoria
+      categoria: permission.categoria || 'general' // Valor por defecto si categoria es null
     });
     setShowPermissionModal(true);
   };
@@ -141,12 +142,19 @@ const PermisosManager: React.FC = () => {
       return;
     }
 
+    // Validar que la categoría no esté vacía
+    if (!permissionForm.categoria || permissionForm.categoria.trim() === '') {
+      setPermissionForm(prev => ({ ...prev, categoria: 'general' }));
+    }
+
     try {
       const permissionData: CreatePermissionData | UpdatePermissionData = {
         nombre: permissionForm.nombre.trim(),
         descripcion: permissionForm.descripcion.trim(),
-        categoria: permissionForm.categoria
+        categoria: permissionForm.categoria.trim() || 'general'
       };
+
+      console.log('Enviando datos:', permissionData); // Debug log
 
       if (editingPermission) {
         await updatePermission(editingPermission.id, permissionData as UpdatePermissionData);
@@ -179,6 +187,9 @@ const PermisosManager: React.FC = () => {
   };
 
   const getCategoryColor = (categoria: string): string => {
+    // Manejar valores null/undefined
+    const cat = categoria || 'general';
+    
     const colors: { [key: string]: string } = {
       'sistema': 'danger',
       'proyectos': 'primary',
@@ -189,7 +200,7 @@ const PermisosManager: React.FC = () => {
       'configuracion': 'dark',
       'general': 'light'
     };
-    return colors[categoria] || 'secondary';
+    return colors[cat] || 'secondary';
   };
 
   if (loading) {
@@ -387,8 +398,8 @@ const PermisosManager: React.FC = () => {
                         </div>
                       </td>
                       <td>
-                        <Badge bg={getCategoryColor(permission.categoria)}>
-                          {permission.categoria}
+                        <Badge bg={getCategoryColor(permission.categoria || 'general')}>
+                          {permission.categoria || 'general'}
                         </Badge>
                       </td>
                       <td>

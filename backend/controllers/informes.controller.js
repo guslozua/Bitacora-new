@@ -173,45 +173,94 @@ exports.getInformeGuardias = async (req, res) => {
     }
 };
 
-// Generar informe de liquidaciones con filtros
+// Generar informe de liquidaciones con filtros - VERSIÓN CORREGIDA
 exports.getInformeLiquidaciones = async (req, res) => {
     try {
+        console.log('🔍 LIQUIDACIONES: Iniciando getInformeLiquidaciones');
         const {
             periodo, usuario, estado,
             orderBy = 'fecha_generacion', orderDir = 'desc'
         } = req.query;
+        console.log('🔍 LIQUIDACIONES: Parámetros recibidos:', { periodo, usuario, estado, orderBy, orderDir });
 
-        // Construir opciones de filtro
-        const options = { where: {} };
+        // Construir consulta SQL directa para liquidaciones
+        let query = `
+            SELECT l.*
+            FROM taskmanagementsystem.liquidaciones_guardia l
+        `;
+        
+        const params = [];
+        const conditions = [];
 
         // Aplicar filtros
         if (periodo) {
-            options.where.periodo = periodo;
+            conditions.push('l.periodo = ?');
+            params.push(periodo);
         }
 
         if (estado) {
-            options.where.estado = estado;
+            conditions.push('l.estado = ?');
+            params.push(estado);
+        }
+
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
         }
 
         // Aplicar ordenamiento
-        options.order = [[orderBy, orderDir]];
+        query += ` ORDER BY l.${orderBy} ${orderDir}`;
+        
+        console.log('🔍 LIQUIDACIONES: Ejecutando consulta SQL:', query);
+        console.log('🔍 LIQUIDACIONES: Parámetros:', params);
 
-        // Obtener liquidaciones
-        const liquidaciones = await LiquidacionGuardia.findAll(options);
+        const [liquidaciones] = await pool.query(query, params);
+        console.log('✅ LIQUIDACIONES: Liquidaciones encontradas:', liquidaciones.length);
 
-        // Filtrar por usuario si se especifica
-        let liquidacionesFiltradas = liquidaciones;
+        // Para cada liquidación, obtener sus detalles
+        console.log('🔍 LIQUIDACIONES: Obteniendo detalles de liquidaciones...');
+        const liquidacionesConDetalles = [];
+        
+        for (const liquidacion of liquidaciones) {
+            // Consulta SQL directa para obtener detalles
+            const [detalles] = await pool.query(`
+                SELECT 
+                    ld.id,
+                    ld.id_incidente,
+                    ld.id_guardia,
+                    ld.usuario,
+                    ld.fecha,
+                    ld.total_minutos,
+                    ld.total_importe
+                FROM taskmanagementsystem.liquidaciones_detalle ld
+                WHERE ld.id_liquidacion = ?
+                ORDER BY ld.fecha ASC
+            `, [liquidacion.id]);
+            
+            liquidacionesConDetalles.push({
+                ...liquidacion,
+                detalles: detalles
+            });
+        }
+        
+        console.log('✅ LIQUIDACIONES: Detalles obtenidos para', liquidacionesConDetalles.length, 'liquidaciones');
+
+        // Filtrar por usuario si se especifica (hacerlo después de obtener detalles)
+        let liquidacionesFiltradas = liquidacionesConDetalles;
 
         if (usuario && liquidacionesFiltradas.length > 0) {
+            console.log('🔍 LIQUIDACIONES: Filtrando por usuario:', usuario);
             liquidacionesFiltradas = liquidacionesFiltradas.filter(liq => {
                 return liq.detalles && liq.detalles.some(detalle =>
                     detalle.usuario.toLowerCase().includes(usuario.toLowerCase())
                 );
             });
+            console.log('✅ LIQUIDACIONES: Después del filtro por usuario:', liquidacionesFiltradas.length);
         }
 
-        // Procesar datos para el informe
-        const datosInforme = procesarDatosInformeLiquidaciones(liquidacionesFiltradas);
+        // Procesar datos para el informe usando función directa
+        console.log('🔍 LIQUIDACIONES: Procesando datos para informe...');
+        const datosInforme = procesarDatosInformeLiquidacionesDirecto(liquidacionesFiltradas);
+        console.log('✅ LIQUIDACIONES: Datos procesados exitosamente');
 
         // Devolver respuesta
         res.status(200).json({
@@ -222,42 +271,55 @@ exports.getInformeLiquidaciones = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error al generar informe de liquidaciones:', error);
+        console.error('❌ LIQUIDACIONES: Error al generar informe de liquidaciones:', error);
+        console.error('❌ LIQUIDACIONES: Stack trace:', error.stack);
         res.status(500).json({
             success: false,
             message: 'Error al generar informe de liquidaciones',
-            error: error.message
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 };
 
-// Generar informe resumen de actividad
+// Generar informe resumen de actividad - VERSIÓN CORREGIDA
 exports.getInformeResumen = async (req, res) => {
     try {
+        console.log('🔍 INFORMES: Iniciando getInformeResumen');
         const { periodo } = req.query;
+        console.log('🔍 INFORMES: Periodo recibido:', periodo);
 
         // Obtener fecha de inicio y fin basada en el periodo
         const { fechaInicio, fechaFin } = calcularRangoPeriodo(periodo);
-
-        // Obtener guardias en el periodo
-        const guardias = await Guardia.findAll({
-            where: {
-                fecha: {
-                    [Op.between]: [fechaInicio, fechaFin]
-                }
-            }
+        console.log('🔍 INFORMES: Rango calculado:', {
+            fechaInicio: fechaInicio.toISOString(),
+            fechaFin: fechaFin.toISOString()
         });
 
-        // Obtener incidentes en el periodo
-        const incidentes = await Incidente.findAll({
-            where: {
-                inicio: {
-                    [Op.between]: [fechaInicio, fechaFin]
-                }
-            }
-        });
+        // Obtener guardias en el periodo usando consulta SQL directa
+        console.log('🔍 INFORMES: Consultando guardias...');
+        const [guardias] = await pool.query(
+            'SELECT * FROM taskmanagementsystem.guardias WHERE fecha BETWEEN ? AND ? ORDER BY fecha ASC',
+            [
+                fechaInicio.toISOString().split('T')[0], 
+                fechaFin.toISOString().split('T')[0]
+            ]
+        );
+        console.log('✅ INFORMES: Guardias encontradas:', guardias.length);
+
+        // Obtener incidentes en el periodo usando consulta SQL directa
+        console.log('🔍 INFORMES: Consultando incidentes...');
+        const [incidentes] = await pool.query(
+            'SELECT * FROM taskmanagementsystem.incidentes_guardia WHERE inicio BETWEEN ? AND ? ORDER BY inicio ASC',
+            [
+                fechaInicio.toISOString(),
+                fechaFin.toISOString()
+            ]
+        );
+        console.log('✅ INFORMES: Incidentes encontrados:', incidentes.length);
 
         // Conteo de guardias por usuario
+        console.log('🔍 INFORMES: Procesando guardias por usuario...');
         const guardiasPorUsuario = guardias.reduce((result, guardia) => {
             if (!result[guardia.usuario]) {
                 result[guardia.usuario] = 0;
@@ -265,8 +327,10 @@ exports.getInformeResumen = async (req, res) => {
             result[guardia.usuario]++;
             return result;
         }, {});
+        console.log('✅ INFORMES: Guardias por usuario:', guardiasPorUsuario);
 
         // Conteos de incidentes por estado
+        console.log('🔍 INFORMES: Procesando incidentes por estado...');
         const incidentesPorEstado = incidentes.reduce((result, incidente) => {
             if (!result[incidente.estado]) {
                 result[incidente.estado] = 0;
@@ -274,11 +338,12 @@ exports.getInformeResumen = async (req, res) => {
             result[incidente.estado]++;
             return result;
         }, {});
+        console.log('✅ INFORMES: Incidentes por estado:', incidentesPorEstado);
 
         // Estadísticas generales
         const datosResumen = {
             periodo: {
-                nombre: periodo,
+                nombre: periodo || 'Periodo actual',
                 fechaInicio: fechaInicio.toISOString(),
                 fechaFin: fechaFin.toISOString()
             },
@@ -296,37 +361,63 @@ exports.getInformeResumen = async (req, res) => {
 
         // Estadísticas de tiempo (si hay incidentes)
         if (incidentes.length > 0) {
-            // Calcular tiempo total de incidentes en minutos
-            const tiempoTotalMinutos = incidentes.reduce((total, incidente) => {
-                const inicio = new Date(incidente.inicio);
-                const fin = new Date(incidente.fin);
-                const duracionMinutos = Math.floor((fin - inicio) / (1000 * 60));
-                return total + duracionMinutos;
-            }, 0);
+            console.log('🔍 INFORMES: Calculando estadísticas de tiempo...');
+            try {
+                // Calcular tiempo total de incidentes en minutos
+                const tiempoTotalMinutos = incidentes.reduce((total, incidente) => {
+                    const inicio = new Date(incidente.inicio);
+                    const fin = new Date(incidente.fin);
+                    
+                    // Validar fechas
+                    if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) {
+                        console.warn('⚠️ INFORMES: Fecha inválida en incidente:', incidente.id);
+                        return total;
+                    }
+                    
+                    const duracionMinutos = Math.floor((fin - inicio) / (1000 * 60));
+                    return total + Math.max(0, duracionMinutos); // Evitar duraciones negativas
+                }, 0);
 
-            // Calcular promedio de duración de incidentes
-            const promedioDuracionMinutos = Math.round(tiempoTotalMinutos / incidentes.length);
+                // Calcular promedio de duración de incidentes
+                const promedioDuracionMinutos = Math.round(tiempoTotalMinutos / incidentes.length);
 
-            // Añadir estadísticas de tiempo
-            datosResumen.estadisticasTiempo = {
-                tiempoTotalMinutos,
-                tiempoTotalHoras: (tiempoTotalMinutos / 60).toFixed(2),
-                promedioDuracionMinutos,
-                promedioDuracionHoras: (promedioDuracionMinutos / 60).toFixed(2)
-            };
+                // Añadir estadísticas de tiempo
+                datosResumen.estadisticasTiempo = {
+                    tiempoTotalMinutos,
+                    tiempoTotalHoras: (tiempoTotalMinutos / 60).toFixed(2),
+                    promedioDuracionMinutos,
+                    promedioDuracionHoras: (promedioDuracionMinutos / 60).toFixed(2)
+                };
+                
+                console.log('✅ INFORMES: Estadísticas de tiempo calculadas:', datosResumen.estadisticasTiempo);
+            } catch (timeError) {
+                console.error('❌ INFORMES: Error calculando estadísticas de tiempo:', timeError);
+                // Continuar sin estadísticas de tiempo
+            }
         }
+
+        console.log('✅ INFORMES: Datos finales del resumen:', {
+            totalGuardias: datosResumen.totalGuardias,
+            totalIncidentes: datosResumen.totalIncidentes,
+            usuariosUnicos: datosResumen.guardiasPorUsuario.length,
+            estadosUnicos: datosResumen.incidentesPorEstado.length
+        });
 
         // Devolver respuesta
         res.status(200).json({
             success: true,
             data: datosResumen
         });
+
     } catch (error) {
-        console.error('Error al generar informe resumen:', error);
+        console.error('❌ INFORMES: Error al generar informe resumen:', error);
+        console.error('❌ INFORMES: Stack trace:', error.stack);
+        
         res.status(500).json({
             success: false,
             message: 'Error al generar informe resumen',
-            error: error.message
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 };
@@ -1718,5 +1809,100 @@ async function exportarCsvLiquidaciones(datos, tempDir, filename) {
     return filePath;
 }
 
+
+// Procesar datos para informe de liquidaciones - VERSIÓN DIRECTA
+function procesarDatosInformeLiquidacionesDirecto(liquidaciones) {
+    console.log('🔍 PROCESANDO: Iniciando procesamiento directo de liquidaciones');
+    
+    // Transformar datos para el informe
+    const liquidacionesProcesadas = liquidaciones.map(liquidacion => {
+        // Calcular totales por liquidación
+        const totalImporte = liquidacion.detalles.reduce((sum, detalle) => {
+            const importe = parseFloat(detalle.total_importe) || 0;
+            return sum + importe;
+        }, 0);
+        
+        const totalMinutos = liquidacion.detalles.reduce((sum, detalle) => {
+            const minutos = parseInt(detalle.total_minutos) || 0;
+            return sum + minutos;
+        }, 0);
+
+        return {
+            id: liquidacion.id,
+            periodo: liquidacion.periodo,
+            fechaGeneracion: liquidacion.fecha_generacion,
+            fechaPago: liquidacion.fecha_pago || null,
+            estado: liquidacion.estado,
+            observaciones: liquidacion.observaciones || '',
+            detalles: liquidacion.detalles.map(detalle => ({
+                id: detalle.id,
+                id_incidente: detalle.id_incidente,
+                id_guardia: detalle.id_guardia,
+                usuario: detalle.usuario,
+                fecha: detalle.fecha,
+                total_minutos: detalle.total_minutos,
+                total_importe: parseFloat(detalle.total_importe) || 0
+            })),
+            totalImporte,
+            totalMinutos
+        };
+    });
+
+    // Calcular estadísticas
+    const estadisticas = calcularEstadisticasLiquidacionesDirecto(liquidacionesProcesadas);
+
+    console.log('✅ PROCESANDO: Liquidaciones procesadas:', liquidacionesProcesadas.length);
+    
+    return {
+        liquidaciones: liquidacionesProcesadas,
+        estadisticas
+    };
+}
+
+// Calcular estadísticas para liquidaciones - VERSIÓN DIRECTA
+function calcularEstadisticasLiquidacionesDirecto(liquidaciones) {
+    console.log('🔍 ESTADÍSTICAS: Calculando estadísticas directas');
+    
+    // Total de liquidaciones
+    const totalLiquidaciones = liquidaciones.length;
+
+    // Total de importe
+    const totalImporte = liquidaciones.reduce((sum, liq) => sum + (liq.totalImporte || 0), 0);
+
+    // Distribución por estado
+    const estadosMap = liquidaciones.reduce((result, liq) => {
+        const estado = liq.estado || 'desconocido';
+        if (!result[estado]) {
+            result[estado] = 0;
+        }
+        result[estado]++;
+        return result;
+    }, {});
+    
+    const porEstado = Object.entries(estadosMap).map(([estado, cantidad]) => ({ estado, cantidad }));
+
+    // Distribución por usuarios (de los detalles)
+    const usuariosSet = new Set();
+    liquidaciones.forEach(liq => {
+        if (liq.detalles) {
+            liq.detalles.forEach(detalle => {
+                if (detalle.usuario) {
+                    usuariosSet.add(detalle.usuario);
+                }
+            });
+        }
+    });
+    
+    const estadisticas = {
+        totalLiquidaciones,
+        totalImporte: parseFloat(totalImporte.toFixed(2)),
+        totalUsuarios: usuariosSet.size,
+        porEstado
+    };
+    
+    console.log('✅ ESTADÍSTICAS: Calculadas exitosamente:', estadisticas);
+    
+    return estadisticas;
+}
 
 module.exports = exports;

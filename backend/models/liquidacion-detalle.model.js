@@ -7,7 +7,7 @@ const LiquidacionDetalle = {
   // Encontrar todos los detalles con filtros opcionales
   findAll: async (options = {}) => {
     try {
-      let query = 'SELECT * FROM liquidaciones_detalle';
+      let query = 'SELECT * FROM taskmanagementsystem.liquidaciones_detalle';
       const params = [];
       let whereClause = '';
       
@@ -87,7 +87,7 @@ const LiquidacionDetalle = {
   // Encontrar un detalle por ID
   findByPk: async (id) => {
     try {
-      const [rows] = await pool.query('SELECT * FROM liquidaciones_detalle WHERE id = ?', [id]);
+      const [rows] = await pool.query('SELECT * FROM taskmanagementsystem.liquidaciones_detalle WHERE id = ?', [id]);
       
       if (rows.length === 0) return null;
       
@@ -112,7 +112,7 @@ const LiquidacionDetalle = {
       } = data;
       
       const [result] = await pool.query(
-        'INSERT INTO liquidaciones_detalle (id_liquidacion, id_incidente, id_guardia, usuario, fecha, total_minutos, total_importe) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO taskmanagementsystem.liquidaciones_detalle (id_liquidacion, id_incidente, id_guardia, usuario, fecha, total_minutos, total_importe) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [id_liquidacion, id_incidente, id_guardia, usuario, fecha, total_minutos, total_importe]
       );
       
@@ -171,7 +171,7 @@ const LiquidacionDetalle = {
       params.push(id); // Para la cláusula WHERE
       
       const [result] = await pool.query(
-        `UPDATE liquidaciones_detalle SET ${updates.join(', ')} WHERE id = ?`,
+        `UPDATE taskmanagementsystem.liquidaciones_detalle SET ${updates.join(', ')} WHERE id = ?`,
         params
       );
       
@@ -189,7 +189,7 @@ const LiquidacionDetalle = {
   // Eliminar un detalle de liquidación
   destroy: async (id) => {
     try {
-      const [result] = await pool.query('DELETE FROM liquidaciones_detalle WHERE id = ?', [id]);
+      const [result] = await pool.query('DELETE FROM taskmanagementsystem.liquidaciones_detalle WHERE id = ?', [id]);
       return result.affectedRows > 0;
     } catch (error) {
       console.error('Error al eliminar detalle de liquidación:', error);

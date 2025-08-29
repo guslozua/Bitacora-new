@@ -50,10 +50,6 @@ import ScrollToTop from './components/ScrollToTop';
 
 // Nuevos imports para el panel de administración de usuarios
 import AdminUsersDashboard from './pages/AdminUsersDashboard';
-import AdminRolesPage from './pages/AdminRolesPage';
-import RolePermissionsPage from './pages/RolePermissionsPage';
-import AdminPermissionsPage from './pages/AdminPermissionsPage';
-import RolePermissionMatrixPage from './pages/RolePermissionMatrixPage';
 import UserDetail from './components/users/UserDetail';
 import UserForm from './components/users/UserForm';
 
@@ -231,44 +227,6 @@ const App: React.FC = () => {
                     element={<AdminUsersDashboard />} 
                     permissions={[SYSTEM_PERMISSIONS.CREATE_USER, SYSTEM_PERMISSIONS.EDIT_USER]}
                     requireAllPermissions={false}
-                  />
-                } 
-              />
-              <Route 
-                path="/admin/roles" 
-                element={
-                  <ProtectedRoute 
-                    element={<AdminRolesPage />} 
-                    permission={SYSTEM_PERMISSIONS.MANAGE_ROLES}
-                  />
-                } 
-              />
-              <Route 
-                path="/admin/roles/:roleId/permissions" 
-                element={
-                  <ProtectedRoute 
-                    element={<RolePermissionsPage />} 
-                    permission={SYSTEM_PERMISSIONS.MANAGE_PERMISSIONS}
-                  />
-                } 
-              />
-              
-              {/* 🔑 RUTAS PARA GESTIÓN DE PERMISOS */}
-              <Route 
-                path="/admin/permissions" 
-                element={
-                  <ProtectedRoute 
-                    element={<AdminPermissionsPage />} 
-                    permission={SYSTEM_PERMISSIONS.MANAGE_PERMISSIONS}
-                  />
-                } 
-              />
-              <Route 
-                path="/admin/permissions/matrix" 
-                element={
-                  <ProtectedRoute 
-                    element={<RolePermissionMatrixPage />} 
-                    permission={SYSTEM_PERMISSIONS.MANAGE_PERMISSIONS}
                   />
                 } 
               />

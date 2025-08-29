@@ -101,8 +101,37 @@ export const SidebarVisibilityProvider = ({ children }: { children: ReactNode })
 
         if (defaultConfig && defaultConfig.valor) {
           console.log('✅ Configuración global del sidebar cargada:', defaultConfig.valor);
+          
+          // Verificar si el valor es un objeto de configuración directa o contiene estructuras anidadas
+          let sidebarData;
+          if (typeof defaultConfig.valor === 'object' && !Array.isArray(defaultConfig.valor)) {
+            // Verificar si es un objeto con propiedades de visibilidad directas
+            const hasDirectProps = Object.keys(defaultConfig.valor).some(key => 
+              typeof defaultConfig.valor[key] === 'boolean'
+            );
+            
+            if (hasDirectProps) {
+              // Es un objeto con propiedades de visibilidad directas (formato correcto)
+              sidebarData = defaultConfig.valor;
+            } else if (defaultConfig.valor.sidebar && typeof defaultConfig.valor.sidebar === 'object') {
+              // Es un objeto con propiedad sidebar anidada
+              sidebarData = defaultConfig.valor.sidebar;
+            } else {
+              // Es otro tipo de objeto, intentar extraer configuración válida
+              console.warn('⚠️ Formato de configuración global inesperado:', defaultConfig.valor);
+              const validConfig = Object.values(defaultConfig.valor).find(value => 
+                typeof value === 'object' && value !== null && !Array.isArray(value)
+              );
+              sidebarData = validConfig || defaultSidebarConfig;
+            }
+          } else {
+            // Fallback a configuración por defecto
+            console.error('❌ Formato de configuración global inválido, usando por defecto');
+            sidebarData = defaultSidebarConfig;
+          }
+          
           setIsGlobalConfig(true);
-          return defaultConfig.valor;
+          return sidebarData;
         }
       }
 

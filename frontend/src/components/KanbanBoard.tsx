@@ -742,12 +742,13 @@ const KanbanBoard: React.FC = () => {
   };
 
   // Componentes internos
-  const TaskWithSubtasks = React.memo(({ taskId, taskCard, taskMap, cardColors, getPriorityColor }: {
+  const TaskWithSubtasks = React.memo(({ taskId, taskCard, taskMap, cardColors, getPriorityColor, openCardDetails }: {
     taskId: string;
     taskCard: Card;
     taskMap: EntityMap;
     cardColors: any;
     getPriorityColor: (priority?: string) => string;
+    openCardDetails: (card: Card) => void;
   }) => {
     const [expanded, setExpanded] = useState(false);
     const subtaskIds = taskMap[taskId]?.subtasks || [];
@@ -762,6 +763,20 @@ const KanbanBoard: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center' }}>
             {taskCard.title}
+            
+            {/* Botón de detalles para tarea anidada */}
+            <button onClick={(e) => {
+              e.stopPropagation();
+              openCardDetails(taskCard);
+            }} style={{
+              background: '#1abc9c', border: '1px solid white', borderRadius: '50%',
+              width: '20px', height: '20px', marginLeft: '6px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'white', fontSize: '10px', fontWeight: 'bold'
+            }} title="Ver detalles de la tarea">
+              <i className="bi bi-info-circle-fill"></i>
+            </button>
+            
             {hasSubtasks && (
               <span style={{
                 cursor: 'pointer', fontSize: '10px', padding: '1px 4px',
@@ -790,9 +805,25 @@ const KanbanBoard: React.FC = () => {
                   backgroundColor: subtaskCard.metadata.progress === 100 ? cardColors.subtask.completed :
                     subtaskCard.metadata.progress && subtaskCard.metadata.progress > 0 ? cardColors.subtask.inProgress : cardColors.subtask.pending,
                   padding: '5px', borderRadius: '3px', marginBottom: '5px', fontSize: '11px',
-                  display: 'flex', justifyContent: 'space-between'
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                 }}>
-                  <div>{subtaskCard.title}</div>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    {subtaskCard.title}
+                    
+                    {/* Botón de detalles para subtarea anidada */}
+                    <button onClick={(e) => {
+                      e.stopPropagation();
+                      openCardDetails(subtaskCard);
+                    }} style={{
+                      background: '#e67e22', border: '1px solid white', borderRadius: '50%',
+                      width: '16px', height: '16px', marginLeft: '4px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'white', fontSize: '8px', fontWeight: 'bold'
+                    }} title="Ver detalles de la subtarea">
+                      <i className="bi bi-info-circle-fill"></i>
+                    </button>
+                  </div>
+                  
                   {subtaskCard.metadata.priority && (
                     <span style={{
                       backgroundColor: getPriorityColor(subtaskCard.metadata.priority),
@@ -810,11 +841,12 @@ const KanbanBoard: React.FC = () => {
     );
   });
 
-  const SubtasksList = React.memo(({ subtaskIds, taskMap, cardColors, getPriorityColor }: {
+  const SubtasksList = React.memo(({ subtaskIds, taskMap, cardColors, getPriorityColor, openCardDetails }: {
     subtaskIds: string[];
     taskMap: EntityMap;
     cardColors: any;
     getPriorityColor: (priority?: string) => string;
+    openCardDetails: (card: Card) => void;
   }) => {
     return (
       <div className="task-subtasks">
@@ -826,9 +858,25 @@ const KanbanBoard: React.FC = () => {
               backgroundColor: subtaskCard.metadata.progress === 100 ? cardColors.subtask.completed :
                 subtaskCard.metadata.progress && subtaskCard.metadata.progress > 0 ? cardColors.subtask.inProgress : cardColors.subtask.pending,
               padding: '6px', borderRadius: '3px', marginBottom: '5px', fontSize: '11px',
-              display: 'flex', justifyContent: 'space-between'
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center'
             }}>
-              <div>{subtaskCard.title}</div>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                {subtaskCard.title}
+                
+                {/* Botón de detalles para subtarea en lista */}
+                <button onClick={(e) => {
+                  e.stopPropagation();
+                  openCardDetails(subtaskCard);
+                }} style={{
+                  background: '#e67e22', border: '1px solid white', borderRadius: '50%',
+                  width: '16px', height: '16px', marginLeft: '4px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'white', fontSize: '8px', fontWeight: 'bold'
+                }} title="Ver detalles de la subtarea">
+                  <i className="bi bi-info-circle-fill"></i>
+                </button>
+              </div>
+              
               {subtaskCard.metadata.priority && (
                 <span style={{
                   backgroundColor: getPriorityColor(subtaskCard.metadata.priority),
@@ -849,10 +897,18 @@ const KanbanBoard: React.FC = () => {
     const hasChildren = (metadata.type === 'project' && projectMap[id]?.tasks && (projectMap[id]?.tasks as string[])?.length > 0) ||
       (metadata.type === 'task' && taskMap[id]?.subtasks && (taskMap[id]?.subtasks as string[])?.length > 0);
 
+    // 📍 RESTAURAR LA JERARQUÍA CORRECTA - Solo mostrar elementos principales
+    // Tareas con proyecto padre NO se muestran individualmente (se ven dentro del proyecto)
+    // Subtareas con tarea padre NO se muestran individualmente (se ven dentro de la tarea)
     if ((metadata.type === 'task' && metadata.parentId && projectMap && (projectMap[`project-${metadata.parentId}`] as any)) ||
       (metadata.type === 'subtask' && metadata.parentId && taskMap && (taskMap[`task-${metadata.parentId}`] as any))) {
       return null;
     }
+    
+    // Solo se muestran como tarjetas independientes:
+    // - Proyectos (siempre)
+    // - Tareas SIN proyecto padre (huérfanas)
+    // - Subtareas SIN tarea padre (huérfanas)
 
     const type = metadata.type as 'project' | 'task' | 'subtask';
     let backgroundColor: string;
@@ -879,16 +935,38 @@ const KanbanBoard: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '5px' }}>
               <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '5px', display: 'flex', alignItems: 'center', flex: 1 }}>
                 {title}
+                {/* 📍 BOTÓN DE DETALLES OPTIMIZADO - MÁS VISIBLE EN TODOS LOS TIPOS */}
                 <button onClick={(e) => {
                   e.stopPropagation();
                   openCardDetails({ id, title, description, metadata, tags, label: '', draggable: true });
                 }} style={{
-                  background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%',
-                  width: '24px', height: '24px', marginLeft: '8px', cursor: 'pointer',
+                  // Mejores colores de contraste según el tipo de tarjeta
+                  background: type === 'project' ? '#2c3e50' : 
+                            type === 'task' ? '#1abc9c' : '#e67e22',
+                  border: '2px solid white',
+                  borderRadius: '50%',
+                  width: '28px', height: '28px', marginLeft: '8px', 
+                  cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: textColor, fontSize: '12px'
-                }} title="Ver detalles">
-                  <i className="bi bi-info-circle"></i>
+                  color: 'white', fontSize: '14px', fontWeight: 'bold',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                  transition: 'all 0.2s ease'
+                }} title={`Ver detalles ${metadata.type === 'project' ? 'del proyecto' : metadata.type === 'subtask' ? 'de la subtarea' : 'de la tarea'}`}
+                onMouseEnter={(e) => {
+                  const button = e.target as HTMLButtonElement;
+                  button.style.transform = 'scale(1.15)';
+                  button.style.boxShadow = '0 3px 6px rgba(0,0,0,0.4)';
+                  button.style.background = type === 'project' ? '#34495e' : 
+                                          type === 'task' ? '#16a085' : '#d68910';
+                }}
+                onMouseLeave={(e) => {
+                  const button = e.target as HTMLButtonElement;
+                  button.style.transform = 'scale(1)';
+                  button.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+                  button.style.background = type === 'project' ? '#2c3e50' : 
+                                          type === 'task' ? '#1abc9c' : '#e67e22';
+                }}>
+                  <i className="bi bi-info-circle-fill"></i>
                 </button>
 
                 {hasChildren && (
@@ -945,7 +1023,8 @@ const KanbanBoard: React.FC = () => {
                       if (!taskCardObj) return null;
                       return (
                         <TaskWithSubtasks key={taskId} taskId={taskId} taskCard={taskCardObj}
-                          taskMap={taskMap} cardColors={cardColors} getPriorityColor={getPriorityColor} />
+                          taskMap={taskMap} cardColors={cardColors} getPriorityColor={getPriorityColor}
+                          openCardDetails={openCardDetails} />
                       );
                     })}
                   </div>
@@ -953,7 +1032,8 @@ const KanbanBoard: React.FC = () => {
 
                 {metadata.type === 'task' && taskMap[id]?.subtasks && (
                   <SubtasksList subtaskIds={taskMap[id]?.subtasks || []} taskMap={taskMap}
-                    cardColors={cardColors} getPriorityColor={getPriorityColor} />
+                    cardColors={cardColors} getPriorityColor={getPriorityColor}
+                    openCardDetails={openCardDetails} />
                 )}
               </div>
             )}

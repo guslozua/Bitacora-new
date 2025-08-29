@@ -183,7 +183,26 @@ export const DashboardSectionVisibilityProvider = ({ children }: { children: Rea
         
         if (globalConfig && globalConfig.valor) {
           console.log('✅ Configuración global de dashboard sections cargada:', globalConfig.valor);
-          setSectionsState(globalConfig.valor);
+          
+          // Verificar si el valor es un array (configuración correcta) o un objeto con secciones
+          let sectionsData;
+          if (Array.isArray(globalConfig.valor)) {
+            // Es un array directo (formato correcto)
+            sectionsData = globalConfig.valor;
+          } else if (globalConfig.valor.secciones && Array.isArray(globalConfig.valor.secciones)) {
+            // Es un objeto con propiedad secciones (formato de test)
+            sectionsData = globalConfig.valor.secciones;
+          } else if (typeof globalConfig.valor === 'object' && globalConfig.valor !== null) {
+            // Es otro tipo de objeto, intentar extraer las secciones
+            console.warn('⚠️ Formato de configuración global inesperado:', globalConfig.valor);
+            sectionsData = Object.values(globalConfig.valor).find(value => Array.isArray(value)) || defaultSections;
+          } else {
+            // Fallback a configuración por defecto
+            console.error('❌ Formato de configuración global inválido, usando por defecto');
+            sectionsData = defaultSections;
+          }
+          
+          setSectionsState(sectionsData);
           setIsGlobalConfig(true);
           console.log('🌐 Usando configuración global de dashboard sections');
           return;

@@ -14,14 +14,17 @@ const checkPermission = require('../middleware/roleMiddleware');
 router.use(authenticateToken);
 router.use(checkPermission(['admin', 'Admin', 'SuperAdmin'])); // Nota: array de roles
 
-// Rutas de diagnósticos
+// Rutas de diagnósticos - CORREGIDAS PARA COINCIDIR CON EL CONTROLADOR
 router.get('/health', DiagnosticsController.healthCheck);
-router.get('/database/connection', DiagnosticsController.testDatabaseConnection);
-router.get('/database/performance', DiagnosticsController.testDatabasePerformance);
-router.get('/apis/internal', DiagnosticsController.testInternalAPIs);
-router.get('/system/info', DiagnosticsController.getSystemInfo);
-router.get('/services/external', DiagnosticsController.testExternalServices);
+router.get('/database', DiagnosticsController.testDatabaseConnection); // Simplificado
+router.get('/database/performance', DiagnosticsController.testDatabasePerformance); // Nueva ruta de rendimiento
+router.get('/apis', DiagnosticsController.testInternalAPIs); // Simplificado
+router.get('/system', DiagnosticsController.getSystemInfo); // Simplificado
+router.get('/external-services', DiagnosticsController.testExternalServices);
 router.get('/filesystem', DiagnosticsController.testFileSystem);
 router.get('/logs', DiagnosticsController.getLogs);
+
+// Ruta para ejecutar todas las pruebas
+router.get('/all', DiagnosticsController.runAllTests);
 
 module.exports = router;

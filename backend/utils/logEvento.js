@@ -87,7 +87,7 @@ const logEvento = async (params, req = null) => {
 
         // Inserción en la tabla bitácora
         const sql = `
-        INSERT INTO bitacora
+        INSERT INTO taskmanagementsystem.bitacora
         (tipo_evento, descripcion, id_usuario, nombre_usuario, id_proyecto, nombre_proyecto,
          id_tarea, nombre_tarea, id_subtarea, nombre_subtarea, fecha)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())

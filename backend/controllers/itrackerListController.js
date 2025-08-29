@@ -2,6 +2,9 @@
 const pool = require('../config/db');
 
 exports.getItrackerList = async (req, res) => {
+  console.log('🔍 iTracker: Iniciando getItrackerList');
+  console.log('📋 iTracker: Query params:', req.query);
+  
   const { year, month, estado, usuario, equipo, causa, ticket } = req.query;
 
   const conditions = [];
@@ -38,21 +41,24 @@ exports.getItrackerList = async (req, res) => {
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  console.log('📋 iTracker: WHERE clause:', where);
+  console.log('📋 iTracker: Params:', params);
 
   try {
     const [rows] = await pool.query(
-      `SELECT ticket_id, unido_a, t_1, t_2, fecha_apertura, equipo_apertura,
-              apertura_descripcion_error,  -- ✅ agregado este campo
+      `SELECT TOP 1000 ticket_id, unido_a, t_1, t_2, fecha_apertura, equipo_apertura,
+              apertura_descripcion_error,
               fecha_cierre, usuario_cierre, cierre_tipo, cierre_comentario 
-       FROM itracker_data
+       FROM taskmanagementsystem.itracker_data
        ${where}
-       ORDER BY fecha_apertura DESC
-       LIMIT 1000`,
+       ORDER BY fecha_apertura DESC`,
       params
     );
+    console.log('✅ iTracker: Consulta exitosa, registros obtenidos:', rows.length);
     res.json(rows);
   } catch (error) {
-    console.error('Error al obtener lista de tickets:', error);
+    console.error('❌ iTracker: Error al obtener lista de tickets:', error);
+    console.error('❌ iTracker: Stack:', error.stack);
     res.status(500).json({ error: 'Error al obtener la lista de tickets' });
   }
 };

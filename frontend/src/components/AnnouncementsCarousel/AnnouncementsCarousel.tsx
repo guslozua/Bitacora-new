@@ -158,7 +158,7 @@ const AnnouncementsCarousel: React.FC = () => {
         style={{ height: '320px' }} // Altura aumentada para mejor espaciado
       >
         {announcements.map((announcement) => (
-          <Carousel.Item key={announcement.id}>
+          <Carousel.Item key={`announcement-${announcement.id}`}>
             <div 
               className="position-relative d-flex align-items-center"
               style={{ 
@@ -349,9 +349,9 @@ const AnnouncementsCarousel: React.FC = () => {
           {/* Indicadores personalizados mejorados */}
           <div className="position-absolute bottom-0 start-50 translate-middle-x mb-2">
             <div className="d-flex gap-2">
-              {announcements.map((_, idx) => (
+              {announcements.map((ann, idx) => (
                 <button
-                  key={idx}
+                  key={`carousel-indicator-${ann.id}`}
                   className="btn p-0 border-0"
                   style={{
                     width: index === idx ? '40px' : '12px',

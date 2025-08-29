@@ -2,7 +2,7 @@
 // CONTROLADOR COMPLETO: contactosController.js - CON SIMULADOR MEJORADO
 // =============================================
 
-const ContactosModel = require('../models/ContactosModel');
+const ContactosModel = require('../models/ContactosModel'); // Usar el modelo original corregido
 
 class ContactosController {
   
@@ -12,6 +12,11 @@ class ContactosController {
   
   static async getAllEquipos(req, res) {
     try {
+      console.log('🔧 Iniciando getAllEquipos...');
+      
+      // Primero test de conexión básica
+      await ContactosModel.testConnection();
+      
       const equipos = await ContactosModel.getAllEquipos();
       res.json({
         success: true,
@@ -19,11 +24,12 @@ class ContactosController {
         total: equipos.length
       });
     } catch (error) {
-      console.error('Error en getAllEquipos:', error);
+      console.error('❌ Error en getAllEquipos:', error);
       res.status(500).json({
         success: false,
         message: 'Error al obtener equipos técnicos',
-        error: error.message
+        error: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   }
@@ -143,6 +149,8 @@ class ContactosController {
   
   static async getAllIntegrantes(req, res) {
     try {
+      console.log('🔧 Iniciando getAllIntegrantes...');
+      
       const integrantes = await ContactosModel.getAllIntegrantes();
       res.json({
         success: true,
@@ -150,11 +158,12 @@ class ContactosController {
         total: integrantes.length
       });
     } catch (error) {
-      console.error('Error en getAllIntegrantes:', error);
+      console.error('❌ Error en getAllIntegrantes:', error);
       res.status(500).json({
         success: false,
         message: 'Error al obtener integrantes',
-        error: error.message
+        error: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   }
@@ -248,6 +257,8 @@ class ContactosController {
   
   static async getAllSistemas(req, res) {
     try {
+      console.log('🔧 Iniciando getAllSistemas...');
+      
       const sistemas = await ContactosModel.getAllSistemas();
       res.json({
         success: true,
@@ -255,11 +266,12 @@ class ContactosController {
         total: sistemas.length
       });
     } catch (error) {
-      console.error('Error en getAllSistemas:', error);
+      console.error('❌ Error en getAllSistemas:', error);
       res.status(500).json({
         success: false,
         message: 'Error al obtener sistemas',
-        error: error.message
+        error: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   }
@@ -613,7 +625,7 @@ class ContactosController {
         });
       }
       
-      const success = await ContactosModel.asignarIntegrantes(equipoId, integrante_ids);
+      const success = await ContactosModel.asignarIntegrantesAEquipo(equipoId, integrante_ids);
       
       res.json({
         success: true,
@@ -642,11 +654,19 @@ class ContactosController {
         });
       }
       
-      const success = await ContactosModel.asignarSistemas(equipoId, sistema_ids);
+      // Invertir la lógica: en lugar de asignar sistemas a equipo,
+      // asignar el equipo a cada sistema
+      const results = [];
+      for (const sistemaId of sistema_ids) {
+        const success = await ContactosModel.asignarEquiposASistema(sistemaId, [equipoId]);
+        results.push(success);
+      }
+      
+      const allSuccess = results.every(r => r === true);
       
       res.json({
-        success: true,
-        message: 'Sistemas asignados correctamente al equipo',
+        success: allSuccess,
+        message: allSuccess ? 'Sistemas asignados correctamente al equipo' : 'Error en algunas asignaciones',
         data: { equipoId, sistema_ids }
       });
     } catch (error) {

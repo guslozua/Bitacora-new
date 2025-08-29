@@ -24,8 +24,20 @@ exports.uploadExcel = async (req, res) => {
         rowData[header] = row.getCell(idx + 1).value;
       });
 
+      // Función para convertir ticket_id según el tipo esperado por la base de datos
+      const processTicketId = (id) => {
+        if (!id) return null;
+        const idStr = String(id).trim();
+        // Si es un número válido, convertir a entero para BIGINT
+        if (/^\d+$/.test(idStr)) {
+          return parseInt(idStr, 10);
+        }
+        // Si no es numérico, mantener como string (puede fallar si la columna es BIGINT)
+        return idStr;
+      };
+
       const finalData = {
-        ticket_id: rowData['ID'],
+        ticket_id: processTicketId(rowData['ID']),
         unido_a: rowData['UNIDO A'],
         t_0: rowData['T_0'],
         t_1: rowData['T_1'],
@@ -51,20 +63,32 @@ exports.uploadExcel = async (req, res) => {
       if (finalData.ticket_id) {
         try {
           const [existing] = await pool.query(
-            'SELECT 1 FROM itracker_data WHERE ticket_id = ?',
+            'SELECT 1 FROM taskmanagementsystem.itracker_data WHERE ticket_id = ?',
             [finalData.ticket_id]
           );
 
           if (existing.length === 0) {
+            // Obtener el próximo ID disponible
+            const [maxIdResult] = await pool.query(
+              'SELECT ISNULL(MAX(id), 0) + 1 as next_id FROM taskmanagementsystem.itracker_data'
+            );
+            const nextId = maxIdResult[0].next_id;
+            
+            // Agregar el ID al objeto de datos
+            const dataWithId = {
+              id: nextId,
+              ...finalData
+            };
+            
             await pool.query(`
-              INSERT INTO itracker_data (
-                ticket_id, unido_a, t_0, t_1, t_2, t_3,
+              INSERT INTO taskmanagementsystem.itracker_data (
+                id, ticket_id, unido_a, t_0, t_1, t_2, t_3,
                 fecha_apertura, u_apertura, usuario_apertura, equipo_apertura,
                 estado, abierto_a, fecha_cierre, u_cierre, usuario_cierre,
                 cierre_tipo, cierre_falla, cierre_novedad, cierre_comentario,
                 apertura_descripcion_error, archivo_origen
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, Object.values(finalData));
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, Object.values(dataWithId));
 
             totalInsertados++;
           } else {

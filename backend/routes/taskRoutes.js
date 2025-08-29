@@ -48,11 +48,19 @@ router.get('/:id/subtasks', authMiddleware, (req, res) => {
 
 // Obtener usuarios asignados a una tarea
 // GET /api/tasks/:id/users
-router.get('/:id/users', authMiddleware, getTaskUsers);
+router.get('/:id/users', authMiddleware, (req, res) => {
+    console.log(`🔍 [taskRoutes] GET /${req.params.id}/users - llamando a getTaskUsers`);
+    console.log(`🔍 [taskRoutes] Parámetros:`, req.params);
+    getTaskUsers(req, res);
+});
 
 // Asignar un usuario a una tarea
 // POST /api/tasks/:id/users
-router.post('/:id/users', authMiddleware, roleMiddleware(['Admin', 'SuperAdmin']), assignUserToTask);
+router.post('/:id/users', authMiddleware, roleMiddleware(['Admin', 'SuperAdmin']), (req, res) => {
+    console.log(`🔍 [taskRoutes] POST /${req.params.id}/users - llamando a assignUserToTask`);
+    console.log(`🔍 [taskRoutes] Body:`, req.body);
+    assignUserToTask(req, res);
+});
 
 // Eliminar asignación de un usuario a una tarea
 // DELETE /api/tasks/:taskId/users/:userId

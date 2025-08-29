@@ -1,22 +1,28 @@
-// src/components/AdminGuardias/AdminGuardias.tsx
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Container, Row, Col, Card, Table, Button,
-  Form, Modal, Alert, Spinner, Pagination, InputGroup, Dropdown
+  Form, Modal, Alert, Spinner, Pagination
 } from 'react-bootstrap';
 import { format, getYear, getMonth, getDaysInMonth, startOfMonth, addDays, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useSearchParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import GuardiaService, { Guardia } from '../../services/GuardiaService';
+import { API_BASE_URL } from '../../services/apiConfig';
 
 // Interfaz para el resultado de la importación
 interface ImportResult {
   totalImportadas: number;
   totalErrores: number;
   totalOmitidas?: number;
-  errors?: string[]; // Hacer opcional para compatibilidad
+  errors?: string[];
 }
+
+// Nombres de meses en español
+const monthNames = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+];
 
 const AdminGuardias: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -35,48 +41,17 @@ const AdminGuardias: React.FC = () => {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
 
-  // Estado para filtros
+  // Estado para filtros - MODIFICADO PARA MOSTRAR DATOS EXISTENTES
   const [filters, setFilters] = useState({
-    year: getYear(new Date()).toString(),
-    month: (getMonth(new Date()) + 1).toString().padStart(2, '0'),
+    year: '', // Inicializar vacío para detectar automáticamente
+    month: '', // Inicializar vacío para mostrar todos
     usuario: '',
-    vista: 'lista', // 'lista' o 'mensual'
+    vista: 'lista' as 'lista' | 'mensual',
   });
 
   // Estado para paginación
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Solo para vista de lista
-
-  // Cargar guardias al montar el componente
-  useEffect(() => {
-    loadGuardias()
-      .then(() => {
-        // Si hay un ID de guardia para editar en los parámetros de URL
-        if (editId) {
-          const guardiaPorEditar = guardias.find(g => g.id.toString() === editId);
-          if (guardiaPorEditar) {
-            handleEditGuardia(guardiaPorEditar);
-          } else {
-            // Si no se encuentra la guardia en el estado actual, buscarla directamente
-            GuardiaService.fetchGuardiaById(parseInt(editId))
-              .then(guardia => {
-                if (guardia) {
-                  handleEditGuardia(guardia);
-                }
-              })
-              .catch(err => {
-                console.error('Error al buscar guardia por ID:', err);
-                Swal.fire({
-                  title: 'Error',
-                  text: `No se encontró la guardia con ID ${editId}`,
-                  icon: 'error',
-                  confirmButtonText: 'Aceptar'
-                });
-              });
-          }
-        }
-      });
-  }, [editId]); // Agregar editId como dependencia
+  const itemsPerPage = 10;
 
   // Obtener años disponibles para filtro
   const availableYears = useMemo(() => {
@@ -86,15 +61,31 @@ const AdminGuardias: React.FC = () => {
       years.add(year);
     });
 
-    // Si no hay años en los datos, usar el año actual
     if (years.size === 0) {
       years.add(format(new Date(), 'yyyy'));
     }
 
-    return Array.from(years).sort((a, b) => b.localeCompare(a)); // Ordenar descendente
+    return Array.from(years).sort((a, b) => b.localeCompare(a));
   }, [guardias]);
 
-  // Obtener usuarios disponibles para filtro
+  // Obtener meses disponibles para el año seleccionado
+  const availableMonths = useMemo(() => {
+    if (!filters.year) {
+      return [];
+    }
+
+    const months = new Set<string>();
+    guardias
+      .filter(g => format(new Date(g.fecha), 'yyyy') === filters.year)
+      .forEach(guardia => {
+        const month = format(new Date(guardia.fecha), 'MM');
+        months.add(month);
+      });
+
+    return Array.from(months).sort();
+  }, [guardias, filters.year]);
+
+  // Obtener usuarios disponibles para filtro - CORREGIDO
   const availableUsers = useMemo(() => {
     const users = new Set<string>();
     guardias.forEach((guardia: Guardia) => {
@@ -103,30 +94,140 @@ const AdminGuardias: React.FC = () => {
     return Array.from(users).sort();
   }, [guardias]);
 
+  // Función para detectar automáticamente el mejor filtro inicial
+  const detectBestInitialFilter = (guardiasList: Guardia[]) => {
+    if (guardiasList.length === 0) {
+      return {
+        year: getYear(new Date()).toString(),
+        month: (getMonth(new Date()) + 1).toString().padStart(2, '0'),
+        usuario: '',
+        vista: 'lista' as const
+      };
+    }
+
+    // Obtener distribución por años
+    const yearDistribution = guardiasList.reduce((acc, guardia) => {
+      const year = format(new Date(guardia.fecha), 'yyyy');
+      acc[year] = (acc[year] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Encontrar el año con más guardias
+    const mostPopularYear = Object.entries(yearDistribution)
+      .sort(([,a], [,b]) => b - a)[0]?.[0] || getYear(new Date()).toString();
+
+    console.log('🔍 Detección automática de filtros:', {
+      totalGuardias: guardiasList.length,
+      yearDistribution,
+      mostPopularYear
+    });
+
+    return {
+      year: mostPopularYear,
+      month: '', // Mostrar todos los meses del año más popular
+      usuario: '',
+      vista: 'lista' as const
+    };
+  };
+
+  // Cargar guardias con detección automática de filtros
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🛡️ [AdminGuardias] Cargando guardias...');
+        const data = await GuardiaService.fetchGuardias();
+        
+        console.log('✅ [AdminGuardias] Guardias cargadas:', data.length);
+        setGuardias(data);
+
+        // Auto-detectar mejores filtros iniciales solo si es la primera carga
+        if (filters.year === '' && filters.month === '') {
+          const bestFilters = detectBestInitialFilter(data);
+          setFilters(bestFilters);
+          console.log('🎯 Filtros auto-detectados aplicados:', bestFilters);
+        }
+
+        // Manejar edición desde URL
+        if (editId) {
+          const guardiaPorEditar = data.find(g => g.id.toString() === editId);
+          if (guardiaPorEditar) {
+            handleEditGuardia(guardiaPorEditar);
+          } else {
+            try {
+              const guardia = await GuardiaService.fetchGuardiaById(parseInt(editId));
+              if (guardia) {
+                handleEditGuardia(guardia);
+              }
+            } catch (err) {
+              console.error('Error al buscar guardia por ID:', err);
+              Swal.fire({
+                title: 'Error',
+                text: `No se encontró la guardia con ID ${editId}`,
+                icon: 'error',
+                confirmButtonText: 'Aceptar'
+              });
+            }
+          }
+        }
+
+      } catch (error: any) {
+        console.error('❌ [AdminGuardias] Error al cargar guardias:', error);
+        
+        let errorMessage = 'Error desconocido';
+        if (error.name === 'ApiError') {
+          errorMessage = `Error API (${error.status}): ${error.message}`;
+        } else if (error.message?.includes('Network Error')) {
+          errorMessage = 'Error de conexión: No se puede conectar con el servidor.';
+        } else if (error.response?.status === 500) {
+          errorMessage = 'Error interno del servidor: Revise los logs del backend.';
+        } else {
+          errorMessage = `Error al cargar guardias: ${error.message}`;
+        }
+        
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [editId]);
+
   // Obtener guardias filtradas
   const filteredGuardias = useMemo(() => {
-    return guardias.filter(guardia => {
+    console.log('🔍 [AdminGuardias] Aplicando filtros:', {
+      year: filters.year,
+      month: filters.month,
+      usuario: filters.usuario,
+      totalGuardias: guardias.length
+    });
+    
+    const filtered = guardias.filter(guardia => {
       const guardiaDate = new Date(guardia.fecha);
       const guardiaYear = format(guardiaDate, 'yyyy');
       const guardiaMonth = format(guardiaDate, 'MM');
 
-      // Filtrar por año si está seleccionado
       if (filters.year && guardiaYear !== filters.year) {
         return false;
       }
 
-      // Filtrar por mes si está seleccionado
       if (filters.month && guardiaMonth !== filters.month) {
         return false;
       }
 
-      // Filtrar por usuario si está ingresado
       if (filters.usuario && !guardia.usuario.toLowerCase().includes(filters.usuario.toLowerCase())) {
         return false;
       }
 
       return true;
     });
+    
+    console.log('📊 [AdminGuardias] Guardias filtradas:', filtered.length);
+    
+    return filtered;
   }, [guardias, filters]);
 
   // Paginación para vista de lista
@@ -151,16 +252,13 @@ const AdminGuardias: React.FC = () => {
     }
 
     const year = parseInt(filters.year);
-    const month = parseInt(filters.month) - 1; // Ajustar para date-fns (0-11)
+    const month = parseInt(filters.month) - 1;
 
     const firstDayOfMonth = startOfMonth(new Date(year, month));
     const daysInMonth = getDaysInMonth(firstDayOfMonth);
 
-    // Crear array con todos los días del mes
     const days = Array.from({ length: daysInMonth }, (_, i) => {
       const date = addDays(firstDayOfMonth, i);
-
-      // Buscar guardia para este día
       const guardia = filteredGuardias.find(g =>
         isSameDay(new Date(g.fecha), date)
       );
@@ -175,7 +273,7 @@ const AdminGuardias: React.FC = () => {
     return days;
   }, [filters.vista, filters.year, filters.month, filteredGuardias]);
 
-  // Función para cargar guardias
+  // Función para recargar guardias
   const loadGuardias = async () => {
     try {
       setLoading(true);
@@ -184,6 +282,7 @@ const AdminGuardias: React.FC = () => {
       setGuardias(data);
       return data;
     } catch (error: any) {
+      console.error('Error al cargar guardias:', error);
       setError(`Error al cargar guardias: ${error.message}`);
       return [];
     } finally {
@@ -206,10 +305,17 @@ const AdminGuardias: React.FC = () => {
       ...prev,
       [filterName]: value
     }));
-    setCurrentPage(1); // Reiniciar paginación al cambiar filtros
+    setCurrentPage(1);
   };
 
-  // Cambiar vista (lista/mensual)
+  // Resetear filtros a detección automática
+  const handleResetFilters = () => {
+    const bestFilters = detectBestInitialFilter(guardias);
+    setFilters(bestFilters);
+    setCurrentPage(1);
+  };
+
+  // Cambiar vista
   const handleChangeView = (vista: 'lista' | 'mensual') => {
     setFilters(prev => ({
       ...prev,
@@ -218,7 +324,7 @@ const AdminGuardias: React.FC = () => {
     setCurrentPage(1);
   };
 
-  // Abrir modal para crear nueva guardia
+  // Abrir modal para nueva guardia
   const handleNewGuardia = () => {
     setSelectedGuardia(null);
     setGuardiaForm({
@@ -229,7 +335,7 @@ const AdminGuardias: React.FC = () => {
     setShowModal(true);
   };
 
-  // Abrir modal para crear guardia en una fecha específica (desde vista mensual)
+  // Abrir modal para nueva guardia en fecha específica
   const handleNewGuardiaForDate = (date: Date) => {
     setSelectedGuardia(null);
     setGuardiaForm({
@@ -240,7 +346,7 @@ const AdminGuardias: React.FC = () => {
     setShowModal(true);
   };
 
-  // Abrir modal para editar guardia existente
+  // Abrir modal para editar guardia
   const handleEditGuardia = (guardia: Guardia) => {
     setSelectedGuardia(guardia);
     setGuardiaForm({
@@ -251,7 +357,7 @@ const AdminGuardias: React.FC = () => {
     setShowModal(true);
   };
 
-  // Guardar guardia (nueva o actualizada)
+  // Guardar guardia
   const handleSaveGuardia = async () => {
     try {
       if (!guardiaForm.usuario) {
@@ -265,11 +371,13 @@ const AdminGuardias: React.FC = () => {
       }
 
       if (selectedGuardia) {
-        // Actualizar guardia existente
-        await GuardiaService.updateGuardia({
+        // Normalizar notas antes del envío
+        const updateData = {
           id: selectedGuardia.id,
-          ...guardiaForm
-        });
+          ...guardiaForm,
+          notas: guardiaForm.notas || null // Convertir string vacío a null
+        };
+        await GuardiaService.updateGuardia(updateData);
 
         Swal.fire({
           title: '¡Éxito!',
@@ -279,8 +387,12 @@ const AdminGuardias: React.FC = () => {
           showConfirmButton: false
         });
       } else {
-        // Crear nueva guardia
-        await GuardiaService.createGuardia(guardiaForm);
+        // Normalizar notas antes del envío
+        const createData = {
+          ...guardiaForm,
+          notas: guardiaForm.notas || null // Convertir string vacío a null
+        };
+        await GuardiaService.createGuardia(createData);
 
         Swal.fire({
           title: '¡Éxito!',
@@ -318,7 +430,6 @@ const AdminGuardias: React.FC = () => {
       if (result.isConfirmed) {
         try {
           await GuardiaService.deleteGuardia(guardia.id);
-
           Swal.fire({
             title: '¡Eliminada!',
             text: 'La guardia ha sido eliminada correctamente',
@@ -326,11 +437,8 @@ const AdminGuardias: React.FC = () => {
             timer: 2000,
             showConfirmButton: false
           });
-
           await loadGuardias();
         } catch (error: any) {
-          console.error('Error al eliminar guardia:', error);
-
           Swal.fire({
             title: 'Error',
             text: `Error al eliminar la guardia: ${error.message}`,
@@ -342,7 +450,7 @@ const AdminGuardias: React.FC = () => {
     });
   };
 
-  // Importar guardias desde archivo Excel - VERSIÓN MEJORADA CON PREVENCIÓN DE DUPLICADOS
+  // Importar guardias desde Excel
   const handleImportGuardias = async () => {
     if (!importFile) {
       Swal.fire({
@@ -354,12 +462,11 @@ const AdminGuardias: React.FC = () => {
       return;
     }
 
-    // Mostrar confirmación antes de procesar
     const confirmResult = await Swal.fire({
       title: 'Confirmar Importación',
       html: `
         <p>¿Está seguro que desea procesar el archivo <strong>${importFile.name}</strong>?</p>
-        <p class="text-muted small">Las guardias duplicadas (misma fecha y usuario) serán omitidas automáticamente.</p>
+        <p class="text-muted small">Las guardias duplicadas serán omitidas automáticamente.</p>
       `,
       icon: 'question',
       showCancelButton: true,
@@ -369,23 +476,18 @@ const AdminGuardias: React.FC = () => {
       cancelButtonText: 'Cancelar'
     });
 
-    if (!confirmResult.isConfirmed) {
-      return;
-    }
+    if (!confirmResult.isConfirmed) return;
 
     try {
       setImporting(true);
       const result: ImportResult = await GuardiaService.importGuardiasFromExcel(importFile);
-
       setImporting(false);
       setImportFile(null);
 
-      // Crear mensaje detallado del resultado
       let mensajeHtml = '';
       let icono: 'success' | 'warning' | 'info' = 'success';
       let titulo = '¡Importación completada exitosamente!';
 
-      // Estadísticas principales
       if (result.totalImportadas > 0) {
         mensajeHtml += `<div class="alert alert-success border-0 mb-2">
           ✅ Se importaron <strong>${result.totalImportadas}</strong> guardias nuevas correctamente.
@@ -394,105 +496,60 @@ const AdminGuardias: React.FC = () => {
 
       if (result.totalOmitidas && result.totalOmitidas > 0) {
         mensajeHtml += `<div class="alert alert-info border-0 mb-2">
-          ℹ️ Se omitieron <strong>${result.totalOmitidas}</strong> guardias que ya existían en el sistema.
+          ℹ️ Se omitieron <strong>${result.totalOmitidas}</strong> guardias duplicadas.
         </div>`;
         if (result.totalImportadas === 0) {
           icono = 'info';
           titulo = 'Archivo procesado - Sin cambios realizados';
-        } else {
-          icono = 'warning';
-          titulo = 'Importación completada con algunas omisiones';
         }
-      }
-
-      const erroresReales = (result.totalErrores || 0) - (result.totalOmitidas || 0);
-      if (erroresReales > 0) {
-        mensajeHtml += `<div class="alert alert-warning border-0 mb-2">
-          ⚠️ Se encontraron <strong>${erroresReales}</strong> problemas que requieren atención.
-        </div>`;
-        icono = 'warning';
-        titulo = 'Importación completada con advertencias';
-      }
-
-      // Si no se importó nada y no hubo omisiones
-      if (result.totalImportadas === 0 && (!result.totalOmitidas || result.totalOmitidas === 0)) {
-        titulo = 'No se encontraron guardias válidas';
-        mensajeHtml = '<div class="alert alert-info border-0">ℹ️ No se encontraron guardias válidas para importar en el archivo.</div>';
-        icono = 'info';
-      }
-
-      // Mostrar detalles específicos si los hay
-      if (result.errors && result.errors.length > 0) {
-        mensajeHtml += `
-          <details style="margin-top: 15px; text-align: left;" class="border rounded p-2 bg-light">
-            <summary style="cursor: pointer; font-weight: bold; color: #495057;">
-              <i class="bi bi-list-ul me-1"></i>Ver detalles (${result.errors.length} elementos)
-            </summary>
-            <div style="max-height: 250px; overflow-y: auto; margin-top: 10px;">
-              <ul class="list-unstyled mb-0" style="font-size: 0.9em;">
-                ${result.errors.map((err: string) => {
-                  // Formatear diferentes tipos de mensajes
-                  if (err.includes('✓ Guardia omitida:')) {
-                    return `<li class="mb-1 text-info">• ${err.replace('✓ Guardia omitida:', '🔄 Duplicada:')}</li>`;
-                  } else if (err.includes('Error')) {
-                    return `<li class="mb-1 text-warning">• ⚠️ ${err}</li>`;
-                  } else {
-                    return `<li class="mb-1">• ${err}</li>`;
-                  }
-                }).join('')}
-              </ul>
-            </div>
-          </details>
-        `;
       }
 
       await Swal.fire({
         title: titulo,
-        html: mensajeHtml,
+        html: mensajeHtml || 'Importación completada',
         icon: icono,
-        confirmButtonText: 'Entendido',
-        width: '600px',
-        customClass: {
-          htmlContainer: 'text-left'
-        }
+        confirmButtonText: 'Entendido'
       });
 
-      // Solo recargar si se importó algo
       if (result.totalImportadas > 0) {
         await loadGuardias();
       }
 
     } catch (error: any) {
       setImporting(false);
-      console.error('Error al importar guardias:', error);
-
       Swal.fire({
         title: 'Error al procesar archivo',
-        html: `
-          <p>Ocurrió un error al procesar el archivo Excel:</p>
-          <div class="alert alert-danger border-0 mt-2">
-            <code>${error.message}</code>
-          </div>
-          <p class="text-muted small mt-2">
-            Verifique que el archivo tenga el formato correcto y vuelva a intentarlo.
-          </p>
-        `,
+        text: `Error: ${error.message}`,
         icon: 'error',
-        confirmButtonText: 'Aceptar',
-        width: '500px'
+        confirmButtonText: 'Aceptar'
       });
     }
   };
 
-  // Limpiar parámetros de URL después de procesar
+  // Limpiar parámetros de URL
   useEffect(() => {
-    // Si ya se encontró y editó la guardia, limpiar el parámetro de URL
     if (editId && showModal) {
       const url = new URL(window.location.href);
       url.searchParams.delete('edit');
       window.history.replaceState({}, '', url.toString());
     }
   }, [editId, showModal]);
+
+  // Componente de información de filtros
+  const FilterInfo: React.FC = () => (
+    <Alert variant="info" className="mb-3">
+      <div className="d-flex align-items-center">
+        <i className="bi bi-info-circle me-2"></i>
+        <div>
+          <strong>Filtros aplicados:</strong> 
+          {filters.year ? ` Año ${filters.year}` : ' Todos los años'} 
+          {filters.month ? ` • Mes ${monthNames[parseInt(filters.month) - 1]}` : ' • Todos los meses'}
+          {filters.usuario ? ` • Usuario: ${filters.usuario}` : ''}
+          <span className="ms-2 text-muted">({filteredGuardias.length} resultados)</span>
+        </div>
+      </div>
+    </Alert>
+  );
 
   return (
     <Container fluid>
@@ -544,11 +601,15 @@ const AdminGuardias: React.FC = () => {
                 />
               </div>
             </Card.Header>
+            
             <Card.Body>
-              {/* Panel de filtros */}
+              {/* Información de Filtros */}
+              <FilterInfo />
+
+              {/* Panel de filtros mejorados */}
               <div className="mb-4 p-3 bg-light rounded">
                 <Row className="align-items-end">
-                  <Col lg={2} md={4} sm={6} className="mb-2">
+                  <Col lg={3} md={4} sm={6} className="mb-2">
                     <Form.Group>
                       <Form.Label className="small fw-bold">Año</Form.Label>
                       <Form.Select
@@ -556,37 +617,47 @@ const AdminGuardias: React.FC = () => {
                         value={filters.year}
                         onChange={(e) => handleFilterChange('year', e.target.value)}
                       >
-                        <option value="">Todos</option>
+                        <option value="">Todos los años</option>
                         {availableYears.map(year => (
-                          <option key={year} value={year}>{year}</option>
+                          <option key={year} value={year}>
+                            {year} ({guardias.filter(g => 
+                              new Date(g.fecha).getFullYear().toString() === year
+                            ).length} guardias)
+                          </option>
                         ))}
                       </Form.Select>
                     </Form.Group>
                   </Col>
-                  <Col lg={2} md={4} sm={6} className="mb-2">
+                  
+                  <Col lg={3} md={4} sm={6} className="mb-2">
                     <Form.Group>
                       <Form.Label className="small fw-bold">Mes</Form.Label>
                       <Form.Select
                         size="sm"
                         value={filters.month}
                         onChange={(e) => handleFilterChange('month', e.target.value)}
+                        disabled={!filters.year}
                       >
-                        <option value="">Todos</option>
-                        <option value="01">Enero</option>
-                        <option value="02">Febrero</option>
-                        <option value="03">Marzo</option>
-                        <option value="04">Abril</option>
-                        <option value="05">Mayo</option>
-                        <option value="06">Junio</option>
-                        <option value="07">Julio</option>
-                        <option value="08">Agosto</option>
-                        <option value="09">Septiembre</option>
-                        <option value="10">Octubre</option>
-                        <option value="11">Noviembre</option>
-                        <option value="12">Diciembre</option>
+                        <option value="">Todos los meses</option>
+                        {availableMonths.map(month => {
+                          const monthIndex = parseInt(month) - 1;
+                          const monthName = monthNames[monthIndex];
+                          const count = guardias.filter(g => {
+                            const date = new Date(g.fecha);
+                            return date.getFullYear().toString() === filters.year &&
+                                   (date.getMonth() + 1).toString().padStart(2, '0') === month;
+                          }).length;
+                          
+                          return (
+                            <option key={month} value={month}>
+                              {monthName} ({count} guardias)
+                            </option>
+                          );
+                        })}
                       </Form.Select>
                     </Form.Group>
                   </Col>
+
                   <Col lg={3} md={4} sm={6} className="mb-2">
                     <Form.Group>
                       <Form.Label className="small fw-bold">Usuario</Form.Label>
@@ -595,14 +666,18 @@ const AdminGuardias: React.FC = () => {
                         value={filters.usuario}
                         onChange={(e) => handleFilterChange('usuario', e.target.value)}
                       >
-                        <option value="">Todos</option>
+                        <option value="">Todos los usuarios</option>
                         {availableUsers.map(user => (
-                          <option key={user} value={user}>{user}</option>
+                          <option key={user} value={user}>
+                            {user} ({guardias.filter(g => g.usuario === user).length})
+                          </option>
                         ))}
                       </Form.Select>
                     </Form.Group>
                   </Col>
-                  <Col lg={3} md={8} sm={6} className="mb-2 d-flex align-items-center">
+
+                  <Col lg={3} md={8} sm={6} className="mb-2">
+                    <Form.Label className="small fw-bold">Vista</Form.Label>
                     <div className="d-flex">
                       <Button
                         variant={filters.vista === 'lista' ? 'primary' : 'outline-primary'}
@@ -610,8 +685,7 @@ const AdminGuardias: React.FC = () => {
                         className="me-2"
                         onClick={() => handleChangeView('lista')}
                       >
-                        <i className="bi bi-list me-1"></i>
-                        Vista Lista
+                        <i className="bi bi-list"></i> Lista
                       </Button>
                       <Button
                         variant={filters.vista === 'mensual' ? 'primary' : 'outline-primary'}
@@ -619,30 +693,22 @@ const AdminGuardias: React.FC = () => {
                         onClick={() => handleChangeView('mensual')}
                         disabled={!filters.year || !filters.month}
                       >
-                        <i className="bi bi-calendar-month me-1"></i>
-                        Vista Mensual
+                        <i className="bi bi-calendar"></i> Mensual
                       </Button>
                     </div>
                   </Col>
-                  <Col lg={2} md={4} sm={6} className="mb-2 d-flex justify-content-end">
-                    <Button
-                      variant="outline-secondary"
-                      size="sm"
-                      onClick={() => {
-                        setFilters({
-                          year: getYear(new Date()).toString(),
-                          month: (getMonth(new Date()) + 1).toString().padStart(2, '0'),
-                          usuario: '',
-                          vista: 'lista'
-                        });
-                        setCurrentPage(1);
-                      }}
-                    >
-                      <i className="bi bi-x-circle me-1"></i>
-                      Limpiar Filtros
-                    </Button>
-                  </Col>
                 </Row>
+
+                <div className="mt-3">
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={handleResetFilters}
+                    title="Limpiar todos los filtros"
+                  >
+                    <i className="bi bi-x-circle"></i> Limpiar Filtros
+                  </Button>
+                </div>
               </div>
 
               {/* Indicador de archivo seleccionado */}
@@ -686,6 +752,7 @@ const AdminGuardias: React.FC = () => {
                 </Alert>
               )}
 
+              {/* Contenido Principal */}
               {loading ? (
                 <div className="text-center py-5">
                   <Spinner animation="border" variant="primary" />
@@ -697,56 +764,81 @@ const AdminGuardias: React.FC = () => {
                 </Alert>
               ) : filteredGuardias.length === 0 ? (
                 <Alert variant="warning">
-                  No se encontraron guardias con los filtros seleccionados. Intente cambiar los filtros o
-                  <Button
-                    variant="link"
-                    className="p-0 ms-1"
-                    onClick={() => handleFilterChange('usuario', '')}
-                  >
-                    limpiar los filtros.
-                  </Button>
+                  <h5>No se encontraron guardias</h5>
+                  <p>No se encontraron guardias con los filtros seleccionados.</p>
+                  <p className="mb-0">
+                    <strong>Sugerencia:</strong> Prueba cambiando los filtros o{' '}
+                    <button
+                      className="btn btn-link p-0"
+                      onClick={handleResetFilters}
+                    >
+                      usar detección automática
+                    </button>
+                  </p>
                 </Alert>
               ) : filters.vista === 'lista' ? (
                 // Vista de lista
                 <>
-                  <Table striped bordered hover responsive>
-                    <thead className="table-light">
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Usuario</th>
-                        <th>Notas</th>
-                        <th>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paginatedGuardias
-                        .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
-                        .map((guardia) => (
-                          <tr key={guardia.id}>
-                            <td>{format(new Date(guardia.fecha), 'EEEE dd/MM/yyyy', { locale: es })}</td>
-                            <td>{guardia.usuario}</td>
-                            <td>{guardia.notas || '-'}</td>
-                            <td>
-                              <Button
-                                variant="outline-primary"
-                                size="sm"
-                                className="me-2"
-                                onClick={() => handleEditGuardia(guardia)}
-                              >
-                                <i className="bi bi-pencil"></i>
-                              </Button>
-                              <Button
-                                variant="outline-danger"
-                                size="sm"
-                                onClick={() => handleDeleteGuardia(guardia)}
-                              >
-                                <i className="bi bi-trash"></i>
-                              </Button>
-                            </td>
+                  <div className="card">
+                    <div className="card-header">
+                      <h5 className="mb-0">
+                        Guardias - {filteredGuardias.length} registros
+                      </h5>
+                    </div>
+                    <div className="card-body">
+                      <Table striped bordered hover responsive>
+                        <thead className="table-light">
+                          <tr>
+                            <th>Fecha</th>
+                            <th>Usuario</th>
+                            <th>Notas</th>
+                            <th>Acciones</th>
                           </tr>
-                        ))}
-                    </tbody>
-                  </Table>
+                        </thead>
+                        <tbody>
+                          {paginatedGuardias
+                            .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+                            .map((guardia) => (
+                              <tr key={guardia.id}>
+                                <td>
+                                  {new Date(guardia.fecha).toLocaleDateString('es-ES', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })}
+                                </td>
+                                <td>
+                                  <strong>{guardia.usuario}</strong>
+                                </td>
+                                <td>
+                                  <span className="text-muted">
+                                    {guardia.notas || 'Sin notas'}
+                                  </span>
+                                </td>
+                                <td>
+                                  <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    className="me-2"
+                                    onClick={() => handleEditGuardia(guardia)}
+                                  >
+                                    <i className="bi bi-pencil"></i>
+                                  </Button>
+                                  <Button
+                                    variant="outline-danger"
+                                    size="sm"
+                                    onClick={() => handleDeleteGuardia(guardia)}
+                                  >
+                                    <i className="bi bi-trash"></i>
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </Table>
+                    </div>
+                  </div>
 
                   {/* Paginación */}
                   {totalPages > 1 && (
@@ -764,16 +856,12 @@ const AdminGuardias: React.FC = () => {
                         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                           let pageNum: number;
                           if (totalPages <= 5) {
-                            // Mostrar todas las páginas si son 5 o menos
                             pageNum = i + 1;
                           } else if (currentPage <= 3) {
-                            // Al inicio, mostrar páginas 1-5
                             pageNum = i + 1;
                           } else if (currentPage + 2 >= totalPages) {
-                            // Al final, mostrar las últimas 5 páginas
                             pageNum = totalPages - 4 + i;
                           } else {
-                            // En medio, mostrar 2 antes y 2 después de la actual
                             pageNum = currentPage - 2 + i;
                           }
 
@@ -802,68 +890,71 @@ const AdminGuardias: React.FC = () => {
                 </>
               ) : (
                 // Vista mensual
-                <div className="mb-3">
-                  <h5 className="mb-3 text-center">
-                    {filters.month && format(new Date(parseInt(filters.year), parseInt(filters.month) - 1), 'MMMM yyyy', { locale: es })}
-                  </h5>
-
-                  <Table bordered responsive className="calendar-table">
-                    <thead className="table-light">
-                      <tr>
-                        <th>Día</th>
-                        <th>Fecha</th>
-                        <th>Usuario</th>
-                        <th>Notas</th>
-                        <th>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {monthViewData.map(dayData => (
-                        <tr key={dayData.day} className={dayData.guardia ? 'table-light' : ''}>
-                          <td className="text-center fw-bold">{dayData.day}</td>
-                          <td>
-                            {format(dayData.date, 'EEEE dd/MM/yyyy', { locale: es })}
-                          </td>
-                          <td>
-                            {dayData.guardia ? dayData.guardia.usuario : '-'}
-                          </td>
-                          <td>
-                            {dayData.guardia?.notas || '-'}
-                          </td>
-                          <td className="text-center">
-                            {dayData.guardia ? (
-                              <>
-                                <Button
-                                  variant="outline-primary"
-                                  size="sm"
-                                  className="me-2"
-                                  onClick={() => handleEditGuardia(dayData.guardia!)}
-                                >
-                                  <i className="bi bi-pencil"></i>
-                                </Button>
-                                <Button
-                                  variant="outline-danger"
-                                  size="sm"
-                                  onClick={() => handleDeleteGuardia(dayData.guardia!)}
-                                >
-                                  <i className="bi bi-trash"></i>
-                                </Button>
-                              </>
-                            ) : (
-                              <Button
-                                variant="outline-success"
-                                size="sm"
-                                onClick={() => handleNewGuardiaForDate(dayData.date)}
-                              >
-                                <i className="bi bi-plus-circle me-1"></i>
-                                Agregar
-                              </Button>
-                            )}
-                          </td>
+                <div className="card">
+                  <div className="card-header">
+                    <h5 className="mb-0 text-center">
+                      {filters.month && format(new Date(parseInt(filters.year), parseInt(filters.month) - 1), 'MMMM yyyy', { locale: es })}
+                    </h5>
+                  </div>
+                  <div className="card-body">
+                    <Table bordered responsive className="calendar-table">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Día</th>
+                          <th>Fecha</th>
+                          <th>Usuario</th>
+                          <th>Notas</th>
+                          <th>Acciones</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </Table>
+                      </thead>
+                      <tbody>
+                        {monthViewData.map(dayData => (
+                          <tr key={dayData.day} className={dayData.guardia ? 'table-light' : ''}>
+                            <td className="text-center fw-bold">{dayData.day}</td>
+                            <td>
+                              {format(dayData.date, 'EEEE dd/MM/yyyy', { locale: es })}
+                            </td>
+                            <td>
+                              {dayData.guardia ? dayData.guardia.usuario : '-'}
+                            </td>
+                            <td>
+                              {dayData.guardia?.notas || '-'}
+                            </td>
+                            <td className="text-center">
+                              {dayData.guardia ? (
+                                <>
+                                  <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    className="me-2"
+                                    onClick={() => handleEditGuardia(dayData.guardia!)}
+                                  >
+                                    <i className="bi bi-pencil"></i>
+                                  </Button>
+                                  <Button
+                                    variant="outline-danger"
+                                    size="sm"
+                                    onClick={() => handleDeleteGuardia(dayData.guardia!)}
+                                  >
+                                    <i className="bi bi-trash"></i>
+                                  </Button>
+                                </>
+                              ) : (
+                                <Button
+                                  variant="outline-success"
+                                  size="sm"
+                                  onClick={() => handleNewGuardiaForDate(dayData.date)}
+                                >
+                                  <i className="bi bi-plus-circle me-1"></i>
+                                  Agregar
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
                 </div>
               )}
             </Card.Body>

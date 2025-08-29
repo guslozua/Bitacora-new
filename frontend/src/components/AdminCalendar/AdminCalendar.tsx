@@ -293,8 +293,8 @@ const AdminCalendar: React.FC<AdminCalendarProps> = ({
     }));
   };
 
-  // Guardar evento (nuevo o actualizado)
-  const handleSaveEvent = () => {
+  // Guardar evento (nuevo o actualizado) - Versión corregida
+  const handleSaveEvent = async () => {
     if (!eventForm.title.trim()) {
       Swal.fire({
         title: 'Error',
@@ -318,42 +318,57 @@ const AdminCalendar: React.FC<AdminCalendarProps> = ({
       return;
     }
 
-    // Crear o actualizar evento
-    const eventToSave: Event = {
-      id: selectedEvent ? selectedEvent.id : `event-${Date.now()}`,
-      ...eventForm
-    };
+    try {
+      // Crear o actualizar evento
+      const eventToSave: Event = {
+        id: selectedEvent ? selectedEvent.id : `event-${Date.now()}`,
+        ...eventForm
+      };
 
-    if (selectedEvent) {
-      // Actualizar evento existente
-      if (onEventUpdate) {
-        onEventUpdate(eventToSave);
+      if (selectedEvent) {
+        // Actualizar evento existente
+        if (onEventUpdate) {
+          await onEventUpdate(eventToSave);
+        }
+        Swal.fire({
+          title: '¡Éxito!',
+          text: 'Evento actualizado correctamente',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } else {
+        // Crear nuevo evento
+        if (onEventAdd) {
+          await onEventAdd(eventToSave);
+        }
+        Swal.fire({
+          title: '¡Éxito!',
+          text: 'Evento creado correctamente',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        });
       }
+
+      // Cerrar el modal después de una breve pausa para que el usuario vea el mensaje
+      setTimeout(() => {
+        handleCloseModal();
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Error al guardar evento:', error);
       Swal.fire({
-        title: '¡Éxito!',
-        text: 'Evento actualizado correctamente',
-        icon: 'success',
-        timer: 2000,
-        showConfirmButton: false
+        title: 'Error',
+        text: 'No se pudo guardar el evento. Por favor, inténtelo de nuevo.',
+        icon: 'error',
+        confirmButtonText: 'Aceptar'
       });
-    } else {
-      // Crear nuevo evento
-      if (onEventAdd) {
-        onEventAdd(eventToSave);
-      }
-      Swal.fire({
-        title: '¡Éxito!',
-        text: 'Evento creado correctamente',
-        icon: 'success',
-        timer: 2000,
-        showConfirmButton: false
-      });
+      // NO cerrar el modal en caso de error
     }
-
-    handleCloseModal();
   };
 
-  // Eliminar evento con SweetAlert2 - Versión actualizada
+  // Eliminar evento con SweetAlert2 - Versión corregida
   const handleDeleteEvent = () => {
     if (selectedEvent) {
       Swal.fire({
@@ -394,6 +409,9 @@ const AdminCalendar: React.FC<AdminCalendarProps> = ({
               timer: 2000,
               showConfirmButton: false
             });
+
+            // Cerrar modal SOLO después del éxito
+            handleCloseModal();
           } catch (error) {
             console.error('Error en handleDeleteEvent:', error);
 
@@ -404,12 +422,12 @@ const AdminCalendar: React.FC<AdminCalendarProps> = ({
               icon: 'error',
               confirmButtonText: 'Aceptar'
             });
+            // NO cerrar el modal en caso de error para que el usuario pueda intentar de nuevo
           }
         }
+        // Si el usuario cancela, no cerramos el modal para que pueda seguir editando
       });
     }
-
-    handleCloseModal();
   };
 
   // Cerrar modal

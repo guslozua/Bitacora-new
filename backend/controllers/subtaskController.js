@@ -10,22 +10,22 @@ exports.createSubtask = async (req, res) => {
 
   try {
     // Verificar que la tarea existe
-    const tareaQuery = 'SELECT id FROM tareas WHERE id = ?';
-    const [tareaResult] = await db.query(tareaQuery, [id_tarea]);
-    if (!tareaResult.length) {
+    const tareaQuery = 'SELECT id FROM taskmanagementsystem.tareas WHERE id = ?';
+    const tareaResult = await db.query(tareaQuery, [id_tarea]);
+    if (!tareaResult[0] || tareaResult[0].length === 0) {
       return res.status(404).json({ success: false, message: 'Tarea no encontrada' });
     }
 
     // Construir la consulta SQL con los campos que sí existen en la tabla subtareas
     // Basado en la estructura de tabla mostrada en las imágenes
     const query = `
-      INSERT INTO subtareas 
+      INSERT INTO taskmanagementsystem.subtareas 
       (titulo, estado, id_tarea, descripcion, fecha_inicio, fecha_vencimiento, prioridad) 
       VALUES (?, 'pendiente', ?, ?, ?, ?, ?)
     `;
     
     // Ejecutar la consulta
-    const [result] = await db.query(query, [
+    const result = await db.query(query, [
       titulo, 
       id_tarea, 
       descripcion || null, 
@@ -34,9 +34,9 @@ exports.createSubtask = async (req, res) => {
       prioridad || null
     ]);
 
-    // Preparar la respuesta
+    // Preparar la respuesta - usar rowsAffected para SQL Server
     const responseData = {
-      id: result.insertId,
+      id: result.recordset ? result.recordset[0]?.id : null,
       titulo,
       estado: 'pendiente',
       id_tarea,
@@ -49,70 +49,90 @@ exports.createSubtask = async (req, res) => {
     // Registrar el evento si es necesario
     console.log(`Subtarea ${titulo} creada para tarea ${id_tarea}`);
 
-    // Enviar respuesta exitosa
     res.status(201).json({
       success: true,
-      message: 'Subtarea creada con éxito',
-      id: result.insertId,
-      data: responseData,
+      message: 'Subtarea creada exitosamente',
+      data: responseData
+    });
+
+  } catch (error) {
+    console.error('Error creando subtarea:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor al crear subtarea',
+      error: error.message
+    });
+  }
+};
+
+exports.getSubtasks = async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM taskmanagementsystem.subtareas');
+    
+    res.json({
+      success: true,
+      data: result[0] || []
     });
   } catch (error) {
-    console.error('Error al crear subtarea:', error);
-    res.status(500).json({ success: false, message: 'Error al crear subtarea' });
+    console.error('❌ Error obteniendo subtareas:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener subtareas: ' + error.message
+    });
   }
 };
 
 exports.getSubtasksByTaskId = async (req, res) => {
-  const id_tarea = req.params.taskId;
-  
   try {
-    const query = 'SELECT * FROM subtareas WHERE id_tarea = ?';
-    const [rows] = await db.query(query, [id_tarea]);
-    res.status(200).json({ success: true, data: rows });
+    const { taskId } = req.params;
+    const result = await db.query(
+      'SELECT * FROM taskmanagementsystem.subtareas WHERE id_tarea = ?',
+      [taskId]
+    );
+    
+    res.json({
+      success: true,
+      data: result[0] || []
+    });
   } catch (error) {
-    console.error('Error al obtener subtareas:', error);
-    res.status(500).json({ success: false, message: 'Error al obtener subtareas' });
+    console.error('❌ Error obteniendo subtareas por tarea:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener subtareas: ' + error.message
+    });
   }
 };
 
 exports.updateSubtask = async (req, res) => {
   const { id } = req.params;
-  const updates = req.body;
+  const { titulo, descripcion, estado, fecha_inicio, fecha_vencimiento, prioridad } = req.body;
 
   try {
-    // Construir la consulta de actualización
-    const fields = [];
-    const values = [];
-
-    // Obtener los campos a actualizar del body
-    for (const key in updates) {
-      // Solo actualizar campos válidos que existen en la tabla subtareas
-      if (['titulo', 'descripcion', 'estado', 'fecha_inicio', 'fecha_vencimiento', 'prioridad', 'id_tarea'].includes(key)) {
-        fields.push(`${key} = ?`);
-        values.push(updates[key]);
-      }
-    }
-
-    if (fields.length === 0) {
-      return res.status(400).json({ success: false, message: 'No hay campos válidos para actualizar' });
-    }
-
-    // Añadir el ID al final para la condición WHERE
-    values.push(id);
+    const query = `
+      UPDATE taskmanagementsystem.subtareas 
+      SET titulo = ?, descripcion = ?, estado = ?, fecha_inicio = ?, fecha_vencimiento = ?, prioridad = ?
+      WHERE id = ?
+    `;
     
-    // Ejecutar la consulta
-    const updateQuery = `UPDATE subtareas SET ${fields.join(', ')} WHERE id = ?`;
-    const [result] = await db.query(updateQuery, values);
-    
-    if (result.affectedRows === 0) {
+    const result = await db.query(query, [
+      titulo, descripcion, estado, fecha_inicio, fecha_vencimiento, prioridad, id
+    ]);
+
+    if (result.rowsAffected && result.rowsAffected[0] === 0) {
       return res.status(404).json({ success: false, message: 'Subtarea no encontrada' });
     }
 
-    console.log(`Subtarea ${id} actualizada`);
-    res.status(200).json({ success: true, message: 'Subtarea actualizada con éxito' });
+    res.json({
+      success: true,
+      message: 'Subtarea actualizada exitosamente'
+    });
+
   } catch (error) {
-    console.error('Error al actualizar subtarea:', error);
-    res.status(500).json({ success: false, message: 'Error al actualizar subtarea' });
+    console.error('❌ Error actualizando subtarea:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar subtarea: ' + error.message
+    });
   }
 };
 
@@ -120,215 +140,206 @@ exports.deleteSubtask = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const deleteQuery = 'DELETE FROM subtareas WHERE id = ?';
-    const [result] = await db.query(deleteQuery, [id]);
+    const result = await db.query('DELETE FROM taskmanagementsystem.subtareas WHERE id = ?', [id]);
 
-    if (result.affectedRows === 0) {
+    if (result.rowsAffected && result.rowsAffected[0] === 0) {
       return res.status(404).json({ success: false, message: 'Subtarea no encontrada' });
     }
 
-    console.log(`Subtarea ${id} eliminada`);
-    res.status(200).json({ success: true, message: 'Subtarea eliminada con éxito' });
+    res.json({
+      success: true,
+      message: 'Subtarea eliminada exitosamente'
+    });
+
   } catch (error) {
-    console.error('Error al eliminar subtarea:', error);
-    res.status(500).json({ success: false, message: 'Error al eliminar subtarea' });
+    console.error('❌ Error eliminando subtarea:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar subtarea: ' + error.message
+    });
   }
 };
 
-// FUNCIONES PARA GESTIÓN DE USUARIOS DE SUBTAREAS
+// ===== NUEVAS FUNCIONES PARA MANEJO DE USUARIOS EN SUBTAREAS =====
 
-/**
- * Obtiene todos los usuarios asignados a una subtarea
- */
 exports.getSubtaskUsers = async (req, res) => {
   try {
     const subtaskId = req.params.id;
     
-    // Verificar que la subtarea existe
-    const [result] = await db.query('SELECT * FROM subtareas WHERE id = ?', [subtaskId]);
-    if (!result || result.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Subtarea no encontrada' 
-      });
-    }
+    const query = `
+      SELECT u.id, u.nombre, u.email, su.fecha_asignacion
+      FROM taskmanagementsystem.usuarios u
+      INNER JOIN taskmanagementsystem.subtarea_usuarios su ON u.id = su.id_usuario
+      WHERE su.id_subtarea = ?
+    `;
     
-    // Obtener usuarios asignados
-    const users = await SubtaskModel.getSubtaskUsers(subtaskId);
+    const result = await db.query(query, [subtaskId]);
     
-    return res.json({ 
-      success: true, 
-      data: users 
+    res.json({
+      success: true,
+      data: result[0] || []
     });
   } catch (error) {
-    console.error('Error al obtener usuarios de la subtarea:', error);
-    return res.status(500).json({
+    console.error('Error obteniendo usuarios de subtarea:', error);
+    res.status(500).json({
       success: false,
-      message: 'Error al obtener usuarios de la subtarea',
-      error: error.message
+      message: 'Error al obtener usuarios de la subtarea: ' + error.message
     });
   }
 };
 
-/**
- * Asigna un usuario a una subtarea
- */
 exports.assignUserToSubtask = async (req, res) => {
   try {
-    const subtaskId = req.params.id;
-    const { userId } = req.body;
+    console.log('🔎 [assignUserToSubtask] Iniciando asignación');
+    console.log('🔎 [assignUserToSubtask] Params:', req.params);
+    console.log('🔎 [assignUserToSubtask] Body:', req.body);
     
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Se requiere especificar el ID de usuario'
+    const subtaskId = req.params.id;
+    // Intentar extraer el ID del usuario con diferentes nombres de campos
+    const { usuario_id, userId, user_id, id } = req.body;
+    const finalUserId = usuario_id || userId || user_id || id;
+    
+    console.log('🔎 [assignUserToSubtask] subtaskId extraído:', subtaskId);
+    console.log('🔎 [assignUserToSubtask] IDs intentados:', { usuario_id, userId, user_id, id });
+    console.log('🔎 [assignUserToSubtask] finalUserId seleccionado:', finalUserId);
+    
+    if (!subtaskId || !finalUserId) {
+      console.log('❌ [assignUserToSubtask] Faltan parámetros');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'ID de subtarea y usuario son requeridos',
+        received: { subtaskId, finalUserId, body: req.body }
       });
     }
     
     // Verificar que la subtarea existe
-    const [subtask] = await db.query('SELECT * FROM subtareas WHERE id = ?', [subtaskId]);
-    if (!subtask || subtask.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Subtarea no encontrada'
-      });
+    const subtaskCheck = await db.query('SELECT id FROM taskmanagementsystem.subtareas WHERE id = ?', [subtaskId]);
+    if (!subtaskCheck[0] || subtaskCheck[0].length === 0) {
+      return res.status(404).json({ success: false, message: 'Subtarea no encontrada' });
     }
     
     // Verificar que el usuario existe
-    const [user] = await db.query('SELECT * FROM Usuarios WHERE id = ?', [userId]);
-    if (!user || user.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no encontrado'
-      });
+    console.log('🔎 [assignUserToSubtask] Verificando usuario...');
+    const userCheck = await db.query('SELECT id FROM taskmanagementsystem.usuarios WHERE id = ?', [finalUserId]);
+    if (!userCheck[0] || userCheck[0].length === 0) {
+      console.log('❌ [assignUserToSubtask] Usuario no encontrado:', finalUserId);
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+    console.log('✅ [assignUserToSubtask] Usuario encontrado');
+    
+    // Verificar si ya está asignado
+    console.log('🔎 [assignUserToSubtask] Verificando asignación existente...');
+    const existingAssignment = await db.query(
+      'SELECT id FROM taskmanagementsystem.subtarea_usuarios WHERE id_subtarea = ? AND id_usuario = ?',
+      [subtaskId, finalUserId]
+    );
+    
+    if (existingAssignment[0] && existingAssignment[0].length > 0) {
+      console.log('⚠️ [assignUserToSubtask] Usuario ya asignado');
+      return res.status(400).json({ success: false, message: 'El usuario ya está asignado a esta subtarea' });
     }
     
-    // Realizar la asignación
-    await SubtaskModel.assignUserToSubtask(subtaskId, userId);
+    // Asignar usuario (sin rol, con fecha actual)
+    console.log('🔎 [assignUserToSubtask] Insertando asignación...');
+    const insertQuery = `
+      INSERT INTO taskmanagementsystem.subtarea_usuarios (id_subtarea, id_usuario, fecha_asignacion)
+      VALUES (?, ?, GETDATE())
+    `;
     
-    // Obtener la información completa del usuario para la respuesta
-    const [userInfo] = await db.query('SELECT id, nombre, email FROM Usuarios WHERE id = ?', [userId]);
+    await db.query(insertQuery, [subtaskId, finalUserId]);
+    console.log('✅ [assignUserToSubtask] Usuario asignado exitosamente');
     
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
-      message: 'Usuario asignado a la subtarea con éxito',
-      data: {
-        id_subtarea: subtaskId,
-        id_usuario: userId,
-        usuario: userInfo[0]
-      }
+      message: 'Usuario asignado a la subtarea exitosamente'
     });
   } catch (error) {
-    console.error('Error al asignar usuario a la subtarea:', error);
-    return res.status(500).json({
+    console.error('Error asignando usuario a subtarea:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error message:', error.message);
+    res.status(500).json({
       success: false,
-      message: 'Error al asignar usuario a la subtarea',
-      error: error.message
+      message: 'Error al asignar usuario a la subtarea: ' + error.message
     });
   }
 };
 
-/**
- * Elimina la asignación de un usuario de una subtarea
- */
 exports.removeUserFromSubtask = async (req, res) => {
   try {
-    const subtaskId = req.params.subtaskId;
-    const userId = req.params.userId;
+    const { subtaskId, userId } = req.params;
     
-    // Verificar que la subtarea existe
-    const [subtask] = await db.query('SELECT * FROM subtareas WHERE id = ?', [subtaskId]);
-    if (!subtask || subtask.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Subtarea no encontrada'
-      });
+    const result = await db.query(
+      'DELETE FROM taskmanagementsystem.subtarea_usuarios WHERE id_subtarea = ? AND id_usuario = ?',
+      [subtaskId, userId]
+    );
+    
+    if (result.rowsAffected && result.rowsAffected[0] === 0) {
+      return res.status(404).json({ success: false, message: 'Asignación no encontrada' });
     }
     
-    // Eliminar la asignación
-    const result = await SubtaskModel.removeUserFromSubtask(subtaskId, userId);
-    
-    if (result.affectedRows === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'El usuario no está asignado a esta subtarea'
-      });
-    }
-    
-    return res.json({
+    res.json({
       success: true,
-      message: 'Usuario eliminado de la subtarea con éxito'
+      message: 'Usuario removido de la subtarea exitosamente'
     });
   } catch (error) {
-    console.error('Error al eliminar usuario de la subtarea:', error);
-    return res.status(500).json({
+    console.error('Error removiendo usuario de subtarea:', error);
+    res.status(500).json({
       success: false,
-      message: 'Error al eliminar usuario de la subtarea',
-      error: error.message
+      message: 'Error al remover usuario de la subtarea: ' + error.message
     });
   }
 };
 
-/**
- * Actualiza todos los usuarios asignados a una subtarea
- */
 exports.updateSubtaskUsers = async (req, res) => {
   try {
-    const subtaskId = req.params.id;
-    const { userIds } = req.body;
+    console.log('🔎 [updateSubtaskUsers] Iniciando actualización');
+    console.log('🔎 [updateSubtaskUsers] Params:', req.params);
+    console.log('🔎 [updateSubtaskUsers] Body:', req.body);
     
-    if (!Array.isArray(userIds)) {
-      return res.status(400).json({
-        success: false,
-        message: 'El campo userIds debe ser un array'
-      });
-    }
+    const subtaskId = req.params.id;
+    const { usuarios } = req.body; // Array de usuarios
+    
+    console.log('🔎 [updateSubtaskUsers] subtaskId:', subtaskId);
+    console.log('🔎 [updateSubtaskUsers] usuarios recibidos:', usuarios);
     
     // Verificar que la subtarea existe
-    const [subtask] = await db.query('SELECT * FROM subtareas WHERE id = ?', [subtaskId]);
-    if (!subtask || subtask.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Subtarea no encontrada'
-      });
+    const subtaskCheck = await db.query('SELECT id FROM taskmanagementsystem.subtareas WHERE id = ?', [subtaskId]);
+    if (!subtaskCheck[0] || subtaskCheck[0].length === 0) {
+      return res.status(404).json({ success: false, message: 'Subtarea no encontrada' });
     }
     
-    // Actualizar usuarios
-    await SubtaskModel.updateSubtaskUsers(subtaskId, userIds);
+    // Eliminar todas las asignaciones actuales
+    await db.query('DELETE FROM taskmanagementsystem.subtarea_usuarios WHERE id_subtarea = ?', [subtaskId]);
     
-    // Obtener la lista actualizada de usuarios
-    const updatedUsers = await SubtaskModel.getSubtaskUsers(subtaskId);
-    
-    // Obtener información de la tarea padre para registrar evento
-    const [tareaInfo] = await db.query('SELECT t.id, t.titulo, t.id_proyecto, p.nombre as nombre_proyecto FROM tareas t JOIN proyectos p ON t.id_proyecto = p.id WHERE t.id = ?', [subtask[0].id_tarea]);
-    
-    if (tareaInfo && tareaInfo.length > 0) {
-      // Registrar evento en bitácora
-      await logEvento({
-        tipo_evento: 'ACTUALIZACIÓN',
-        descripcion: `Usuarios de subtarea actualizados: ${subtask[0].titulo}`,
-        id_usuario: req.user.id,
-        nombre_usuario: req.user.nombre,
-        id_proyecto: tareaInfo[0].id_proyecto,
-        nombre_proyecto: tareaInfo[0].nombre_proyecto,
-        id_tarea: tareaInfo[0].id,
-        nombre_tarea: tareaInfo[0].titulo,
-        id_subtarea: subtaskId,
-        nombre_subtarea: subtask[0].titulo
-      });
+    // Insertar las nuevas asignaciones
+    if (usuarios && usuarios.length > 0) {
+      console.log('🔎 [updateSubtaskUsers] Insertando nuevas asignaciones...');
+      for (const usuario of usuarios) {
+        // Extraer el ID del usuario - puede venir como 'id', 'usuario_id', 'userId', etc.
+        const userId = usuario.id || usuario.usuario_id || usuario.userId || usuario.user_id;
+        
+        console.log('🔎 [updateSubtaskUsers] Insertando usuario:', userId);
+        
+        if (userId) {
+          await db.query(
+            'INSERT INTO taskmanagementsystem.subtarea_usuarios (id_subtarea, id_usuario, fecha_asignacion) VALUES (?, ?, GETDATE())',
+            [subtaskId, userId]
+          );
+        } else {
+          console.warn('⚠️ [updateSubtaskUsers] Usuario sin ID válido:', usuario);
+        }
+      }
     }
     
-    return res.json({
+    res.json({
       success: true,
-      message: 'Usuarios de la subtarea actualizados con éxito',
-      data: updatedUsers
+      message: 'Usuarios de la subtarea actualizados exitosamente'
     });
   } catch (error) {
-    console.error('Error al actualizar usuarios de la subtarea:', error);
-    return res.status(500).json({
+    console.error('Error actualizando usuarios de subtarea:', error);
+    res.status(500).json({
       success: false,
-      message: 'Error al actualizar usuarios de la subtarea',
-      error: error.message
+      message: 'Error al actualizar usuarios de la subtarea: ' + error.message
     });
   }
 };

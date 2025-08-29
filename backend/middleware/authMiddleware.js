@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const UserModel = require('../models/UserModel');
 
 module.exports = async (req, res, next) => {
+  console.log('🔍 AuthMiddleware - INICIO. URL:', req.method, req.url);
   try {
     // Buscar el token en x-auth-token o en Authorization
     let token = req.header('x-auth-token');
@@ -21,13 +22,32 @@ module.exports = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'No hay token, autorización denegada' });
     }
     
-    console.log('Token recibido:', token.substring(0, 20) + '...');
+    console.log('🔐 AuthMiddleware - Token recibido:', token.substring(0, 20) + '...');
+    console.log('🔐 AuthMiddleware - JWT_SECRET disponible:', !!process.env.JWT_SECRET);
     
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      UserModel.getUserById(decoded.id, (err, results) => {
-        if (err || results.length === 0) {
-          console.error('Error o usuario no encontrado:', err);
+      console.log('🔐 AuthMiddleware - Token decodificado. User ID:', decoded.id);
+      
+      // Convertir callback a Promise para mejor manejo de errores
+      const getUserPromise = (userId) => {
+        return new Promise((resolve, reject) => {
+          UserModel.getUserById(userId, (err, results) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(results);
+            }
+          });
+        });
+      };
+
+      try {
+        const results = await getUserPromise(decoded.id);
+        console.log('🔐 AuthMiddleware - Resultado getUserById. Results length:', results?.length);
+        
+        if (!results || results.length === 0) {
+          console.error('Usuario no encontrado para ID:', decoded.id);
           return res.status(401).json({ success: false, message: 'Usuario no encontrado' });
         }
         
@@ -47,9 +67,37 @@ module.exports = async (req, res, next) => {
         // Asignar el usuario al request para uso posterior
         req.user = user;
         next();
-      });
+        
+      } catch (dbError) {
+        console.error('🔐 AuthMiddleware - Error de base de datos:', dbError);
+        
+        // Manejar errores específicos de conexión
+        const isConnectionError = (
+          dbError.code === 'ECONNCLOSED' || 
+          dbError.code === 'ENOTOPEN' ||
+          dbError.message.includes('Connection is closed') ||
+          dbError.message.includes('Connection not yet open')
+        );
+        
+        if (isConnectionError) {
+          console.error('🔐 AuthMiddleware - Error de conexión a BD detectado');
+          return res.status(503).json({ 
+            success: false, 
+            message: 'Servicio temporalmente no disponible. Intente nuevamente.',
+            error: 'DATABASE_CONNECTION_ERROR'
+          });
+        }
+        
+        // Para otros errores de BD
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Error interno del servidor',
+          error: 'DATABASE_ERROR'
+        });
+      }
+      
     } catch (jwtError) {
-      console.error('Error específico de JWT:', jwtError.message);
+      console.error('🔐 AuthMiddleware - Error específico de JWT:', jwtError.message);
       if (jwtError.name === 'JsonWebTokenError') {
         return res.status(401).json({ success: false, message: 'Token inválido: ' + jwtError.message });
       }
@@ -59,7 +107,11 @@ module.exports = async (req, res, next) => {
       throw jwtError;
     }
   } catch (error) {
-    console.error('Error en autenticación:', error);
-    res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
+    console.error('🔐 AuthMiddleware - Error general en autenticación:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error en el servidor', 
+      error: error.message 
+    });
   }
 };

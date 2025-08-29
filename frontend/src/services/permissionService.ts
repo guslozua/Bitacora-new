@@ -46,7 +46,7 @@ const getAuthHeaders = () => {
  */
 export const fetchAllPermissions = async (): Promise<Permission[]> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/permissions`, {
+    const response = await axios.get(`${API_BASE_URL}/permisos`, {
       headers: getAuthHeaders()
     });
     
@@ -66,7 +66,7 @@ export const fetchAllPermissions = async (): Promise<Permission[]> => {
  */
 export const fetchPermissionsByCategory = async (): Promise<PermissionsByCategory[]> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/permissions/by-category`, {
+    const response = await axios.get(`${API_BASE_URL}/permisos/by-category`, {
       headers: getAuthHeaders()
     });
     
@@ -87,7 +87,7 @@ export const fetchPermissionsByCategory = async (): Promise<PermissionsByCategor
  */
 export const createPermission = async (permissionData: CreatePermissionData): Promise<any> => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/permissions`, permissionData, {
+    const response = await axios.post(`${API_BASE_URL}/permisos`, permissionData, {
       headers: getAuthHeaders()
     });
     
@@ -107,7 +107,9 @@ export const createPermission = async (permissionData: CreatePermissionData): Pr
  */
 export const updatePermission = async (permissionId: number, permissionData: UpdatePermissionData): Promise<any> => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/permissions/${permissionId}`, permissionData, {
+    console.log('Actualizando permiso ID:', permissionId, 'con datos:', permissionData); // Debug log
+    
+    const response = await axios.put(`${API_BASE_URL}/permisos/${permissionId}`, permissionData, {
       headers: getAuthHeaders()
     });
     
@@ -127,7 +129,7 @@ export const updatePermission = async (permissionId: number, permissionData: Upd
  */
 export const deletePermission = async (permissionId: number): Promise<any> => {
   try {
-    const response = await axios.delete(`${API_BASE_URL}/permissions/${permissionId}`, {
+    const response = await axios.delete(`${API_BASE_URL}/permisos/${permissionId}`, {
       headers: getAuthHeaders()
     });
     

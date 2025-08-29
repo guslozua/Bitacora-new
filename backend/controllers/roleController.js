@@ -4,7 +4,7 @@ const db = require('../config/db');
 // Obtener todos los roles
 const getAllRoles = async (req, res) => {
     try {
-        const [results] = await db.query('SELECT * FROM Roles ORDER BY nombre');
+        const [results] = await db.query('SELECT * FROM taskmanagementsystem.Roles ORDER BY nombre');
         
         res.json({
             success: true,
@@ -22,7 +22,7 @@ const getAllRoles = async (req, res) => {
 
 // Crear un nuevo rol
 const createRole = async (req, res) => {
-    const { nombre, descripcion = '', is_default = 0 } = req.body;
+    const { nombre, descripcion = '', is_default = 0, estado = 'activo' } = req.body;
     
     if (!nombre) {
         return res.status(400).json({
@@ -33,7 +33,7 @@ const createRole = async (req, res) => {
     
     try {
         // Verificar si ya existe un rol con ese nombre
-        const [existingRoles] = await db.query('SELECT id FROM Roles WHERE nombre = ?', [nombre]);
+        const [existingRoles] = await db.query('SELECT id FROM taskmanagementsystem.Roles WHERE nombre = ?', [nombre]);
         
         if (existingRoles.length > 0) {
             return res.status(409).json({
@@ -42,15 +42,21 @@ const createRole = async (req, res) => {
             });
         }
         
+        // Obtener el próximo ID disponible (columna id no es IDENTITY)
+        const [maxIdResult] = await db.query(
+            'SELECT ISNULL(MAX(id), 0) + 1 as next_id FROM taskmanagementsystem.Roles'
+        );
+        const nextId = maxIdResult[0].next_id;
+        
         const [result] = await db.query(
-            'INSERT INTO Roles (nombre, descripcion, is_default) VALUES (?, ?, ?)',
-            [nombre, descripcion, is_default]
+            'INSERT INTO taskmanagementsystem.Roles (id, nombre, descripcion, is_default, estado) VALUES (?, ?, ?, ?, ?)',
+            [nextId, nombre, descripcion, is_default, estado]
         );
         
         res.status(201).json({
             success: true,
             message: 'Rol creado correctamente',
-            roleId: result.insertId
+            roleId: nextId
         });
     } catch (err) {
         console.error('Error creando rol:', err);
@@ -77,17 +83,18 @@ const assignRoleToUser = async (req, res) => {
     try {
         // Usar transacción para mantener integridad
         const connection = await db.getConnection();
-        await connection.beginTransaction();
+        const transaction = await connection.beginTransaction();
         
         try {
             // Verificar si ya existe esta asignación
-            const [existingAssignments] = await connection.query(
-                'SELECT id FROM usuario_rol WHERE id_usuario = ? AND id_rol = ?',
+            const [existingAssignments] = await transaction.query(
+                'SELECT id FROM taskmanagementsystem.usuario_rol WHERE id_usuario = ? AND id_rol = ?',
                 [userId, roleId]
             );
             
             if (existingAssignments.length > 0) {
-                await connection.release();
+                await transaction.rollback();
+                connection.release();
                 return res.status(409).json({
                     success: false,
                     message: 'El usuario ya tiene este rol asignado'
@@ -95,12 +102,12 @@ const assignRoleToUser = async (req, res) => {
             }
             
             // Insertar la nueva asignación
-            await connection.query(
-                'INSERT INTO usuario_rol (id_usuario, id_rol) VALUES (?, ?)',
+            await transaction.query(
+                'INSERT INTO taskmanagementsystem.usuario_rol (id_usuario, id_rol) VALUES (?, ?)',
                 [userId, roleId]
             );
             
-            await connection.commit();
+            await transaction.commit();
             connection.release();
             
             res.json({
@@ -108,7 +115,7 @@ const assignRoleToUser = async (req, res) => {
                 message: 'Rol asignado correctamente'
             });
         } catch (error) {
-            await connection.rollback();
+            await transaction.rollback();
             connection.release();
             throw error;
         }
@@ -137,7 +144,7 @@ const removeRoleFromUser = async (req, res) => {
     try {
         // Verificar si existe la asignación
         const [existingRole] = await db.query(
-            'SELECT id FROM usuario_rol WHERE id_usuario = ? AND id_rol = ?',
+            'SELECT id FROM taskmanagementsystem.usuario_rol WHERE id_usuario = ? AND id_rol = ?',
             [userId, roleId]
         );
         
@@ -150,7 +157,7 @@ const removeRoleFromUser = async (req, res) => {
         
         // Eliminar la asignación
         await db.query(
-            'DELETE FROM usuario_rol WHERE id_usuario = ? AND id_rol = ?',
+            'DELETE FROM taskmanagementsystem.usuario_rol WHERE id_usuario = ? AND id_rol = ?',
             [userId, roleId]
         );
         
@@ -175,8 +182,8 @@ const getUserRoles = async (req, res) => {
     try {
         const [results] = await db.query(`
             SELECT r.* 
-            FROM Roles r
-            JOIN usuario_rol ur ON r.id = ur.id_rol
+            FROM taskmanagementsystem.Roles r
+            JOIN taskmanagementsystem.usuario_rol ur ON r.id = ur.id_rol
             WHERE ur.id_usuario = ?
             ORDER BY r.nombre
         `, [userId]);
@@ -198,7 +205,7 @@ const getUserRoles = async (req, res) => {
 // Actualizar un rol
 const updateRole = async (req, res) => {
     const roleId = req.params.id;
-    const { nombre, descripcion, is_default } = req.body;
+    const { nombre, descripcion, is_default, estado } = req.body;
     
     if (!nombre) {
         return res.status(400).json({
@@ -210,7 +217,7 @@ const updateRole = async (req, res) => {
     try {
         // Verificar si ya existe un rol con ese nombre (excepto el actual)
         const [existingRoles] = await db.query(
-            'SELECT id FROM Roles WHERE nombre = ? AND id != ?',
+            'SELECT id FROM taskmanagementsystem.Roles WHERE nombre = ? AND id != ?',
             [nombre, roleId]
         );
         
@@ -223,13 +230,13 @@ const updateRole = async (req, res) => {
         
         // Si is_default es true (1), actualizar todos los demás roles primero
         if (is_default === 1) {
-            await db.query('UPDATE Roles SET is_default = 0 WHERE id != ?', [roleId]);
+            await db.query('UPDATE taskmanagementsystem.Roles SET is_default = 0 WHERE id != ?', [roleId]);
         }
         
-        // Actualizar el rol
+        // Actualizar el rol incluyendo el estado
         await db.query(
-            'UPDATE Roles SET nombre = ?, descripcion = ?, is_default = ? WHERE id = ?',
-            [nombre, descripcion, is_default, roleId]
+            'UPDATE taskmanagementsystem.Roles SET nombre = ?, descripcion = ?, is_default = ?, estado = ? WHERE id = ?',
+            [nombre, descripcion, is_default, estado, roleId]
         );
         
         res.json({
@@ -253,7 +260,7 @@ const deleteRole = async (req, res) => {
     try {
         // Verificar que no sea un rol por defecto
         const [defaultRole] = await db.query(
-            'SELECT is_default FROM Roles WHERE id = ?',
+            'SELECT is_default FROM taskmanagementsystem.Roles WHERE id = ?',
             [roleId]
         );
         
@@ -273,7 +280,7 @@ const deleteRole = async (req, res) => {
         
         // Verificar si hay usuarios con este rol
         const [usersWithRole] = await db.query(
-            'SELECT COUNT(*) as count FROM usuario_rol WHERE id_rol = ?',
+            'SELECT COUNT(*) as count FROM taskmanagementsystem.usuario_rol WHERE id_rol = ?',
             [roleId]
         );
         
@@ -286,16 +293,16 @@ const deleteRole = async (req, res) => {
         
         // Usar transacción para mantener integridad
         const connection = await db.getConnection();
-        await connection.beginTransaction();
+        const transaction = await connection.beginTransaction();
         
         try {
             // Eliminar permisos asociados al rol
-            await connection.query('DELETE FROM rol_permiso WHERE id_rol = ?', [roleId]);
+            await transaction.query('DELETE FROM taskmanagementsystem.rol_permiso WHERE id_rol = ?', [roleId]);
             
             // Eliminar el rol
-            await connection.query('DELETE FROM Roles WHERE id = ?', [roleId]);
+            await transaction.query('DELETE FROM taskmanagementsystem.Roles WHERE id = ?', [roleId]);
             
-            await connection.commit();
+            await transaction.commit();
             connection.release();
             
             res.json({
@@ -303,7 +310,7 @@ const deleteRole = async (req, res) => {
                 message: 'Rol eliminado correctamente'
             });
         } catch (error) {
-            await connection.rollback();
+            await transaction.rollback();
             connection.release();
             throw error;
         }
@@ -332,24 +339,24 @@ const assignPermissionsToRole = async (req, res) => {
     try {
         // Usar transacción para mantener integridad
         const connection = await db.getConnection();
-        await connection.beginTransaction();
+        const transaction = await connection.beginTransaction();
         
         try {
             // Eliminar permisos actuales
-            await connection.query('DELETE FROM rol_permiso WHERE id_rol = ?', [roleId]);
+            await transaction.query('DELETE FROM taskmanagementsystem.rol_permiso WHERE id_rol = ?', [roleId]);
             
             // Asignar nuevos permisos
             if (permisoIds.length > 0) {
-                // Crear consulta con múltiples valores
-                const values = permisoIds.map(permisoId => [roleId, permisoId]);
-                
-                await connection.query(
-                    'INSERT INTO rol_permiso (id_rol, id_permiso) VALUES ?',
-                    [values]
-                );
+                // Crear consulta con múltiples inserts individuales para SQL Server
+                for (const permisoId of permisoIds) {
+                    await transaction.query(
+                        'INSERT INTO taskmanagementsystem.rol_permiso (id_rol, id_permiso) VALUES (?, ?)',
+                        [roleId, permisoId]
+                    );
+                }
             }
             
-            await connection.commit();
+            await transaction.commit();
             connection.release();
             
             res.json({
@@ -357,7 +364,7 @@ const assignPermissionsToRole = async (req, res) => {
                 message: 'Permisos asignados correctamente'
             });
         } catch (error) {
-            await connection.rollback();
+            await transaction.rollback();
             connection.release();
             throw error;
         }
@@ -378,8 +385,8 @@ const getRolePermissions = async (req, res) => {
     try {
         const [results] = await db.query(`
             SELECT p.* 
-            FROM Permisos p
-            JOIN rol_permiso rp ON p.id = rp.id_permiso
+            FROM taskmanagementsystem.Permisos p
+            JOIN taskmanagementsystem.rol_permiso rp ON p.id = rp.id_permiso
             WHERE rp.id_rol = ?
             ORDER BY p.categoria, p.nombre
         `, [roleId]);

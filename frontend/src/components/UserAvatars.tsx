@@ -38,7 +38,10 @@ const UserAvatars: React.FC<UserAvatarsProps> = ({
         setUsers(assignedUsers);
         setError(null);
       } catch (error: any) {
-        console.error('Error al cargar usuarios asignados:', error.message);
+        // Solo log errores que no sean 404 para reducir spam en console
+        if (error.response?.status !== 404) {
+          console.warn(`UserAvatars: Error al cargar usuarios para ${itemType} ${itemId}:`, error.message);
+        }
         setError(error.message);
         setUsers([]);
       } finally {

@@ -11,6 +11,12 @@ import {
   getUsersByRole,
   Role 
 } from '../../services/roleService';
+import { 
+  fetchAllPermissions,
+  getPermissionsByRole,
+  assignPermissionToRole,
+  removePermissionFromRole
+} from '../../services/permissionService';
 
 interface User {
   id: number;
@@ -30,13 +36,21 @@ const RolesManager: React.FC = () => {
   const [roleForm, setRoleForm] = useState({
     nombre: '',
     descripcion: '',
-    is_default: false
+    is_default: false,
+    estado: 'activo' // Agregar campo estado
   });
 
   // Estados para el modal de usuarios del rol
   const [showUsersModal, setShowUsersModal] = useState<boolean>(false);
   const [selectedRoleUsers, setSelectedRoleUsers] = useState<User[]>([]);
   const [selectedRoleName, setSelectedRoleName] = useState<string>('');
+
+  // Estados para el modal de permisos
+  const [showPermissionsModal, setShowPermissionsModal] = useState<boolean>(false);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [allPermissions, setAllPermissions] = useState<any[]>([]);
+  const [rolePermissions, setRolePermissions] = useState<any[]>([]);
+  const [permissionsLoading, setPermissionsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     loadRoles();
@@ -61,7 +75,8 @@ const RolesManager: React.FC = () => {
     setRoleForm({
       nombre: '',
       descripcion: '',
-      is_default: false
+      is_default: false,
+      estado: 'activo'
     });
     setShowRoleModal(true);
   };
@@ -71,7 +86,8 @@ const RolesManager: React.FC = () => {
     setRoleForm({
       nombre: role.nombre,
       descripcion: role.descripcion || '',
-      is_default: role.is_default === 1
+      is_default: role.is_default === 1,
+      estado: role.estado || 'activo' // Usar estado del rol o 'activo' por defecto
     });
     setShowRoleModal(true);
   };
@@ -133,7 +149,8 @@ const RolesManager: React.FC = () => {
       const roleData = {
         nombre: roleForm.nombre.trim(),
         descripcion: roleForm.descripcion.trim(),
-        is_default: roleForm.is_default ? 1 : 0
+        is_default: roleForm.is_default ? 1 : 0,
+        estado: roleForm.estado
       };
 
       if (editingRole) {
@@ -181,9 +198,69 @@ const RolesManager: React.FC = () => {
     }
   };
 
-  const handleManagePermissions = (role: Role) => {
-    // Navegar a la página de permisos (la implementaremos después)
-    navigate(`/admin/roles/${role.id}/permissions`);
+  const handleManagePermissions = async (role: Role) => {
+    try {
+      setPermissionsLoading(true);
+      setSelectedRole(role);
+      
+      // Cargar todos los permisos y los permisos del rol en paralelo
+      const [allPermsData, rolePermsData] = await Promise.all([
+        fetchAllPermissions(),
+        getPermissionsByRole(role.id)
+      ]);
+      
+      setAllPermissions(allPermsData || []);
+      setRolePermissions(rolePermsData || []);
+      setShowPermissionsModal(true);
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: err.message || 'Error al cargar permisos del rol'
+      });
+    } finally {
+      setPermissionsLoading(false);
+    }
+  };
+
+  // Verificar si un permiso está asignado al rol
+  const isPermissionAssigned = (permissionId: number): boolean => {
+    return rolePermissions.some(rp => rp.id === permissionId);
+  };
+
+  // Asignar/quitar permiso
+  const handleTogglePermission = async (permission: any) => {
+    if (!selectedRole) return;
+    
+    try {
+      const isAssigned = isPermissionAssigned(permission.id);
+      
+      if (isAssigned) {
+        await removePermissionFromRole(selectedRole.id, permission.id);
+        setRolePermissions(prev => prev.filter(rp => rp.id !== permission.id));
+      } else {
+        await assignPermissionToRole(selectedRole.id, permission.id);
+        setRolePermissions(prev => [...prev, permission]);
+      }
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: err.message || 'Error al actualizar permisos'
+      });
+    }
+  };
+
+  // Agrupar permisos por categoría
+  const groupPermissionsByCategory = (permissions: any[]) => {
+    return permissions.reduce((groups: any, permission: any) => {
+      const category = permission.categoria || 'general';
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(permission);
+      return groups;
+    }, {});
   };
 
   if (loading) {
@@ -301,9 +378,9 @@ const RolesManager: React.FC = () => {
                       </span>
                     </td>
                     <td>
-                      <Badge bg="success">
-                        <i className="bi bi-check-circle me-1"></i>
-                        Activo
+                      <Badge bg={role.estado === 'activo' ? 'success' : 'secondary'}>
+                        <i className={`bi ${role.estado === 'activo' ? 'bi-check-circle' : 'bi-x-circle'} me-1`}></i>
+                        {role.estado === 'activo' ? 'Activo' : 'Inactivo'}
                       </Badge>
                     </td>
                     <td>
@@ -385,14 +462,15 @@ const RolesManager: React.FC = () => {
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>
-                    <strong>Configuración</strong>
+                    <strong>Estado</strong>
                   </Form.Label>
-                  <Form.Check
-                    type="checkbox"
-                    label="Rol por defecto para nuevos usuarios"
-                    checked={roleForm.is_default}
-                    onChange={(e) => setRoleForm({...roleForm, is_default: e.target.checked})}
-                  />
+                  <Form.Select
+                    value={roleForm.estado}
+                    onChange={(e) => setRoleForm({...roleForm, estado: e.target.value})}
+                  >
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                  </Form.Select>
                 </Form.Group>
               </Col>
             </Row>
@@ -408,6 +486,17 @@ const RolesManager: React.FC = () => {
                 onChange={(e) => setRoleForm({...roleForm, descripcion: e.target.value})}
               />
             </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>
+                <strong>Configuración</strong>
+              </Form.Label>
+              <Form.Check
+                type="checkbox"
+                label="Rol por defecto para nuevos usuarios"
+                checked={roleForm.is_default}
+                onChange={(e) => setRoleForm({...roleForm, is_default: e.target.checked})}
+              />
+            </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>
@@ -417,6 +506,85 @@ const RolesManager: React.FC = () => {
           <Button variant="warning" onClick={handleSaveRole}>
             <i className="bi bi-check-lg me-1"></i>
             {editingRole ? 'Actualizar' : 'Crear'} Rol
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modal para gestionar permisos del rol */}
+      <Modal show={showPermissionsModal} onHide={() => setShowPermissionsModal(false)} size="xl">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className="bi bi-key me-2"></i>
+            Permisos del Rol: {selectedRole?.nombre}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+          {permissionsLoading ? (
+            <div className="text-center py-4">
+              <Spinner animation="border" />
+              <p className="mt-2">Cargando permisos...</p>
+            </div>
+          ) : (
+            <div>
+              <div className="mb-3">
+                <Badge bg="info" className="me-2">
+                  Total de permisos: {allPermissions.length}
+                </Badge>
+                <Badge bg="success">
+                  Asignados: {rolePermissions.length}
+                </Badge>
+              </div>
+              
+              {Object.entries(groupPermissionsByCategory(allPermissions)).map(([category, permissions]: [string, any]) => (
+                <Card key={category} className="mb-3">
+                  <Card.Header className="bg-light">
+                    <h6 className="mb-0">
+                      <i className="bi bi-tag me-2"></i>
+                      {category.toUpperCase()}
+                    </h6>
+                  </Card.Header>
+                  <Card.Body>
+                    <Row>
+                      {permissions.map((permission: any) => {
+                        const isAssigned = isPermissionAssigned(permission.id);
+                        return (
+                          <Col md={6} lg={4} key={permission.id} className="mb-2">
+                            <div 
+                              className={`border rounded p-2 cursor-pointer ${
+                                isAssigned ? 'border-success bg-success bg-opacity-10' : 'border-light'
+                              }`}
+                              style={{ cursor: 'pointer' }}
+                              onClick={() => handleTogglePermission(permission)}
+                            >
+                              <div className="d-flex align-items-center justify-content-between">
+                                <div className="flex-grow-1">
+                                  <div className="fw-bold text-primary" style={{ fontSize: '0.85rem' }}>
+                                    {permission.nombre}
+                                  </div>
+                                  <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                    {permission.descripcion || 'Sin descripción'}
+                                  </div>
+                                </div>
+                                <div className="ms-2">
+                                  <i className={`bi ${
+                                    isAssigned ? 'bi-check-circle-fill text-success' : 'bi-circle text-muted'
+                                  }`}></i>
+                                </div>
+                              </div>
+                            </div>
+                          </Col>
+                        );
+                      })}
+                    </Row>
+                  </Card.Body>
+                </Card>
+              ))}
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowPermissionsModal(false)}>
+            Cerrar
           </Button>
         </Modal.Footer>
       </Modal>

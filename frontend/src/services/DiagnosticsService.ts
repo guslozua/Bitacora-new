@@ -228,7 +228,7 @@ class DiagnosticsService {
             checkAuthStatus();
             
             console.log('🔍 Iniciando test de base de datos...');
-            const response = await api.get('/diagnostics/database/connection', {
+            const response = await api.get('/diagnostics/database', {
                 headers: getAuthHeaders()
             });
             
@@ -261,6 +261,7 @@ class DiagnosticsService {
             checkAuthStatus();
             
             console.log('🔍 Iniciando test de rendimiento...');
+            // Usar la nueva ruta de rendimiento específica
             const response = await api.get('/diagnostics/database/performance', {
                 headers: getAuthHeaders()
             });
@@ -289,7 +290,7 @@ class DiagnosticsService {
             checkAuthStatus();
             
             console.log(`🔍 Iniciando test de APIs internas - Nivel: ${level}...`);
-            const response = await api.get(`/diagnostics/apis/internal?level=${level}`, {
+            const response = await api.get(`/diagnostics/apis?level=${level}`, {
                 headers: getAuthHeaders()
             });
             
@@ -323,7 +324,7 @@ class DiagnosticsService {
             checkAuthStatus();
             
             console.log('🔍 Obteniendo información del sistema...');
-            const response = await api.get('/diagnostics/system/info', {
+            const response = await api.get('/diagnostics/system', {
                 headers: getAuthHeaders()
             });
             
@@ -347,7 +348,7 @@ class DiagnosticsService {
             checkAuthStatus();
             
             console.log('🔍 Probando servicios externos...');
-            const response = await api.get('/diagnostics/services/external', {
+            const response = await api.get('/diagnostics/external-services', {
                 headers: getAuthHeaders()
             });
             

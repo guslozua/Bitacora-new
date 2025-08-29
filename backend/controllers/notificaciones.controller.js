@@ -8,14 +8,15 @@ exports.getNotificacionesUsuario = async (req, res) => {
     const { solo_no_leidas = false } = req.query;
     
     let query = `
-      SELECT * FROM notificaciones 
+      SELECT * FROM taskmanagementsystem.notificaciones 
       WHERE id_usuario = ?
     `;
     
     const params = [id_usuario];
     
     if (solo_no_leidas === 'true') {
-      query += ' AND leida = FALSE';
+      query += ' AND leida = ?';
+      params.push(0);
     }
     
     query += ' ORDER BY fecha_creacion DESC';
@@ -42,8 +43,8 @@ exports.marcarComoLeida = async (req, res) => {
     const { id } = req.params;
     
     const [result] = await pool.query(
-      'UPDATE notificaciones SET leida = TRUE WHERE id = ?',
-      [id]
+      'UPDATE taskmanagementsystem.notificaciones SET leida = ? WHERE id = ?',
+      [1, id]
     );
     
     if (result.affectedRows === 0) {
@@ -73,8 +74,8 @@ exports.marcarTodasComoLeidas = async (req, res) => {
     const { id_usuario } = req.params;
     
     await pool.query(
-      'UPDATE notificaciones SET leida = TRUE WHERE id_usuario = ? AND leida = FALSE',
-      [id_usuario]
+      'UPDATE taskmanagementsystem.notificaciones SET leida = ? WHERE id_usuario = ? AND leida = ?',
+      [1, id_usuario, 0]
     );
     
     res.status(200).json({
@@ -97,8 +98,8 @@ exports.getContadorNoLeidas = async (req, res) => {
     const { id_usuario } = req.params;
     
     const [result] = await pool.query(
-      'SELECT COUNT(*) as total FROM notificaciones WHERE id_usuario = ? AND leida = FALSE',
-      [id_usuario]
+      'SELECT COUNT(*) as total FROM taskmanagementsystem.notificaciones WHERE id_usuario = ? AND leida = ?',
+      [id_usuario, 0]
     );
     
     res.status(200).json({

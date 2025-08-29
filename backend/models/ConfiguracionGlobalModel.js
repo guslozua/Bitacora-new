@@ -21,8 +21,8 @@ const ConfiguracionGlobalModel = {
           cg.fecha_creacion,
           cg.fecha_actualizacion,
           u.nombre as usuario_nombre
-        FROM configuraciones_globales cg
-        LEFT JOIN usuarios u ON cg.usuario_creacion = u.id
+        FROM taskmanagementsystem.configuraciones_globales cg
+        LEFT JOIN taskmanagementsystem.usuarios u ON cg.usuario_creacion = u.id
         WHERE cg.tipo_configuracion = ? AND cg.activo = 1
         ORDER BY cg.orden ASC, cg.fecha_creacion ASC
       `;
@@ -50,7 +50,7 @@ const ConfiguracionGlobalModel = {
       console.log(`🔍 Buscando configuración: ${tipo} - ${clave}`);
       
       const sql = `
-        SELECT 
+        SELECT TOP 1
           cg.id,
           cg.tipo_configuracion,
           cg.clave,
@@ -62,10 +62,9 @@ const ConfiguracionGlobalModel = {
           cg.fecha_creacion,
           cg.fecha_actualizacion,
           u.nombre as usuario_nombre
-        FROM configuraciones_globales cg
-        LEFT JOIN usuarios u ON cg.usuario_creacion = u.id
+        FROM taskmanagementsystem.configuraciones_globales cg
+        LEFT JOIN taskmanagementsystem.usuarios u ON cg.usuario_creacion = u.id
         WHERE cg.tipo_configuracion = ? AND cg.clave = ? AND cg.activo = 1
-        LIMIT 1
       `;
       
       const [results] = await db.query(sql, [tipo, clave]);
@@ -97,7 +96,7 @@ const ConfiguracionGlobalModel = {
       const { tipo_configuracion, clave, valor, descripcion, usuario_creacion, orden = null } = datos;
       
       const sql = `
-        INSERT INTO configuraciones_globales 
+        INSERT INTO taskmanagementsystem.configuraciones_globales 
         (tipo_configuracion, clave, valor, descripcion, usuario_creacion, orden, activo)
         VALUES (?, ?, ?, ?, ?, ?, 1)
       `;
@@ -139,7 +138,7 @@ const ConfiguracionGlobalModel = {
       const { valor, descripcion, orden = null, activo = 1 } = datos;
       
       const sql = `
-        UPDATE configuraciones_globales 
+        UPDATE taskmanagementsystem.configuraciones_globales 
         SET valor = ?, descripcion = ?, orden = ?, activo = ?
         WHERE id = ?
       `;
@@ -165,7 +164,7 @@ const ConfiguracionGlobalModel = {
   obtenerConfiguracionPorId: async (id) => {
     try {
       const sql = `
-        SELECT 
+        SELECT TOP 1
           cg.id,
           cg.tipo_configuracion,
           cg.clave,
@@ -177,10 +176,9 @@ const ConfiguracionGlobalModel = {
           cg.fecha_creacion,
           cg.fecha_actualizacion,
           u.nombre as usuario_nombre
-        FROM configuraciones_globales cg
-        LEFT JOIN usuarios u ON cg.usuario_creacion = u.id
+        FROM taskmanagementsystem.configuraciones_globales cg
+        LEFT JOIN taskmanagementsystem.usuarios u ON cg.usuario_creacion = u.id
         WHERE cg.id = ?
-        LIMIT 1
       `;
       
       const [results] = await db.query(sql, [id]);
@@ -206,7 +204,7 @@ const ConfiguracionGlobalModel = {
       console.log(`🗑️ Eliminando configuración ID: ${id}`);
       
       const sql = `
-        UPDATE configuraciones_globales 
+        UPDATE taskmanagementsystem.configuraciones_globales 
         SET activo = 0
         WHERE id = ?
       `;
@@ -231,7 +229,7 @@ const ConfiguracionGlobalModel = {
     try {
       const sql = `
         SELECT COUNT(*) as count 
-        FROM configuraciones_globales 
+        FROM taskmanagementsystem.configuraciones_globales 
         WHERE tipo_configuracion = ? AND clave = ? AND activo = 1
       `;
       
@@ -261,7 +259,7 @@ const ConfiguracionGlobalModel = {
           cg.orden,
           cg.descripcion,
           cg.fecha_actualizacion
-        FROM configuraciones_globales cg
+        FROM taskmanagementsystem.configuraciones_globales cg
         WHERE cg.activo = 1
         ORDER BY cg.tipo_configuracion, cg.orden ASC, cg.fecha_creacion ASC
       `;
@@ -298,7 +296,7 @@ const ConfiguracionGlobalModel = {
       
       // Desactivar configuraciones existentes del tipo
       const sqlDesactivar = `
-        UPDATE configuraciones_globales 
+        UPDATE taskmanagementsystem.configuraciones_globales 
         SET activo = 0 
         WHERE tipo_configuracion = ?
       `;

@@ -18,18 +18,25 @@ exports.getAbmStats = async (req, res) => {
     };
 
     // Totales por plataforma y tipo
-    const [[{ total_altas_pic }]] = await pool.query(
-      `SELECT SUM(cant_usuarios) AS total_altas_pic FROM abm_pic ${makeSqlCondition(where, "tipo = 'Alta'")}`
+    const total_altas_pic_result = await pool.query(
+      `SELECT SUM(cant_usuarios) AS total_altas_pic FROM taskmanagementsystem.abm_pic ${makeSqlCondition(where, "tipo = 'Alta'")}`
     );
-    const [[{ total_bajas_pic }]] = await pool.query(
-      `SELECT SUM(cant_usuarios) AS total_bajas_pic FROM abm_pic ${makeSqlCondition(where, "tipo = 'Baja'")}`
+    const total_altas_pic = total_altas_pic_result[0] && total_altas_pic_result[0][0] ? total_altas_pic_result[0][0].total_altas_pic : 0;
+    
+    const total_bajas_pic_result = await pool.query(
+      `SELECT SUM(cant_usuarios) AS total_bajas_pic FROM taskmanagementsystem.abm_pic ${makeSqlCondition(where, "tipo = 'Baja'")}`
     );
-    const [[{ total_altas_social }]] = await pool.query(
-      `SELECT SUM(cant_usuarios) AS total_altas_social FROM abm_social ${makeSqlCondition(where, "tipo = 'Alta'")}`
+    const total_bajas_pic = total_bajas_pic_result[0] && total_bajas_pic_result[0][0] ? total_bajas_pic_result[0][0].total_bajas_pic : 0;
+    
+    const total_altas_social_result = await pool.query(
+      `SELECT SUM(cant_usuarios) AS total_altas_social FROM taskmanagementsystem.abm_social ${makeSqlCondition(where, "tipo = 'Alta'")}`
     );
-    const [[{ total_bajas_social }]] = await pool.query(
-      `SELECT SUM(cant_usuarios) AS total_bajas_social FROM abm_social ${makeSqlCondition(where, "tipo = 'Baja'")}`
+    const total_altas_social = total_altas_social_result[0] && total_altas_social_result[0][0] ? total_altas_social_result[0][0].total_altas_social : 0;
+    
+    const total_bajas_social_result = await pool.query(
+      `SELECT SUM(cant_usuarios) AS total_bajas_social FROM taskmanagementsystem.abm_social ${makeSqlCondition(where, "tipo = 'Baja'")}`
     );
+    const total_bajas_social = total_bajas_social_result[0] && total_bajas_social_result[0][0] ? total_bajas_social_result[0][0].total_bajas_social : 0;
 
     const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
@@ -47,8 +54,8 @@ exports.getAbmStats = async (req, res) => {
         MONTH(fecha) AS mes,
         SUM(CASE WHEN tipo = 'Alta' THEN cant_usuarios ELSE 0 END) AS usuarios,
         SUM(CASE WHEN tipo = 'Baja' THEN cant_usuarios ELSE 0 END) AS bajas
-      FROM abm_pic ${whereClause}
-      GROUP BY mes ORDER BY mes
+      FROM taskmanagementsystem.abm_pic ${whereClause}
+      GROUP BY MONTH(fecha) ORDER BY MONTH(fecha)
     `);
 
     const [porMesSocial] = await pool.query(`
@@ -56,8 +63,8 @@ exports.getAbmStats = async (req, res) => {
         MONTH(fecha) AS mes,
         SUM(CASE WHEN tipo = 'Alta' THEN cant_usuarios ELSE 0 END) AS usuarios,
         SUM(CASE WHEN tipo = 'Baja' THEN cant_usuarios ELSE 0 END) AS bajas
-      FROM abm_social ${whereClause}
-      GROUP BY mes ORDER BY mes
+      FROM taskmanagementsystem.abm_social ${whereClause}
+      GROUP BY MONTH(fecha) ORDER BY MONTH(fecha)
     `);
 
     const porMesPicFormat = porMesPic.map(row => ({
@@ -76,93 +83,89 @@ exports.getAbmStats = async (req, res) => {
 
     // Altas por centro
     const [topCentrosPic] = await pool.query(`
-      SELECT centro, SUM(cant_usuarios) AS total
-      FROM abm_pic ${makeSqlCondition(where, "tipo = 'Alta' AND centro IS NOT NULL")}
-      GROUP BY centro ORDER BY total DESC LIMIT 10
+      SELECT TOP 10 centro, SUM(cant_usuarios) AS total
+      FROM taskmanagementsystem.abm_pic ${makeSqlCondition(where, "tipo = 'Alta' AND centro IS NOT NULL")}
+      GROUP BY centro ORDER BY total DESC
     `);
 
     const [topCentrosSocial] = await pool.query(`
-      SELECT centro, SUM(cant_usuarios) AS total
-      FROM abm_social ${makeSqlCondition(where, "tipo = 'Alta' AND centro IS NOT NULL")}
-      GROUP BY centro ORDER BY total DESC LIMIT 10
+      SELECT TOP 10 centro, SUM(cant_usuarios) AS total
+      FROM taskmanagementsystem.abm_social ${makeSqlCondition(where, "tipo = 'Alta' AND centro IS NOT NULL")}
+      GROUP BY centro ORDER BY total DESC
     `);
 
     // Altas por operación
     const [topOperacionesPic] = await pool.query(`
-      SELECT operacion, SUM(cant_usuarios) AS total
-      FROM abm_pic ${makeSqlCondition(where, "tipo = 'Alta' AND operacion IS NOT NULL")}
-      GROUP BY operacion ORDER BY total DESC LIMIT 10
+      SELECT TOP 10 operacion, SUM(cant_usuarios) AS total
+      FROM taskmanagementsystem.abm_pic ${makeSqlCondition(where, "tipo = 'Alta' AND operacion IS NOT NULL")}
+      GROUP BY operacion ORDER BY total DESC
     `);
 
     const [topOperacionesSocial] = await pool.query(`
-      SELECT operacion, SUM(cant_usuarios) AS total
-      FROM abm_social ${makeSqlCondition(where, "tipo = 'Alta' AND operacion IS NOT NULL")}
-      GROUP BY operacion ORDER BY total DESC LIMIT 10
+      SELECT TOP 10 operacion, SUM(cant_usuarios) AS total
+      FROM taskmanagementsystem.abm_social ${makeSqlCondition(where, "tipo = 'Alta' AND operacion IS NOT NULL")}
+      GROUP BY operacion ORDER BY total DESC
     `);
 
     // Altas por gestión
     const [topGestionesPic] = await pool.query(`
-      SELECT gestion, SUM(cant_usuarios) AS total
-      FROM abm_pic ${makeSqlCondition(where, "tipo = 'Alta' AND gestion IS NOT NULL")}
-      GROUP BY gestion ORDER BY total DESC LIMIT 10
+      SELECT TOP 10 gestion, SUM(cant_usuarios) AS total
+      FROM taskmanagementsystem.abm_pic ${makeSqlCondition(where, "tipo = 'Alta' AND gestion IS NOT NULL")}
+      GROUP BY gestion ORDER BY total DESC
     `);
 
     const [topGestionesSocial] = await pool.query(`
-      SELECT gestion, SUM(cant_usuarios) AS total
-      FROM abm_social ${makeSqlCondition(where, "tipo = 'Alta' AND gestion IS NOT NULL")}
-      GROUP BY gestion ORDER BY total DESC LIMIT 10
+      SELECT TOP 10 gestion, SUM(cant_usuarios) AS total
+      FROM taskmanagementsystem.abm_social ${makeSqlCondition(where, "tipo = 'Alta' AND gestion IS NOT NULL")}
+      GROUP BY gestion ORDER BY total DESC
     `);
 
     // Tendencia por año (nuevo)
     const tendenciaWhereClause = year ? 'WHERE YEAR(fecha) <= ' + parseInt(year) : '';
 
     const [tendenciaPic] = await pool.query(`
-      SELECT 
+      SELECT TOP 12
         YEAR(fecha) AS anio,
         MONTH(fecha) AS mes, 
         SUM(CASE WHEN tipo = 'Alta' THEN cant_usuarios ELSE 0 END) AS altas,
         SUM(CASE WHEN tipo = 'Baja' THEN cant_usuarios ELSE 0 END) AS bajas,
         SUM(CASE WHEN tipo = 'Alta' THEN cant_usuarios ELSE -cant_usuarios END) AS neto
-      FROM abm_pic ${tendenciaWhereClause}
-      GROUP BY anio, mes 
-      ORDER BY anio, mes
-      LIMIT 12
+      FROM taskmanagementsystem.abm_pic ${tendenciaWhereClause}
+      GROUP BY YEAR(fecha), MONTH(fecha)
+      ORDER BY YEAR(fecha), MONTH(fecha)
     `);
 
     const [tendenciaSocial] = await pool.query(`
-      SELECT 
+      SELECT TOP 12
         YEAR(fecha) AS anio,
         MONTH(fecha) AS mes, 
         SUM(CASE WHEN tipo = 'Alta' THEN cant_usuarios ELSE 0 END) AS altas,
         SUM(CASE WHEN tipo = 'Baja' THEN cant_usuarios ELSE 0 END) AS bajas,
         SUM(CASE WHEN tipo = 'Alta' THEN cant_usuarios ELSE -cant_usuarios END) AS neto
-      FROM abm_social ${tendenciaWhereClause}
-      GROUP BY anio, mes 
-      ORDER BY anio, mes
-      LIMIT 12
+      FROM taskmanagementsystem.abm_social ${tendenciaWhereClause}
+      GROUP BY YEAR(fecha), MONTH(fecha)
+      ORDER BY YEAR(fecha), MONTH(fecha)
     `);
 
     // Últimas cargas (nuevo) usando created_at
     const [ultimasCargasPic] = await pool.query(`
-    SELECT 
+    SELECT TOP 5
       fuente, 
-      DATE_FORMAT(MAX(created_at), '%d/%m/%Y') AS ultima_fecha,
+      FORMAT(MAX(created_at), 'dd/MM/yyyy') AS ultima_fecha,
       SUM(cant_usuarios) AS total_usuarios
-    FROM abm_pic
+    FROM taskmanagementsystem.abm_pic
     GROUP BY fuente
     ORDER BY MAX(created_at) DESC
-    LIMIT 5
     `);
 
     const [ultimasCargasSocial] = await pool.query(`
-    SELECT 
+    SELECT TOP 5
       fuente, 
-      DATE_FORMAT(MAX(created_at), '%d/%m/%Y') AS ultima_fecha,
+      FORMAT(MAX(created_at), 'dd/MM/yyyy') AS ultima_fecha,
       SUM(cant_usuarios) AS total_usuarios
-    FROM abm_social
+    FROM taskmanagementsystem.abm_social
     GROUP BY fuente
     ORDER BY MAX(created_at) DESC
-    LIMIT 5
     `);
     // Agregar console.log para verificar las fechas obtenidas
     console.log("Ultima fecha PIC:", ultimasCargasPic);
@@ -170,27 +173,25 @@ exports.getAbmStats = async (req, res) => {
 
     // Resumen por tipo de gestión (nuevo)
     const [resumenGestionPic] = await pool.query(`
-      SELECT 
+      SELECT TOP 10
         gestion,
         SUM(CASE WHEN tipo = 'Alta' THEN cant_usuarios ELSE 0 END) AS altas,
         SUM(CASE WHEN tipo = 'Baja' THEN cant_usuarios ELSE 0 END) AS bajas,
         SUM(CASE WHEN tipo = 'Alta' THEN cant_usuarios ELSE -cant_usuarios END) AS neto
-      FROM abm_pic ${whereClause}
+      FROM taskmanagementsystem.abm_pic ${whereClause}
       GROUP BY gestion
       ORDER BY altas DESC
-      LIMIT 10
     `);
 
     const [resumenGestionSocial] = await pool.query(`
-      SELECT 
+      SELECT TOP 10
         gestion,
         SUM(CASE WHEN tipo = 'Alta' THEN cant_usuarios ELSE 0 END) AS altas,
         SUM(CASE WHEN tipo = 'Baja' THEN cant_usuarios ELSE 0 END) AS bajas,
         SUM(CASE WHEN tipo = 'Alta' THEN cant_usuarios ELSE -cant_usuarios END) AS neto
-      FROM abm_social ${whereClause}
+      FROM taskmanagementsystem.abm_social ${whereClause}
       GROUP BY gestion
       ORDER BY altas DESC
-      LIMIT 10
     `);
 
     res.json({

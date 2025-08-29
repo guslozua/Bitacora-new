@@ -103,13 +103,13 @@ exports.uploadTabulaciones = async (req, res) => {
 
         if (rowData.tarea_id) {
           const [existing] = await pool.query(
-            'SELECT 1 FROM tabulaciones_data WHERE tarea_id = ?',
+            'SELECT 1 FROM taskmanagementsystem.tabulaciones_data WHERE tarea_id = ?',
             [rowData.tarea_id]
           );
 
           if (existing.length === 0) {
             await pool.query(`
-              INSERT INTO tabulaciones_data (
+              INSERT INTO taskmanagementsystem.tabulaciones_data (
                 tarea_id, nombre_tarea, deposito, progreso, prioridad, asignado_a,
                 creado_por, fecha_creacion, fecha_inicio, fecha_vencimiento,
                 es_periodica, con_retraso, fecha_finalizacion, completado_por,

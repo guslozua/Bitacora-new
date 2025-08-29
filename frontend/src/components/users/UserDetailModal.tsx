@@ -137,10 +137,17 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ show, onHide, userId,
                       />
                     ) : (
                       <div 
-                        className="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto" 
-                        style={{ width: '120px', height: '120px' }}
+                        className="rounded-circle d-flex align-items-center justify-content-center mx-auto" 
+                        style={{ 
+                          width: '120px', 
+                          height: '120px',
+                          backgroundColor: '#007bff',
+                          color: 'white',
+                          fontSize: '2.5rem',
+                          fontWeight: 'bold'
+                        }}
                       >
-                        <i className="fas fa-user fa-3x text-secondary"></i>
+                        {user.nombre ? user.nombre.split(' ').map(name => name.charAt(0).toUpperCase()).slice(0, 2).join('') : 'NN'}
                       </div>
                     )}
                     <h4 className="mt-3">{user.nombre}</h4>
@@ -181,7 +188,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ show, onHide, userId,
                       <h5 className="mb-0">Roles del Usuario</h5>
                     </Card.Header>
                     <Card.Body>
-                      {userId && <UserRoles userId={Number(userId)} userRoles={user.roles || []} />}
+                      {userId && <UserRoles userId={Number(userId)} userRoles={user.roles || []} onRoleChange={loadUserData} />}
                     </Card.Body>
                   </Card>
                 </Col>

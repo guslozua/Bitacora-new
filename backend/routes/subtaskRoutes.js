@@ -2,6 +2,7 @@
 const express = require('express');
 const {
   createSubtask,
+  getSubtasks,
   getSubtasksByTaskId,
   updateSubtask,
   deleteSubtask,
@@ -16,16 +17,7 @@ const roleMiddleware = require('../middleware/roleMiddleware');
 const router = express.Router();
 
 // ✅ Obtener todas las subtareas (para el Gantt)
-router.get('/', authMiddleware, async (req, res) => {
-  try {
-    const db = require('../config/db');
-    const [subtareas] = await db.query('SELECT * FROM subtareas');
-    res.json({ success: true, data: subtareas });
-  } catch (error) {
-    console.error('Error al obtener las subtareas:', error);
-    res.status(500).json({ success: false, message: 'Error interno del servidor' });
-  }
-});
+router.get('/', authMiddleware, getSubtasks);
 
 // Crear una nueva subtarea asociada a una tarea
 router.post('/task/:taskId', authMiddleware, createSubtask);
@@ -42,27 +34,27 @@ router.put('/:id', authMiddleware, updateSubtask);
 // Eliminar subtarea por ID
 router.delete('/:id', authMiddleware, deleteSubtask);
 
-// ===== NUEVAS RUTAS PARA ASIGNACIÓN DE USUARIOS =====
+// ===== NUEVAS RUTAS PARA ASIGNACIÓN DE USUARIOS EN SUBTAREAS =====
 
 // Obtener usuarios asignados a una subtarea
 // GET /api/subtasks/:id/users
-router.get('/:id/users', authMiddleware, getSubtaskUsers);
+router.get('/:id/users', authMiddleware, (req, res) => {
+    console.log(`🔍 [subtaskRoutes] GET /${req.params.id}/users - llamando a getSubtaskUsers`);
+    console.log(`🔍 [subtaskRoutes] Parámetros:`, req.params);
+    getSubtaskUsers(req, res);
+});
 
 // Asignar un usuario a una subtarea
 // POST /api/subtasks/:id/users
-router.post('/:id/users', 
-    authMiddleware, 
-    roleMiddleware(['Admin', 'SuperAdmin']), 
-    assignUserToSubtask
-);
+router.post('/:id/users', authMiddleware, roleMiddleware(['Admin', 'SuperAdmin']), (req, res) => {
+    console.log(`🔍 [subtaskRoutes] POST /${req.params.id}/users - llamando a assignUserToSubtask`);
+    console.log(`🔍 [subtaskRoutes] Body:`, req.body);
+    assignUserToSubtask(req, res);
+});
 
 // Eliminar asignación de un usuario a una subtarea
 // DELETE /api/subtasks/:subtaskId/users/:userId
-router.delete('/:subtaskId/users/:userId', 
-    authMiddleware, 
-    roleMiddleware(['Admin', 'SuperAdmin']), 
-    removeUserFromSubtask
-);
+router.delete('/:subtaskId/users/:userId', authMiddleware, roleMiddleware(['Admin', 'SuperAdmin']), removeUserFromSubtask);
 
 // Actualizar todos los usuarios asignados a una subtarea
 // PUT /api/subtasks/:id/users

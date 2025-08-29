@@ -11,12 +11,15 @@ const UserModel = {
     // Actualizada para incluir el campo estado y todos los campos necesarios
     const sql = `
       SELECT u.id, u.nombre, u.email, u.password, u.estado, 
-             GROUP_CONCAT(DISTINCT r.nombre) as roles
-      FROM Usuarios u
-      LEFT JOIN usuario_rol ur ON u.id = ur.id_usuario
-      LEFT JOIN Roles r ON ur.id_rol = r.id
+             STUFF((
+                 SELECT ',' + r.nombre
+                 FROM taskmanagementsystem.usuario_rol ur2
+                 LEFT JOIN taskmanagementsystem.roles r ON ur2.id_rol = r.id
+                 WHERE ur2.id_usuario = u.id
+                 FOR XML PATH('')
+             ), 1, 1, '') as roles
+      FROM taskmanagementsystem.usuarios u
       WHERE u.id = ?
-      GROUP BY u.id
     `;
     
     console.log('Ejecutando consulta SQL:', sql, [id]);
@@ -49,11 +52,11 @@ const UserModel = {
 
     const sql = `
       SELECT DISTINCT p.nombre AS permiso
-      FROM Usuarios u
-      JOIN usuario_rol ur ON u.id = ur.id_usuario
-      JOIN Roles r ON ur.id_rol = r.id
-      JOIN rol_permiso rp ON r.id = rp.id_rol
-      JOIN Permisos p ON rp.id_permiso = p.id
+      FROM taskmanagementsystem.usuarios u
+      JOIN taskmanagementsystem.usuario_rol ur ON u.id = ur.id_usuario
+      JOIN taskmanagementsystem.roles r ON ur.id_rol = r.id
+      JOIN taskmanagementsystem.rol_permiso rp ON r.id = rp.id_rol
+      JOIN taskmanagementsystem.permisos p ON rp.id_permiso = p.id
       WHERE u.id = ?
     `;
 

@@ -185,7 +185,7 @@ if (process.env.NODE_ENV === 'development') {
     try {
       const db = require('../config/db');
       
-      await db.query('UPDATE configuraciones_globales SET activo = 0');
+      await db.query('UPDATE taskmanagementsystem.configuraciones_globales SET activo = 0');
       
       res.json({
         success: true,

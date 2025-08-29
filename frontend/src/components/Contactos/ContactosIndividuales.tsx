@@ -56,7 +56,7 @@ const ContactosIndividuales: React.FC<ContactosIndividualesProps> = ({
       telefono_personal: integrante.telefono_personal ? integrante.telefono_personal.toString().trim() : null,
       whatsapp: integrante.whatsapp ? integrante.whatsapp.toString().trim() : null,
       email: integrante.email ? integrante.email.toString().trim() : null,
-      equipos_nombres: integrante.equipos_nombres ? integrante.equipos_nombres.toString().trim() : null
+      equipos: integrante.equipos ? integrante.equipos.toString().trim() : null
     };
   };
 
@@ -408,9 +408,9 @@ const ContactosIndividuales: React.FC<ContactosIndividualesProps> = ({
                   </td>
                   <td>
                     {/* ✅ BADGES DE EQUIPOS CON COLORES HEREDADOS Y DEBUG */}
-                    {contacto.equipos_nombres ? (
+                    {contacto.equipos ? (
                       <div>
-                        {contacto.equipos_nombres.split(', ').map((equipo: string, index: number) => {
+                        {contacto.equipos.split(', ').map((equipo: string, index: number) => {
                           const equipoColor = getEquipoColor(equipo.trim());
                           return (
                             <span 

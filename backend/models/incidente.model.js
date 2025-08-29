@@ -88,8 +88,8 @@ const Incidente = {
         SELECT i.*,
                g.fecha as fecha_guardia,
                g.usuario as usuario_guardia
-        FROM incidentes_guardia i
-        JOIN guardias g ON i.id_guardia = g.id
+        FROM taskmanagementsystem.incidentes_guardia i
+        JOIN taskmanagementsystem.guardias g ON i.id_guardia = g.id
       `;
       
       const params = [];
@@ -156,8 +156,8 @@ const Incidente = {
       for (const incidente of rows) {
         const [codigos] = await pool.query(`
           SELECT ic.id, ic.id_codigo, c.codigo, c.descripcion, ic.minutos, ic.importe
-          FROM incidentes_codigos ic
-          JOIN codigos_facturacion c ON ic.id_codigo = c.id
+          FROM taskmanagementsystem.incidentes_codigos ic
+          JOIN taskmanagementsystem.codigos_facturacion c ON ic.id_codigo = c.id
           WHERE ic.id_incidente = ?
         `, [incidente.id]);
         
@@ -180,8 +180,8 @@ const Incidente = {
         SELECT i.*,
                g.fecha as fecha_guardia,
                g.usuario as usuario_guardia
-        FROM incidentes_guardia i
-        JOIN guardias g ON i.id_guardia = g.id
+        FROM taskmanagementsystem.incidentes_guardia i
+        JOIN taskmanagementsystem.guardias g ON i.id_guardia = g.id
         WHERE i.id = ?
       `;
       
@@ -194,8 +194,8 @@ const Incidente = {
       // Obtener códigos aplicados en una consulta separada
       const [codigos] = await pool.query(`
         SELECT ic.id, ic.id_codigo, c.codigo, c.descripcion, ic.minutos, ic.importe
-        FROM incidentes_codigos ic
-        JOIN codigos_facturacion c ON ic.id_codigo = c.id
+        FROM taskmanagementsystem.incidentes_codigos ic
+        JOIN taskmanagementsystem.codigos_facturacion c ON ic.id_codigo = c.id
         WHERE ic.id_incidente = ?
       `, [id]);
       
@@ -233,7 +233,7 @@ const Incidente = {
       
       // ✨ INSERTAR INCIDENTE CON PARÁMETROS LIMPIOS
       const [resultIncidente] = await connection.execute(
-        'INSERT INTO incidentes_guardia (id_guardia, inicio, fin, descripcion, estado, id_usuario_registro, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO taskmanagementsystem.incidentes_guardia (id_guardia, inicio, fin, descripcion, estado, id_usuario_registro, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [id_guardia, inicio, fin, descripcion, estado, usuarioRegistro, observacionesLimpias]
       );
       
@@ -243,7 +243,7 @@ const Incidente = {
       if (!incidenteId || incidenteId === 0) {
         // Buscar el último incidente insertado para esta guardia
         const [ultimoIncidente] = await connection.execute(
-          'SELECT id FROM incidentes_guardia WHERE id_guardia = ? AND descripcion = ? ORDER BY created_at DESC LIMIT 1',
+          'SELECT id FROM taskmanagementsystem.incidentes_guardia WHERE id_guardia = ? AND descripcion = ? ORDER BY created_at DESC LIMIT 1',
           [id_guardia, descripcion]
         );
         
@@ -266,7 +266,7 @@ const Incidente = {
             const observacionLimpia = codigo.observacion === undefined ? null : codigo.observacion;
             
             const [resultCodigo] = await connection.execute(
-              'INSERT INTO incidentes_codigos (id_incidente, id_codigo, minutos, importe, observacion) VALUES (?, ?, ?, ?, ?)',
+              'INSERT INTO taskmanagementsystem.incidentes_codigos (id_incidente, id_codigo, minutos, importe, observacion) VALUES (?, ?, ?, ?, ?)',
               [incidenteId, codigo.id_codigo, codigo.minutos, importeLimpio, observacionLimpia]
             );
             
@@ -289,7 +289,7 @@ const Incidente = {
       
       // ✨ OBTENER DATOS DE GUARDIA USANDO LA CONEXIÓN DE LA TRANSACCIÓN
       const [guardiaData] = await connection.execute(
-        'SELECT fecha, usuario FROM guardias WHERE id = ?',
+        'SELECT fecha, usuario FROM taskmanagementsystem.guardias WHERE id = ?',
         [id_guardia]
       );
       
@@ -399,7 +399,7 @@ const Incidente = {
         params.push(id); // Para la cláusula WHERE
         
         await connection.execute(
-          `UPDATE incidentes_guardia SET ${updates.join(', ')} WHERE id = ?`,
+          `UPDATE taskmanagementsystem.incidentes_guardia SET ${updates.join(', ')} WHERE id = ?`,
           params
         );
         
@@ -411,12 +411,12 @@ const Incidente = {
         console.log('🔄 MODELO: Actualizando códigos:', codigos.length);
         
         // Eliminar códigos existentes
-        await connection.execute('DELETE FROM incidentes_codigos WHERE id_incidente = ?', [id]);
+        await connection.execute('DELETE FROM taskmanagementsystem.incidentes_codigos WHERE id_incidente = ?', [id]);
         
         // Insertar nuevos códigos
         for (const codigo of codigos) {
           await connection.execute(
-            'INSERT INTO incidentes_codigos (id_incidente, id_codigo, minutos, importe, observacion) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO taskmanagementsystem.incidentes_codigos (id_incidente, id_codigo, minutos, importe, observacion) VALUES (?, ?, ?, ?, ?)',
             [id, codigo.id_codigo, codigo.minutos, codigo.importe || null, codigo.observacion || null]
           );
         }
@@ -463,7 +463,7 @@ const Incidente = {
         throw new Error(`ID no es un número válido: ${id}`);
       }
       
-      const query = 'DELETE FROM incidentes_guardia WHERE id = ?';
+      const query = 'DELETE FROM taskmanagementsystem.incidentes_guardia WHERE id = ?';
       const params = [id];
       
       // Las relaciones tienen ON DELETE CASCADE

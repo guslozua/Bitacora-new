@@ -53,18 +53,15 @@ const UserSelector: React.FC<UserSelectorProps> = ({
   useEffect(() => {
     if (!shouldShowRoleSelection) return;
     
-    const newRoles: Record<number, string> = {};
-    selectedUserIds.forEach(userId => {
-      // Si ya tiene un rol asignado, mantenerlo
-      if (userRoles[userId]) {
-        newRoles[userId] = userRoles[userId];
-      } else {
-        // Si no, usar el rol por defecto
-        newRoles[userId] = defaultRole;
-      }
+    setUserRoles(prevRoles => {
+      const newRoles: Record<number, string> = {};
+      selectedUserIds.forEach(userId => {
+        // Mantener rol existente o usar defaultRole
+        newRoles[userId] = prevRoles[userId] || defaultRole;
+      });
+      return newRoles;
     });
-    setUserRoles(newRoles);
-  }, [selectedUserIds, defaultRole, userRoles, shouldShowRoleSelection]);
+  }, [selectedUserIds, defaultRole, shouldShowRoleSelection]);
   
   // Filtrar usuarios
   const filteredUsers = useMemo(() => {

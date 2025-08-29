@@ -209,6 +209,15 @@ class AnnouncementsController {
       const { id } = req.params;
       const announcementData = req.body;
       
+      // 🔍 LOGS DE DEBUG
+      console.log('🔍 DEBUG - updateAnnouncement called');
+      console.log('📝 ID recibido:', id);
+      console.log('📝 Datos recibidos:', JSON.stringify(announcementData, null, 2));
+      console.log('📝 Tipo de cada campo:');
+      Object.keys(announcementData).forEach(key => {
+        console.log(`   ${key}: ${typeof announcementData[key]} = ${announcementData[key]}`);
+      });
+      
       // Verificar que el anuncio existe
       const existingAnnouncement = await AnnouncementModel.getAnnouncementById(id);
       if (!existingAnnouncement) {
@@ -218,13 +227,12 @@ class AnnouncementsController {
         });
       }
       
-      console.log('📝 Actualizando anuncio:', {
-        id,
-        title: announcementData.title,
-        changes: Object.keys(announcementData)
-      });
+      console.log('📝 Anuncio existente encontrado:', existingAnnouncement.title);
       
+      console.log('📝 Llamando a AnnouncementModel.updateAnnouncement...');
       const success = await AnnouncementModel.updateAnnouncement(id, announcementData);
+      
+      console.log('📝 Resultado del modelo:', success);
       
       if (!success) {
         return res.status(400).json({
@@ -241,12 +249,15 @@ class AnnouncementsController {
         nombre_usuario: req.user?.nombre || 'Usuario'
       });
       
+      console.log('✅ updateAnnouncement exitoso');
+      
       res.json({
         success: true,
         message: 'Anuncio actualizado correctamente'
       });
     } catch (error) {
-      console.error('❌ Error actualizando anuncio:', error);
+      console.error('❌ Error en updateAnnouncement controller:', error);
+      console.error('📝 Error stack:', error.stack);
       res.status(500).json({
         success: false,
         message: 'Error al actualizar anuncio',

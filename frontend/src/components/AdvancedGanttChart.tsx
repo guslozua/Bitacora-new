@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ViewMode, Gantt, Task } from 'gantt-task-react';
 import 'gantt-task-react/dist/index.css';
 import 'react-circular-progressbar/dist/styles.css';
@@ -180,6 +180,10 @@ const AdvancedGanttChart = () => {
     fecha_inicio: '',
     fecha_vencimiento: '',
   });
+
+  // Estado adicional para controlar la apertura del panel
+  const [lastActionTime, setLastActionTime] = useState<number>(0);
+  const [isClosing, setIsClosing] = useState<boolean>(false);
 
   const token = localStorage.getItem('token');
 
@@ -372,6 +376,28 @@ const AdvancedGanttChart = () => {
   const handleViewChange = (mode: ViewMode) => setView(mode);
 
   const openTaskDetails = (task: ExtendedTask) => {
+    const now = Date.now();
+    
+    // Evitar abrir el mismo task múltiples veces seguidas
+    if (selectedTask && selectedTask.id === task.id && showDetails) {
+      console.log('Evitando apertura duplicada del panel para:', task.id);
+      return;
+    }
+    
+    // Debouncing: evitar acciones muy rápidas consecutivas
+    if (now - lastActionTime < 300) { // 300ms de debounce
+      console.log('Acción muy rápida, evitando apertura para:', task.id);
+      return;
+    }
+    
+    // No abrir si estamos en proceso de cerrar
+    if (isClosing) {
+      console.log('Panel cerrando, evitando reapertura para:', task.id);
+      return;
+    }
+    
+    setLastActionTime(now);
+    
     console.log('Tarea seleccionada:', {
       id: task.id,
       type: task.type,
@@ -1053,7 +1079,14 @@ const AdvancedGanttChart = () => {
         </div>
       )}
 
-      <Offcanvas show={showDetails} onHide={() => setShowDetails(false)} placement="end">
+      <Offcanvas show={showDetails} onHide={() => {
+        setIsClosing(true);
+        setShowDetails(false);
+        // Reset isClosing después de un breve delay
+        setTimeout(() => {
+          setIsClosing(false);
+        }, 500);
+      }} placement="end">
         <Offcanvas.Header closeButton>
           <Offcanvas.Title>
             {selectedTask?.type === 'project' ? 'Detalles del Proyecto' :

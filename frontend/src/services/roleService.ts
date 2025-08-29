@@ -9,6 +9,7 @@ export interface Role {
   descripcion: string;
   is_default: number;
   fecha_creacion: string;
+  estado: string;
 }
 
 export interface Permission {
@@ -23,12 +24,14 @@ export interface CreateRoleData {
   nombre: string;
   descripcion: string;
   is_default: number;
+  estado: string;
 }
 
 export interface UpdateRoleData {
   nombre: string;
   descripcion: string;
   is_default: number;
+  estado: string;
 }
 
 // Configurar interceptor para incluir token automáticamente

@@ -366,7 +366,7 @@ const DiagnosticsPanel: React.FC = () => {
                                 <div className="mt-2">
                                     <strong>Advertencias:</strong>
                                     <ul className="mb-0 mt-1">
-                                        {healthCheck.warnings.map((warning, index) => (
+                                        {(healthCheck.warnings || []).map((warning, index) => (
                                             <li key={index} className="small">{warning}</li>
                                         ))}
                                     </ul>
@@ -501,7 +501,7 @@ const DiagnosticsPanel: React.FC = () => {
                                                             </div>
                                                         </div>
                                                         <div className="small">
-                                                            {apiTests.apiTests?.slice(0, 4).map((test, index) => (
+                                                            {(apiTests?.apiTests || []).slice(0, 4).map((test, index) => (
                                                                 <div key={index} className="d-flex justify-content-between align-items-center py-1">
                                                                     <span className="text-truncate" style={{ maxWidth: '60%' }}>{test.description}</span>
                                                                     <div className="d-flex align-items-center">
@@ -562,8 +562,8 @@ const DiagnosticsPanel: React.FC = () => {
                                                 <Col md={3}>
                                                     <h6>CPU</h6>
                                                     <div className="small">
-                                                        <div><strong>Cores:</strong> {systemInfo.server.cpu.cores}</div>
-                                                        <div><strong>Load:</strong> {systemInfo.server.cpu.load.map(l => l.toFixed(2)).join(', ')}</div>
+                                                        <div><strong>Cores:</strong> {systemInfo?.server?.cpu?.cores || 0}</div>
+                                                        <div><strong>Load:</strong> {systemInfo?.server?.cpu?.load?.map(l => l.toFixed(2)).join(', ') || 'N/A'}</div>
                                                     </div>
                                                 </Col>
                                                 <Col md={3}>
@@ -657,7 +657,7 @@ const DiagnosticsPanel: React.FC = () => {
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {databasePerformance.performanceTests.map((test, index) => (
+                                                            {databasePerformance.performanceTests && databasePerformance.performanceTests.map((test, index) => (
                                                                 <tr key={index}>
                                                                     <td>{test.test}</td>
                                                                     <td>
@@ -843,7 +843,7 @@ const DiagnosticsPanel: React.FC = () => {
                                         {/* Mostrar estadísticas por categoría si están disponibles */}
                                         {apiTests.summary && (
                                             <Row className="mb-4">
-                                                {Object.entries(apiTests.summary).map(([category, stats]: [string, any]) => (
+                                                {Object.entries(apiTests.summary || {}).map(([category, stats]: [string, any]) => (
                                                     stats.total > 0 && (
                                                         <Col md={3} key={category}>
                                                             <Card className="border-0 shadow-sm h-100">
@@ -877,7 +877,7 @@ const DiagnosticsPanel: React.FC = () => {
                                                     apiTests.recommendations.some(r => r.level === 'warning') ? 'warning' : 'success'
                                             } className="mb-4">
                                                 <h6><i className="bi bi-lightbulb me-2"></i>Recomendaciones</h6>
-                                                {apiTests.recommendations.map((rec, index) => (
+                                                {(apiTests.recommendations || []).map((rec, index) => (
                                                     <div key={index} className="mb-2">
                                                         <strong>{rec.message}</strong>
                                                         <div className="small">{rec.action}</div>
@@ -904,7 +904,7 @@ const DiagnosticsPanel: React.FC = () => {
                                                         </thead>
                                                         <tbody>
                                                             {apiTests.apiTests && apiTests.apiTests.length > 0 ? (
-                                                                apiTests.apiTests.map((test, index) => (
+                                                                (apiTests.apiTests || []).map((test, index) => (
                                                                     <tr key={index} className={test.status === 'error' ? 'table-danger' : 'table-success'}>
                                                                         <td className="text-center">{getStatusIcon(test.status)}</td>
                                                                         <td><code className="small">{test.endpoint}</code></td>
@@ -1064,7 +1064,7 @@ const DiagnosticsPanel: React.FC = () => {
                                                         </div>
                                                     </div>
                                                     <div className="small">
-                                                        <div><strong>Sistema Total:</strong> {systemInfo.server.memory.system}</div>
+                                                        <div><strong>Sistema Total:</strong> {systemInfo?.server?.memory?.system || 'N/A'}</div>
                                                     </div>
                                                 </Card.Body>
                                             </Card>
@@ -1099,7 +1099,7 @@ const DiagnosticsPanel: React.FC = () => {
                                                             <tr>
                                                                 <td><strong>Load Average:</strong></td>
                                                                 <td>
-                                                                    {systemInfo.server.cpu.load.map((load, index) => (
+                                                                    {(systemInfo.server.cpu.load || []).map((load, index) => (
                                                                         <Badge
                                                                             key={index}
                                                                             bg={load > 2 ? 'danger' : load > 1 ? 'warning' : 'success'}
@@ -1213,7 +1213,7 @@ const DiagnosticsPanel: React.FC = () => {
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
-                                                                {externalServices.externalServices.map((service, index) => (
+                                                                {(externalServices?.externalServices || []).map((service, index) => (
                                                                     <tr key={index} className={
                                                                         service.status === 'available' ? 'table-success' :
                                                                             service.status === 'not_configured' ? 'table-warning' : 'table-danger'
@@ -1276,7 +1276,7 @@ const DiagnosticsPanel: React.FC = () => {
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
-                                                                {fileSystemTests.fileSystemTests.map((test, index) => (
+                                                                {(fileSystemTests?.fileSystemTests || []).map((test, index) => (
                                                                     <tr key={index} className={
                                                                         ['exists', 'accessible'].includes(test.status) ? 'table-success' : 'table-danger'
                                                                     }>
@@ -1389,7 +1389,7 @@ const DiagnosticsPanel: React.FC = () => {
                                                         </thead>
                                                         <tbody>
                                                             {logs.logs && logs.logs.length > 0 ? (
-                                                                logs.logs.map((log, index) => (
+                                                                (logs.logs || []).map((log, index) => (
                                                                     <tr key={index} className={
                                                                         log.level === 'error' ? 'table-danger' :
                                                                             log.level === 'warning' ? 'table-warning' : ''

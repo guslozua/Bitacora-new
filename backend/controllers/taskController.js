@@ -13,11 +13,11 @@ exports.createTask = async (req, res) => {
         const userId = id_usuario_asignado || req.user.id;
 
         // Obtener nombre del usuario
-        const [userInfo] = await db.query('SELECT nombre FROM Usuarios WHERE id = ?', [req.user.id]);
+        const [userInfo] = await db.query('SELECT nombre FROM taskmanagementsystem.Usuarios WHERE id = ?', [req.user.id]);
         const nombreUsuario = userInfo.length > 0 ? userInfo[0].nombre : null;
 
         // Obtener nombre del proyecto
-        const [projectInfo] = await db.query('SELECT nombre FROM Proyectos WHERE id = ?', [id_proyecto]);
+        const [projectInfo] = await db.query('SELECT nombre FROM taskmanagementsystem.Proyectos WHERE id = ?', [id_proyecto]);
         const nombreProyecto = projectInfo.length > 0 ? projectInfo[0].nombre : null;
 
         console.log({
@@ -72,7 +72,7 @@ exports.createTask = async (req, res) => {
 exports.getAllTasks = async (req, res) => {
     try {
         const { estado, prioridad, usuario } = req.query;
-        let sql = 'SELECT * FROM Tareas WHERE 1=1';
+        let sql = 'SELECT * FROM taskmanagementsystem.Tareas WHERE 1=1';
         const params = [];
 
         if (estado) {
@@ -130,11 +130,11 @@ exports.updateTask = async (req, res) => {
         const projectId = id_proyecto || currentTask.id_proyecto;
         
         // Obtener nombre del usuario
-        const [userInfo] = await db.query('SELECT nombre FROM Usuarios WHERE id = ?', [req.user.id]);
+        const [userInfo] = await db.query('SELECT nombre FROM taskmanagementsystem.Usuarios WHERE id = ?', [req.user.id]);
         const nombreUsuario = userInfo.length > 0 ? userInfo[0].nombre : null;
 
         // Obtener nombre del proyecto
-        const [projectInfo] = await db.query('SELECT nombre FROM Proyectos WHERE id = ?', [projectId]);
+        const [projectInfo] = await db.query('SELECT nombre FROM taskmanagementsystem.Proyectos WHERE id = ?', [projectId]);
         const nombreProyecto = projectInfo.length > 0 ? projectInfo[0].nombre : null;
 
         const result = await TaskModel.updateTask(
@@ -269,64 +269,91 @@ exports.getTaskUsers = async (req, res) => {
       });
     }
 };
-  
+
+// ===== FUNCIÓN FALTANTE PARA ASIGNAR USUARIOS A TAREAS =====
+
 /**
  * Asigna un usuario a una tarea
  */
 exports.assignUserToTask = async (req, res) => {
-    try {
-      const taskId = req.params.id;
-      const { userId } = req.body;
-      
-      if (!userId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Se requiere especificar el ID de usuario'
-        });
-      }
-      
-      // Verificar que la tarea existe
-      const [task] = await TaskModel.getTaskById(taskId);
-      if (!task) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Tarea no encontrada' 
-        });
-      }
-      
-      // Verificar que el usuario existe
-      const [user] = await db.query('SELECT * FROM Usuarios WHERE id = ?', [userId]);
-      if (!user || user.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Usuario no encontrado'
-        });
-      }
-      
-      // Realizar la asignación
-      await TaskModel.assignUserToTask(taskId, userId);
-      
-      // Obtener la información completa del usuario para la respuesta
-      const [userInfo] = await db.query('SELECT id, nombre, email FROM Usuarios WHERE id = ?', [userId]);
-      
-      return res.status(201).json({
-        success: true,
-        message: 'Usuario asignado a la tarea con éxito',
-        data: {
-          id_tarea: taskId,
-          id_usuario: userId,
-          usuario: userInfo[0]
-        }
-      });
-    } catch (error) {
-      console.error('Error al asignar usuario a la tarea:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Error al asignar usuario a la tarea',
-        error: error.message
+  console.log('🚨 [INICIO assignUserToTask] FUNCIÓN EJECUTÁNDOSE');
+  try {
+    console.log('🔎 [assignUserToTask] Iniciando asignación');
+    console.log('🔎 [assignUserToTask] Params:', req.params);
+    console.log('🔎 [assignUserToTask] Body:', req.body);
+    console.log('🔎 [assignUserToTask] User:', req.user);
+    
+    const taskId = req.params.id;
+    // Intentar extraer el ID del usuario con diferentes nombres de campos
+    const { usuario_id, userId, user_id, id } = req.body;
+    const finalUserId = usuario_id || userId || user_id || id;
+    
+    console.log('🔎 [assignUserToTask] taskId extraído:', taskId);
+    console.log('🔎 [assignUserToTask] IDs intentados:', { usuario_id, userId, user_id, id });
+    console.log('🔎 [assignUserToTask] finalUserId seleccionado:', finalUserId);
+    
+    if (!taskId || !finalUserId) {
+      console.log('❌ [assignUserToTask] Faltan parámetros');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'ID de tarea y usuario son requeridos',
+        received: { taskId, finalUserId, body: req.body }
       });
     }
+    
+    // Verificar que la tarea existe
+    console.log('🔎 [assignUserToTask] Verificando tarea...');
+    const [task] = await TaskModel.getTaskById(taskId);
+    if (!task) {
+      console.log('❌ [assignUserToTask] Tarea no encontrada:', taskId);
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Tarea no encontrada' 
+      });
+    }
+    console.log('✅ [assignUserToTask] Tarea encontrada:', task.titulo);
+    
+    // Verificar que el usuario existe
+    console.log('🔎 [assignUserToTask] Verificando usuario...');
+    const userCheck = await db.query('SELECT id FROM taskmanagementsystem.usuarios WHERE id = ?', [finalUserId]);
+    if (!userCheck[0] || userCheck[0].length === 0) {
+      console.log('❌ [assignUserToTask] Usuario no encontrado:', finalUserId);
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+    console.log('✅ [assignUserToTask] Usuario encontrado');
+    
+    // Verificar si ya está asignado
+    console.log('🔎 [assignUserToTask] Verificando asignación existente...');
+    const existingUsers = await TaskModel.getTaskUsers(taskId);
+    const isAlreadyAssigned = existingUsers.some(user => user.id === parseInt(finalUserId));
+    
+    if (isAlreadyAssigned) {
+      console.log('⚠️ [assignUserToTask] Usuario ya asignado');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'El usuario ya está asignado a esta tarea' 
+      });
+    }
+    
+    // Asignar usuario usando el modelo
+    console.log('🔎 [assignUserToTask] Asignando usuario...');
+    await TaskModel.assignUserToTask(taskId, finalUserId);
+    console.log('✅ [assignUserToTask] Usuario asignado exitosamente');
+    
+    res.status(201).json({
+      success: true,
+      message: 'Usuario asignado a la tarea exitosamente'
+    });
+  } catch (error) {
+    console.error('❌ [assignUserToTask] Error:', error);
+    console.error('❌ [assignUserToTask] Stack:', error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'Error al asignar usuario a la tarea: ' + error.message
+    });
+  }
 };
+
   
 /**
  * Elimina la asignación de un usuario de una tarea
@@ -401,7 +428,7 @@ exports.updateTaskUsers = async (req, res) => {
       
       // Obtener nombre del proyecto
       const projectId = task.id_proyecto;
-      const [projectInfo] = await db.query('SELECT nombre FROM Proyectos WHERE id = ?', [projectId]);
+      const [projectInfo] = await db.query('SELECT nombre FROM taskmanagementsystem.Proyectos WHERE id = ?', [projectId]);
       const nombreProyecto = projectInfo.length > 0 ? projectInfo[0].nombre : null;
       
       // Registrar el evento en la bitácora

@@ -28,20 +28,22 @@ exports.getItrackerStats = async (req, res) => {
       }
 
       const where = fullConditions.length ? `WHERE ${fullConditions.join(' AND ')}` : '';
-      const fullQuery = `${baseQuery} ${where} ${groupOrder}`.trim();
-      const [rows] = await pool.query(fullQuery, fullParams);
-      return rows;
+      // Asegurar que todas las referencias usen el esquema correcto
+      let fullQuery = baseQuery.replace(/FROM\s+itracker_data/gi, 'FROM taskmanagementsystem.itracker_data');
+      fullQuery = `${fullQuery} ${where} ${groupOrder}`.trim();
+      const result = await pool.query(fullQuery, fullParams);
+      return result[0]; // Acceder al recordset devuelto por la función query
     };
 
     // Consulta para obtener la fecha del último registro cargado
-    const [ultimaActualizacionRes] = await pool.query(`
-      SELECT MAX(fecha_cierre) as ultima_fecha FROM itracker_data
+    const [ultimaActualizacionResult] = await pool.query(`
+      SELECT MAX(fecha_cierre) as ultima_fecha FROM taskmanagementsystem.itracker_data
     `);
     
     // Formateamos la fecha a dd/mm/yyyy para consistencia con el formato usado en AbmDashboard
     let ultimaActualizacion = 'Fecha no disponible';
-    if (ultimaActualizacionRes[0]?.ultima_fecha) {
-      const fechaUltima = new Date(ultimaActualizacionRes[0].ultima_fecha);
+    if (ultimaActualizacionResult && ultimaActualizacionResult[0]?.ultima_fecha) {
+      const fechaUltima = new Date(ultimaActualizacionResult[0].ultima_fecha);
       if (!isNaN(fechaUltima.getTime())) {
         ultimaActualizacion = fechaUltima.toLocaleDateString('es-ES', {
           day: '2-digit',
@@ -51,43 +53,43 @@ exports.getItrackerStats = async (req, res) => {
       }
     }
 
-    const total = (await runQuery("SELECT COUNT(*) AS total FROM itracker_data"))[0].total;
-    const masivos = (await runQuery("SELECT COUNT(*) AS total FROM itracker_data", { condition: "t_1 = 'Incidentes Masivos'" }))[0].total;
-    const puntuales = (await runQuery("SELECT COUNT(*) AS total FROM itracker_data", { condition: "t_1 = 'Incidentes Puntuales'" }))[0].total;
-    const abm = (await runQuery("SELECT COUNT(*) AS total FROM itracker_data", { condition: "t_1 LIKE '%ABM%'" }))[0].total;
+    const total = (await runQuery("SELECT COUNT(*) AS total FROM taskmanagementsystem.itracker_data"))[0].total;
+    const masivos = (await runQuery("SELECT COUNT(*) AS total FROM taskmanagementsystem.itracker_data", { condition: "t_1 = 'Incidentes Masivos'" }))[0].total;
+    const puntuales = (await runQuery("SELECT COUNT(*) AS total FROM taskmanagementsystem.itracker_data", { condition: "t_1 = 'Incidentes Puntuales'" }))[0].total;
+    const abm = (await runQuery("SELECT COUNT(*) AS total FROM taskmanagementsystem.itracker_data", { condition: "t_1 LIKE '%ABM%'" }))[0].total;
 
     const fechaMaxRows = await runQuery(
-      "SELECT fecha_apertura, COUNT(*) AS cantidad FROM itracker_data",
+      "SELECT fecha_apertura, COUNT(*) AS cantidad FROM taskmanagementsystem.itracker_data",
       null,
-      "GROUP BY fecha_apertura ORDER BY cantidad DESC LIMIT 1"
+      "GROUP BY fecha_apertura ORDER BY cantidad DESC"
     );
     const fechaMax = fechaMaxRows[0]?.fecha_apertura || null;
 
     const porMes = await runQuery(
-      "SELECT MONTH(fecha_apertura) AS mes, COUNT(*) AS cantidad FROM itracker_data",
+      "SELECT MONTH(fecha_apertura) AS mes, COUNT(*) AS cantidad FROM taskmanagementsystem.itracker_data",
       null,
-      "GROUP BY mes ORDER BY mes"
+      "GROUP BY MONTH(fecha_apertura) ORDER BY MONTH(fecha_apertura)"
     );
 
     const porCausa = await runQuery(
-      "SELECT t_2 AS causa, COUNT(*) AS cantidad FROM itracker_data",
+      "SELECT t_2 AS causa, COUNT(*) AS cantidad FROM taskmanagementsystem.itracker_data",
       null,
       "GROUP BY t_2 ORDER BY cantidad DESC"
     );
 
     const usuariosCierre = await runQuery(
-      "SELECT usuario_cierre AS name, COUNT(*) AS cantidad FROM itracker_data",
+      "SELECT usuario_cierre AS name, COUNT(*) AS cantidad FROM taskmanagementsystem.itracker_data",
       null,
       "GROUP BY usuario_cierre ORDER BY cantidad DESC"
     );
 
     const porCentro = await runQuery(
-      "SELECT equipo_apertura AS centro, COUNT(*) AS cantidad FROM itracker_data",
+      "SELECT equipo_apertura AS centro, COUNT(*) AS cantidad FROM taskmanagementsystem.itracker_data",
       null,
       "GROUP BY equipo_apertura ORDER BY cantidad DESC"
     );
 
-    const comentarios = await runQuery("SELECT cierre_comentario FROM itracker_data");
+    const comentarios = await runQuery("SELECT cierre_comentario FROM taskmanagementsystem.itracker_data");
 
     const wordCounts = {};
     comentarios.forEach(({ cierre_comentario }) => {
@@ -123,7 +125,7 @@ exports.getItrackerStats = async (req, res) => {
       ultimaActualizacion // Añadimos la fecha de última actualización a la respuesta
     });
   } catch (error) {
-    console.error('Error al obtener estadísticas de iTracker:', error);
-    res.status(500).json({ error: 'Error al obtener estadísticas de iTracker' });
+    console.error('❌ Error al obtener estadísticas de iTracker:', error);
+    res.status(500).json({ error: 'Error al obtener estadísticas de iTracker: ' + error.message });
   }
 };

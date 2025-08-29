@@ -36,6 +36,11 @@ exports.getProjectById = async (req, res) => {
 
 // Crear un nuevo proyecto
 exports.createProject = async (req, res) => {
+  console.log('✅ [ENTRADA] Petición POST recibida en createProject');
+  console.log('🔍 [ENTRADA] Method:', req.method, 'URL:', req.url);
+  console.log('🔍 [ENTRADA] Headers:', req.headers);
+  console.log('🔍 [ENTRADA] Body:', req.body);
+  
   // Validar datos de entrada
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -64,8 +69,8 @@ exports.createProject = async (req, res) => {
     });
 
     // Obtener nombre del usuario
-    const [userInfo] = await db.query('SELECT nombre FROM Usuarios WHERE id = ?', [userId]);
-    const nombreUsuario = userInfo.length > 0 ? userInfo[0].nombre : null;
+    const userInfo = await db.query('SELECT nombre FROM taskmanagementsystem.usuarios WHERE id = ?', [userId]);
+    const nombreUsuario = userInfo[0] && userInfo[0].length > 0 ? userInfo[0][0].nombre : null;
     console.log('🔍 [DEBUG] Usuario encontrado:', nombreUsuario);
 
     // Obtener nombre del proyecto
@@ -158,9 +163,9 @@ exports.deleteProject = async (req, res) => {
     const userId = req.user.id;
 
     // Obtener información del proyecto antes de eliminarlo
-    const [projectResult] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [projectId]);
+    const projectResult = await db.query('SELECT * FROM taskmanagementsystem.Proyectos WHERE id = ?', [projectId]);
     
-    if (!projectResult || projectResult.length === 0) {
+    if (!projectResult[0] || projectResult[0].length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Proyecto no encontrado'
@@ -168,12 +173,12 @@ exports.deleteProject = async (req, res) => {
     }
 
     // Corregir cómo se accede al nombre del proyecto
-    const project = projectResult[0];
+    const project = projectResult[0][0];
     const nombreProyecto = project.nombre || 'Proyecto sin nombre';
 
     // Obtener nombre del usuario
-    const [userInfo] = await db.query('SELECT nombre FROM Usuarios WHERE id = ?', [userId]);
-    const nombreUsuario = userInfo.length > 0 ? userInfo[0].nombre : null;
+    const userInfo = await db.query('SELECT nombre FROM taskmanagementsystem.Usuarios WHERE id = ?', [userId]);
+    const nombreUsuario = userInfo[0] && userInfo[0].length > 0 ? userInfo[0][0].nombre : null;
 
     // Registrar el evento de eliminación en la bitácora
     await logEvento({
@@ -190,7 +195,7 @@ exports.deleteProject = async (req, res) => {
     });
 
     // Eliminar el proyecto
-    const [result] = await db.query('DELETE FROM Proyectos WHERE id = ?', [projectId]);
+    const result = await db.query('DELETE FROM taskmanagementsystem.Proyectos WHERE id = ?', [projectId]);
 
     // Enviar respuesta al cliente
     return res.json({
@@ -222,9 +227,9 @@ exports.changeProjectStatus = async (req, res) => {
     }
 
     // Obtener información actual del proyecto
-    const [currentProject] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [projectId]);
+    const currentProject = await db.query('SELECT * FROM taskmanagementsystem.Proyectos WHERE id = ?', [projectId]);
     
-    if (!currentProject || currentProject.length === 0) {
+    if (!currentProject[0] || currentProject[0].length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Proyecto no encontrado'
@@ -232,23 +237,23 @@ exports.changeProjectStatus = async (req, res) => {
     }
 
     // Obtener nombre del usuario
-    const [userInfo] = await db.query('SELECT nombre FROM Usuarios WHERE id = ?', [userId]);
-    const nombreUsuario = userInfo.length > 0 ? userInfo[0].nombre : null;
+    const userInfo = await db.query('SELECT nombre FROM taskmanagementsystem.Usuarios WHERE id = ?', [userId]);
+    const nombreUsuario = userInfo[0] && userInfo[0].length > 0 ? userInfo[0][0].nombre : null;
 
     // Actualizar el estado del proyecto
-    const [result] = await db.query(
-      'UPDATE Proyectos SET estado = ? WHERE id = ?',
+    const result = await db.query(
+      'UPDATE taskmanagementsystem.Proyectos SET estado = ? WHERE id = ?',
       [estado, projectId]
     );
 
     // Registrar el evento en la bitácora
     await logEvento({
       tipo_evento: 'ACTUALIZACIÓN',
-      descripcion: `Estado de proyecto cambiado: ${currentProject[0].nombre} (${estado})`,
+      descripcion: `Estado de proyecto cambiado: ${currentProject[0][0].nombre} (${estado})`,
       id_usuario: userId,
       nombre_usuario: nombreUsuario,
       id_proyecto: projectId,
-      nombre_proyecto: currentProject[0].nombre,
+      nombre_proyecto: currentProject[0][0].nombre,
       id_tarea: null,
       nombre_tarea: null,
       id_subtarea: null,
@@ -261,7 +266,7 @@ exports.changeProjectStatus = async (req, res) => {
       message: 'Estado del proyecto actualizado con éxito',
       data: {
         id: projectId,
-        nombre: currentProject[0].nombre,
+        nombre: currentProject[0][0].nombre,
         estado: estado
       }
     });
@@ -300,8 +305,8 @@ exports.getProjectUsers = async (req, res) => {
     const projectId = req.params.id;
     
     // Verificar que el proyecto existe
-    const [project] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [projectId]);
-    if (!project || project.length === 0) {
+    const project = await db.query('SELECT * FROM taskmanagementsystem.Proyectos WHERE id = ?', [projectId]);
+    if (!project[0] || project[0].length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Proyecto no encontrado'
@@ -341,8 +346,8 @@ exports.assignUserToProject = async (req, res) => {
     }
     
     // Verificar que el proyecto existe
-    const [project] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [projectId]);
-    if (!project || project.length === 0) {
+    const project = await db.query('SELECT * FROM taskmanagementsystem.Proyectos WHERE id = ?', [projectId]);
+    if (!project[0] || project[0].length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Proyecto no encontrado'
@@ -350,8 +355,8 @@ exports.assignUserToProject = async (req, res) => {
     }
     
     // Verificar que el usuario existe
-    const [user] = await db.query('SELECT * FROM Usuarios WHERE id = ?', [userId]);
-    if (!user || user.length === 0) {
+    const user = await db.query('SELECT * FROM taskmanagementsystem.Usuarios WHERE id = ?', [userId]);
+    if (!user[0] || user[0].length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Usuario no encontrado'
@@ -362,7 +367,7 @@ exports.assignUserToProject = async (req, res) => {
     await projectModel.assignUserToProject(projectId, userId, rol || 'colaborador');
     
     // Obtener la información completa del usuario para la respuesta
-    const [userInfo] = await db.query('SELECT id, nombre, email FROM Usuarios WHERE id = ?', [userId]);
+    const userInfo = await db.query('SELECT id, nombre, email FROM taskmanagementsystem.Usuarios WHERE id = ?', [userId]);
     
     return res.status(201).json({
       success: true,
@@ -371,7 +376,7 @@ exports.assignUserToProject = async (req, res) => {
         id_proyecto: projectId,
         id_usuario: userId,
         rol: rol || 'colaborador',
-        usuario: userInfo[0]
+        usuario: userInfo[0][0]
       }
     });
   } catch (error) {
@@ -393,8 +398,8 @@ exports.removeUserFromProject = async (req, res) => {
     const userId = req.params.userId;
     
     // Verificar que el proyecto existe
-    const [project] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [projectId]);
-    if (!project || project.length === 0) {
+    const project = await db.query('SELECT * FROM taskmanagementsystem.Proyectos WHERE id = ?', [projectId]);
+    if (!project[0] || project[0].length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Proyecto no encontrado'
@@ -442,8 +447,8 @@ exports.updateUserRoleInProject = async (req, res) => {
     }
     
     // Verificar que el proyecto existe
-    const [project] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [projectId]);
-    if (!project || project.length === 0) {
+    const project = await db.query('SELECT * FROM taskmanagementsystem.Proyectos WHERE id = ?', [projectId]);
+    if (!project[0] || project[0].length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Proyecto no encontrado'
@@ -495,8 +500,8 @@ exports.updateProjectUsers = async (req, res) => {
     }
     
     // Verificar que el proyecto existe
-    const [project] = await db.query('SELECT * FROM Proyectos WHERE id = ?', [projectId]);
-    if (!project || project.length === 0) {
+    const project = await db.query('SELECT * FROM taskmanagementsystem.Proyectos WHERE id = ?', [projectId]);
+    if (!project[0] || project[0].length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Proyecto no encontrado'
@@ -509,7 +514,7 @@ exports.updateProjectUsers = async (req, res) => {
       await connection.beginTransaction();
       
       // Eliminar asignaciones existentes
-      await connection.query('DELETE FROM proyecto_usuarios WHERE id_proyecto = ?', [projectId]);
+      await connection.query('DELETE FROM taskmanagementsystem.proyecto_usuarios WHERE id_proyecto = ?', [projectId]);
       
       // Crear nuevas asignaciones
       if (usuarios.length > 0) {
@@ -520,7 +525,7 @@ exports.updateProjectUsers = async (req, res) => {
         ]);
         
         await connection.query(
-          'INSERT INTO proyecto_usuarios (id_proyecto, id_usuario, rol) VALUES ?', 
+          'INSERT INTO taskmanagementsystem.proyecto_usuarios (id_proyecto, id_usuario, rol) VALUES ?', 
           [values]
         );
       }
@@ -533,11 +538,11 @@ exports.updateProjectUsers = async (req, res) => {
       // Registrar el evento en la bitácora
       await logEvento({
         tipo_evento: 'ACTUALIZACIÓN',
-        descripcion: `Usuarios del proyecto actualizados: ${project[0].nombre}`,
+        descripcion: `Usuarios del proyecto actualizados: ${project[0][0].nombre}`,
         id_usuario: req.user.id,
         nombre_usuario: req.user.nombre,
         id_proyecto: projectId,
-        nombre_proyecto: project[0].nombre,
+        nombre_proyecto: project[0][0].nombre,
         id_tarea: null,
         nombre_tarea: null,
         id_subtarea: null,

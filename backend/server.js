@@ -104,6 +104,21 @@ if (!fs.existsSync(uploadsDir)) {
 // reportes
 app.use('/api/reports', reportRoutes);
 
+// Middleware de debug para routes
+app.use('/api/tasks*', (req, res, next) => {
+  console.log(`🔥 TASK ROUTE HIT: ${req.method} ${req.originalUrl}`);
+  console.log('🔥 Body:', req.body);
+  console.log('🔥 Params:', req.params);
+  next();
+});
+
+app.use('/api/subtasks*', (req, res, next) => {
+  console.log(`🔥 SUBTASK ROUTE HIT: ${req.method} ${req.originalUrl}`);
+  console.log('🔥 Body:', req.body);
+  console.log('🔥 Params:', req.params);
+  next();
+});
+
 // Rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);

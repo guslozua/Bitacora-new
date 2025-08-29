@@ -20,9 +20,10 @@ interface UsersListProps {
   filters?: UserFilters;
   onEditUser?: (userId: string) => void; // Prop para editar usuario
   onViewUser?: (userId: string) => void; // Prop para ver detalles (opcional)
+  onDataChange?: () => void; // Prop para notificar cambios de datos (crear/eliminar/editar)
 }
 
-const UsersList: React.FC<UsersListProps> = ({ filters = {}, onEditUser, onViewUser }) => {
+const UsersList: React.FC<UsersListProps> = ({ filters = {}, onEditUser, onViewUser, onDataChange }) => {
   const [users, setUsers] = useState<UserAdmin[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,6 +117,10 @@ const UsersList: React.FC<UsersListProps> = ({ filters = {}, onEditUser, onViewU
           );
           
           loadUsers(); // Recargar usuarios
+          // Notificar al componente padre para actualizar KPIs
+          if (onDataChange) {
+            onDataChange();
+          }
         } catch (error: any) {
           Swal.fire(
             'Error',
@@ -163,6 +168,10 @@ const UsersList: React.FC<UsersListProps> = ({ filters = {}, onEditUser, onViewU
           );
           
           loadUsers(); // Recargar usuarios
+          // Notificar al componente padre para actualizar KPIs
+          if (onDataChange) {
+            onDataChange();
+          }
         } catch (error: any) {
           Swal.fire(
             'Error',

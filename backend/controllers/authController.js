@@ -118,14 +118,17 @@ const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Buscar usuario por email
+    // Buscar usuario por email - Con esquema completo
     const [users] = await db.query(`
-      SELECT u.*, GROUP_CONCAT(r.nombre) as roles
-      FROM Usuarios u
-      LEFT JOIN usuario_rol ur ON u.id = ur.id_usuario
-      LEFT JOIN Roles r ON ur.id_rol = r.id
+      SELECT u.id, u.nombre, u.email, u.password, u.estado, u.ultimo_acceso,
+             (
+               SELECT STRING_AGG(r.nombre, ',')
+               FROM taskmanagementsystem.usuario_rol ur
+               INNER JOIN taskmanagementsystem.roles r ON ur.id_rol = r.id
+               WHERE ur.id_usuario = u.id
+             ) as roles
+      FROM taskmanagementsystem.usuarios u
       WHERE u.email = ?
-      GROUP BY u.id
     `, [email]);
 
     if (users.length === 0) {
@@ -190,7 +193,7 @@ const loginUser = async (req, res) => {
         console.log('Login exitoso, token generado');
         
         // Actualizar último acceso
-        db.query('UPDATE Usuarios SET ultimo_acceso = NOW() WHERE id = ?', [user.id])
+        db.query('UPDATE taskmanagementsystem.usuarios SET ultimo_acceso = GETDATE() WHERE id = ?', [user.id])
           .then(() => {
             console.log('Último acceso actualizado');
           })

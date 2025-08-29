@@ -314,7 +314,8 @@ const UsuariosManager: React.FC = () => {
           <UsersFilter onFilterChange={handleFilterChange} />
           <UsersList 
             filters={filters} 
-            onEditUser={handleEditUser} 
+            onEditUser={handleEditUser}
+            onDataChange={loadData}
           />
         </Card.Body>
       </Card>

@@ -51,6 +51,30 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
     
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
+  
+  // ✅ NUEVA FUNCIÓN: Convertir fecha UTC a formato local para datetime-local
+  const convertUTCToLocalDateTimeString = (utcDateString: string | null | undefined): string => {
+    if (!utcDateString) return '';
+    
+    try {
+      const utcDate = new Date(utcDateString);
+      
+      // Verificar que la fecha es válida
+      if (isNaN(utcDate.getTime())) return '';
+      
+      // Convertir a hora local y formatear para datetime-local
+      const year = utcDate.getFullYear();
+      const month = String(utcDate.getMonth() + 1).padStart(2, '0');
+      const day = String(utcDate.getDate()).padStart(2, '0');
+      const hours = String(utcDate.getHours()).padStart(2, '0');
+      const minutes = String(utcDate.getMinutes()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch (error) {
+      console.warn('⚠️ Error convirtiendo fecha UTC a local:', error);
+      return '';
+    }
+  };
 
   const defaultPlaca: Placa = {
     numero_placa: '',
@@ -96,8 +120,18 @@ const PlacaFormModal: React.FC<PlacaFormModalProps> = ({ show, onHide, onSave, p
   useEffect(() => {
     if (show) {
       if (placa) {
-        setFormData(placa);
-        setMinFechaCierre(placa.fecha_inicio);
+        // ✅ CORREGIDO: Convertir fechas UTC a formato local para el formulario
+        const formattedPlaca = {
+          ...placa,
+          fecha_inicio: convertUTCToLocalDateTimeString(placa.fecha_inicio),
+          fecha_cierre: convertUTCToLocalDateTimeString(placa.fecha_cierre)
+        };
+        
+        console.log('📝 Datos originales de placa:', placa);
+        console.log('📝 Datos formateados para formulario:', formattedPlaca);
+        
+        setFormData(formattedPlaca);
+        setMinFechaCierre(formattedPlaca.fecha_inicio);
       } else {
         const currentLocalDateTime = getCurrentLocalISOString();
         const newDefaultPlaca = {

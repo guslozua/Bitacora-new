@@ -1,3 +1,4 @@
+// FORCE RECOMPILE: 2025-08-14T18:20:34.743Z
 // src/components/AnnouncementsAdmin/AnnouncementsList.tsx
 // 🔐 COMPONENTE CON CONTROL DE PERMISOS APLICADO
 // - Editar anuncio: ANNOUNCEMENT_PERMISSIONS.EDIT_ANNOUNCEMENTS
@@ -45,6 +46,27 @@ const AnnouncementsList: React.FC<AnnouncementsListProps> = ({
   
   // 🔐 HOOK PARA VERIFICAR PERMISOS
   const { hasPermission } = usePermissions();
+
+  // ✅ PROTECCIÓN CRÍTICA: Validar props
+  if (!announcements) {
+    console.warn('AnnouncementsList: announcements prop is undefined');
+    return (
+      <div className="text-center py-5">
+        <Spinner animation="border" variant="warning" />
+        <p className="mt-3 text-warning">Esperando datos de anuncios...</p>
+      </div>
+    );
+  }
+
+  if (!Array.isArray(announcements)) {
+    console.error('AnnouncementsList: announcements is not an array:', announcements);
+    return (
+      <Alert variant="danger">
+        <h5>Error de datos</h5>
+        <p>Los datos de anuncios no tienen el formato esperado.</p>
+      </Alert>
+    );
+  }
 
   // Filtrar y ordenar anuncios
   const filteredAnnouncements = announcements
@@ -150,7 +172,16 @@ const AnnouncementsList: React.FC<AnnouncementsListProps> = ({
     });
 
     if (result.isConfirmed) {
-      onDelete(announcement.id);
+      if (announcement.id) {
+        onDelete(announcement.id);
+      } else {
+        console.error('AnnouncementsList: announcement.id is undefined for delete', announcement);
+        Swal.fire({
+          title: 'Error',
+          text: 'No se puede eliminar: ID del anuncio no válido',
+          icon: 'error'
+        });
+      }
     }
   };
 
@@ -181,7 +212,16 @@ const AnnouncementsList: React.FC<AnnouncementsListProps> = ({
     });
 
     if (result.isConfirmed) {
-      onToggleStatus(announcement.id, newStatus);
+      if (announcement.id) {
+        onToggleStatus(announcement.id, newStatus);
+      } else {
+        console.error('AnnouncementsList: announcement.id is undefined', announcement);
+        Swal.fire({
+          title: 'Error',
+          text: 'No se puede cambiar el estado: ID del anuncio no válido',
+          icon: 'error'
+        });
+      }
     }
   };
 
@@ -205,7 +245,16 @@ const AnnouncementsList: React.FC<AnnouncementsListProps> = ({
     });
 
     if (result.isConfirmed) {
-      onDuplicate(announcement.id);
+      if (announcement.id) {
+        onDuplicate(announcement.id);
+      } else {
+        console.error('AnnouncementsList: announcement.id is undefined for duplicate', announcement);
+        Swal.fire({
+          title: 'Error',
+          text: 'No se puede duplicar: ID del anuncio no válido',
+          icon: 'error'
+        });
+      }
     }
   };
 
@@ -444,7 +493,7 @@ const AnnouncementsList: React.FC<AnnouncementsListProps> = ({
                         <strong>{announcement.title}</strong>
                       </div>
                       <small className="text-muted">
-                        {announcement.content.length > 100 
+                        {announcement.content && announcement.content.length > 100 
                           ? `${announcement.content.substring(0, 100)}...` 
                           : announcement.content
                         }
@@ -505,7 +554,7 @@ const AnnouncementsList: React.FC<AnnouncementsListProps> = ({
                         <Button
                           size="sm"
                           variant={announcement.active ? 'success' : 'outline-success'}
-                          onClick={() => handleToggleStatusClick(announcement)}
+                          onClick={() => announcement.id ? handleToggleStatusClick(announcement) : console.error('AnnouncementsList: announcement.id is undefined for toggle button', announcement)}
                           title={announcement.active ? 'Desactivar anuncio' : 'Activar anuncio'}
                         >
                           <i className={`bi ${announcement.active ? 'bi-pause-fill' : 'bi-play-fill'}`}></i>
@@ -546,7 +595,7 @@ const AnnouncementsList: React.FC<AnnouncementsListProps> = ({
                           {/* 🔐 CAMBIAR ESTADO - Solo con permiso de publicar */}
                           <PermissionGate permission={ANNOUNCEMENT_PERMISSIONS.PUBLISH_ANNOUNCEMENTS}>
                             <Dropdown.Item 
-                              onClick={() => handleToggleStatusClick(announcement)}
+                              onClick={() => announcement.id ? handleToggleStatusClick(announcement) : console.error('AnnouncementsList: announcement.id is undefined for toggle dropdown', announcement)}
                               className="d-flex align-items-center"
                             >
                               <i className={`bi ${announcement.active ? 'bi-pause' : 'bi-play'} me-2`}></i>

@@ -9,7 +9,7 @@ const LiquidacionGuardia = {
     try {
       let query = `
         SELECT l.*
-        FROM liquidaciones_guardia l
+        FROM taskmanagementsystem.liquidaciones_guardia l
       `;
       
       const params = [];
@@ -82,7 +82,7 @@ const LiquidacionGuardia = {
     try {
       const query = `
         SELECT l.*
-        FROM liquidaciones_guardia l
+        FROM taskmanagementsystem.liquidaciones_guardia l
         WHERE l.id = ?
       `;
       
@@ -117,7 +117,7 @@ const LiquidacionGuardia = {
           ld.fecha,
           ld.total_minutos,
           ld.total_importe
-        FROM liquidaciones_detalle ld
+        FROM taskmanagementsystem.liquidaciones_detalle ld
         WHERE ld.id_liquidacion = ?
         ORDER BY ld.fecha ASC
       `;
@@ -153,7 +153,7 @@ const LiquidacionGuardia = {
       try {
         // Insertar liquidación
         const [resultLiquidacion] = await pool.query(
-          'INSERT INTO liquidaciones_guardia (periodo, fecha_generacion, estado, observaciones, id_usuario_generacion) VALUES (?, ?, ?, ?, ?)',
+          'INSERT INTO taskmanagementsystem.liquidaciones_guardia (periodo, fecha_generacion, estado, observaciones, id_usuario_generacion) VALUES (?, ?, ?, ?, ?)',
           [periodo, fecha_generacion, estado, observaciones, id_usuario_generacion]
         );
         
@@ -163,7 +163,7 @@ const LiquidacionGuardia = {
         if (Array.isArray(detalles) && detalles.length > 0) {
           for (const detalle of detalles) {
             await pool.query(
-              'INSERT INTO liquidaciones_detalle (id_liquidacion, id_incidente, id_guardia, usuario, fecha, total_minutos, total_importe) VALUES (?, ?, ?, ?, ?, ?, ?)',
+              'INSERT INTO taskmanagementsystem.liquidaciones_detalle (id_liquidacion, id_incidente, id_guardia, usuario, fecha, total_minutos, total_importe) VALUES (?, ?, ?, ?, ?, ?, ?)',
               [
                 liquidacionId, 
                 detalle.id_incidente, 
@@ -239,7 +239,7 @@ const LiquidacionGuardia = {
           params.push(id); // Para la cláusula WHERE
           
           await pool.query(
-            `UPDATE liquidaciones_guardia SET ${updates.join(', ')} WHERE id = ?`,
+            `UPDATE taskmanagementsystem.liquidaciones_guardia SET ${updates.join(', ')} WHERE id = ?`,
             params
           );
         }
@@ -247,12 +247,12 @@ const LiquidacionGuardia = {
         // Si hay detalles, actualizar la relación
         if (detalles !== undefined && Array.isArray(detalles)) {
           // Eliminar detalles existentes
-          await pool.query('DELETE FROM liquidaciones_detalle WHERE id_liquidacion = ?', [id]);
+          await pool.query('DELETE FROM taskmanagementsystem.liquidaciones_detalle WHERE id_liquidacion = ?', [id]);
           
           // Insertar nuevos detalles
           for (const detalle of detalles) {
             await pool.query(
-              'INSERT INTO liquidaciones_detalle (id_liquidacion, id_incidente, id_guardia, usuario, fecha, total_minutos, total_importe) VALUES (?, ?, ?, ?, ?, ?, ?)',
+              'INSERT INTO taskmanagementsystem.liquidaciones_detalle (id_liquidacion, id_incidente, id_guardia, usuario, fecha, total_minutos, total_importe) VALUES (?, ?, ?, ?, ?, ?, ?)',
               [
                 id, 
                 detalle.id_incidente, 
@@ -290,10 +290,10 @@ const LiquidacionGuardia = {
       
       try {
         // Eliminar detalles asociados
-        await pool.query('DELETE FROM liquidaciones_detalle WHERE id_liquidacion = ?', [id]);
+        await pool.query('DELETE FROM taskmanagementsystem.liquidaciones_detalle WHERE id_liquidacion = ?', [id]);
         
         // Eliminar liquidación
-        const [result] = await pool.query('DELETE FROM liquidaciones_guardia WHERE id = ?', [id]);
+        const [result] = await pool.query('DELETE FROM taskmanagementsystem.liquidaciones_guardia WHERE id = ?', [id]);
         
         // Confirmar transacción
         await pool.query('COMMIT');
@@ -320,7 +320,7 @@ const LiquidacionGuardia = {
           SUM(CASE WHEN estado = 'aprobada' THEN 1 ELSE 0 END) as aprobadas,
           SUM(CASE WHEN estado = 'pagada' THEN 1 ELSE 0 END) as pagadas,
           SUM(CASE WHEN estado = 'cancelada' THEN 1 ELSE 0 END) as canceladas
-        FROM liquidaciones_guardia
+        FROM taskmanagementsystem.liquidaciones_guardia
       `;
       
       const [result] = await pool.query(query);

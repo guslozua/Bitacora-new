@@ -1,5 +1,6 @@
 // Updated models/EventModel.js
 const db = require('../config/db');
+const sql = require('mssql');
 const { validationResult } = require('express-validator');
 const logEvento = require('../utils/logEvento');
 const fs = require('fs');
@@ -21,8 +22,8 @@ exports.getEvents = async (req, res) => {
     
     let query = `
       SELECT e.*, u.nombre as usuario_nombre, u.email as usuario_email
-      FROM eventos e
-      LEFT JOIN usuarios u ON e.createdBy = u.id
+      FROM taskmanagementsystem.eventos e
+      LEFT JOIN taskmanagementsystem.usuarios u ON e.createdBy = u.id
       WHERE 1=1
     `;
 
@@ -42,13 +43,13 @@ exports.getEvents = async (req, res) => {
     }
 
     if (start && end) {
-      query += ' AND ((e.start >= ? AND e.start <= ?) OR (e.end >= ? AND e.end <= ?) OR (e.start <= ? AND e.end >= ?))';
+      query += ' AND ((e.start >= ? AND e.start <= ?) OR (e.[end] >= ? AND e.[end] <= ?) OR (e.start <= ? AND e.[end] >= ?))';
       params.push(start, end, start, end, start, end);
     } else if (start) {
       query += ' AND e.start >= ?';
       params.push(start);
     } else if (end) {
-      query += ' AND e.end <= ?';
+      query += ' AND e.[end] <= ?';
       params.push(end);
     }
 
@@ -84,8 +85,8 @@ exports.getEventById = async (req, res) => {
 
     const query = `
       SELECT e.*, u.nombre as usuario_nombre, u.email as usuario_email
-      FROM eventos e
-      LEFT JOIN usuarios u ON e.createdBy = u.id
+      FROM taskmanagementsystem.eventos e
+      LEFT JOIN taskmanagementsystem.usuarios u ON e.createdBy = u.id
       WHERE e.id = ?
     `;
 
@@ -142,11 +143,11 @@ exports.createEvent = async (req, res) => {
     // Verificar posibles conflictos - solo para tipos específicos
     if (type === 'task' || type === 'event' || type === 'dayoff') {
       const [conflictingEvents] = await db.query(`
-        SELECT * FROM eventos
+        SELECT * FROM taskmanagementsystem.eventos
         WHERE (
-          (start < ? AND end > ?)
+          (start < ? AND [end] > ?)
           OR (start = ?)
-          OR (end = ?)
+          OR ([end] = ?)
         )
         AND type IN ('task', 'event', 'dayoff')
       `, [end, start, start, end]);
@@ -160,13 +161,17 @@ exports.createEvent = async (req, res) => {
       }
     }
 
-    const query = `
-      INSERT INTO eventos 
-      (title, start, end, allDay, type, color, description, location, createdBy, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    // Consulta simplificada para SQL Server con SCOPE_IDENTITY()
+    const insertQuery = `
+      INSERT INTO taskmanagementsystem.eventos
+      (title, start, [end], allDay, type, color, description, location, createdBy, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE());
+      SELECT SCOPE_IDENTITY() AS insertId;
     `;
 
-    const [result] = await db.query(query, [
+    console.log('Ejecutando inserción de evento...');
+    
+    const result = await db.query(insertQuery, [
       title,
       new Date(start),
       new Date(end),
@@ -177,7 +182,25 @@ exports.createEvent = async (req, res) => {
       location || null,
       createdBy || null
     ]);
+    
+    console.log('Resultado completo de inserción:', JSON.stringify(result, null, 2));
+    
+    // Obtener el ID del evento insertado
+    const insertId = result?.[0]?.insertId;
+    
+    if (!insertId) {
+      console.error('No se pudo obtener insertId. Estructura del resultado:', {
+        resultType: typeof result,
+        resultLength: result?.length,
+        firstElement: result?.[0],
+        insertIdProperty: result?.[0]?.insertId
+      });
+      throw new Error('No se pudo obtener el ID del evento creado');
+    }
+    
+    console.log(`✅ Evento creado exitosamente con ID: ${insertId}`);
 
+    // Log del evento si hay usuario
     if (createdBy) {
       await logEvento({
         tipo_evento: 'CREACIÓN',
@@ -186,13 +209,20 @@ exports.createEvent = async (req, res) => {
       });
     }
 
-    const [newEvent] = await db.query('SELECT * FROM eventos WHERE id = ?', [result.insertId]);
+    // Obtener el evento completo para retornarlo
+    const [newEvent] = await db.query(`
+      SELECT e.*, u.nombre as usuario_nombre, u.email as usuario_email
+      FROM taskmanagementsystem.eventos e
+      LEFT JOIN taskmanagementsystem.usuarios u ON e.createdBy = u.id
+      WHERE e.id = ?
+    `, [insertId]);
 
     res.status(201).json({
       success: true,
       message: `${getEventTypeText(type)} creado correctamente`,
       data: newEvent[0]
     });
+
   } catch (error) {
     console.error('Error al crear evento:', error);
     res.status(500).json({
@@ -222,7 +252,7 @@ exports.updateEvent = async (req, res) => {
     const { title, start, end, allDay, type, color, description, location, completed } = req.body;
     const userId = req.user?.id;
 
-    const [existingEvents] = await db.query('SELECT * FROM eventos WHERE id = ?', [eventId]);
+    const [existingEvents] = await db.query('SELECT * FROM taskmanagementsystem.eventos WHERE id = ?', [eventId]);
     if (existingEvents.length === 0) {
       return res.status(404).json({ success: false, message: 'Evento no encontrado' });
     }
@@ -244,11 +274,11 @@ exports.updateEvent = async (req, res) => {
       const endDate = end ? new Date(end) : existingEvents[0].end;
       
       const [conflictingEvents] = await db.query(`
-        SELECT * FROM eventos
+        SELECT * FROM taskmanagementsystem.eventos
         WHERE (
-          (start < ? AND end > ?)
+          (start < ? AND [end] > ?)
           OR (start = ?)
-          OR (end = ?)
+          OR ([end] = ?)
         )
         AND type IN ('task', 'event', 'dayoff')
         AND id != ?
@@ -263,13 +293,13 @@ exports.updateEvent = async (req, res) => {
       }
     }
     
-    let query = 'UPDATE eventos SET updatedAt = NOW()';
+    let query = 'UPDATE taskmanagementsystem.eventos SET updatedAt = NOW()';
     const updateFields = [];
     const params = [];
 
     if (title !== undefined) { updateFields.push('title = ?'); params.push(title); }
     if (start !== undefined) { updateFields.push('start = ?'); params.push(new Date(start)); }
-    if (end !== undefined) { updateFields.push('end = ?'); params.push(new Date(end)); }
+    if (end !== undefined) { updateFields.push('[end] = ?'); params.push(new Date(end)); }
     if (allDay !== undefined) { updateFields.push('allDay = ?'); params.push(allDay); }
     if (type !== undefined) { updateFields.push('type = ?'); params.push(type); }
     if (color !== undefined) { updateFields.push('color = ?'); params.push(color); }
@@ -297,8 +327,8 @@ exports.updateEvent = async (req, res) => {
 
     const [updatedEvent] = await db.query(`
       SELECT e.*, u.nombre as usuario_nombre, u.email as usuario_email
-      FROM eventos e
-      LEFT JOIN usuarios u ON e.createdBy = u.id
+      FROM taskmanagementsystem.eventos e
+      LEFT JOIN taskmanagementsystem.usuarios u ON e.createdBy = u.id
       WHERE e.id = ?
     `, [eventId]);
 
@@ -325,7 +355,7 @@ exports.deleteEvent = async (req, res) => {
 
     console.log(`Intentando eliminar evento ID: ${eventId}`);
 
-    const [existingEvents] = await db.query('SELECT * FROM eventos WHERE id = ?', [eventId]);
+    const [existingEvents] = await db.query('SELECT * FROM taskmanagementsystem.eventos WHERE id = ?', [eventId]);
     if (existingEvents.length === 0) {
       console.log(`Evento ID: ${eventId} no encontrado`);
       return res.status(404).json({ success: false, message: 'Evento no encontrado' });
@@ -337,7 +367,7 @@ exports.deleteEvent = async (req, res) => {
 
     // Ejecutar la consulta de eliminación con manejo de excepciones
     try {
-      const [deleteResult] = await db.query('DELETE FROM eventos WHERE id = ?', [eventId]);
+      const [deleteResult] = await db.query('DELETE FROM taskmanagementsystem.eventos WHERE id = ?', [eventId]);
       
       // Verificar si se eliminó alguna fila
       if (deleteResult.affectedRows === 0) {
@@ -395,11 +425,11 @@ exports.checkConflicts = async (req, res) => {
     }
     
     let query = `
-      SELECT * FROM eventos
+      SELECT * FROM taskmanagementsystem.eventos
       WHERE (
-        (start < ? AND end > ?)
+        (start < ? AND [end] > ?)
         OR (start = ?)
-        OR (end = ?)
+        OR ([end] = ?)
       )
       AND type IN ('task', 'event', 'dayoff')
     `;
@@ -437,7 +467,7 @@ exports.completeTask = async (req, res) => {
 
     console.log(`Intentando marcar evento ID ${eventId} como ${completed ? 'completado' : 'pendiente'}`);
 
-    const [event] = await db.query('SELECT * FROM eventos WHERE id = ?', [eventId]);
+    const [event] = await db.query('SELECT * FROM taskmanagementsystem.eventos WHERE id = ?', [eventId]);
     
     if (event.length === 0) {
       return res.status(404).json({ success: false, message: 'Evento no encontrado' });
@@ -449,7 +479,7 @@ exports.completeTask = async (req, res) => {
     
     const completedValue = completed !== undefined ? completed : true;
     
-    await db.query('UPDATE eventos SET completed = ?, updatedAt = NOW() WHERE id = ?', [completedValue, eventId]);
+    await db.query('UPDATE taskmanagementsystem.eventos SET completed = ?, updatedAt = NOW() WHERE id = ?', [completedValue, eventId]);
 
     if (userId) {
       await logEvento({
@@ -461,8 +491,8 @@ exports.completeTask = async (req, res) => {
 
     const [updatedEvent] = await db.query(`
       SELECT e.*, u.nombre as usuario_nombre, u.email as usuario_email
-      FROM eventos e
-      LEFT JOIN usuarios u ON e.createdBy = u.id
+      FROM taskmanagementsystem.eventos e
+      LEFT JOIN taskmanagementsystem.usuarios u ON e.createdBy = u.id
       WHERE e.id = ?
     `, [eventId]);
 
@@ -495,7 +525,7 @@ exports.getEventStats = async (req, res) => {
         SUM(CASE WHEN type = 'gconect' THEN 1 ELSE 0 END) as gconect,
         SUM(CASE WHEN type = 'vacation' THEN 1 ELSE 0 END) as vacaciones,
         SUM(CASE WHEN type = 'task' AND completed = true THEN 1 ELSE 0 END) as tareasCompletadas
-      FROM eventos
+      FROM taskmanagementsystem.eventos
     `);
 
     const today = new Date();
@@ -504,7 +534,7 @@ exports.getEventStats = async (req, res) => {
 
     const [upcomingEvents] = await db.query(`
       SELECT COUNT(*) as proximosEventos
-      FROM eventos
+      FROM taskmanagementsystem.eventos
       WHERE start BETWEEN ? AND ?
     `, [today, nextWeek]);
 
@@ -577,7 +607,7 @@ exports.exportEvents = async (req, res) => {
       query += ' AND e.start >= ?';
       params.push(new Date(start));
     } else if (end) {
-      query += ' AND e.end <= ?';
+      query += ' AND e.[end] <= ?';
       params.push(new Date(end));
     }
     
@@ -947,12 +977,13 @@ exports.importEvents = async (req, res) => {
     for (const event of events) {
       try {
         const query = `
-          INSERT INTO eventos 
-          (title, start, end, allDay, type, color, description, location, createdAt, updatedAt)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+          INSERT INTO taskmanagementsystem.eventos 
+          (title, start, [end], allDay, type, color, description, location, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE());
+          SELECT SCOPE_IDENTITY() AS insertId;
         `;
         
-        const [result] = await db.query(query, [
+        const result = await db.query(query, [
           event.title,
           event.start,
           event.end,
@@ -963,7 +994,15 @@ exports.importEvents = async (req, res) => {
           event.location || null
         ]);
         
-        if (result.insertId) insertedCount++;
+        // Verificar si se obtuvo un ID válido
+        let insertId = null;
+        if (result && result.length > 1 && result[1].length > 0) {
+          insertId = result[1][0].insertId;
+        } else if (result && result[0] && result[0].length > 0 && result[0][0].insertId) {
+          insertId = result[0][0].insertId;
+        }
+        
+        if (insertId) insertedCount++;
       } catch (err) {
         console.error('Error al insertar evento:', err, event);
         // Continuar con el siguiente evento

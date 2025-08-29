@@ -3,13 +3,13 @@ const pool = require('../config/db');
 
 const TaskModel = {
     createTask: async (titulo, descripcion, estado, prioridad, fecha_inicio, fecha_vencimiento, id_proyecto, id_usuario_asignado) => {
-        const sql = 'INSERT INTO Tareas (titulo, descripcion, estado, prioridad, fecha_inicio, fecha_vencimiento, id_proyecto, id_usuario_asignado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+        const sql = 'INSERT INTO taskmanagementsystem.Tareas (titulo, descripcion, estado, prioridad, fecha_inicio, fecha_vencimiento, id_proyecto, id_usuario_asignado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
         const [result] = await pool.query(sql, [titulo, descripcion, estado, prioridad, fecha_inicio, fecha_vencimiento, id_proyecto, id_usuario_asignado]);
         return result;
     },
     
     getAllTasks: async () => {
-        const sql = 'SELECT * FROM Tareas';
+        const sql = 'SELECT * FROM taskmanagementsystem.Tareas';
         const [rows] = await pool.query(sql);
         return rows;
     },
@@ -20,19 +20,19 @@ const TaskModel = {
     },
     
     getTaskById: async (id) => {
-        const sql = 'SELECT * FROM Tareas WHERE id = ?';
+        const sql = 'SELECT * FROM taskmanagementsystem.Tareas WHERE id = ?';
         const [rows] = await pool.query(sql, [id]);
         return rows;
     },
     
     updateTask: async (id, titulo, descripcion, estado, prioridad, fecha_inicio, fecha_vencimiento, id_usuario_asignado) => {
-        const sql = 'UPDATE Tareas SET titulo = ?, descripcion = ?, estado = ?, prioridad = ?, fecha_inicio = ?, fecha_vencimiento = ?, id_usuario_asignado = ? WHERE id = ?';
+        const sql = 'UPDATE taskmanagementsystem.Tareas SET titulo = ?, descripcion = ?, estado = ?, prioridad = ?, fecha_inicio = ?, fecha_vencimiento = ?, id_usuario_asignado = ? WHERE id = ?';
         const [result] = await pool.query(sql, [titulo, descripcion, estado, prioridad, fecha_inicio, fecha_vencimiento, id_usuario_asignado, id]);
         return result;
     },
     
     deleteTask: async (id) => {
-        const sql = 'DELETE FROM Tareas WHERE id = ?';
+        const sql = 'DELETE FROM taskmanagementsystem.Tareas WHERE id = ?';
         const [result] = await pool.query(sql, [id]);
         return result;
     },
@@ -42,43 +42,79 @@ const TaskModel = {
         const query = `
           SELECT tu.id, tu.id_tarea, tu.id_usuario, tu.fecha_asignacion, 
                  u.nombre, u.email
-          FROM tarea_usuarios tu
-          JOIN usuarios u ON tu.id_usuario = u.id
+          FROM taskmanagementsystem.tarea_usuarios tu
+          JOIN taskmanagementsystem.usuarios u ON tu.id_usuario = u.id
           WHERE tu.id_tarea = ?
           ORDER BY u.nombre
         `;
         
-        const [users] = await pool.query(query, [taskId]);
-        return users;
+        const users = await pool.query(query, [taskId]);
+        return users[0];
     },
     
     assignUserToTask: async (taskId, userId) => {
         try {
-          const query = `
-            INSERT INTO tarea_usuarios (id_tarea, id_usuario)
-            VALUES (?, ?)
-            ON DUPLICATE KEY UPDATE fecha_asignacion = CURRENT_TIMESTAMP
+          console.log(`[TaskModel] Asignando usuario ${userId} a tarea ${taskId}`);
+          
+          // Para SQL Server, primero verificamos si existe
+          const checkQuery = `
+            SELECT COUNT(*) as count 
+            FROM taskmanagementsystem.tarea_usuarios 
+            WHERE id_tarea = ? AND id_usuario = ?
           `;
           
-          const [result] = await pool.query(query, [taskId, userId]);
-          return result;
+          const existing = await pool.query(checkQuery, [taskId, userId]);
+          const userExists = existing[0] && existing[0].length > 0 && existing[0][0].count > 0;
+          
+          if (userExists) {
+            // Actualizar fecha si ya existe
+            const updateQuery = `
+              UPDATE taskmanagementsystem.tarea_usuarios 
+              SET fecha_asignacion = GETDATE() 
+              WHERE id_tarea = ? AND id_usuario = ?
+            `;
+            const result = await pool.query(updateQuery, [taskId, userId]);
+            console.log(`[TaskModel] Usuario ${userId} actualizado en tarea ${taskId}`);
+            return {
+              affectedRows: result[0] ? result[0].affectedRows : 1,
+              action: 'updated'
+            };
+          } else {
+            // Insertar nuevo registro
+            const insertQuery = `
+              INSERT INTO taskmanagementsystem.tarea_usuarios (id_tarea, id_usuario, fecha_asignacion)
+              VALUES (?, ?, GETDATE())
+            `;
+            const result = await pool.query(insertQuery, [taskId, userId]);
+            console.log(`[TaskModel] Usuario ${userId} insertado en tarea ${taskId}`);
+            return {
+              affectedRows: result[0] ? result[0].affectedRows : 1,
+              action: 'inserted'
+            };
+          }
         } catch (error) {
-          console.error('Error al asignar usuario a la tarea:', error);
+          console.error('[TaskModel] Error al asignar usuario a la tarea:', error);
           throw error;
         }
     },
     
     removeUserFromTask: async (taskId, userId) => {
         try {
+          console.log(`[TaskModel] Eliminando usuario ${userId} de tarea ${taskId}`);
+          
           const query = `
-            DELETE FROM tarea_usuarios
+            DELETE FROM taskmanagementsystem.tarea_usuarios
             WHERE id_tarea = ? AND id_usuario = ?
           `;
           
-          const [result] = await pool.query(query, [taskId, userId]);
-          return result;
+          const result = await pool.query(query, [taskId, userId]);
+          console.log(`[TaskModel] Usuario ${userId} eliminado de tarea ${taskId}`);
+          
+          return {
+            affectedRows: result[0] ? result[0].affectedRows : 0
+          };
         } catch (error) {
-          console.error('Error al eliminar usuario de la tarea:', error);
+          console.error('[TaskModel] Error al eliminar usuario de la tarea:', error);
           throw error;
         }
     },
@@ -90,15 +126,16 @@ const TaskModel = {
           await connection.beginTransaction();
           
           // Eliminar asignaciones existentes
-          await connection.query('DELETE FROM tarea_usuarios WHERE id_tarea = ?', [taskId]);
+          await connection.query('DELETE FROM taskmanagementsystem.tarea_usuarios WHERE id_tarea = ?', [taskId]);
           
           // Crear nuevas asignaciones
           if (userIds && userIds.length > 0) {
-            const values = userIds.map(userId => [taskId, userId]);
-            await connection.query(
-              'INSERT INTO tarea_usuarios (id_tarea, id_usuario) VALUES ?', 
-              [values]
-            );
+            for (const userId of userIds) {
+              await connection.query(
+                'INSERT INTO taskmanagementsystem.tarea_usuarios (id_tarea, id_usuario) VALUES (?, ?)', 
+                [taskId, userId]
+              );
+            }
           }
           
           await connection.commit();

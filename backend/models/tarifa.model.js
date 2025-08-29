@@ -1,44 +1,36 @@
-// models/tarifa.model.js - MODELO DE TARIFAS SIGUIENDO PATRÓN DEL PROYECTO
+// models/tarifa.model.js - CORREGIDO PARA SQL SERVER
 const pool = require('../config/db');
-const { Op } = require('./db.operators');
 
 // Inicializar tabla si no existe
 const initTable = async () => {
   try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS tarifas (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        nombre VARCHAR(255) NOT NULL COMMENT 'Nombre descriptivo de la tarifa',
-        valor_guardia_pasiva DECIMAL(10,2) NOT NULL COMMENT 'Valor fijo por guardia pasiva',
-        valor_hora_activa DECIMAL(10,2) NOT NULL COMMENT 'Valor por hora de guardia activa',
-        valor_adicional_nocturno_habil DECIMAL(10,2) NOT NULL COMMENT 'Valor adicional nocturno días hábiles',
-        valor_adicional_nocturno_no_habil DECIMAL(10,2) NOT NULL COMMENT 'Valor adicional nocturno días no hábiles',
-        vigencia_desde DATE NOT NULL COMMENT 'Fecha desde la que aplica esta tarifa',
-        vigencia_hasta DATE NULL COMMENT 'Fecha hasta la que aplica (NULL = vigente indefinidamente)',
-        estado ENUM('activo', 'inactivo') NOT NULL DEFAULT 'activo',
-        observaciones TEXT NULL COMMENT 'Observaciones adicionales',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        
-        INDEX idx_vigencia (vigencia_desde, vigencia_hasta),
-        INDEX idx_estado (estado),
-        UNIQUE KEY uk_nombre_vigencia (nombre, vigencia_desde)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tarifas versionadas para facturación de guardias'
-    `);
+    // Verificar si la tabla ya existe en el esquema taskmanagementsystem
+    const checkQuery = `
+      SELECT COUNT(*) as count 
+      FROM INFORMATION_SCHEMA.TABLES 
+      WHERE TABLE_SCHEMA = 'taskmanagementsystem' AND TABLE_NAME = 'tarifas'
+    `;
     
-    console.log('✅ Tabla tarifas inicializada correctamente');
-    
-    // Verificar si hay tarifas, si no, crear una por defecto
-    const [existing] = await pool.query('SELECT COUNT(*) as count FROM tarifas');
+    const [existing] = await pool.query(checkQuery);
     
     if (existing[0].count === 0) {
+      console.log('❌ Tabla taskmanagementsystem.tarifas no encontrada. Debe existir desde la migración.');
+      return;
+    }
+    
+    console.log('✅ Tabla taskmanagementsystem.tarifas encontrada correctamente');
+    
+    // Verificar si hay tarifas, si no, crear una por defecto
+    const [tarifasExisting] = await pool.query('SELECT COUNT(*) as count FROM taskmanagementsystem.tarifas');
+    
+    if (tarifasExisting[0].count === 0) {
       console.log('📝 Creando tarifa por defecto...');
       await pool.query(`
-        INSERT INTO tarifas 
+        INSERT INTO taskmanagementsystem.tarifas 
         (nombre, valor_guardia_pasiva, valor_hora_activa, valor_adicional_nocturno_habil, valor_adicional_nocturno_no_habil, vigencia_desde, observaciones)
         VALUES 
-        ('Tarifa Base 2025', 2500.00, 350.00, 500.00, 750.00, '2025-01-01', 'Tarifa base creada automáticamente')
-      `);
+        (?, ?, ?, ?, ?, ?, ?)
+      `, ['Tarifa Base 2025', 2500.00, 350.00, 500.00, 750.00, '2025-01-01', 'Tarifa base creada automáticamente']);
       console.log('✅ Tarifa por defecto creada');
     }
   } catch (error) {
@@ -56,7 +48,7 @@ const Tarifa = {
     try {
       console.log('🔍 TARIFA MODEL: Iniciando findAll con opciones:', JSON.stringify(options));
       
-      let query = 'SELECT * FROM tarifas';
+      let query = 'SELECT * FROM taskmanagementsystem.tarifas';
       const params = [];
       let whereClause = '';
       
@@ -85,7 +77,8 @@ const Tarifa = {
         }
       } else {
         // Por defecto, mostrar solo activas
-        whereClause = ' WHERE estado = "activo"';
+        whereClause = ' WHERE estado = ?';
+        params.push('activo');
       }
       
       query += whereClause;
@@ -117,7 +110,7 @@ const Tarifa = {
     try {
       console.log('🔍 TARIFA MODEL: Buscando tarifa por ID:', id);
       
-      const [rows] = await pool.query('SELECT * FROM tarifas WHERE id = ?', [id]);
+      const [rows] = await pool.query('SELECT * FROM taskmanagementsystem.tarifas WHERE id = ?', [id]);
       
       if (rows.length === 0) {
         console.log('❌ Tarifa no encontrada con ID:', id);
@@ -132,18 +125,17 @@ const Tarifa = {
     }
   },
   
-  // ✨ FUNCIÓN CLAVE: Encontrar tarifa vigente para una fecha específica
+  // Encontrar tarifa vigente para una fecha específica
   findVigenteEnFecha: async (fecha) => {
     try {
       console.log('📅 TARIFA MODEL: Buscando tarifa vigente para fecha:', fecha);
       
       const query = `
-        SELECT * FROM tarifas 
+        SELECT TOP 1 * FROM taskmanagementsystem.tarifas 
         WHERE estado = 'activo' 
         AND vigencia_desde <= ? 
         AND (vigencia_hasta IS NULL OR vigencia_hasta >= ?)
-        ORDER BY vigencia_desde DESC 
-        LIMIT 1
+        ORDER BY vigencia_desde DESC
       `;
       
       const [rows] = await pool.query(query, [fecha, fecha]);
@@ -178,10 +170,6 @@ const Tarifa = {
         observaciones = null
       } = data;
       
-      // ✨ CONVERTIR UNDEFINED A NULL PARA MYSQL
-      const vigenciaHastaLimpia = vigencia_hasta === undefined ? null : vigencia_hasta;
-      const observacionesLimpias = observaciones === undefined ? null : observaciones;
-      
       // Validaciones básicas
       if (!nombre || !valor_guardia_pasiva || !valor_hora_activa || !vigencia_desde) {
         throw new Error('Faltan campos obligatorios: nombre, valores y fecha de vigencia');
@@ -190,7 +178,7 @@ const Tarifa = {
       // Verificar conflictos de vigencia para el mismo nombre
       const [conflictos] = await pool.query(`
         SELECT id, nombre, vigencia_desde, vigencia_hasta 
-        FROM tarifas 
+        FROM taskmanagementsystem.tarifas 
         WHERE nombre = ? 
         AND estado = 'activo'
         AND (
@@ -198,16 +186,18 @@ const Tarifa = {
           OR
           (? <= vigencia_desde AND (? IS NULL OR ? >= vigencia_desde))
         )
-      `, [nombre, vigencia_desde, vigencia_desde, vigencia_desde, vigenciaHastaLimpia, vigenciaHastaLimpia]);
+      `, [nombre, vigencia_desde, vigencia_desde, vigencia_desde, vigencia_hasta, vigencia_hasta]);
       
       if (conflictos.length > 0) {
         throw new Error(`Ya existe una tarifa "${nombre}" vigente en el período especificado`);
       }
       
+      // Query para SQL Server con OUTPUT para obtener el ID insertado
       const insertQuery = `
-        INSERT INTO tarifas 
+        INSERT INTO taskmanagementsystem.tarifas 
         (nombre, valor_guardia_pasiva, valor_hora_activa, valor_adicional_nocturno_habil, 
          valor_adicional_nocturno_no_habil, vigencia_desde, vigencia_hasta, estado, observaciones)
+        OUTPUT INSERTED.id
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
@@ -218,16 +208,20 @@ const Tarifa = {
         parseFloat(valor_adicional_nocturno_habil),
         parseFloat(valor_adicional_nocturno_no_habil),
         vigencia_desde,
-        vigenciaHastaLimpia,
+        vigencia_hasta,
         estado,
-        observacionesLimpias
+        observaciones
       ];
       
       console.log('📝 SQL INSERT:', insertQuery);
       console.log('📝 PARÁMETROS:', insertParams);
       
       const [result] = await pool.query(insertQuery, insertParams);
-      const tarifaId = result.insertId;
+      const tarifaId = result[0] ? result[0].id : null;
+      
+      if (!tarifaId) {
+        throw new Error('No se pudo obtener el ID de la tarifa creada');
+      }
       
       console.log('✅ Tarifa creada exitosamente con ID:', tarifaId);
       
@@ -284,13 +278,16 @@ const Tarifa = {
         }
       });
       
-      if (updates.length === 0) {
+      // Actualizar fecha de modificación
+      updates.push('updated_at = GETDATE()');
+      
+      if (updates.length === 1) { // Solo updated_at
         throw new Error('No hay campos para actualizar');
       }
       
       params.push(id);
       
-      const updateQuery = `UPDATE tarifas SET ${updates.join(', ')} WHERE id = ?`;
+      const updateQuery = `UPDATE taskmanagementsystem.tarifas SET ${updates.join(', ')} WHERE id = ?`;
       console.log('📝 SQL UPDATE:', updateQuery);
       console.log('📝 PARÁMETROS:', params);
       
@@ -308,14 +305,14 @@ const Tarifa = {
     }
   },
   
-  // Eliminar una tarifa (soft delete - cambiar a inactivo)
+  // Desactivar una tarifa (soft delete)
   deactivate: async (id) => {
     try {
       console.log('🗑️ TARIFA MODEL: Desactivando tarifa ID:', id);
       
       const [result] = await pool.query(
-        'UPDATE tarifas SET estado = "inactivo" WHERE id = ?',
-        [id]
+        'UPDATE taskmanagementsystem.tarifas SET estado = ?, updated_at = GETDATE() WHERE id = ?',
+        ['inactivo', id]
       );
       
       const success = result.affectedRows > 0;
@@ -328,14 +325,12 @@ const Tarifa = {
     }
   },
   
-  // Eliminar definitivamente una tarifa (verificar uso)
+  // Eliminar definitivamente una tarifa
   destroy: async (id) => {
     try {
       console.log('🗑️ TARIFA MODEL: Eliminando permanentemente tarifa ID:', id);
       
-      // Verificar si está siendo usada (esto dependerá de cómo se use en el futuro)
-      // Por ahora, permitir eliminación directa
-      const [result] = await pool.query('DELETE FROM tarifas WHERE id = ?', [id]);
+      const [result] = await pool.query('DELETE FROM taskmanagementsystem.tarifas WHERE id = ?', [id]);
       
       const success = result.affectedRows > 0;
       console.log(success ? '✅ Tarifa eliminada permanentemente' : '❌ Tarifa no encontrada');
@@ -347,20 +342,17 @@ const Tarifa = {
     }
   },
   
-  // ✨ FUNCIONES ESPECIALIZADAS PARA CÁLCULOS
-  
   // Calcular importe para guardia pasiva
   calcularGuardiaP: async (tarifaId, tipoGuardia = 'completa') => {
     try {
       const tarifa = await Tarifa.findByPk(tarifaId);
       if (!tarifa) throw new Error('Tarifa no encontrada');
       
-      // Diferentes tipos de guardia pasiva según el cronograma
       const factores = {
-        'completa': 1.0,      // Lun-Vie 16:00–00:00 (8h)
-        'sabado_manana': 0.75, // Sáb 07:00–13:00 (6h)
-        'sabado_tarde': 1.375, // Sáb 13:00–00:00 (11h)
-        'domingo': 2.125       // Dom 07:00–00:00 (17h)
+        'completa': 1.0,
+        'sabado_manana': 0.75,
+        'sabado_tarde': 1.375,
+        'domingo': 2.125
       };
       
       const factor = factores[tipoGuardia] || 1.0;
@@ -379,9 +371,8 @@ const Tarifa = {
       
       let valorHora = tarifa.valor_hora_activa;
       
-      // Aplicar factor adicional para días no laborales si es necesario
       if (esDiaNoLaboral) {
-        valorHora *= 1.5; // +50% para días no laborales
+        valorHora *= 1.5;
       }
       
       return parseFloat((valorHora * horas).toFixed(2));
@@ -421,7 +412,7 @@ const Tarifa = {
           AVG(valor_hora_activa) as promedio_hora_activa,
           MIN(vigencia_desde) as primera_vigencia,
           MAX(vigencia_desde) as ultima_vigencia
-        FROM tarifas
+        FROM taskmanagementsystem.tarifas
       `;
       
       const [result] = await pool.query(query);
@@ -434,22 +425,18 @@ const Tarifa = {
   
   // Método para adjuntar métodos a un objeto tarifa
   attachMethods: (tarifa) => {
-    // Añadir método update
     tarifa.update = async function(values) {
       return Tarifa.update(this.id, values);
     };
     
-    // Añadir método destroy
     tarifa.destroy = async function() {
       return Tarifa.destroy(this.id);
     };
     
-    // Añadir método deactivate
     tarifa.deactivate = async function() {
       return Tarifa.deactivate(this.id);
     };
     
-    // Métodos de cálculo específicos
     tarifa.calcularGuardiaP = async function(tipoGuardia) {
       return Tarifa.calcularGuardiaP(this.id, tipoGuardia);
     };

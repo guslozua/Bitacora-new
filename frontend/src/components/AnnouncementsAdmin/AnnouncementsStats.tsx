@@ -77,9 +77,12 @@ const AnnouncementsStats: React.FC<AnnouncementsStatsProps> = ({ stats }) => {
     );
   }
 
-  // Datos para gráficos
-  const typeData = stats.byType.map((type: any) => ({
-    type: type.type.charAt(0).toUpperCase() + type.type.slice(1),
+  // ✅ PROTECCIÓN CONTRA UNDEFINED: Validar datos antes de procesarlos
+  const safeByType = stats.byType || [];
+
+  // Datos para gráficos con protección contra undefined
+  const typeData = safeByType.map((type: any) => ({
+    type: (type.type || '').charAt(0).toUpperCase() + (type.type || '').slice(1),
     total: Number(type.total || 0),
     active: Number(type.active || 0),
     views: Number(type.total_views || 0),
@@ -93,8 +96,8 @@ const AnnouncementsStats: React.FC<AnnouncementsStatsProps> = ({ stats }) => {
     { name: 'Expirados', value: Number(stats.general.expired_announcements || 0), color: '#dc3545' }
   ];
 
-  const engagementData = stats.byType.map((type: any) => ({
-    type: type.type.charAt(0).toUpperCase() + type.type.slice(1),
+  const engagementData = safeByType.map((type: any) => ({
+    type: (type.type || '').charAt(0).toUpperCase() + (type.type || '').slice(1),
     ctr: Number(type.total_views) > 0 ? ((Number(type.total_clicks) / Number(type.total_views)) * 100) : 0,
     avg_views: Number(type.avg_views || 0)
   }));
@@ -165,7 +168,7 @@ const AnnouncementsStats: React.FC<AnnouncementsStatsProps> = ({ stats }) => {
                     dataKey="value"
                   >
                     {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell key={`pie-cell-${entry.name}-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip 
@@ -302,11 +305,11 @@ const AnnouncementsStats: React.FC<AnnouncementsStatsProps> = ({ stats }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {stats.byType.map((type: any) => (
-                      <tr key={type.type}>
+                    {safeByType.map((type: any, index: number) => (
+                      <tr key={`stats-type-${type.type || 'unknown'}-${index}`}>
                         <td>
-                          <Badge bg={type.type}>
-                            {type.type.charAt(0).toUpperCase() + type.type.slice(1)}
+                          <Badge bg={type.type || 'secondary'}>
+                            {(type.type || '').charAt(0).toUpperCase() + (type.type || '').slice(1)}
                           </Badge>
                         </td>
                         <td>{Number(type.total || 0)}</td>
@@ -352,7 +355,7 @@ const AnnouncementsStats: React.FC<AnnouncementsStatsProps> = ({ stats }) => {
               ) : (
                 <div>
                   {expiringAnnouncements.slice(0, 5).map((announcement) => (
-                    <div key={announcement.id} className="border-bottom pb-2 mb-2">
+                    <div key={`expiring-${announcement.id}`} className="border-bottom pb-2 mb-2">
                       <div className="fw-semibold">{announcement.title}</div>
                       <small className="text-muted">
                         Expira: {announcementsService.formatDate(announcement.end_date!)}

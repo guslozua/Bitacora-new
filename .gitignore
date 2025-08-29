@@ -21,6 +21,10 @@ logs/
 *.tmp
 *.temp
 temp/
+temp_delete/
+
+# Files marked for deletion
+*.delete
 
 # SQL temporary files (debugging)
 *fix*.sql
@@ -31,13 +35,25 @@ testDB.js
 aternity_server.js
 update-passwords.js
 
+# Database backups and large SQL files
+*.sql.backup
+*.db
+taskmanagementsystem.sql
+basededatos-backup.sql
+
+# Test files
+test-*.js
+*test*.jsx
+*test*.tsx
+*Test*.tsx
+
+# Backup files
+*_backup.*
+*backup.*
+
 # Uploads (archivos subidos por usuarios)  
 /backend/uploads/*
 !/backend/uploads/.gitkeep
-
-# Database backups
-*.sql.backup
-*.db
 
 # OS generated files
 .DS_Store

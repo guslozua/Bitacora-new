@@ -65,15 +65,15 @@ exports.getTabulacionesStats = async (req, res) => {
 
     // NUEVO: Consulta para obtener la fecha de última actualización
     // Usamos la última fecha de finalización como indicador de última actualización
-    const [ultimaActualizacionRes] = await pool.query(`
+    const ultimaActualizacionResult = await pool.query(`
       SELECT MAX(fecha_finalizacion) as ultima_fecha 
-      FROM tabulaciones_data
+      FROM taskmanagementsystem.tabulaciones_data
     `);
     
     // Formateamos la fecha a dd/mm/yyyy
     let ultimaActualizacion = 'Fecha no disponible';
-    if (ultimaActualizacionRes[0]?.ultima_fecha) {
-      const fechaUltima = new Date(ultimaActualizacionRes[0].ultima_fecha);
+    if (ultimaActualizacionResult[0] && ultimaActualizacionResult[0][0]?.ultima_fecha) {
+      const fechaUltima = new Date(ultimaActualizacionResult[0][0].ultima_fecha);
       if (!isNaN(fechaUltima.getTime())) {
         ultimaActualizacion = fechaUltima.toLocaleDateString('es-ES', {
           day: '2-digit',
@@ -84,31 +84,34 @@ exports.getTabulacionesStats = async (req, res) => {
     }
 
     // 1. Total tareas
-    const total = (await pool.query(
-      `SELECT COUNT(*) AS total FROM tabulaciones_data ${whereClause}`,
+    const totalResult = await pool.query(
+      `SELECT COUNT(*) AS total FROM taskmanagementsystem.tabulaciones_data ${whereClause}`,
       [...params]
-    ))[0][0].total;
+    );
+    const total = totalResult[0][0].total;
 
     // 2. Finalizaciones por fecha (solo para tareas con fecha_finalizacion)
-    const porFechaFinal = (await pool.query(`
-      SELECT DATE(fecha_finalizacion) AS fecha, COUNT(*) AS cantidad
-      FROM tabulaciones_data
+    const porFechaFinalResult = await pool.query(`
+      SELECT CAST(fecha_finalizacion AS DATE) AS fecha, COUNT(*) AS cantidad
+      FROM taskmanagementsystem.tabulaciones_data
       ${whereFinalizadas}
-      GROUP BY fecha
-      ORDER BY fecha
-    `, [...params]))[0];
+      GROUP BY CAST(fecha_finalizacion AS DATE)
+      ORDER BY CAST(fecha_finalizacion AS DATE)
+    `, [...params]);
+    const porFechaFinal = porFechaFinalResult[0];
 
     // 3. Completado por usuario (MODIFICADO para normalizar nombres)
-    const completadoPorRaw = (await pool.query(`
+    const completadoPorRawResult = await pool.query(`
       SELECT 
         completado_por, 
         COUNT(*) AS cantidad
-      FROM tabulaciones_data
+      FROM taskmanagementsystem.tabulaciones_data
       ${whereFinalizadas}
       AND completado_por IS NOT NULL AND completado_por != ''
       GROUP BY completado_por
       ORDER BY cantidad DESC
-    `, [...params]))[0];
+    `, [...params]);
+    const completadoPorRaw = completadoPorRawResult[0];
 
     // Normalizar y reagrupar usuarios
     const usuariosNormalizados = {};
@@ -123,16 +126,17 @@ exports.getTabulacionesStats = async (req, res) => {
       .sort((a, b) => b.cantidad - a.cantidad);
 
     // 4. Creado por usuario (TAMBIÉN normalizado)
-    const creadoPorRaw = (await pool.query(`
+    const creadoPorRawResult = await pool.query(`
       SELECT 
         creado_por, 
         COUNT(*) AS cantidad
-      FROM tabulaciones_data
+      FROM taskmanagementsystem.tabulaciones_data
       ${baseWhere}
       AND creado_por IS NOT NULL AND creado_por != ''
       GROUP BY creado_por
       ORDER BY cantidad DESC
-    `, [...params]))[0];
+    `, [...params]);
+    const creadoPorRaw = creadoPorRawResult[0];
 
     // Normalizar y reagrupar usuarios creadores
     const creadoresNormalizados = {};
@@ -147,12 +151,13 @@ exports.getTabulacionesStats = async (req, res) => {
       .sort((a, b) => b.cantidad - a.cantidad);
 
     // 5. Obtener datos crudos para procesamiento avanzado
-    const rawTabulaciones = (await pool.query(`
+    const rawTabulacionesResult = await pool.query(`
       SELECT nombre_tarea
-      FROM tabulaciones_data
+      FROM taskmanagementsystem.tabulaciones_data
       ${baseWhere}
       ORDER BY fecha_creacion DESC
-    `, [...params]))[0];
+    `, [...params]);
+    const rawTabulaciones = rawTabulacionesResult[0];
 
     // Extraer los árboles de tabulación mediante procesamiento en JS
     const arbolesConteo = {};
@@ -217,18 +222,19 @@ exports.getTabulacionesStats = async (req, res) => {
       .slice(0, 10);
 
     // Añadir información de diagnóstico
-    const diagnostico = (await pool.query(`
+    const diagnosticoResult = await pool.query(`
       SELECT 
         SUM(CASE WHEN fecha_finalizacion IS NULL THEN 1 ELSE 0 END) AS sin_fecha_finalizacion,
         SUM(CASE WHEN completado_por IS NULL OR completado_por = '' THEN 1 ELSE 0 END) AS sin_completado_por,
         SUM(CASE WHEN creado_por IS NULL OR creado_por = '' THEN 1 ELSE 0 END) AS sin_creado_por,
         SUM(CASE WHEN nombre_tarea IS NULL OR nombre_tarea = '' THEN 1 ELSE 0 END) AS sin_nombre_tarea,
         COUNT(*) AS total_registros
-      FROM tabulaciones_data
+      FROM taskmanagementsystem.tabulaciones_data
       ${baseWhere}
-    `, [...params]))[0][0];
+    `, [...params]);
+    const diagnostico = diagnosticoResult[0][0];
 
-    console.log('✅ Estadísticas procesadas correctamente');
+    console.log('✅ Estadísticas de tabulaciones procesadas correctamente');
     console.log(`📊 Usuarios únicos completaron tareas: ${completadoPor.length}`);
     console.log(`📊 Usuarios únicos crearon tareas: ${creadoPor.length}`);
 

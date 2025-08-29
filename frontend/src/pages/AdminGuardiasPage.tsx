@@ -9,6 +9,7 @@ import { es } from 'date-fns/locale';
 import { useSearchParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import GuardiaService, { Guardia } from '../services/GuardiaService';
+import { API_BASE_URL } from '../services/apiConfig';
 
 const AdminGuardias: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -167,16 +168,44 @@ const AdminGuardias: React.FC = () => {
     return days;
   }, [filters.vista, filters.year, filters.month, filteredGuardias]);
 
-  // Función para cargar guardias
+  // Función para cargar guardias - VERSIÓN CON DEBUG MEJORADO
   const loadGuardias = async () => {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('🛡️ Cargando guardias desde AdminGuardias...');
+      console.log('🌐 API URL configurada:', API_BASE_URL);
+      
       const data = await GuardiaService.fetchGuardias();
+      
+      console.log('✅ Guardias cargadas exitosamente:', data.length);
+      console.log('📊 Primeras 3 guardias:', data.slice(0, 3));
+      
       setGuardias(data);
       return data;
     } catch (error: any) {
-      setError(`Error al cargar guardias: ${error.message}`);
+      console.error('❌ Error detallado al cargar guardias:', error);
+      
+      let errorMessage = 'Error desconocido';
+      
+      if (error.name === 'ApiError') {
+        errorMessage = `Error API (${error.status}): ${error.message}`;
+      } else if (error.message?.includes('Network Error')) {
+        errorMessage = 'Error de conexión: No se puede conectar con el servidor. Verifique que el backend esté ejecutándose.';
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = 'Timeout: El servidor está tardando demasiado en responder.';
+      } else if (error.response?.status === 404) {
+        errorMessage = 'Endpoint no encontrado: La ruta /api/guardias no existe en el servidor.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'No autorizado: Token de autenticación inválido o faltante.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Error interno del servidor: Revise los logs del backend.';
+      } else {
+        errorMessage = `Error al cargar guardias: ${error.message}`;
+      }
+      
+      setError(errorMessage);
       return [];
     } finally {
       setLoading(false);

@@ -7,8 +7,9 @@ const crypto = require('crypto');
 
 const normalize = (val) => (val || '').toString().trim().toLowerCase();
 
-const generateKey = (row, index) => {
-  const base = `${row.fecha.toISOString().split('T')[0]}-${normalize(row.centro)}-${normalize(row.operacion)}-${row.cant_usuarios}-${normalize(row.gestion)}-${normalize(row.itracker)}-${index}`;
+const generateKey = (row) => {
+  // Usar fecha, centro, operacion, cant_usuarios, gestion para evitar duplicados reales
+  const base = `${row.fecha.toISOString().split('T')[0]}-${normalize(row.centro)}-${normalize(row.operacion)}-${row.cant_usuarios}-${normalize(row.gestion)}-${row.tipo}`;
   return crypto.createHash('md5').update(base).digest('hex');
 };
 
@@ -27,7 +28,6 @@ exports.uploadPicExcel = async (req, res) => {
     );
 
     if (!isPic) {
-      // Eliminar archivo si no es válido
       cleanupFile(filePath);
       return res.status(400).json({ error: 'Este archivo no corresponde a datos de PIC. Revisá el archivo.' });
     }
@@ -36,13 +36,17 @@ exports.uploadPicExcel = async (req, res) => {
     const bajasSheet = workbook.getWorksheet('Bajas carga manual');
 
     if (!altasSheet && !bajasSheet) {
-      // Eliminar archivo si no tiene las hojas requeridas
       cleanupFile(filePath);
       return res.status(400).json({ error: 'El archivo no contiene hojas válidas de Altas o Bajas para PIC.' });
     }
 
+    // NUEVA FUNCIONALIDAD: Limpiar tabla antes de cargar datos frescos
+    console.log('Limpiando datos existentes de PIC antes de cargar archivo...');
+    await pool.query('DELETE FROM taskmanagementsystem.abm_pic');
+    console.log('Tabla abm_pic limpiada correctamente');
+
     let totalInsertados = 0;
-    let totalDuplicados = 0;
+    let totalOmitidos = 0;
 
     const processSheet = async (sheet, tipo) => {
       if (!sheet) return;
@@ -59,70 +63,76 @@ exports.uploadPicExcel = async (req, res) => {
         const fecha = rowData['fecha'] ? new Date(rowData['fecha']) : null;
         if (!fecha || isNaN(fecha.getTime())) continue;
 
+        // FILTRO: Solo procesar datos de 2023 en adelante
+        const año = fecha.getFullYear();
+        if (año < 2023) {
+          totalOmitidos++;
+          continue;
+        }
+
         const finalData = {
           fecha,
           tipo,
           centro_region: rowData['centro_region'] || null,
           centro: rowData['centro'] || null,
           operacion: rowData['operación'] || null,
-          cant_usuarios: parseInt(rowData['cant usuarios']) || 0,
+          cant_usuarios: parseInt(rowData['cant usuarios'] || rowData['cant_usuarios']) || 0,
           gestion: rowData['gestion'] || null,
           itracker: rowData['itracker'] || null,
           fuente: req.file.originalname,
         };
 
-        const unique_key = generateKey(finalData, i);
+        const unique_key = generateKey(finalData);
 
-        const [existing] = await pool.query('SELECT 1 FROM abm_pic WHERE unique_key = ?', [unique_key]);
+        // Obtener el próximo ID disponible
+        const [maxIdResult] = await pool.query(
+          'SELECT ISNULL(MAX(id), 0) + 1 as next_id FROM taskmanagementsystem.abm_pic'
+        );
+        const nextId = maxIdResult[0].next_id;
 
-        if (existing.length === 0) {
-          await pool.query(
-            `INSERT INTO abm_pic (fecha, tipo, centro_region, centro, operacion, cant_usuarios, gestion, itracker, fuente, unique_key)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-              finalData.fecha,
-              finalData.tipo,
-              finalData.centro_region,
-              finalData.centro,
-              finalData.operacion,
-              finalData.cant_usuarios,
-              finalData.gestion,
-              finalData.itracker,
-              finalData.fuente,
-              unique_key,
-            ]
-          );
-          totalInsertados++;
-        } else {
-          totalDuplicados++;
-        }
+        await pool.query(
+          `INSERT INTO taskmanagementsystem.abm_pic (id, fecha, tipo, centro_region, centro, operacion, cant_usuarios, gestion, itracker, fuente, unique_key)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            nextId,
+            finalData.fecha,
+            finalData.tipo,
+            finalData.centro_region,
+            finalData.centro,
+            finalData.operacion,
+            finalData.cant_usuarios,
+            finalData.gestion,
+            finalData.itracker,
+            finalData.fuente,
+            unique_key,
+          ]
+        );
+        totalInsertados++;
       }
     };
 
     await processSheet(altasSheet, 'Alta');
     await processSheet(bajasSheet, 'Baja');
 
-    // Eliminar el archivo después de procesarlo
     cleanupFile(filePath);
-    filePath = null; // Para evitar intentar eliminarlo de nuevo en el bloque finally
+    filePath = null;
 
     res.status(200).json({
-      message: 'Archivo PIC procesado correctamente.',
+      message: 'Archivo PIC procesado correctamente. Tabla limpiada y recargada.',
       total_insertados: totalInsertados,
-      total_duplicados: totalDuplicados,
+      total_omitidos: totalOmitidos,
+      años_procesados: '2023-2025',
     });
   } catch (error) {
     console.error('Error al procesar archivo PIC:', error);
     res.status(500).json({ error: 'Error procesando el archivo PIC' });
   } finally {
-    // Asegurarse de que el archivo siempre se elimine, incluso si hay errores
     if (filePath) {
       cleanupFile(filePath);
     }
   }
 };
 
-// Función auxiliar para eliminar archivos de forma segura
 function cleanupFile(filePath) {
   try {
     if (fs.existsSync(filePath)) {
@@ -134,23 +144,18 @@ function cleanupFile(filePath) {
   }
 }
 
-// Función para limpiar archivos huérfanos en la carpeta uploads
 exports.cleanupUploadsFolder = () => {
   try {
     const uploadsDir = path.join(__dirname, '../uploads');
     
-    // Verificar si la carpeta existe
     if (fs.existsSync(uploadsDir)) {
       const files = fs.readdirSync(uploadsDir);
-      
-      // Establecer tiempo límite (archivos más antiguos que 1 hora)
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
       
       files.forEach(file => {
         const filePath = path.join(uploadsDir, file);
         const stats = fs.statSync(filePath);
         
-        // Si el archivo es más antiguo que el límite, eliminarlo
         if (stats.mtime < oneHourAgo) {
           fs.unlinkSync(filePath);
           console.log(`Archivo huérfano eliminado: ${filePath}`);

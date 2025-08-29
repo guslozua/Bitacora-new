@@ -46,18 +46,8 @@ const UserAssignment: React.FC<UserAssignmentProps> = ({
   // Verificar si el tipo de elemento soporta roles
   const supportsRoles = itemType === 'project';
   
-  // Ejecutar diagnóstico al inicio para verificar API
-  useEffect(() => {
-    const runDiagnostic = async () => {
-      try {
-        await diagnoseAPI();
-      } catch (error) {
-        console.error('Error durante el diagnóstico:', error);
-      }
-    };
-    
-    runDiagnostic();
-  }, []);
+  // Diagnóstico removido para evitar spam de errores 404 en consola
+  // Solo se ejecutará manualmente desde la página de diagnósticos
   
   // Filtrado de usuarios
   const filteredUsers = useMemo(() => {
