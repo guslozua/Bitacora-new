@@ -1,5 +1,8 @@
 // src/services/GuardiaService.ts
 
+// Importaciones al inicio del archivo
+import { API_BASE_URL } from './apiConfig';
+
 export interface Guardia {
   id: number;
   fecha: string;
@@ -37,8 +40,6 @@ export interface ImportResult {
 }
 
 // URL base de la API
-import { API_BASE_URL } from './apiConfig';
-
 class GuardiaServiceClass {
   private readonly baseURL: string;
 
