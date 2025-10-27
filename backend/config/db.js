@@ -2,6 +2,19 @@
 const sql = require('mssql');
 require('dotenv').config();
 
+// Detectar si es servidor remoto o local
+const isRemoteServer = process.env.DB_HOST && !process.env.DB_HOST.includes('\\');
+
+// Log de configuración para debug
+console.log('🔧 Configuración de Base de Datos:');
+console.log('   Host:', process.env.DB_HOST || 'GUSLAPTOP\\SQLEXPRESS');
+console.log('   Port:', process.env.DB_PORT || 60167);
+console.log('   Database:', process.env.DB_NAME || 'taskmanagementsystem');
+console.log('   User:', process.env.DB_USER || 'taskapp');
+console.log('   Servidor Remoto:', isRemoteServer ? 'SÍ' : 'NO');
+console.log('   Instance Name:', isRemoteServer ? 'N/A (remoto)' : 'SQLEXPRESS');
+console.log('');
+
 // Configuración de SQL Server con opciones de reconexión mejoradas
 const config = {
   server: process.env.DB_HOST || 'GUSLAPTOP\\SQLEXPRESS',
@@ -13,7 +26,8 @@ const config = {
     encrypt: false,
     trustServerCertificate: true,
     enableArithAbort: true,
-    instanceName: 'SQLEXPRESS'
+    // Solo usar instanceName si NO es servidor remoto
+    ...(isRemoteServer ? {} : { instanceName: 'SQLEXPRESS' })
   },
   pool: {
     max: 10,

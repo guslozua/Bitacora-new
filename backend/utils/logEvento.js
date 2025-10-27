@@ -86,11 +86,12 @@ const logEvento = async (params, req = null) => {
         }
 
         // Inserción en la tabla bitácora
+        // Usar sintaxis de 3 partes cuando no hay DB_NAME configurado (servidor remoto)
         const sql = `
-        INSERT INTO taskmanagementsystem.bitacora
+        INSERT INTO [taskmanagementsystem].[taskmanagementsystem].[bitacora]
         (tipo_evento, descripcion, id_usuario, nombre_usuario, id_proyecto, nombre_proyecto,
          id_tarea, nombre_tarea, id_subtarea, nombre_subtarea, fecha)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE())
         `;
         
         const [result] = await db.query(sql, [

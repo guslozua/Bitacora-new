@@ -119,14 +119,16 @@ const loginUser = async (req, res) => {
 
   try {
     // Buscar usuario por email - Con esquema completo
+    // Usar FOR XML PATH en lugar de STRING_AGG para compatibilidad con SQL Server 2013
     const [users] = await db.query(`
       SELECT u.id, u.nombre, u.email, u.password, u.estado, u.ultimo_acceso,
-             (
-               SELECT STRING_AGG(r.nombre, ',')
+             STUFF((
+               SELECT ',' + r.nombre
                FROM taskmanagementsystem.usuario_rol ur
                INNER JOIN taskmanagementsystem.roles r ON ur.id_rol = r.id
                WHERE ur.id_usuario = u.id
-             ) as roles
+               FOR XML PATH(''), TYPE
+             ).value('.', 'NVARCHAR(MAX)'), 1, 1, '') as roles
       FROM taskmanagementsystem.usuarios u
       WHERE u.email = ?
     `, [email]);

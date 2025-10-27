@@ -6,7 +6,11 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
     "audit": "npm audit",
-    "audit-fix": "npm audit fix"
+    "audit-fix": "npm audit fix",
+    "switch:remote": "copy .env.remote .env && echo Configuracion REMOTA activada",
+    "switch:local": "copy .env.local.backup .env && echo Configuracion LOCAL activada",
+    "show:config": "type .env",
+    "test:connection": "node test-connection.js"
   },
   "keywords": [],
   "author": "",
